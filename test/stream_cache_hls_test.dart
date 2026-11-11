@@ -345,6 +345,38 @@ void main() {
     expect(worker.asked.length - requestsBefore, 2);
   });
 
+  test("kept spare: the pool rule — a jump takes the free pool, or the one most "
+      'recently in whole; a read that carries on takes the one used less recently; '
+      "the lab's off jumps take the busy one", () {
+    bool first({
+      bool aFree = true,
+      bool bFree = true,
+      int? a,
+      int? b,
+      required bool jump,
+      bool spare = true,
+    }) =>
+        StreamCacheServer.firstPool(
+            aFree: aFree, bFree: bFree, aWholeMs: a, bWholeMs: b, jump: jump, spareForJumps: spare);
+    // A read in flight on one pool: anything new goes to the other...
+    expect(first(aFree: false, jump: true), isFalse);
+    expect(first(bFree: false, jump: true), isTrue);
+    expect(first(aFree: false, jump: false), isFalse);
+    // ...except the lab's "off" jump, which goes where one pool would.
+    expect(first(aFree: false, jump: true, spare: false), isTrue);
+    expect(first(bFree: false, jump: true, spare: false), isFalse);
+    // Both free: a jump takes the connection used most recently...
+    expect(first(a: 1000, b: 5000, jump: true), isTrue);
+    expect(first(a: 5000, b: 1000, jump: true), isFalse);
+    expect(first(a: null, b: 5000, jump: true), isFalse);
+    expect(first(a: 5000, b: null, jump: true), isTrue);
+    // ...and a read that carries on the one used less recently (or never).
+    expect(first(a: 1000, b: 5000, jump: false), isFalse);
+    expect(first(a: 5000, b: 1000, jump: false), isTrue);
+    expect(first(a: 1000, b: null, jump: false), isFalse);
+    expect(first(a: null, b: null, jump: false), isTrue);
+  });
+
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
       () async {
     final master = await register('film9');

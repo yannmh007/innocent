@@ -329,6 +329,12 @@ class StreamCacheServer {
   /// in turn rather than one.
   static bool keepSpare = false;
 
+  /// LAB ONLY (Test Lab's jumps in Auto, on for one jump and off for the
+  /// next, lib/app.dart): false sends a jump onto the pool whose read it
+  /// cuts, as if there were one pool, while the reads still take turns —
+  /// so on and off are compared on one phone's line in one playback.
+  static bool spareForJumps = true;
+
   /// The pool a ladder's segment read goes to ([keepSpare]). A jump: the
   /// one with no read in flight whose last read came in whole most recently
   /// — its connection is open. A read that carries on from the one before:
@@ -340,20 +346,47 @@ class StreamCacheServer {
     if (!keepSpare || b == null || identical(a, b)) return a;
     final ua = _useOf(a);
     final ub = _useOf(b);
-    final aFree = ua.reading == 0;
-    final bFree = ub.reading == 0;
-    if (aFree != bFree) return aFree ? a : b;
+    return firstPool(
+            aFree: ua.reading == 0,
+            bFree: ub.reading == 0,
+            aWholeMs: ua.sinceWhole,
+            bWholeMs: ub.sinceWhole,
+            jump: jump,
+            spareForJumps: spareForJumps)
+        ? a
+        : b;
+  }
+
+  /// [_poolFor]'s rule, on its own: whether a read goes to the first pool
+  /// (true) or the second. [aFree] / [bFree]: no read in flight on it;
+  /// [aWholeMs] / [bWholeMs]: ms since a read on it last came in whole
+  /// (null: none yet). A jump: the free pool, else the one whose last read
+  /// came in whole most recently (its connection is open) — or, with
+  /// [spareForJumps] off (the lab's "off" jumps), the busy one, as one pool
+  /// would. A read that carries on: the free pool, else the one used less
+  /// recently, so both stay open.
+  @visibleForTesting
+  static bool firstPool({
+    required bool aFree,
+    required bool bFree,
+    required int? aWholeMs,
+    required int? bWholeMs,
+    required bool jump,
+    bool spareForJumps = true,
+  }) {
+    if (jump && !spareForJumps && aFree != bFree) return !aFree;
+    if (aFree != bFree) return aFree;
     // Both free, or both reading: by when each last came in whole.
-    final wa = ua.sinceWhole;
-    final wb = ub.sinceWhole;
+    final wa = aWholeMs;
+    final wb = bWholeMs;
     if (jump) {
-      if (wa == null) return wb == null ? a : b;
-      if (wb == null) return a;
-      return wa <= wb ? a : b;
+      if (wa == null) return wb == null;
+      if (wb == null) return true;
+      return wa <= wb;
     }
-    if (wa == null) return a;
-    if (wb == null) return b;
-    return wa >= wb ? a : b;
+    if (wa == null) return true;
+    if (wb == null) return false;
+    return wa >= wb;
   }
 
   /// How long parts handed over wait for the request that is to take them.

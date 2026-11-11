@@ -479,14 +479,20 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///   back_ms    from moving again until `before` was back (-1: not then)
   ///   stall_ms   the longest stop in those twenty seconds
   ///   mean       the mean rung over them
-  ///   rule       the pass's word (`lab_jump`), or - when none was written
+  ///   rule       the pass's word (`lab_jump`), or - when none was written;
+  ///              with [alternate], `spare-on` / `spare-off` for the jump
   ///   conn …     the jump's first read from the proxy
   ///              ([StreamCacheServer.jumpCostAfter]): conn new / kept,
   ///              conn_ms (getting it), wait_ms (request out to the
   ///              Worker's answer), tcp_ms / tls_ms (a new one's
   ///              handshake), answer_ms, seg_ms, cut (a read cut for it),
   ///              idle_ms (since a read on the pool last came in whole)
-  Future<void> _labAutoJumps(List<double> shares) async {
+  ///
+  /// [alternate] (Test Lab, where no word is written): with the build's
+  /// [StreamCacheServer.keepSpare] on, the odd jumps take the spare pool and
+  /// the even ones the pool whose read they cut
+  /// ([StreamCacheServer.spareForJumps]), on one phone's line.
+  Future<void> _labAutoJumps(List<double> shares, {bool alternate = false}) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);
     int rungNow() => (svc is MediaKitPlayerService ? svc.ladderRung : null) ?? 0;
@@ -504,85 +510,92 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       await Future<void>.delayed(const Duration(milliseconds: 250));
     }
     final length = svc.duration;
-    final variant = await LabStream.jumpVariant() ?? '-';
-    var i = 0;
-    for (final share in shares) {
-      i++;
-      if (!mounted) return;
-      final want = Duration(milliseconds: (length.inMilliseconds * share).round());
-      final before = rungNow();
-      final jumped = DateTime.now();
-      var last = svc.position;
-      var stillSince = jumped;
-      var frozen = Duration.zero;
-      // Every tick: the longest the position stood still so far.
-      void look() {
-        final now = DateTime.now();
-        if (svc.position != last) {
-          last = svc.position;
-          stillSince = now;
-        } else if (now.difference(stillSince) > frozen) {
-          frozen = now.difference(stillSince);
+    final word = await LabStream.jumpVariant() ?? '-';
+    final turns = alternate && StreamCacheServer.keepSpare;
+    try {
+      var i = 0;
+      for (final share in shares) {
+        i++;
+        if (!mounted) return;
+        if (turns) StreamCacheServer.spareForJumps = i.isOdd;
+        final variant = turns ? 'spare-${i.isOdd ? 'on' : 'off'}' : word;
+        final want = Duration(milliseconds: (length.inMilliseconds * share).round());
+        final before = rungNow();
+        final jumped = DateTime.now();
+        var last = svc.position;
+        var stillSince = jumped;
+        var frozen = Duration.zero;
+        // Every tick: the longest the position stood still so far.
+        void look() {
+          final now = DateTime.now();
+          if (svc.position != last) {
+            last = svc.position;
+            stillSince = now;
+          } else if (now.difference(stillSince) > frozen) {
+            frozen = now.difference(stillSince);
+          }
         }
-      }
 
-      // The jump's own first read, from the proxy, once it is in.
-      final readsBefore = StreamCacheServer.jumpCount;
-      await player().seek(want);
-      // Landed and moving past where it landed (as the jumps flow's check).
-      int? readyMs;
-      while (DateTime.now().difference(jumped) < const Duration(seconds: 30)) {
-        if (!mounted) return;
-        look();
-        if (svc.position > want + const Duration(milliseconds: 500) &&
-            LabStream.landed(want, svc.position)) {
-          readyMs = DateTime.now().difference(jumped).inMilliseconds;
-          break;
-        }
-        await Future<void>.delayed(tick);
-      }
-      final got = svc.position;
-      final first = rungNow();
-      // The twenty seconds after: the stops, and the rungs.
-      final moving = DateTime.now();
-      final atMoving = svc.position;
-      var stall = Duration.zero;
-      var oneSecondIn = false;
-      var lowMs = 0;
-      int? backMs = first >= before ? 0 : null;
-      var sum = 0, samples = 0;
-      stillSince = moving;
-      last = svc.position;
-      while (DateTime.now().difference(moving) < window) {
-        if (!mounted) return;
-        await Future<void>.delayed(tick);
-        final now = DateTime.now();
-        // The jump's own stop runs on until a second of film has played.
-        if (!oneSecondIn) {
+        // The jump's own first read, from the proxy, once it is in.
+        final readsBefore = StreamCacheServer.jumpCount;
+        await player().seek(want);
+        // Landed and moving past where it landed (as the jumps flow's check).
+        int? readyMs;
+        while (DateTime.now().difference(jumped) < const Duration(seconds: 30)) {
+          if (!mounted) return;
           look();
-          oneSecondIn = svc.position - atMoving >= const Duration(seconds: 1);
-          if (oneSecondIn) stillSince = now;
-        } else if (svc.position != last) {
-          last = svc.position;
-          stillSince = now;
-        } else if (now.difference(stillSince) > stall) {
-          stall = now.difference(stillSince);
+          if (svc.position > want + const Duration(milliseconds: 500) &&
+              LabStream.landed(want, svc.position)) {
+            readyMs = DateTime.now().difference(jumped).inMilliseconds;
+            break;
+          }
+          await Future<void>.delayed(tick);
         }
-        final r = rungNow();
-        if (r > 0) {
-          sum += r;
-          samples++;
-          if (r < before) lowMs += tick.inMilliseconds;
-          if (r >= before && backMs == null) backMs = now.difference(moving).inMilliseconds;
+        final got = svc.position;
+        final first = rungNow();
+        // The twenty seconds after: the stops, and the rungs.
+        final moving = DateTime.now();
+        final atMoving = svc.position;
+        var stall = Duration.zero;
+        var oneSecondIn = false;
+        var lowMs = 0;
+        int? backMs = first >= before ? 0 : null;
+        var sum = 0, samples = 0;
+        stillSince = moving;
+        last = svc.position;
+        while (DateTime.now().difference(moving) < window) {
+          if (!mounted) return;
+          await Future<void>.delayed(tick);
+          final now = DateTime.now();
+          // The jump's own stop runs on until a second of film has played.
+          if (!oneSecondIn) {
+            look();
+            oneSecondIn = svc.position - atMoving >= const Duration(seconds: 1);
+            if (oneSecondIn) stillSince = now;
+          } else if (svc.position != last) {
+            last = svc.position;
+            stillSince = now;
+          } else if (now.difference(stillSince) > stall) {
+            stall = now.difference(stillSince);
+          }
+          final r = rungNow();
+          if (r > 0) {
+            sum += r;
+            samples++;
+            if (r < before) lowMs += tick.inMilliseconds;
+            if (r >= before && backMs == null) backMs = now.difference(moving).inMilliseconds;
+          }
         }
+        PlaybackLog.add('LAB autojump $i/${shares.length} at=${share.toStringAsFixed(2)} '
+            'want=${want.inSeconds} got=${got.inSeconds} frozen_ms=${frozen.inMilliseconds} '
+            'ready_ms=${readyMs ?? -1} before=$before first=$first low_ms=$lowMs '
+            'back_ms=${backMs ?? -1} stall_ms=${stall.inMilliseconds} '
+            'mean=${samples == 0 ? 0 : (sum / samples).round()} '
+            'rule=$variant '
+            '${StreamCacheServer.jumpCostAfter(readsBefore) ?? 'conn=- answer_ms=-1'}');
       }
-      PlaybackLog.add('LAB autojump $i/${shares.length} at=${share.toStringAsFixed(2)} '
-          'want=${want.inSeconds} got=${got.inSeconds} frozen_ms=${frozen.inMilliseconds} '
-          'ready_ms=${readyMs ?? -1} before=$before first=$first low_ms=$lowMs '
-          'back_ms=${backMs ?? -1} stall_ms=${stall.inMilliseconds} '
-          'mean=${samples == 0 ? 0 : (sum / samples).round()} '
-          'rule=$variant '
-          '${StreamCacheServer.jumpCostAfter(readsBefore) ?? 'conn=- answer_ms=-1'}');
+    } finally {
+      StreamCacheServer.spareForJumps = true;
     }
     PlaybackLog.add('LAB autojump done');
   }
@@ -634,6 +647,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             PlaybackLog.add('LAB title: none named');
             return;
           }
+          // Test Lab with jumps in Auto (no word can be written there): the
+          // spare pool on for the whole playback, the checks included, so
+          // they prove it on a real phone; the jumps then take it in turn
+          // (_labAutoJumps, alternate).
+          if (built.isNotEmpty && autoJumps.isNotEmpty) {
+            StreamCacheServer.keepSpare = true;
+            PlaybackLog.add('LAB jump rule spare on (Test Lab: the jumps in Auto alternate)');
+          }
           await _labTitle(id);
           // Test Lab only (the title compiled in): the jumps a viewer
           // makes, each checked for where it landed.
@@ -641,7 +662,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           // Then jumps in Auto on this phone's own line, each measured
           // (STREAM_AUTOJUMPS in cloud.env; none by default).
           if (built.isNotEmpty && autoJumps.isNotEmpty) {
-            await _labAutoJumps(LabStream.parseAutoJumps(autoJumps));
+            await _labAutoJumps(LabStream.parseAutoJumps(autoJumps), alternate: true);
           }
         }());
         if (built.isNotEmpty) {

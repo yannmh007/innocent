@@ -712,7 +712,11 @@ for flow in $FLOWS; do
     adb shell mkdir -p "$d" >/dev/null 2>&1
     adb shell "echo title:$jt > $d/lab_stream_url"
     adb shell "echo 1 > $d/lab_jumps"
-    log "jumps: $jt, the viewer's jumps, ${JUMPS_S:-200} s, home after ${JUMPS_AWAY_AFTER:-100} s"
+    # JUMPS_JUMP: a word for the build's jump switch (lab_jump, as the
+    # weakjumps flow writes it; `on` = StreamCacheServer.keepSpare), so the
+    # release gate can run with a switch on before the build's default is.
+    if [ -n "${JUMPS_JUMP:-}" ]; then adb shell "echo $JUMPS_JUMP > $d/lab_jump"; fi
+    log "jumps: $jt, the viewer's jumps, ${JUMPS_S:-200} s, home after ${JUMPS_AWAY_AFTER:-100} s${JUMPS_JUMP:+, lab_jump=$JUMPS_JUMP}"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     # The checks are over by about 75 s. Then away to the home screen and
     # back, as a viewer answering a message does: the app's own check
@@ -730,11 +734,11 @@ for flow in $FLOWS; do
     sleep $(( ${JUMPS_S:-200} - ${JUMPS_AWAY_AFTER:-100} - 18 ))
     adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
     grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
-    grep -o 'exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -160 \
+    grep -o 'LAB jump rule.*\|exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -160 \
       | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' >> "$OUT/jumps.txt" || true
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
-    adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" "$d/lab_jump" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;
