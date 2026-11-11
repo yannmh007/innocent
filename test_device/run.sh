@@ -587,9 +587,11 @@ for flow in $FLOWS; do
   # from what is in hand each time, so the player waits for the Worker and
   # a segment before it plays. The film is played once per word of
   # JUMP_PASSES, from a cleared app each time, the word written to
-  # lab_jump for a build's jump switch (5c's, a first segment from a lower
-  # rung, was A/B'd in runs 42616754742 and 42628158249 and taken out; no
-  # build reads one now, so two words are an A/A). The app (lib/app.dart,
+  # lab_jump for a build's jump switch: since 11 Nov `on` / `off` for
+  # StreamCacheServer.keepSpare (a second pool, so a jump finds a
+  # connection open); other words leave the build's own, so `a b` is an
+  # A/A. (5c's switch, a first segment from a lower rung, was A/B'd in runs
+  # 42616754742 and 42628158249 and taken out.) The app (lib/app.dart,
   # _labAutoJumps) warms up for 40 s of film, then jumps to each share of
   # JUMP_AT in turn and writes one line a jump: the longest the picture
   # stood still, and the rungs and stops for 20 s after.

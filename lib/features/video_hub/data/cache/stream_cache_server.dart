@@ -307,14 +307,54 @@ class StreamCacheServer {
     return null;
   }
 
-  /// When a read on a pool last came in whole, which leaves its connection
-  /// open in the pool for the next request (the trail's "idle" at a jump).
-  static final Expando<Stopwatch> _wholeAt = Expando<Stopwatch>('whole');
+  /// What a pool is doing ([_PoolUse]): its segment reads in flight, and
+  /// when a read on it last came in whole — which leaves its connection open
+  /// in the pool for the next request (the trail's "idle" at a jump).
+  static final Expando<_PoolUse> _use = Expando<_PoolUse>('pool use');
 
-  static void _readWhole(HttpClient pool) =>
-      (_wholeAt[pool] ??= Stopwatch())
-        ..reset()
-        ..start();
+  static _PoolUse _useOf(HttpClient pool) => _use[pool] ??= _PoolUse();
+
+  static void _readWhole(HttpClient pool) => _useOf(pool).whole();
+
+  /// A CONNECTION KEPT OPEN FOR A JUMP (11 Nov 2026; lab switch `lab_jump`,
+  /// off until the lab decides). A jump cuts the read ahead in flight, and a
+  /// response cut before its end takes its connection with it: the jump's
+  /// own request then waits for a new one — a name lookup, TCP and TLS, two
+  /// round trips or more before the Worker even hears it, and on a lossy
+  /// line a lost handshake packet costs a second more. On, a ladder's
+  /// segment reads take turns on two pools ([_Ladder.spare]), so the read
+  /// in flight holds one connection and the other stays open, used a read
+  /// ago; a jump goes to the one with no read on it ([_poolFor]). No request
+  /// more to the Worker: the reads are the same reads, on two connections
+  /// in turn rather than one.
+  static bool keepSpare = false;
+
+  /// The pool a ladder's segment read goes to ([keepSpare]). A jump: the
+  /// one with no read in flight whose last read came in whole most recently
+  /// — its connection is open. A read that carries on from the one before:
+  /// the pool used less recently, so both stay open. Off, or for a film
+  /// that is not a ladder's, the film's one pool.
+  HttpClient _poolFor(_Source src, {required bool jump}) {
+    final a = src.io;
+    final b = src.second;
+    if (!keepSpare || b == null || identical(a, b)) return a;
+    final ua = _useOf(a);
+    final ub = _useOf(b);
+    final aFree = ua.reading == 0;
+    final bFree = ub.reading == 0;
+    if (aFree != bFree) return aFree ? a : b;
+    // Both free, or both reading: by when each last came in whole.
+    final wa = ua.sinceWhole;
+    final wb = ub.sinceWhole;
+    if (jump) {
+      if (wa == null) return wb == null ? a : b;
+      if (wb == null) return a;
+      return wa <= wb ? a : b;
+    }
+    if (wa == null) return a;
+    if (wb == null) return b;
+    return wa >= wb ? a : b;
+  }
 
   /// How long parts handed over wait for the request that is to take them.
   static const Duration _handOverFor = Duration(seconds: 3);
@@ -666,16 +706,26 @@ class StreamCacheServer {
         return null;
       }
       final entries = <_LadderRung>[];
+      // A SECOND POOL, FOR A JUMP ([keepSpare]): made now, connected only
+      // when a read first goes to it.
+      final spare = _Ladder.pool();
       for (var i = 0; i < rungs.length; i++) {
         final r = rungs[i];
-        _sources[r.cacheId]?.segmented = true;
+        _sources[r.cacheId]
+          ?..segmented = true
+          ..second = spare;
         entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
       }
       final ladder = _Ladder(
-          rungs: entries, io: pool, aspect: aspect, frameRate: frameRate, startHeight: start.height);
+          rungs: entries,
+          io: pool,
+          spare: spare,
+          aspect: aspect,
+          frameRate: frameRate,
+          startHeight: start.height);
       // A ladder registered again (a renewal, a return from Original): the
-      // old pool closes once its reads are done.
-      _ladders.remove(ladderId)?.io.close();
+      // old pools close once their reads are done.
+      _ladders.remove(ladderId)?.close();
       _ladders[ladderId] = ladder;
       _playingLadder = ladderId;
       // THE START RUNG'S HEAD, ASKED FOR NOW (2026-10-29), while the player
@@ -795,7 +845,7 @@ class StreamCacheServer {
   void releaseLadder(String ladderId) {
     final l = _ladders.remove(ladderId);
     if (l == null) return;
-    l.io.close(force: true);
+    l.close(force: true);
     for (final r in l.rungs) {
       release(r.cacheId);
     }
@@ -1294,7 +1344,7 @@ class StreamCacheServer {
     // A ladder with none of its rungs left is gone with them.
     _ladders.removeWhere((_, l) {
       if (l.rungs.any((r) => _sources.containsKey(r.cacheId))) return false;
-      l.io.close(force: true);
+      l.close(force: true);
       return true;
     });
   }
@@ -1317,6 +1367,7 @@ class StreamCacheServer {
     src.segmented = false;
     // Lanes want their own pool.
     src.shared = null;
+    src.second = null;
   }
 
   Future<void> _handle(HttpRequest req) async {
@@ -1760,9 +1811,14 @@ class StreamCacheServer {
     // ago a read on the pool last came in whole (leaving its connection
     // open, for the pool's idleTimeout).
     final cut = before != null && !before.done;
-    final idle = _wholeAt[src.io]?.elapsedMilliseconds;
+    final pool = _poolFor(src, jump: jump);
+    final use = _useOf(pool);
+    final idle = use.sinceWhole;
+    // Counted from the choice on, so a jump that comes while this read waits
+    // for its answer goes to the other pool.
+    use.reading++;
     _Opened? cost;
-    final opening = _openPooled(src, pos, aheadEnd - 1, opened: (c) => cost = c);
+    final opening = _openPooled(src, pos, aheadEnd - 1, opened: (c) => cost = c, pool: pool);
     var beforeMs = 0;
     if (before != null && !before.done) {
       final w = Stopwatch()..start();
@@ -1770,18 +1826,26 @@ class StreamCacheServer {
       beforeMs = w.elapsedMilliseconds;
     }
     final up = await opening;
-    if (up == null) return pos;
+    if (up == null) {
+      use.reading--;
+      return pos;
+    }
     // A jump's cost, in the trail: the Worker's answer, then the segment
     // the player is waiting for (docs/streaming_pro_plan.md, far seeks).
     final headers = asked.elapsedMilliseconds;
     var firstByte = -1;
     CacheWriter? writer;
-    if (await store.hasRoom(protecting: entry.id)) {
-      // GATHERED, like a stretch's writes (CacheWriter.batchBytes): a
-      // sealed cache's every write is a call across the platform channel,
-      // on the thread that draws the app. While a request waits for these
-      // bytes, what has gathered is written at once (below, and onWait).
-      writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
+    try {
+      if (await store.hasRoom(protecting: entry.id)) {
+        // GATHERED, like a stretch's writes (CacheWriter.batchBytes): a
+        // sealed cache's every write is a call across the platform channel,
+        // on the thread that draws the app. While a request waits for these
+        // bytes, what has gathered is written at once (below, and onWait).
+        writer = await store.openWriter(entry, pos, batchBytes: _teeBatch);
+      }
+    } catch (_) {
+      use.reading--;
+      rethrow;
     }
     final fill = src.fill = _Fill(pos, aheadEnd);
     fill.onWait = () {
@@ -1840,7 +1904,7 @@ class StreamCacheServer {
           waiting.stop();
           if (!more) {
             // In whole: its connection is back in the pool.
-            if (!fill.cancelled) _readWhole(src.io);
+            if (!fill.cancelled && at >= aheadEnd) use.whole();
             break;
           }
           quiet.reset();
@@ -1899,7 +1963,8 @@ class StreamCacheServer {
               answered.complete(sent);
               if (jump) {
                 _noteJump(cost, headers, firstByte, asked.elapsedMilliseconds,
-                    clientEnd - pos, beforeMs, cut, idle, pos);
+                    clientEnd - pos, beforeMs, cut, idle, pos,
+                    spare: identical(pool, src.second));
               }
             }
           }
@@ -1910,6 +1975,7 @@ class StreamCacheServer {
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._segmentFromUpstream: $e');
       } finally {
+        use.reading--;
         stallWatch?.cancel();
         waitFlush?.cancel();
         await writer?.close();
@@ -1931,7 +1997,7 @@ class StreamCacheServer {
   /// its pen down — and what the pool had: a read cut for the jump, and how
   /// long since a read last came in whole.
   void _noteJump(_Opened? c, int answer, int firstByte, int segment, int bytes,
-      int beforeMs, bool cut, int? idle, int pos) {
+      int beforeMs, bool cut, int? idle, int pos, {bool spare = false}) {
     final conn = switch (c?.fresh) { true => 'new', false => 'kept', null => '-' };
     final hs = c?.handshake;
     PlaybackLog.add('hls jump: answer $answer ms, first byte $firstByte ms, '
@@ -1939,14 +2005,15 @@ class StreamCacheServer {
         '${hs == null ? '' : ' (dns ${hs.$1}, tcp ${hs.$2}, tls ${hs.$3})'}'
         ', wait ${c?.waitMs ?? -1} ms, before $beforeMs ms, tries ${c?.tries ?? 0}; '
         '${cut ? 'a read cut' : 'no read cut'}, '
-        'last whole ${idle == null ? 'never' : '${(idle / 1000).toStringAsFixed(1)} s ago'}');
+        '${keepSpare ? 'pool ${spare ? 2 : 1}, ' : ''}'
+        'last whole on it ${idle == null ? 'never' : '${(idle / 1000).toStringAsFixed(1)} s ago'}');
     if (pos == 0) return;
     jumpCount++;
     _jumpCosts.add((
       jumpCount,
       'conn=$conn conn_ms=${c?.connMs ?? -1} wait_ms=${c?.waitMs ?? -1} '
           'tcp_ms=${hs?.$2 ?? -1} tls_ms=${hs?.$3 ?? -1} answer_ms=$answer seg_ms=$segment '
-          'cut=${cut ? 1 : 0} idle_ms=${idle ?? -1}'
+          'cut=${cut ? 1 : 0} idle_ms=${idle ?? -1} pool=${spare ? 2 : 1}'
     ));
     if (_jumpCosts.length > 32) _jumpCosts.removeAt(0);
   }
@@ -1956,12 +2023,12 @@ class StreamCacheServer {
   ///
   /// What the answer cost goes to [opened], for the trail ([_Opened]).
   Future<Stream<List<int>>?> _openPooled(_Source src, int start, int endInclusive,
-      {void Function(_Opened cost)? opened}) async {
+      {void Function(_Opened cost)? opened, HttpClient? pool}) async {
     for (var attempt = 0; attempt < _upstreamTries; attempt++) {
       try {
         final up = Uri.parse(src.upstream);
         final clock = Stopwatch()..start();
-        final r = await src.io.getUrl(up);
+        final r = await (pool ?? src.io).getUrl(up);
         final connMs = clock.elapsedMilliseconds;
         upstreamRequests++;
         StreamDoor.apply(r, up);
@@ -2638,6 +2705,21 @@ class _Gone {
   }
 }
 
+/// What a pool of connections is doing ([StreamCacheServer._useOf]).
+class _PoolUse {
+  /// Segment reads in flight on it.
+  int reading = 0;
+  Stopwatch? _whole;
+
+  /// A read on it came in whole: its connection is back in the pool.
+  void whole() => (_whole ??= Stopwatch())
+    ..reset()
+    ..start();
+
+  /// Ms since a read on it last came in whole; null: none yet.
+  int? get sinceWhole => _whole?.elapsedMilliseconds;
+}
+
 /// What an answer from the Worker cost ([StreamCacheServer._openPooled]):
 /// the connection it came on — new (a handshake first), kept open, or null
 /// when the platform did not say — and how long getting it took; the wait
@@ -2684,6 +2766,11 @@ class _Source {
   /// same Worker, so a change of rung, or a jump after the last read was
   /// cut off, finds a connection already open instead of a new handshake.
   HttpClient? shared;
+
+  /// And a second one ([_Ladder.spare]), for [StreamCacheServer.keepSpare]:
+  /// the segment reads take turns on the two, so a jump that cuts the read
+  /// in flight finds the other's connection open.
+  HttpClient? second;
 
   /// The player's requests for this film that are still being answered.
   final List<_Gone> serving = [];
@@ -3264,12 +3351,25 @@ class HlsRungSource {
 
 class _Ladder {
   _Ladder(
-      {required this.rungs, required this.io, this.aspect, this.frameRate, this.startHeight});
+      {required this.rungs,
+      required this.io,
+      required this.spare,
+      this.aspect,
+      this.frameRate,
+      this.startHeight});
   final List<_LadderRung> rungs;
 
   /// One pool for every rung (see [_Source.shared]), kept a minute between
   /// reads: [pool], made before the rungs are registered.
   final HttpClient io;
+
+  /// The second pool ([_Source.second], [StreamCacheServer.keepSpare]).
+  final HttpClient spare;
+
+  void close({bool force = false}) {
+    io.close(force: force);
+    spare.close(force: force);
+  }
 
   static HttpClient pool() {
     final c = HttpClient()

@@ -60,8 +60,8 @@ class LabStream {
 
   /// The pass's word (`lab_jump`), written by the weakjumps flow before
   /// each pass, echoed on every `LAB autojump` line so the flow can check
-  /// the app saw it; a jump switch for an A/B reads it too (none now: 5c's
-  /// rule was tried and taken out, 9 Nov 2026). Null when none was written.
+  /// the app saw it; the jump switch for an A/B reads it too ([jumpRule]).
+  /// Null when none was written.
   static Future<String?> jumpVariant() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
     try {
@@ -69,6 +69,23 @@ class LabStream {
     } catch (_) {
       return null;
     }
+  }
+
+  /// THE JUMP SWITCH FOR THIS PLAY (11 Nov 2026): `lab_jump` holds `on` or
+  /// `off` for [StreamCacheServer.keepSpare] — a ladder's segment reads in
+  /// turn on two pools, so a jump finds a connection open — written by the
+  /// weakjumps flow before each pass, so the passes alternate on one line.
+  /// Read before the film opens. Any other word, or none: the build's own.
+  /// Said in the trail either way. (5c's switch, a jump's first segment
+  /// from a quick rung, read the same file; tried and taken out 9 Nov.)
+  static Future<void> jumpRule() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    try {
+      final v = await _read('lab_jump');
+      if (v == 'on' || v == 'off') StreamCacheServer.keepSpare = v == 'on';
+      PlaybackLog.add('LAB jump rule spare ${StreamCacheServer.keepSpare ? 'on' : 'off'}'
+          '${v == 'on' || v == 'off' ? '' : " (the build's own)"}');
+    } catch (_) {}
   }
 
   /// The lab's jumps in Auto (`lab_autojumps`): where each lands, as shares

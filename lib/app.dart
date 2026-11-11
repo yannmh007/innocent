@@ -87,6 +87,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
     if (titleId != null) {
+      // Before the film opens: the jump switch for this pass.
+      await LabStream.jumpRule();
       await _labTitle(titleId);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
