@@ -1,0 +1,18 @@
+probe: Sintel
+via: edge | rungs: 4
+door host (last two labels): ['innocentplayer', 'com']
+--- whole-object GET, headers only
+HTTP/2 200 
+content-type: video/mp4
+content-length: 1127595385
+accept-ranges: bytes
+--- ranged GET 0-1023, headers
+HTTP/2 206 
+content-length: 1024
+content-range: bytes 0-1023/1127595385
+--- one connection, 20 s
+bytes=1127595385 speed=71646316 B/s ttfb=0.420807s
+--- three connections on three ranges, 20 s
+lane0 bytes=375865128 speed=78320132 B/s
+lane2 bytes=375865128 speed=74490056 B/s
+lane1 bytes=375865128 speed=58538994 B/s
