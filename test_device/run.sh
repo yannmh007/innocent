@@ -733,9 +733,14 @@ for flow in $FLOWS; do
     adb exec-out screencap -p > "$OUT/shots/9_jumps_back.png"
     sleep $(( ${JUMPS_S:-200} - ${JUMPS_AWAY_AFTER:-100} - 18 ))
     adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
-    grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
-    grep -o 'LAB jump rule.*\|exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -160 \
+    # This flow's own lines only: from its `LAB phase jumps start` on, so a
+    # run that plays another flow first (weakjumps, 11 Nov) does not fill
+    # the trail below with that flow's lines.
+    awk '/LAB phase jumps start/{on=1} on' "$OUT/logcat_raw.txt" 2>/dev/null > "$OUT/jumps_raw.txt" || true
+    grep -o 'LAB check.*' "$OUT/jumps_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
+    grep -o 'LAB jump rule.*\|exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/jumps_raw.txt" 2>/dev/null | head -160 \
       | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' >> "$OUT/jumps.txt" || true
+    rm -f "$OUT/jumps_raw.txt"
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
     adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" "$d/lab_jump" >/dev/null 2>&1 || true
