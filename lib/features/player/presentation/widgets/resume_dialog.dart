@@ -131,8 +131,13 @@ class _ResumeDialogState extends State<ResumeDialog> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  // Side by side when they fit; one above the other when a
+                  // large font or a 320 dp phone has no room ("Resume" was
+                  // cut in half).
+                  OverflowBar(
+                    alignment: MainAxisAlignment.end,
+                    overflowAlignment: OverflowBarAlignment.end,
+                    spacing: 4,
                     children: [
                       TextButton(
                         onPressed: () => widget.onStartOver(
@@ -150,7 +155,6 @@ class _ResumeDialogState extends State<ResumeDialog> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 4),
                       TextButton(
                         onPressed: () =>
                             widget.onResume(useByDefault: _useByDefault),

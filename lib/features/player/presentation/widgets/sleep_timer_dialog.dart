@@ -251,8 +251,19 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                         thickness: 1,
                       ),
                       const SizedBox(height: 12),
-                      Center(child: _keypad()),
-                      const Spacer(),
+                      // The keypad gives way, not STOP and START: four rows
+                      // of keys are 212 dp, and on a phone 320 dp tall held
+                      // sideways the buttons were pushed 33 dp off the
+                      // screen (test/player_layout_test.dart). Smaller keys
+                      // there; full size wherever they fit.
+                      Expanded(
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: _keypad(),
+                          ),
+                        ),
+                      ),
                       _actionsRow(),
                     ],
                   ),

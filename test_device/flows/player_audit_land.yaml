@@ -1,0 +1,88 @@
+# The player audit's fixes on a real Android build, landscape
+# (docs/player_ux_audit_2026_11.md). Runs after layout_landscape, with the
+# lab film open and the phone turned (run.sh turns it for layout_landscape):
+#  - B2: ♪ and CC are on the landscape top bar;
+#  - B1: ⋮ then Back closes the menu and the film stays;
+#  - B3: holding Next opens the repeat menu (Loop one / Loop all);
+#  - the subtitle panel opens from CC, and Back closes it, not the film.
+# Each check has its screenshot (8x_audit_*).
+appId: com.innocent.media
+---
+- runFlow:
+    # Controls up: tap the picture only if they are not (a tap on shown
+    # controls hides them).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- takeScreenshot: 80_audit_controls_landscape
+- assertVisible: "(Audio track|အသံ လိုင်း)"
+- assertVisible: "(Subtitle|စာတန်းထိုး)"
+
+# ── B1: ⋮, then Back ───────────────────────────────────────────────────
+- tapOn: "(More|နောက်ထပ်)"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 81_audit_more_landscape
+- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု)"
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 82_audit_more_closed_by_back
+- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု)"
+# Still in the player: its controls come back on a tap.
+- runFlow:
+    # Controls up: tap the picture only if they are not (a tap on shown
+    # controls hides them).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible: "(Audio track|အသံ လိုင်း)"
+
+# ── B3: hold Next ──────────────────────────────────────────────────────
+- longPressOn: "(Next video.*|နောက် ဗီဒီယို.*)"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 83_audit_repeat_menu
+- assertVisible: "(Loop one|တစ်ခု ထပ်ဖွင့်)"
+- back
+- waitForAnimationToEnd:
+    timeout: 1000
+
+# ── CC: the subtitle panel, closed by Back ─────────────────────────────
+- runFlow:
+    # Controls up: tap the picture only if they are not (a tap on shown
+    # controls hides them).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- tapOn: "(Subtitle|စာတန်းထိုး)"
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 84_audit_subtitle_panel
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: 85_audit_subtitle_panel_closed
+- runFlow:
+    # Controls up: tap the picture only if they are not (a tap on shown
+    # controls hides them).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - tapOn:
+          point: "50%,50%"
+      - waitForAnimationToEnd:
+          timeout: 1000
+- assertVisible: "(Audio track|အသံ လိုင်း)"

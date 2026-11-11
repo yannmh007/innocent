@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 
 import '../../../../core/localization/app_strings.dart';
+
 /// Right-side panel for subtitle options (Open / Settings / Online subtitles)
 class SubtitlePanel extends StatelessWidget {
   final VoidCallback onOpen;
@@ -50,53 +51,78 @@ class SubtitlePanel extends StatelessWidget {
                   // Header row: title + online subtitles link
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+                    // Both texts give way, so a larger system font or a
+                    // 320 dp phone does not push the link off the panel.
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(AppStrings.of(context).subtitle,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                        Flexible(
+                          flex: 2,
+                          child: Text(
+                            AppStrings.of(context).subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: onOnlineSubtitles,
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                          ),
-                          child: Text(AppStrings.of(context).onlineSubtitles,
-                            style: const TextStyle(fontSize: 13),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          flex: 3,
+                          child: TextButton(
+                            onPressed: onOnlineSubtitles,
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                            ),
+                            child: Text(
+                              AppStrings.of(context).onlineSubtitles,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 13),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _SubtitleOption(
-                    icon: Icons.folder_open_outlined,
-                    label: AppStrings.of(context).pwOpenFile,
-                    onTap: onOpen,
-                  ),
-                  _SubtitleOption(
-                    icon: Icons.subtitles_outlined,
-                    label: AppStrings.of(context).pwSubTrack,
-                    onTap: onSettings,
-                  ),
-                  // UX-3 (audit): in-player access to the (already
-                  // comprehensive) subtitle styling screens — previously
-                  // reachable only via global Settings.
-                  _SubtitleOption(
-                    icon: Icons.text_fields,
-                    label: AppStrings.of(context).pwTextStyle,
-                    onTap: onTextStyle,
-                  ),
-                  _SubtitleOption(
-                    icon: Icons.format_align_center,
-                    label: AppStrings.of(context).pwPosLayout,
-                    onTap: onLayout,
+                  // The options scroll: a phone held sideways is about
+                  // 320–360 dp tall, and four rows under the header did not
+                  // fit it at a large font size (test/player_layout_test.dart).
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        _SubtitleOption(
+                          icon: Icons.folder_open_outlined,
+                          label: AppStrings.of(context).pwOpenFile,
+                          onTap: onOpen,
+                        ),
+                        _SubtitleOption(
+                          icon: Icons.subtitles_outlined,
+                          label: AppStrings.of(context).pwSubTrack,
+                          onTap: onSettings,
+                        ),
+                        // UX-3 (audit): in-player access to the (already
+                        // comprehensive) subtitle styling screens — previously
+                        // reachable only via global Settings.
+                        _SubtitleOption(
+                          icon: Icons.text_fields,
+                          label: AppStrings.of(context).pwTextStyle,
+                          onTap: onTextStyle,
+                        ),
+                        _SubtitleOption(
+                          icon: Icons.format_align_center,
+                          label: AppStrings.of(context).pwPosLayout,
+                          onTap: onLayout,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -129,12 +155,14 @@ class _SubtitleOption extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 24),
             const SizedBox(width: 20),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
               ),
             ),
           ],

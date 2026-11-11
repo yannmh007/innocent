@@ -597,12 +597,18 @@ class _PointRow extends StatelessWidget {
                     size: 16,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    value != null ? fmt(value!) : AppStrings.of(context).pwNotSet,
-                    style: TextStyle(
-                      color: value != null ? Colors.white : Colors.white54,
-                      fontSize: 13,
-                      fontFamily: 'monospace',
+                  // Gives way: "not set" in Burmese ran 44 dp past the box on
+                  // a 320 dp phone (test/player_layout_test.dart).
+                  Flexible(
+                    child: Text(
+                      value != null ? fmt(value!) : AppStrings.of(context).pwNotSet,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: value != null ? Colors.white : Colors.white54,
+                        fontSize: 13,
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   ),
                   if (onSeek != null) ...[

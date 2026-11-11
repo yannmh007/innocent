@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/tv_focus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../player_provider.dart';
 import '../shortcut_item.dart';
+import '../../domain/speed_format.dart';
 import '../../../../core/localization/app_strings.dart';
 
 /// Phase 15: MX Player parity for shortcut row.
@@ -54,6 +57,11 @@ class ShortcutRow extends StatelessWidget {
   /// minus customiseItems (which lives in the More menu).
   final List<ShortcutItem>? allItemsOverride;
 
+  /// The viewer's own shortcuts (the collapsed row). Expanded, they stay
+  /// first, where the viewer last saw them: in the enum's order they moved
+  /// to the far end, behind nine rarely used ones.
+  final Set<ShortcutItem> pinned;
+
   const ShortcutRow({
     super.key,
     required this.visibleItems,
@@ -66,13 +74,18 @@ class ShortcutRow extends StatelessWidget {
     this.currentSpeed = 1.0,
     this.audioEffectActive = false,
     this.loopMode = LoopMode.off,
+    this.pinned = const {},
   });
 
   List<ShortcutItem> get _expandedItems {
     if (allItemsOverride != null) return allItemsOverride!;
-    return ShortcutItem.values
+    final all = ShortcutItem.values
         .where((i) => i != ShortcutItem.customiseItems)
         .toList();
+    return [
+      ...all.where(pinned.contains),
+      ...all.where((i) => !pinned.contains(i)),
+    ];
   }
 
   @override
@@ -81,8 +94,18 @@ class ShortcutRow extends StatelessWidget {
     // +1 for the trailing expand/collapse chevron
     // Phase 16: Collapsed = no labels (more compact, MX Player parity).
     //           Expanded = with labels (matches MX Player landscape view).
+    // Expanded, the labels hang under the circles in a box as tall as the
+    // tallest of them: 28 dp holds two Latin lines, and a Burmese line alone
+    // is nearly that tall.
+    var labelBox = 28.0;
+    if (expanded) {
+      final s = AppStrings.of(context);
+      for (final i in items) {
+        labelBox = math.max(labelBox, shortcutLabelFit(context, i.labelIn(s)).height);
+      }
+    }
     return SizedBox(
-      height: expanded ? 90 : 56,
+      height: expanded ? 6 + _circle + 6 + labelBox + 6 : 56,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.zero,
@@ -95,6 +118,7 @@ class ShortcutRow extends StatelessWidget {
             return _ShortcutButton(
               key: ValueKey(item.name),
               item: item,
+              labelBox: labelBox,
               isActive: activeItems.contains(item),
               showLabel: expanded,
               onTap: () => onItemTap(item),
@@ -105,6 +129,7 @@ class ShortcutRow extends StatelessWidget {
             );
           }
           return _ExpandButton(
+            labelBox: labelBox,
             expanded: expanded,
             onTap: onToggleExpand,
             isPortrait: isPortrait,
@@ -124,10 +149,12 @@ class _ShortcutButton extends StatelessWidget {
   final double currentSpeed;
   final bool audioEffectActive;
   final LoopMode loopMode;
+  final double labelBox;
 
   const _ShortcutButton({
     super.key,
     required this.item,
+    this.labelBox = 28,
     required this.isActive,
     required this.showLabel,
     required this.onTap,
@@ -178,7 +205,7 @@ class _ShortcutButton extends StatelessWidget {
               // is set a touch smaller (down to 10 sp), longer than that
               // and it wraps.
               SizedBox(
-                height: 28,
+                height: labelBox,
                 child: _ShortcutLabel(
                   // Phase 45 (audit): the Speed shortcut already shows
                   // its value ("1X"/"1.5X"/"2X") as the icon text itself;
@@ -269,12 +296,8 @@ class _ShortcutButton extends StatelessWidget {
   /// Phase 45 (audit): render the speed label like MX Player ("1X",
   /// "1.5X", "2X"). Whole-number speeds drop the decimal point.
   Widget _speedText() {
-    final isWhole = (currentSpeed - currentSpeed.roundToDouble()).abs() < 0.01;
-    final label = isWhole
-        ? '${currentSpeed.toInt()}X'
-        : '${currentSpeed.toStringAsFixed(currentSpeed.toString().endsWith("5") ? 1 : 2)}X';
     return Text(
-      label,
+      '${formatSpeed(currentSpeed)}X',
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,
@@ -329,8 +352,10 @@ class _ExpandButton extends StatelessWidget {
   final bool expanded;
   final VoidCallback onTap;
   final bool isPortrait;
+  final double labelBox;
 
   const _ExpandButton({
+    this.labelBox = 28,
     required this.expanded,
     required this.onTap,
     this.isPortrait = false,
@@ -373,7 +398,7 @@ class _ExpandButton extends StatelessWidget {
                   ),
             if (expanded) ...[
               // Empty label slot to align with sibling buttons
-              const SizedBox(height: 6 + 28),
+              SizedBox(height: 6 + labelBox),
             ],
           ],
         ),
@@ -383,6 +408,79 @@ class _ExpandButton extends StatelessWidget {
 }
 
 /// A shortcut's label under its circle: see the note where it is used.
+/// Whether [t] is written without spaces between words (Burmese, Thai):
+/// such text breaks between syllables, which is how it is written, so a line
+/// break inside a space-free run is not a word cut in half.
+bool _breaksWithoutSpaces(String t) => t.runes.any((r) =>
+    (r >= 0x1000 && r <= 0x109F) || // Myanmar
+    (r >= 0xAA60 && r <= 0xAA7F) || // Myanmar Extended-A
+    (r >= 0xA9E0 && r <= 0xA9FF) || // Myanmar Extended-B
+    (r >= 0x0E00 && r <= 0x0E7F)); // Thai
+
+/// How a shortcut's label is set under its circle: the font size, one line
+/// or two, and the height that takes.
+///
+/// 11 sp on one line; a little smaller (to 10) rather than wrap; else two
+/// lines, never a Latin word broken in half ("Backgroun / d"), smaller only
+/// if a word still does not fit. Burmese and Thai have no spaces between
+/// words: they were measured as one long "word" and shrunk to fit a single
+/// line — "အပေါ်အောက်လှန်" came out near 6 sp, unreadable. They wrap
+/// between syllables instead, and the row grows to hold their taller lines
+/// (test/player_layout_test.dart).
+({double size, int lines, double height}) shortcutLabelFit(
+    BuildContext context, String text) {
+  const base = _ShortcutLabel._base;
+  const min = _ShortcutLabel._min;
+  // A text set to fill its box exactly can still come out a hair wider and
+  // be cut off, so it is fitted 1 dp inside its room.
+  const fit = _slot - 4 - 1;
+  final scaler = MediaQuery.textScalerOf(context);
+  final direction = Directionality.of(context);
+  final style = DefaultTextStyle.of(context)
+      .style
+      .merge(const TextStyle(color: Colors.white, fontSize: base));
+  TextPainter lay(String t, double size, int lines, [double? width]) =>
+      TextPainter(
+        text: TextSpan(text: t, style: style.copyWith(fontSize: size)),
+        textDirection: direction,
+        textScaler: scaler,
+        maxLines: lines,
+        ellipsis: lines > 1 ? '…' : null,
+      )..layout(maxWidth: width ?? double.infinity);
+  double widthOf(String t, double size) {
+    final p = lay(t, size, 1);
+    final w = p.width;
+    p.dispose();
+    return w;
+  }
+
+  ({double size, int lines, double height}) done(double size, int lines) {
+    final p = lay(text, size, lines, fit);
+    final h = p.height;
+    p.dispose();
+    return (size: size, lines: lines, height: h);
+  }
+
+  final width = widthOf(text, base);
+  if (width <= fit) return done(base, 1);
+  if (width * min / base <= fit) return done(base * fit / width, 1);
+  // Two lines. The longest word that may not be broken must fit a line.
+  final longest = text
+      .split(' ')
+      .where((w) => !_breaksWithoutSpaces(w))
+      .map((w) => widthOf(w, base))
+      .fold<double>(0, math.max);
+  var size = longest > fit ? base * fit / longest : base;
+  // And the whole text must fit two lines at that size.
+  for (; size > 8; size -= 0.5) {
+    final p = lay(text, size, 2, fit);
+    final over = p.didExceedMaxLines;
+    p.dispose();
+    if (!over) break;
+  }
+  return done(size, 2);
+}
+
 class _ShortcutLabel extends StatelessWidget {
   const _ShortcutLabel(this.text);
 
@@ -394,44 +492,12 @@ class _ShortcutLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const room = _slot - 4;
-    final scaler = MediaQuery.textScalerOf(context);
-    final style = DefaultTextStyle.of(context).style.merge(const TextStyle(
-      color: Colors.white,
-      fontSize: _base,
-      height: 1.15,
-    ));
-    // Measured in the font the label is drawn in.
-    double widthOf(String t) {
-      final painter = TextPainter(
-        text: TextSpan(text: t, style: style),
-        textDirection: Directionality.of(context),
-        textScaler: scaler,
-        maxLines: 1,
-      )..layout();
-      final w = painter.width;
-      painter.dispose();
-      return w;
-    }
-
-    // A text set to fill its box exactly can still come out a hair wider
-    // and be cut off, so it is fitted 1 dp inside.
-    const fit = room - 1;
-    final width = widthOf(text);
-    var size = _base;
-    var lines = 1;
-    if (width > fit) {
-      if (width * _min / _base <= fit) {
-        size = _base * fit / width;
-      } else {
-        // Two lines, and never a word broken in half ("Backgroun / d").
-        lines = 2;
-        final longest = text
-            .split(' ')
-            .map(widthOf)
-            .fold<double>(0, (a, b) => a > b ? a : b);
-        if (longest > fit) size = _base * fit / longest;
-      }
-    }
+    final style = DefaultTextStyle.of(context)
+        .style
+        .merge(const TextStyle(color: Colors.white, fontSize: _base));
+    final f = shortcutLabelFit(context, text);
+    final size = f.size;
+    final lines = f.lines;
     return Align(
       alignment: Alignment.topCenter,
       child: SizedBox(

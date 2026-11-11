@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/speed_format.dart';
 
 /// Speed indicator - shown on left edge when playback speed != 1.0
 class SpeedIndicator extends StatelessWidget {
@@ -10,9 +11,7 @@ class SpeedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final speedLabel = speed == speed.toInt().toDouble()
-        ? '${speed.toInt()}X'
-        : '${speed.toStringAsFixed(1)}X';
+    final speedLabel = '${formatSpeed(speed)}X';
 
     return IgnorePointer(
       child: Container(

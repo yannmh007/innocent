@@ -63,6 +63,10 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      // Scrolls: sideways, with the keyboard up, there is little more than
+      // the field's own height of screen left, and the range line and the
+      // buttons ran off it.
+      scrollable: true,
       backgroundColor: AppColors.darkSurface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -71,11 +75,13 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
         children: [
           const Icon(Icons.speed, color: AppColors.accentBlue, size: 22),
           const SizedBox(width: 12),
-          Text(AppStrings.of(context).customSpeedTitle,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(AppStrings.of(context).customSpeedTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

@@ -15,6 +15,8 @@ class SkipMarkersSheet extends ConsumerWidget {
     return showAppModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      constraints: tallSheetConstraints(context),
       builder: (_) => const SkipMarkersSheet(),
     );
   }
@@ -40,7 +42,9 @@ class SkipMarkersSheet extends ConsumerWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
+        // Scrolls: sideways the outro's row and the buttons were below the
+        // screen.
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
