@@ -238,10 +238,83 @@ class StreamCacheServer {
   /// test run on a real phone shows every fetch naming its install.
   static final Map<String, int> bindAnswers = <String, int>{};
 
-  static void _noteBind(HttpClientResponse r) {
+  /// What an answer says of this phone, counted; and whether it came on a
+  /// connection new to the app (a handshake first), told by its local port:
+  /// a port not seen before is a new connection, one seen before a
+  /// connection kept open ([_ports]). Null when the platform did not say.
+  /// With it, in a lab build, what that new connection's handshake took
+  /// ([_labTimedConnect]).
+  static ({bool? fresh, (int, int, int)? handshake}) _noteBind(HttpClientResponse r) {
     final v = r.headers.value('x-bind');
     if (v != null) bindAnswers[v] = (bindAnswers[v] ?? 0) + 1;
+    final port = r.connectionInfo?.localPort;
+    if (port == null) return (fresh: null, handshake: null);
+    final fresh = _ports.add(port);
+    return (fresh: fresh, handshake: fresh ? _handshakes.remove(port) : null);
   }
+
+  /// The local ports of the connections answers came on since the app
+  /// started (see [_noteBind]). A few hundred in a long evening.
+  static final Set<int> _ports = <int>{};
+
+  /// LAB BUILDS: a new connection's DNS, TCP and TLS in ms, by its local
+  /// port, from [_labTimedConnect] until its first answer takes it.
+  static final Map<int, (int, int, int)> _handshakes = <int, (int, int, int)>{};
+
+  /// LAB BUILDS ONLY: a ladder pool's new connections made step by step
+  /// ([_Ladder.pool]), so the trail can say what a jump's handshake cost —
+  /// the name looked up, the TCP connection, the TLS handshake. The same
+  /// socket and the same TLS as HttpClient's own: a direct connection, the
+  /// platform's trust store. Through a proxy HttpClient tunnels as always.
+  static Future<ConnectionTask<Socket>> _labTimedConnect(
+      Uri uri, String? proxyHost, int? proxyPort) async {
+    if (proxyHost != null && proxyPort != null) {
+      return Socket.startConnect(proxyHost, proxyPort);
+    }
+    final clock = Stopwatch()..start();
+    var dns = -1;
+    try {
+      await InternetAddress.lookup(uri.host);
+      dns = clock.elapsedMilliseconds;
+    } catch (_) {}
+    final task = await Socket.startConnect(uri.host, uri.port);
+    final looked = dns < 0 ? 0 : dns;
+    Future<Socket> made() async {
+      final plain = await task.socket;
+      final tcp = clock.elapsedMilliseconds - looked;
+      if (uri.scheme != 'https') return plain;
+      final secure = await SecureSocket.secure(plain, host: uri.host);
+      if (_handshakes.length > 64) _handshakes.clear();
+      _handshakes[secure.port] = (dns, tcp, clock.elapsedMilliseconds - looked - tcp);
+      return secure;
+    }
+
+    return ConnectionTask.fromSocket(made(), task.cancel);
+  }
+
+  /// A JUMP'S FIRST READ, IN PARTS (11 Nov 2026), for the lab's line a jump
+  /// (`LAB autojump`, lib/app.dart): `key=value` words — the connection
+  /// (new or kept), what getting it took, the Worker's answer after the
+  /// request went out, the segment. [jumpCount] numbers them.
+  static int jumpCount = 0;
+  static final List<(int, String)> _jumpCosts = <(int, String)>[];
+
+  /// The first jump's read numbered after [seq], or null.
+  static String? jumpCostAfter(int seq) {
+    for (final (n, words) in _jumpCosts) {
+      if (n > seq) return words;
+    }
+    return null;
+  }
+
+  /// When a read on a pool last came in whole, which leaves its connection
+  /// open in the pool for the next request (the trail's "idle" at a jump).
+  static final Expando<Stopwatch> _wholeAt = Expando<Stopwatch>('whole');
+
+  static void _readWhole(HttpClient pool) =>
+      (_wholeAt[pool] ??= Stopwatch())
+        ..reset()
+        ..start();
 
   /// How long parts handed over wait for the request that is to take them.
   static const Duration _handOverFor = Duration(seconds: 3);
@@ -708,6 +781,7 @@ class StreamCacheServer {
         }
         upstreamBytes += got;
         if (got != stop - pos) return null;
+        _readWhole(src.io);
         pos = stop;
       }
       return out.takeBytes();
@@ -1681,9 +1755,19 @@ class StreamCacheServer {
     // the Worker's answer, so it is waited for alongside the answer, not in
     // front of it, and never long.
     final before = src.fill;
-    final opening = _openPooled(src, pos, aheadEnd - 1);
+    // What the pool had for this read, when it is a jump: whether a read of
+    // this film was cut for it (its connection goes with it), and how long
+    // ago a read on the pool last came in whole (leaving its connection
+    // open, for the pool's idleTimeout).
+    final cut = before != null && !before.done;
+    final idle = _wholeAt[src.io]?.elapsedMilliseconds;
+    _Opened? cost;
+    final opening = _openPooled(src, pos, aheadEnd - 1, opened: (c) => cost = c);
+    var beforeMs = 0;
     if (before != null && !before.done) {
+      final w = Stopwatch()..start();
       await before.finished.timeout(const Duration(seconds: 1), onTimeout: () {});
+      beforeMs = w.elapsedMilliseconds;
     }
     final up = await opening;
     if (up == null) return pos;
@@ -1754,7 +1838,11 @@ class StreamCacheServer {
           waiting.start();
           final more = await pieces.moveNext();
           waiting.stop();
-          if (!more) break;
+          if (!more) {
+            // In whole: its connection is back in the pool.
+            if (!fill.cancelled) _readWhole(src.io);
+            break;
+          }
           quiet.reset();
           final chunk = pieces.current;
           // The window opens at the first byte, so the Worker's time to
@@ -1810,8 +1898,8 @@ class StreamCacheServer {
               fill.answering = false;
               answered.complete(sent);
               if (jump) {
-                PlaybackLog.add('hls jump: answer ${headers} ms, first byte $firstByte ms, '
-                    'segment ${asked.elapsedMilliseconds} ms (${clientEnd - pos} B)');
+                _noteJump(cost, headers, firstByte, asked.elapsedMilliseconds,
+                    clientEnd - pos, beforeMs, cut, idle, pos);
               }
             }
           }
@@ -1835,21 +1923,62 @@ class StreamCacheServer {
     return answered.future;
   }
 
+  /// A jump's first read in the trail and for the lab ([jumpCostAfter]):
+  /// `hls jump: answer … first byte … segment …` as before, then what the
+  /// answer was made of — the connection (new or kept, and getting it; in
+  /// a lab build a new one's DNS / TCP / TLS), the wait from the request
+  /// going out to the Worker's answer, the wait for the read before to put
+  /// its pen down — and what the pool had: a read cut for the jump, and how
+  /// long since a read last came in whole.
+  void _noteJump(_Opened? c, int answer, int firstByte, int segment, int bytes,
+      int beforeMs, bool cut, int? idle, int pos) {
+    final conn = switch (c?.fresh) { true => 'new', false => 'kept', null => '-' };
+    final hs = c?.handshake;
+    PlaybackLog.add('hls jump: answer $answer ms, first byte $firstByte ms, '
+        'segment $segment ms ($bytes B); conn $conn ${c?.connMs ?? -1} ms'
+        '${hs == null ? '' : ' (dns ${hs.$1}, tcp ${hs.$2}, tls ${hs.$3})'}'
+        ', wait ${c?.waitMs ?? -1} ms, before $beforeMs ms, tries ${c?.tries ?? 0}; '
+        '${cut ? 'a read cut' : 'no read cut'}, '
+        'last whole ${idle == null ? 'never' : '${(idle / 1000).toStringAsFixed(1)} s ago'}');
+    if (pos == 0) return;
+    jumpCount++;
+    _jumpCosts.add((
+      jumpCount,
+      'conn=$conn conn_ms=${c?.connMs ?? -1} wait_ms=${c?.waitMs ?? -1} '
+          'tcp_ms=${hs?.$2 ?? -1} tls_ms=${hs?.$3 ?? -1} answer_ms=$answer seg_ms=$segment '
+          'cut=${cut ? 1 : 0} idle_ms=${idle ?? -1}'
+    ));
+    if (_jumpCosts.length > 32) _jumpCosts.removeAt(0);
+  }
+
   /// A range from the Worker on the film's pooled connection, renewed once
   /// when the link has expired. The body, or null.
-  Future<Stream<List<int>>?> _openPooled(_Source src, int start, int endInclusive) async {
+  ///
+  /// What the answer cost goes to [opened], for the trail ([_Opened]).
+  Future<Stream<List<int>>?> _openPooled(_Source src, int start, int endInclusive,
+      {void Function(_Opened cost)? opened}) async {
     for (var attempt = 0; attempt < _upstreamTries; attempt++) {
       try {
         final up = Uri.parse(src.upstream);
+        final clock = Stopwatch()..start();
         final r = await src.io.getUrl(up);
+        final connMs = clock.elapsedMilliseconds;
         upstreamRequests++;
         StreamDoor.apply(r, up);
         r.headers.set(HttpHeaders.rangeHeader, 'bytes=$start-$endInclusive');
         final resp = await r.close();
-        _noteBind(resp);
+        final waitMs = clock.elapsedMilliseconds - connMs;
+        final how = _noteBind(resp);
         final code = resp.statusCode;
         final cr = resp.headers.value(HttpHeaders.contentRangeHeader) ?? '';
         if ((code == 206 && cr.startsWith('bytes $start-')) || (code == 200 && start == 0)) {
+          opened?.call((
+            fresh: how.fresh,
+            connMs: connMs,
+            waitMs: waitMs,
+            handshake: how.handshake,
+            tries: attempt + 1,
+          ));
           return resp;
         }
         await resp.drain<void>().catchError((_) {});
@@ -2509,6 +2638,14 @@ class _Gone {
   }
 }
 
+/// What an answer from the Worker cost ([StreamCacheServer._openPooled]):
+/// the connection it came on — new (a handshake first), kept open, or null
+/// when the platform did not say — and how long getting it took; the wait
+/// from the request going out to the answer (the round trip and the
+/// Worker's own time, R2's read among it); in a lab build a new
+/// connection's DNS / TCP / TLS in ms; and the attempts it took.
+typedef _Opened = ({bool? fresh, int connMs, int waitMs, (int, int, int)? handshake, int tries});
+
 class _Source {
   _Source({required this.upstream, required this.refresh, this.offline = false});
 
@@ -2525,6 +2662,7 @@ class _Source {
 
   /// The read ahead in flight for this film, if any.
   _Fill? fill;
+
   final Future<String?> Function() refresh;
   Future<bool>? refreshing;
 
@@ -3133,10 +3271,17 @@ class _Ladder {
   /// reads: [pool], made before the rungs are registered.
   final HttpClient io;
 
-  static HttpClient pool() => HttpClient()
-    ..connectionTimeout = const Duration(seconds: 15)
-    ..idleTimeout = const Duration(seconds: 60)
-    ..maxConnectionsPerHost = 4;
+  static HttpClient pool() {
+    final c = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 15)
+      ..idleTimeout = const Duration(seconds: 60)
+      ..maxConnectionsPerHost = 4;
+    // Lab builds: each new connection timed step by step, for the trail.
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      c.connectionFactory = StreamCacheServer._labTimedConnect;
+    }
+    return c;
+  }
   final double? aspect;
   final double? frameRate;
 

@@ -254,6 +254,46 @@ void main() {
         reason: 'its own read, not the 1.4 MB in front of it');
   });
 
+  test("a jump's first read says what its answer was made of, as the Worker saw it: "
+      'a connection new or kept open, and whether a read was cut for it', () async {
+    final master = await register('film12');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // Whether the Worker had seen the connection [a]'s read came on before.
+    bool seenBefore(int a) {
+      final i = worker.conns.lastIndexWhere((c) => c.$1 == 'a720' && c.$2 == a);
+      return worker.conns.take(i).any((c) => c.$4 == worker.conns[i].$4);
+    }
+
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (s10, a10, u10) = segs[10];
+    await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}');
+    // Two minutes on, while that read ahead is still coming: it is cut.
+    worker.paceMs = 0;
+    var seq = StreamCacheServer.jumpCount;
+    final (s60, a60, u60) = segs[60];
+    expect((await _get(u60, range: 'bytes=$a60-${a60 + s60 - 1}')).$2,
+        r720.bytes.sublist(a60, a60 + s60));
+    final first = StreamCacheServer.jumpCostAfter(seq)!;
+    expect(first, contains('cut=1'));
+    expect(first, contains(seenBefore(a60) ? 'conn=kept' : 'conn=new'));
+    // Its read ahead comes in whole and leaves its connection open; the
+    // next jump, far from it, cuts nothing and finds a connection open.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    seq = StreamCacheServer.jumpCount;
+    final (s85, a85, u85) = segs[85];
+    expect((await _get(u85, range: 'bytes=$a85-${a85 + s85 - 1}')).$2,
+        r720.bytes.sublist(a85, a85 + s85));
+    final second = StreamCacheServer.jumpCostAfter(seq)!;
+    expect(second, contains('cut=0'));
+    expect(seenBefore(a85), isTrue);
+    expect(second, contains('conn=kept'));
+    expect(RegExp(r'idle_ms=(\d+)').firstMatch(second), isNotNull,
+        reason: 'a read came in whole before it');
+  });
+
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
       () async {
     final master = await register('film9');

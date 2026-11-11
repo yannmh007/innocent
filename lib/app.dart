@@ -478,6 +478,12 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///   stall_ms   the longest stop in those twenty seconds
   ///   mean       the mean rung over them
   ///   rule       the pass's word (`lab_jump`), or - when none was written
+  ///   conn …     the jump's first read from the proxy
+  ///              ([StreamCacheServer.jumpCostAfter]): conn new / kept,
+  ///              conn_ms (getting it), wait_ms (request out to the
+  ///              Worker's answer), tcp_ms / tls_ms (a new one's
+  ///              handshake), answer_ms, seg_ms, cut (a read cut for it),
+  ///              idle_ms (since a read on the pool last came in whole)
   Future<void> _labAutoJumps(List<double> shares) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);
@@ -518,6 +524,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         }
       }
 
+      // The jump's own first read, from the proxy, once it is in.
+      final readsBefore = StreamCacheServer.jumpCount;
       await player().seek(want);
       // Landed and moving past where it landed (as the jumps flow's check).
       int? readyMs;
@@ -571,7 +579,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           'ready_ms=${readyMs ?? -1} before=$before first=$first low_ms=$lowMs '
           'back_ms=${backMs ?? -1} stall_ms=${stall.inMilliseconds} '
           'mean=${samples == 0 ? 0 : (sum / samples).round()} '
-          'rule=$variant');
+          'rule=$variant '
+          '${StreamCacheServer.jumpCostAfter(readsBefore) ?? 'conn=- answer_ms=-1'}');
     }
     PlaybackLog.add('LAB autojump done');
   }

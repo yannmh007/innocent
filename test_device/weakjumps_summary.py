@@ -26,6 +26,14 @@ COLUMNS = ["pass", "variant", "jump", "at", "frozen_ms", "ready_ms", "before",
            "first", "low_ms", "back_ms", "stall_ms", "mean", "rule", "want"]
 NUMERIC = {"pass", "jump", "frozen_ms", "ready_ms", "before", "first", "low_ms",
            "back_ms", "stall_ms", "mean", "want"}
+# The jump's first read from the proxy, since 11 Nov (lib/app.dart's
+# autojump line, StreamCacheServer.jumpCostAfter): its connection (new or
+# kept) and what getting it took, the wait from the request going out to the
+# Worker's answer, a new connection's TCP and TLS, the answer, the segment,
+# whether a read was cut for the jump, and how long since a read last came in
+# whole. Older rows lack them; -1 or empty is "not said".
+READ_COLUMNS = ["conn", "conn_ms", "wait_ms", "tcp_ms", "tls_ms", "answer_ms",
+                "seg_ms", "cut", "idle_ms"]
 ALIKE_MS = 100  # closer than this is the position's own tick, not a win
 # A STOP AFTER THE JUMP: stall_ms is the longest the position stood still,
 # and the position moves in ticks of 250 ms, which the emulator stretches:
@@ -52,8 +60,19 @@ def read(path):
                         break
                 else:
                     row[name] = cell
-            if ok:
-                rows.append(row)
+            if not ok:
+                continue
+            extra = cells[len(COLUMNS):]
+            for i, name in enumerate(READ_COLUMNS):
+                cell = extra[i] if i < len(extra) else ""
+                if name == "conn":
+                    row[name] = cell or "-"
+                else:
+                    try:
+                        row[name] = int(cell)
+                    except ValueError:
+                        row[name] = -1
+            rows.append(row)
     return rows
 
 
@@ -101,6 +120,22 @@ def per_variant(v, rows):
            f"average, back after median {median(back):.0f} ms ({never} not within 20 s); "
            f"mean rung {sum(r['mean'] for r in rows) / max(1, len(rows)):.0f}p; stops >= {STOP_MS} ms "
            f"after the jump: {len(stops)} (longest {max(stops, default=0)} ms)")
+    said = [r for r in rows if r.get("answer_ms", -1) >= 0]
+    if said:
+        def ms(rs, key):
+            xs = [r[key] for r in rs if r[key] >= 0]
+            return f"{median(xs):.0f}" if xs else "-"
+        new = [r for r in said if r["conn"] == "new"]
+        kept = [r for r in said if r["conn"] == "kept"]
+        yield (f"weakjumps {v}, the jump's first read ({len(said)} said): answer median "
+               f"{ms(said, 'answer_ms')} ms (p90 {pct([r['answer_ms'] for r in said], 0.9)}); "
+               f"on a new connection {len(new)} (answer {ms(new, 'answer_ms')}, getting it "
+               f"{ms(new, 'conn_ms')}: tcp {ms(new, 'tcp_ms')}, tls {ms(new, 'tls_ms')}; "
+               f"wait {ms(new, 'wait_ms')}), on one kept open {len(kept)} (answer "
+               f"{ms(kept, 'answer_ms')}, wait {ms(kept, 'wait_ms')}); segment median "
+               f"{ms(said, 'seg_ms')} ms; a read cut for the jump in "
+               f"{sum(1 for r in said if r['cut'] == 1)}; last whole read median "
+               f"{ms(said, 'idle_ms')} ms before")
     by_pass = defaultdict(list)
     for r in rows:
         by_pass[r["pass"]].append(r["frozen_ms"])
@@ -141,6 +176,18 @@ def paired(rows, a, b):
            f"{ALIKE_MS} ms) {alike}; median {a} - {b} = {median(diffs):.0f} ms; sign test "
            f"p={sign_p(a_wins, b_wins):.4f} for {a}, p={sign_p(b_wins, a_wins):.4f} for {b}; "
            f"stops after the jump {stop_a} against {stop_b}")
+    answers = []
+    for (pair, jump, var), ra in cell.items():
+        rb = cell.get((pair, jump, b)) if var == a else None
+        if rb is not None and ra.get("answer_ms", -1) >= 0 and rb.get("answer_ms", -1) >= 0:
+            answers.append(ra["answer_ms"] - rb["answer_ms"])
+    if answers:
+        aa = sum(1 for d in answers if d <= -ALIKE_MS)
+        ab = sum(1 for d in answers if d >= ALIKE_MS)
+        yield (f"weakjumps paired, the Worker's answer to the jump's first read ({len(answers)} "
+               f"jumps): {a} sooner in {aa}, {b} in {ab}, alike {len(answers) - aa - ab}; median "
+               f"{a} - {b} = {median(answers):.0f} ms; sign test p={sign_p(aa, ab):.4f} for {a}, "
+               f"p={sign_p(ab, aa):.4f} for {b}")
     ta = sum(1 for d in totals if d <= -ALIKE_MS)
     tb = sum(1 for d in totals if d >= ALIKE_MS)
     yield (f"weakjumps paired, the jump's stop and any stop after it: {a} shorter in {ta}, "

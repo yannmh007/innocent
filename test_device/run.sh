@@ -595,8 +595,9 @@ for flow in $FLOWS; do
   # stood still, and the rungs and stops for 20 s after.
   # test_device/weakjumps_summary.py sums them per variant and pairs each
   # jump with the same jump in the neighbouring pass. The trail has each
-  # jump's wait in parts: `hls jump: answer … first byte … segment …` and
-  # `exo picture after seek`.
+  # jump's wait in parts: `hls jump: answer … first byte … segment …;
+  # conn new|kept …` and `exo picture after seek`; the jump's own first
+  # read is on its `LAB autojump` line too (conn=, wait_ms=, answer_ms=).
   case "$flow" in weakjumps)
     if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakjumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
     line_proved weakjumps || continue
@@ -640,9 +641,13 @@ for flow in $FLOWS; do
       grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | awk -v p="$p" -v v="$variant" '
         { split($3, ij, "/"); split("", kv)
           for (k=4; k<=NF; k++) { n=index($k, "="); if (n>0) kv[substr($k,1,n-1)]=substr($k,n+1) }
-          printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", p, v, ij[1], kv["at"], kv["frozen_ms"],
+          printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", p, v, ij[1], kv["at"], kv["frozen_ms"],
             kv["ready_ms"], kv["before"], kv["first"], kv["low_ms"], kv["back_ms"], kv["stall_ms"], kv["mean"], kv["rule"],
-            kv["want"] }' >> "$OUT/weakjumps.tsv" || true
+            kv["want"]
+          # The first read of the jump, from the proxy (since 11 Nov): its
+          # connection and the answer of the Worker, in parts.
+          printf "\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", kv["conn"], kv["conn_ms"], kv["wait_ms"],
+            kv["tcp_ms"], kv["tls_ms"], kv["answer_ms"], kv["seg_ms"], kv["cut"], kv["idle_ms"] }' >> "$OUT/weakjumps.tsv" || true
       n=$(grep -c 'LAB autojump [0-9]' "$wj" || true)
       log "weakjumps pass $p ($variant): $n jumps"
       grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | sed "s/^LAB /weakjumps pass $p ($variant): /" | while read -r line; do log "$line"; done
