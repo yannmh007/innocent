@@ -20,6 +20,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - takeScreenshot: 70_audit_controls_portrait
@@ -32,6 +36,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - assertVisible: "(Subtitle|စာတန်းထိုး)"
@@ -45,6 +53,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - tapOn: "(More|နောက်ထပ်)"
@@ -67,6 +79,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
@@ -80,6 +96,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - longPressOn: "(Next video|နောက် ဗီဒီယို).*"
@@ -100,6 +120,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - tapOn: "(Subtitle|စာတန်းထိုး)"
@@ -120,6 +144,10 @@ appId: com.innocent.media
     commands:
       - tapOn:
           point: "50%,50%"
+      # Apart from the next tap, or the two make a double tap: play/pause,
+      # and the controls stay down (run 42993934736's last check).
+      - waitForAnimationToEnd:
+          timeout: 800
 - tapOn:
     point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
