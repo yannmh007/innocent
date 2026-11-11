@@ -563,7 +563,11 @@ in the picture after or on the phones' fast lines. One fix with it: a read
 that carries on from a short one (the head at the start) stays on that
 pool, so the length check's connection carries the first fragment as
 before (the alternation had sent it to the second pool's first handshake;
-stream_cache_hls_test caught it).
+stream_cache_hls_test caught it). On that build, with no word (the
+build's own): the jumps on Big Buck Bunny 15 of 15 twice, G1 (42995970597;
+first frame 2.8 s, one sample, against the 1.64.81 candidate's 2.2 s) and
+G2 (42999722877, after two weakjumps passes, which also proved the jumps
+flow's trail now holds its own lines only).
 
 **What is left of a jump's wait, and what it would take.**
 - The Worker's own wait, ~0.35-0.47 s on a kept connection: a round trip

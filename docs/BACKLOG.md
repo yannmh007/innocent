@@ -62,7 +62,8 @@ does it.
   the jump's stop and the first picture each 0.30 s sooner (stop: 69
   pairs against 33, p 0.0002; the A/A spreads 0.31-0.35 s over 21-28);
   stops after 3 (0.61-0.73 s) against 0, picture after alike; no Worker
-  request more. Gate: jumps on Big Buck Bunny 15 of 15 with it on. Test
+  request more. Gate: jumps on Big Buck Bunny 15 of 15 with it on (S2), and
+  twice more on the build with it on by default (G1, G2). Test
   Lab with it on: OPPO 16 of 16 (42982587122), realme 16 of 16 on its rerun
   (42985879375; its first run's line read 64-303 kbps and the checks never
   began). On the phones' fast lines every jump found a connection open
@@ -110,9 +111,11 @@ does it.
   `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
   weakjumps flows; read the cap probe first; passes alternating per
   variant, then the other order; read a jump's answer in parts first; an
-  A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: `FLOWS="jumps"`,
-  the gate on the build with 5d on by default; Test Lab `cloud.env`: the
-  realme alone (its rerun) — name both phones again for the next run.
+  A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: G2's
+  `FLOWS="weakjumps jumps"`, two passes (on, off) then the gate — with 5d on
+  by default the gate passed 15 of 15 twice (G1 42995970597, G2
+  42999722877); Test Lab `cloud.env`: the realme alone (its rerun) — name
+  both phones again for the next run.
 
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,
