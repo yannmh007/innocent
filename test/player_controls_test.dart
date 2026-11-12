@@ -10,6 +10,8 @@ import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/player_screen.dart';
 import 'package:innocent/features/player/presentation/video_adjust.dart';
 import 'package:innocent/features/player/presentation/widgets/display_settings_sheet.dart';
+import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -129,7 +131,8 @@ void main() {
       await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
       await tester.longPress(find.byIcon(Icons.skip_next));
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(BottomSheet), findsOneWidget,
+      // A bottom sheet upright, a side panel sideways: its rows either way.
+      expect(find.text('Loop one'), findsOneWidget,
           reason: 'no repeat menu after a long press on Next');
       await leavePlayer(tester);
     });
@@ -171,23 +174,38 @@ void main() {
     });
   }
 
-  testWidgets('upright, the picture rises to the top under ⋮ and comes back',
+  testWidgets('menus are frosted glass, and the picture stays where it is',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
-    // The fake engine's picture: a 16:9 frame, centred.
     final frame = find.byType(AspectRatio).first;
-    final before = tester.getRect(frame).top;
-    expect(before, greaterThan(200));
+    final before = tester.getRect(frame);
     await tester.tap(find.byIcon(Icons.more_vert));
     await _settle(tester);
-    expect(tester.getRect(frame).top, lessThan(1),
-        reason: 'the sheet covered the picture (owner, 12 Nov)');
-    // The sheet stays under the picture: the film is whole above it.
-    final sheetTop = tester.getRect(find.text('More').first).top;
-    expect(sheetTop, greaterThan(tester.getRect(frame).bottom));
-    playerContainer!.read(playerControllerProvider.notifier).closePanel();
+    expect(
+        find.descendant(
+            of: find.byType(MoreMenuPanel), matching: find.byType(BackdropFilter)),
+        findsOneWidget,
+        reason: 'the menu is not glass (owner, 12 Nov)');
+    // The owner chose glass over moving the film (12 Nov).
+    expect(tester.getRect(frame), before);
+    // Upright, the sheet stops at 55 % of the screen.
+    final sheet = tester.getRect(find.byType(PlayerGlass).first);
+    expect(sheet.height, lessThanOrEqualTo(_phone.height * 0.55 + 0.5));
+    await leavePlayer(tester);
+  });
+
+  testWidgets('sideways, a player sheet is a glass panel from the right',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
-    expect(tester.getRect(frame).top, closeTo(before, 1));
+    expect(find.text('Loop one'), findsOneWidget);
+    final glass = tester.getRect(find.byType(PlayerGlass).last);
+    // The whole height, at the right edge: not a bottom sheet that held two
+    // rows (12 Nov).
+    expect(glass.height, closeTo(_phone.width, 0.5));
+    expect(glass.right, closeTo(_phone.height, 0.5));
+    expect(glass.width, lessThan(_phone.height * 0.6));
     await leavePlayer(tester);
   });
 

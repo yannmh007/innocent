@@ -77,10 +77,8 @@ class _UpNextCardState extends State<UpNextCard>
     final s = AppStrings.of(context);
     // The player's surface and corners (skill ui-design): it was a 90 %
     // grey of its own, the picture showing through it.
-    return Material(
-      color: PlayerUi.surface,
+    return PlayerGlass(
       borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
-      clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: 300,
         child: Padding(

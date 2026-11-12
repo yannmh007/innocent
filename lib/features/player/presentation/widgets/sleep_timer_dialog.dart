@@ -162,15 +162,11 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       ),
     );
 
-    final surface = Material(
-      color: PlayerUi.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: portrait
-            ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-            : const BorderRadius.horizontal(
-                left: Radius.circular(PlayerUi.radius)),
-      ),
-      clipBehavior: Clip.antiAlias,
+    final surface = PlayerGlass(
+      borderRadius: portrait
+          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
+          : const BorderRadius.horizontal(
+              left: Radius.circular(PlayerUi.radius)),
       child: Padding(
         padding: EdgeInsets.only(
           top: portrait ? 0 : padding.top,

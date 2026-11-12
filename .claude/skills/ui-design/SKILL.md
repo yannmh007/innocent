@@ -13,10 +13,11 @@ on a phone. The player's building blocks live in
 ## 1. Principles
 1. **The picture is the hero.** Chrome recedes: one accent (brand blue
    `#3D8DF0`, `AppColors.specPrimary`), greys for everything else.
-2. **One layer at a time.** An open panel, sheet or dialog sits on an
-   OPAQUE surface over a dimmed picture, and the controls under it hide.
-   Nothing shows through a menu (11 Nov: the clock, ♪, "Default" and the
-   seek bar showed through ⋮ and the subtitle panel).
+2. **One layer at a time.** An open panel, sheet or dialog is frosted
+   glass over a dimmed picture, and the controls under it hide: the film
+   shows through as colour, nothing sharp does (11 Nov: the clock, ♪,
+   "Default" and the seek bar showed through a translucent ⋮; 12 Nov the
+   owner chose misted glass over moving the picture out of the way).
 3. **Every menu looks like every other menu**: same surface, header, row,
    spacing. A new menu is built from player_ui.dart, not from scratch.
 4. **It fits everywhere**: 320–411 dp, portrait and landscape, Burmese,
@@ -28,10 +29,10 @@ on a phone. The player's building blocks live in
 ## 2. Tokens (dark; the player is always dark)
 | | value |
 |---|---|
-| scrim behind a panel/dialog | black 60 % (`PlayerUi.scrim`) |
-| surface (panel, sheet, dialog) | `#1C1C1E`, opaque (`PlayerUi.surface`) |
-| raised (card, tile, chip on a surface) | `#2A2A2D` (`PlayerUi.raised`) |
-| hairline | white 8 % |
+| scrim behind a panel/dialog | black 40 % (`PlayerUi.scrim`) |
+| surface (panel, sheet, dialog) | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
+| hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
 | selected | accent text/icon; container accent 16 % |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
@@ -50,10 +51,8 @@ two lines at most · caption 11 sp.
 - **Panel** (`PlayerPanel`, in the player's own Stack): landscape a side
   panel from the right, up to 400 dp of content plus the navigation strip,
   46 % of the width; portrait a bottom sheet up to 60 % of the height with a
-  drag handle. **Upright, the picture rises to the top** while a panel, the
-  sleep timer or a player sheet is open (`_pictureLift`), so the film stays
-  whole above the sheet: at 72 % with the picture centred the sheet covered
-  all of it ("it goes up too far", owner, 12 Nov). Header: title + optional trailing (capped at half the row,
+  drag handle, up to 55 % (at 72 % it rose over the whole picture: "it
+  goes up too far", owner, 12 Nov). The picture never moves. Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
@@ -69,8 +68,10 @@ two lines at most · caption 11 sp.
 - **Card** (`PanelCard`): raised, radius 14, for a checklist or a group.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
-- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): the panels' surface,
-  radius, scrim; `barrierColor: Colors.transparent` for a sheet that
+- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): upright a glass
+  bottom sheet; **sideways a glass side panel from the right, the whole
+  height**, like ⋮ (a bottom sheet held sideways had ~300 dp and cut its
+  lists and sliders). `barrierColor: Colors.transparent` for a sheet that
   changes the picture (Display, subtitle delay) so the change can be seen.
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other
