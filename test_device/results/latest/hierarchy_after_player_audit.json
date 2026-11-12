@@ -588,8 +588,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "9:43 ",
-                      "accessibilityText" : "9:43 AM",
+                      "text" : "4:44 ",
+                      "accessibilityText" : "4:44 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -1273,7 +1273,7 @@
                       }, {
                         "attributes" : {
                           "text" : "",
-                          "accessibilityText" : "စာတန်းထိုး 33 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 33",
+                          "accessibilityText" : "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 26",
                           "hintText" : "",
                           "ignoreBoundsFiltering" : "false",
                           "resource-id" : "",
