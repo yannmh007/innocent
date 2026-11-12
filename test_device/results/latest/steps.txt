@@ -1,24 +1,24 @@
-[08:45:39] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[08:45:39] install
-[08:45:54] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[08:45:54] network: eth0 has qdisc clsact
-[08:45:54] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[08:46:22] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[08:46:22] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[08:46:22] library: pushing 24 files
-[08:46:55] library: MediaStore lists 24 videos
-[08:46:55] cold start
+[13:21:44] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[13:21:44] install
+[13:21:55] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[13:21:55] network: eth0 has qdisc clsact
+[13:21:55] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[13:22:22] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[13:22:22] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[13:22:22] library: pushing 24 files
+[13:22:54] library: MediaStore lists 24 videos
+[13:22:54] cold start
 Status: ok
-TotalTime: 3049
-WaitTime: 3053
-[08:47:09] flow layout_portrait
-[08:47:11] rotation asked 0, now 0
-[08:47:49] flow layout_portrait exit 0
-[08:48:00] flow player_audit
-[08:49:12] flow player_audit exit 0
-[08:49:22] flow layout_landscape
-[08:49:25] rotation asked 1, now 90
-[08:49:43] flow layout_landscape exit 0
-[08:49:53] flow player_audit_land
-[08:51:02] flow player_audit_land exit 0
-[08:51:15] done
+TotalTime: 3427
+WaitTime: 3442
+[13:23:08] flow layout_portrait
+[13:23:10] rotation asked 0, now 0
+[13:23:50] flow layout_portrait exit 0
+[13:24:01] flow player_audit
+[13:25:13] flow player_audit exit 0
+[13:25:24] flow layout_landscape
+[13:25:47] rotation asked 1, now 0
+[13:26:05] flow layout_landscape exit 0
+[13:26:15] flow player_audit_land
+[13:27:14] flow player_audit_land exit 0
+[13:27:28] done

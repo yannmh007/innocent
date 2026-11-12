@@ -1,0 +1,150 @@
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+Build fingerprint: 'google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050/12077443:userdebug/dev-keys'
+Revision: '0'
+ABI: 'x86_64'
+Timestamp: 2026-11-12 13:21:43.928785495+0000
+Process uptime: 8s
+Cmdline: com.google.android.googlequicksearchbox:search
+pid: 1726, tid: 2083, name: BG Thread #2  >>> com.google.android.googlequicksearchbox:search <<<
+uid: 10132
+signal 4 (SIGILL), code 2 (ILL_ILLOPN), fault addr 0x000075585d06c573
+    rax 0000000000000000  rbx 0000000000000003  rcx 18c0b6c879fd8e65  rdx 0000000000000000
+    r8  ffffffffffffffff  r9  00007ffdd0d420a0  r10 00000000000045b6  r11 0000000000000217
+    r12 000075584bf424aa  r13 0000755851897344  r14 0000755abd8ee2f0  r15 0000000000000000
+    rdi 0000755861afdf20  rsi 0000000000000000
+    rbp 0000755851897230  rsp 0000755851897080  rip 000075585d06c573
+
+34 total frames
+backtrace:
+      #00 pc 00000000028a2573  /data/app/~~JzxNuafmzyV7fkPDFHN1RQ==/com.google.android.trichromelibrary_567263637-jBGT4m6pvgYivcKR4hYUBw==/TrichromeLibrary.apk!libmonochrome_64.so (offset 0x89b000) (BuildId: 0808498ff97b3353fd7cdb68725c85232b4ce202)
+      #01 pc 00000000028a0377  /data/app/~~JzxNuafmzyV7fkPDFHN1RQ==/com.google.android.trichromelibrary_567263637-jBGT4m6pvgYivcKR4hYUBw==/TrichromeLibrary.apk!libmonochrome_64.so (offset 0x89b000) (Java_J_N_M81WqFvs+87) (BuildId: 0808498ff97b3353fd7cdb68725c85232b4ce202)
+      #02 pc 0000000000391a4b  /apex/com.android.art/lib64/libart.so (art_quick_generic_jni_trampoline+219) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #03 pc 000000000036ec95  /apex/com.android.art/lib64/libart.so (nterp_helper+165) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #04 pc 00000000001824aa  /data/app/~~uqP9houZEycR5gF6I1Z6VA==/com.google.android.webview-6p6btIgr9WiPhJixcWcfbA==/WebViewGoogle.apk (gP.d+210)
+      #05 pc 000000000036fa88  /apex/com.android.art/lib64/libart.so (nterp_helper+3736) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #06 pc 000000000018239e  /data/app/~~uqP9houZEycR5gF6I1Z6VA==/com.google.android.webview-6p6btIgr9WiPhJixcWcfbA==/WebViewGoogle.apk (gP.b+38)
+      #07 pc 000000000036fa88  /apex/com.android.art/lib64/libart.so (nterp_helper+3736) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #08 pc 00000000000f05ee  /data/app/~~uqP9houZEycR5gF6I1Z6VA==/com.google.android.webview-6p6btIgr9WiPhJixcWcfbA==/WebViewGoogle.apk (ta.<init>+18)
+      #09 pc 000000000036fa88  /apex/com.android.art/lib64/libart.so (nterp_helper+3736) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #10 pc 000000000026df8a  /data/app/~~uqP9houZEycR5gF6I1Z6VA==/com.google.android.webview-6p6btIgr9WiPhJixcWcfbA==/WebViewGoogle.apk (com.android.webview.chromium.WebViewChromiumFactoryProvider.getCookieManager+26)
+      #11 pc 00000000007acc5a  /system/framework/x86_64/boot-framework.oat (android.webkit.CookieManager.getInstance+74) (BuildId: e4c2202f7e80276bcdbfa046249d896342205aa9)
+      #12 pc 000000000036ec95  /apex/com.android.art/lib64/libart.so (nterp_helper+165) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #13 pc 0000000000437b1a  /product/priv-app/Velvet/Velvet.apk (com.google.android.libraries.web.webview.i.a.a.a.invokeSuspend+10)
+      #14 pc 000000000036fa88  /apex/com.android.art/lib64/libart.so (nterp_helper+3736) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #15 pc 00000000000da95e  /product/priv-app/Velvet/Velvet.apk (i.c.b.a.a.resumeWith+26)
+      #16 pc 00000000003707e5  /apex/com.android.art/lib64/libart.so (nterp_helper+7157) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #17 pc 0000000000147c9c  /product/priv-app/Velvet/Velvet.apk (kotlinx.coroutines.bk.run+216)
+      #18 pc 00000000003707e5  /apex/com.android.art/lib64/libart.so (nterp_helper+7157) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #19 pc 0000000000504188  /product/priv-app/Velvet/Velvet.apk (com.google.apps.tiktok.coroutines.f.run+4)
+      #20 pc 00000000003707e5  /apex/com.android.art/lib64/libart.so (nterp_helper+7157) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #21 pc 00000000003bcef0  /product/priv-app/Velvet/Velvet.apk (com.google.android.libraries.i.ae.run+4)
+      #22 pc 00000000002f2a29  /system/framework/x86_64/boot.oat (java.util.concurrent.ThreadPoolExecutor.runWorker+857) (BuildId: c78b6b6270062f2e659e76e5f8dac6d757f47ca6)
+      #23 pc 00000000002ef4f4  /system/framework/x86_64/boot.oat (java.util.concurrent.ThreadPoolExecutor$Worker.run+68) (BuildId: c78b6b6270062f2e659e76e5f8dac6d757f47ca6)
+      #24 pc 000000000037084a  /apex/com.android.art/lib64/libart.so (nterp_helper+7258) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #25 pc 00000000003c058a  /product/priv-app/Velvet/Velvet.apk (com.google.android.libraries.i.k.run+14)
+      #26 pc 00000000003707e5  /apex/com.android.art/lib64/libart.so (nterp_helper+7157) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #27 pc 00000000003c0a5e  /product/priv-app/Velvet/Velvet.apk (com.google.android.libraries.i.p.run+46)
+      #28 pc 0000000000175324  /system/framework/x86_64/boot.oat (java.lang.Thread.run+84) (BuildId: c78b6b6270062f2e659e76e5f8dac6d757f47ca6)
+      #29 pc 00000000003784c4  /apex/com.android.art/lib64/libart.so (art_quick_invoke_stub+756) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #30 pc 00000000003c535c  /apex/com.android.art/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+204) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #31 pc 0000000000853176  /apex/com.android.art/lib64/libart.so (art::Thread::CreateCallback(void*)+1510) (BuildId: b6dc79e02101ea00827a35a55ab6597a)
+      #32 pc 00000000000cd06a  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start(void*)+58) (BuildId: fa337969c798946280caa45e2d71a2e7)
+      #33 pc 0000000000062d88  /apex/com.android.runtime/lib64/bionic/libc.so (__start_thread+56) (BuildId: fa337969c798946280caa45e2d71a2e7)
+
+memory near r12 (/data/app/~~uqP9houZEycR5gF6I1Z6VA==/com.google.android.webview-6p6btIgr9WiPhJixcWcfbA==/WebViewGoogle.apk):
+    000075584bf42480 12d4206e4477021a 106e060d0b280020  ..wDn .. .(...n.
+    000075584bf42490 060d06270000761a 06270000761a106e  .v..'...n..v..'.
+    000075584bf424a0 605200064d52106e 00000c471071283d  n.RM..R`=(q.G...
+    000075584bf424b0 00384237021a000a 207134aa001a0028  ....7B8.(....4q 
+    000075584bf424c0 03e1006300023387 00220b2800030039  .3..c...9...(.".
+    000075584bf424d0 0000734d10701be0 1ad4206e03e00262  ..p.Ms..b...n ..
+    000075584bf424e0 206e313700620002 0ccc007100105658  ..b.71n XV..q...
+    000075584bf424f0 0038313a00620000 000023c7106e0005  ..b.:18...n..#..
+    000075584bf42500 061a000e283b615c 00623384207144ba  \a;(.....Dq .3b.
+    000075584bf42510 02ce207000e00622 0000000e06270016  "...p ....'.....
+    000075584bf42520 0000001f00010009 0000004500010006  ............E...
+    000075584bf42530 0000005b00030006 0000006000050003  ....[.......`...
+    000075584bf42540 005f000400070003 00000063005e005a  ......_.Z.^.c...
+    000075584bf42550 000500030002000a 00000055002d80e9  ..........-.U...
+    000075584bf42560 10341112283c8052 20d9001a000e0003  R.<(..4........ 
+    000075584bf42570 000c00005f1a1071 020b0000320d0071  q.._....q..2....
+
+memory near r13 ([anon:stack_and_tls:2083]):
+    0000755851897320 0000755851897368 0000000000000000  hs.QXu..........
+    0000755851897330 0000000000000000 0000000000000000  ................
+    0000755851897340 0000000314be55d8 0000755800000001  .U..........Xu..
+    0000755851897350 0000000000000001 14be55d8cb775bca  .........[w..U..
+    0000755851897360 0000000070066400 0000755b6cd078d8  .d.p.....x.l[u..
+    0000755851897370 0000000000000000 0000000000000000  ................
+    0000755851897380 0000000000000000 0000000000000010  ................
+    0000755851897390 0000000000000001 000075584bf4239e  .........#.KXu..
+    00007558518973a0 00007558518973ec 00007558cb766a80  .s.QXu...jv.Xu..
+    00007558518973b0 00007558518973e0 00007558cb76fa89  .s.QXu....v.Xu..
+    00007558518973c0 0000755b628ac0a8 0000755851897480  ...b[u...t.QXu..
+    00007558518973d0 000075584bf4239e 00007558518973f8  .#.KXu...s.QXu..
+    00007558518973e0 12dc39b814be57d8 14be57d814be55d8  .W...9...U...W..
+    00007558518973f0 14be55d812dc39b8 0000755b6cd078d8  .9...U...x.l[u..
+    0000755851897400 0000000000000000 0000000000000000  ................
+    0000755851897410 0000000000000000 0000000000000010  ................
+
+memory near r14 ([anon:scudo:primary]):
+    0000755abd8ee2d0 0000000000000000 0000000000000000  ................
+    0000755abd8ee2e0 1c530000000e810b 0000000000000000  ......S.........
+    0000755abd8ee2f0 00007558cbf57500 000075590d9352e0  .u..Xu...R..Yu..
+    0000755abd8ee300 000075595d8e3bd0 0000000000000000  .;.]Yu..........
+    0000755abd8ee310 0000008000000000 00000000fffffffc  ................
+    0000755abd8ee320 0000755b8a0bde00 0000000000000000  ....[u..........
+    0000755abd8ee330 0000000000000000 0000000000000000  ................
+    0000755abd8ee340 0000000000000000 0000000000000000  ................
+    0000755abd8ee350 0000000000000000 0000000000000000  ................
+    0000755abd8ee360 0000000000000000 0000000000000000  ................
+    0000755abd8ee370 726f74696e6f6d10 0000000000000073  .monitors.......
+    0000755abd8ee380 0000000000000000 0000755a7d8f6170  ........pa.}Zu..
+    0000755abd8ee390 0000755a7d8f6170 0000755a7d8f61f0  pa.}Zu...a.}Zu..
+    0000755abd8ee3a0 0000000000001000 00007558cbf57500  .........u..Xu..
+    0000755abd8ee3b0 0000000000000000 0000000000000000  ................
+    0000755abd8ee3c0 0000000000000000 0000000000000000  ................
+
+memory near rdi (/data/misc/shared_relro/libwebviewchromium64.relro):
+    0000755861afdf00 000075585ab1c418 000075585a9ed151  ...ZXu..Q..ZXu..
+    0000755861afdf10 000075585a9ecfaa 000075585aa0df6c  ...ZXu..l..ZXu..
+    0000755861afdf20 000075585f871cc0 000075585f872350  ..._Xu..P#._Xu..
+    0000755861afdf30 000075585f8729d0 000075585f873090  .)._Xu...0._Xu..
+    0000755861afdf40 000075585f874c40 000075585d068f50  @L._Xu..P..]Xu..
+    0000755861afdf50 000075585d0e9540 0000000000000000  @..]Xu..........
+    0000755861afdf60 000075585f874cc0 000075585f874d00  .L._Xu...M._Xu..
+    0000755861afdf70 0000000000000000 0000000000000000  ................
+    0000755861afdf80 000075585f873f40 000075585f873f50  @?._Xu..P?._Xu..
+    0000755861afdf90 000075585d068f50 0000000000000000  P..]Xu..........
+    0000755861afdfa0 0000000000000000 000075585aaed833  ........3..ZXu..
+    0000755861afdfb0 0000000000000001 000075585ab73734  ........47.ZXu..
+    0000755861afdfc0 0000000000000002 000075585aaed823  ........#..ZXu..
+    0000755861afdfd0 0000755861c66658 000075585ab216b9  Xf.aXu.....ZXu..
+    0000755861afdfe0 0000000000000000 0000755861afdfa0  ...........aXu..
+    0000755861afdff0 0000000000000003 0000000000000000  ................
+
+memory near rbp ([anon:stack_and_tls:2083]):
+    0000755851897210 0000755851897328 00007558cb791a4c  (s.QXu..L.y.Xu..
+    0000755851897220 000075584bf424aa 000000000d9352e0  .$.KXu...R......
+    0000755851897230 0000755b628ae320 0000000000000000   ..b[u..........
+    0000755851897240 0000000000000000 ffffff00ffffffff  ................
+    0000755851897250 674c04003b50674c 7070612f786f6268  LgP;..Lghbox/app
+    0000755851897260 6573752f61746164 612e656c676f6f67  data/usegoogle.a
+    0000755851897270 697571656c676f6f 5f7070612f786f62  ooglequibox/app_
+    0000755851897280 0000755b6cd078d8 0000000000000000  .x.l[u..........
+    0000755851897290 0000000000000000 0000000000000000  ................
+    00007558518972a0 000075584bf424aa 0000000000000000  .$.KXu..........
+    00007558518972b0 0000000000000010 0000000000000001  ................
+    00007558518972c0 0000000000000003 0000000000000c47  ........G.......
+    00007558518972d0 0000000000000010 000075584bf424aa  .........$.KXu..
+    00007558518972e0 0000755851897344 00007558cb766a80  Ds.QXu...jv.Xu..
+    00007558518972f0 0000755851897328 00007558cb76ec96  (s.QXu....v.Xu..
+    0000755851897300 0000755b628ac0c8 14bdc71800000002  ...b[u..........
+
+memory near rsp ([anon:stack_and_tls:2083]):
+    0000755851897060 0000000000000003 0000755abd8ee2f0  ............Zu..
+    0000755851897070 0000000000000000 000075585d06c4fc  ...........]Xu..
+    0000755851897080 00007558518970a8 01007558518970bc  .p.QXu...p.QXu..
+    0000755851897090 0000755800000006 0000000000000000  ....Xu..........
+    00007558518970a0 0000000100000000 0000000000000000  ................
+    00007558518970b0 000075584bf424aa 0000755851897344  .$.KXu..Ds.QXu..
