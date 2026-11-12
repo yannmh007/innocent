@@ -37,7 +37,7 @@ class Phone {
   final double cutout;
 }
 
-const phones = <Phone>[
+const phonesOnly = <Phone>[
   // A 720p budget phone: the most common screen among this app's viewers.
   Phone('360x800', 360, 800, 2.0, statusBar: 28, navBar: 48),
   // The owner's phone (1080x2316 at 2.625), three-button navigation.
@@ -45,6 +45,24 @@ const phones = <Phone>[
   // A small screen, or a large "display size" setting on a 360 dp phone.
   Phone('320x640', 320, 640, 2.0, statusBar: 24, navBar: 48),
 ];
+
+/// The larger screens of Google's adaptive quality tests (12 Nov): an
+/// 8-inch tablet, a foldable's inner screen, a 13-inch Chromebook window,
+/// and a 1080p TV (960x540 dp; only sideways matters there).
+const largeScreens = <Phone>[
+  Phone('800x1280', 800, 1280, 2.0, statusBar: 24, navBar: 48),
+  Phone('701x841', 701, 841, 2.625, statusBar: 30, navBar: 24),
+  Phone('900x1600', 900, 1600, 1.25, statusBar: 0, navBar: 0),
+  Phone('540x960tv', 540, 960, 2.0, statusBar: 0, navBar: 0),
+];
+
+/// PLAYER_PHONES=large photographs the large screens, =all both sets;
+/// the phones by default.
+final phones = switch (Platform.environment['PLAYER_PHONES']) {
+  'large' => largeScreens,
+  'all' => [...phonesOnly, ...largeScreens],
+  _ => phonesOnly,
+};
 
 final shotsDir = Platform.environment['PLAYER_SHOTS'];
 /// Real fonts, so text has its real width and height: the layout test's

@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Player > Screen
 /// Orientation, Full Screen, Brightness, etc.
 ///
@@ -36,7 +37,7 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).screenTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).pssOrientation),
           // Audit fix (standard high-quality): wire default orientation
@@ -132,7 +133,7 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
           }),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Subtitle > Layout
 /// Alignment, padding, background color settings.
 ///
@@ -36,7 +37,7 @@ class SubtitleLayoutScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).subtitleLayoutTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).slyPosition),
           // Audit fix (standard high-quality): wire to libmpv
@@ -191,7 +192,7 @@ class SubtitleLayoutScreen extends ConsumerWidget {
           }),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

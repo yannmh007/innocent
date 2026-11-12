@@ -7,6 +7,7 @@ import '../../../core/services/preferences/player_settings_service.dart';
 import 'video_hub_theme.dart';
 import 'widgets/vh_insets.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// The connection the phone is on now, for the saver's status line.
 ///
@@ -327,11 +328,11 @@ class DataSaverScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         padding: EdgeInsets.fromLTRB(
             VH.gutter, VH.s3, VH.gutter, VhInsets.scrollBottom(context)),
         children: const <Widget>[DataSaverPanel(showHow: true)],
-      ),
+      )),
     );
   }
 }

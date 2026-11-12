@@ -24,6 +24,7 @@ import 'transfer_home.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Transfer tab — same-Wi-Fi file sharing.
 ///
@@ -454,7 +455,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
       // did: the Send button pinned to the bottom sat under Back · Home ·
       // Recents (Test Lab, a realme C53 with three-button navigation). In
       // the tab the inset is zero and this changes nothing.
-      body: SafeArea(
+      body: TabletConstrainedWidth(maxWidth: 840, child: SafeArea(
         top: false,
         left: false,
         right: false,
@@ -491,7 +492,7 @@ class _TransferScreenState extends ConsumerState<TransferScreen> {
                 onSendFolder: _pickFolder,
               ),
         },
-      ),
+      )),
     );
     // Opened as its own page (from Me, the shortcuts, a video's menu), there
     // is no shell to ask: system Back left the whole page from Send or

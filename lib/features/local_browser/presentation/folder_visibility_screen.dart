@@ -8,6 +8,7 @@ import '../../../core/ui/nav_bar_space.dart';
 import '../domain/app_data_names.dart';
 import 'folder_visibility.dart';
 import 'library_provider.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// SHOW / HIDE FOLDERS — the one place a hidden folder comes back from.
 ///
@@ -52,7 +53,7 @@ class FolderVisibilityScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(s.fvTitle)),
-      body: app.isEmpty && other.isEmpty
+      body: TabletConstrainedWidth(maxWidth: 840, child: app.isEmpty && other.isEmpty
           ? _Empty(text: s.fvEmpty)
           : ListView(
               padding: const EdgeInsets.fromLTRB(0, 4, 0, 24)
@@ -110,7 +111,7 @@ class FolderVisibilityScreen extends ConsumerWidget {
                     ),
                 ],
               ],
-            ),
+            )),
     );
   }
 }

@@ -3,7 +3,9 @@
 // fake engine).
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
@@ -206,6 +208,63 @@ void main() {
     expect(glass.height, closeTo(_phone.width, 0.5));
     expect(glass.right, closeTo(_phone.height, 0.5));
     expect(glass.width, lessThan(_phone.height * 0.6));
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a remote\'s and a keyboard\'s keys reach the player',
+      (tester) async {
+    final svc = FakePlayerService();
+    await pumpPlayer(
+        tester, phone: _phone, landscape: true, lang: 'en', engine: svc);
+    // The TV quality guideline's media keys, wherever focus is.
+    final playing = _state().isPlaying;
+    await tester.sendKeyEvent(LogicalKeyboardKey.mediaPlayPause);
+    await _settle(tester);
+    expect(_state().isPlaying, !playing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await _settle(tester);
+    expect(_state().isPlaying, playing);
+    final seeks = svc.calls.where((c) => c == 'seek').length;
+    await tester.sendKeyEvent(LogicalKeyboardKey.mediaFastForward);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await _settle(tester);
+    expect(svc.calls.where((c) => c == 'seek').length, seeks + 2);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
+    await _settle(tester);
+    expect(_state().isMuted, isTrue);
+    // ☰ opens ⋮, Esc puts it away and leaves the film playing.
+    await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    // ? lists the keys.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await _settle(tester);
+    expect(find.text('Keyboard and remote'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a mouse: moving shows the controls, a right-click opens ⋮',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    playerContainer!.read(playerControllerProvider.notifier).hideControls();
+    await _settle(tester);
+    expect(_state().controlsVisible, isFalse);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: const Offset(400, 180));
+    await mouse.moveTo(const Offset(420, 190));
+    await _settle(tester);
+    expect(_state().controlsVisible, isTrue);
+    await mouse.removePointer();
+    await tester.tapAt(const Offset(420, 200),
+        buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
     await leavePlayer(tester);
   });
 

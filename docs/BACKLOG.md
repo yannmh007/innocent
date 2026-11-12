@@ -170,6 +170,15 @@ beside MX Player. Done:
   their lists). Session branch a74047a6, on this branch; ships with the
   next release — worth a look on the realme/OPPO for smoothness under
   an open menu (the blur is redrawn every frame).
+- **Every screen size** (owner, 12 Nov): `docs/devices_2026_11.md` — the
+  study (large-screen tiers, TV quality, window size classes, Android
+  16/17 ignoring orientation locks at ≥600 dp) and the plan. Phase 1 done
+  (session branch 851dce81, on this branch, ships with the next release):
+  TV overscan margins as insets; the player's remote and keyboard keys
+  (media keys, K/J/L, M, Esc, ?), mouse hover and right-click; 25 list and
+  form screens capped at 840 dp; upright player panels at 640. Phase 2
+  next: two panes on expanded widths, targetSdk 36 readiness (the player
+  unlocked), TV text entry, hover states.
 - Left: the gestures help keeps its own full-screen look; the Folders
   title is cut to "Folder မ…" on a 320 dp phone by its four actions; the
   paste bar's Burmese hint sits a little high (the font's metrics); a test

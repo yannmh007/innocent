@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Subtitle > Text
 /// Font, size, color, border settings for subtitle text.
 ///
@@ -37,7 +38,7 @@ class SubtitleTextScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(s.subtitleTextTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(s.subFont),
           // Phase 45 (audit refined, build 64): wire Font picker.
@@ -440,7 +441,7 @@ class SubtitleTextScreen extends ConsumerWidget {
               setting: PlayerSetting.subTextImproveStroke),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

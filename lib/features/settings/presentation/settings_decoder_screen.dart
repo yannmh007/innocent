@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Decoder — full MX Player parity (UI PDF page 16).
 /// Sections: Hardware decoder, Software decoder, General.
 ///
@@ -36,7 +37,7 @@ class SettingsDecoderScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsDecoder)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).sdHw),
           // Phase 45 (audit refined, build 63): MX Player V3's
@@ -162,7 +163,7 @@ class SettingsDecoderScreen extends ConsumerWidget {
               setting: PlayerSetting.decDeinterlace),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

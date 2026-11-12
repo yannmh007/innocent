@@ -23,6 +23,7 @@ import '../domain/file_kind.dart';
 import 'adb_image_viewer.dart';
 import '../../../core/ui/nav_bar_space.dart';
 import '../../local_browser/presentation/folder_visibility_screen.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// HIDDEN FILES — every app's private folder (Android/data), read over
 /// Innocent's own ADB connection, as a file browser.
@@ -321,13 +322,13 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
           title: Text(_atRoot ? s.hfTitle : appDataFolderName(_here)),
           actions: <Widget>[_foldersAction(s)],
         ),
-        body: _link == _Link.checking
+        body: TabletConstrainedWidth(maxWidth: 840, child: _link == _Link.checking
             ? _Checking(text: s.adbHeroChecking)
             : AdbLostCard(
                 hiddenFiles: true,
                 firstTime: _neverSetUp,
                 onBack: _connected,
-              ),
+              )),
       );
     }
     return PopScope(
@@ -399,7 +400,7 @@ class _AndroidDataScreenState extends ConsumerState<AndroidDataScreen> {
                       ),
                     ],
             ),
-            body: _body(s, snap, entries),
+            body: TabletConstrainedWidth(maxWidth: 840, child: _body(s, snap, entries)),
           );
         },
       ),

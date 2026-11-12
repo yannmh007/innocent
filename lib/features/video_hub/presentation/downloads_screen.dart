@@ -25,6 +25,7 @@ import '../domain/video_content.dart';
 import 'video_hub_theme.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// What is kept on this device.
 ///
@@ -57,7 +58,7 @@ class DownloadsScreen extends ConsumerWidget {
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
-      body: itemsAsync.when(
+      body: TabletConstrainedWidth(maxWidth: 840, child: itemsAsync.when(
         // No error state worth its own screen: items() swallows a broken index
         // and returns an empty list, because a shelf that cannot be read looks
         // exactly like an empty one to the person holding the phone.
@@ -139,7 +140,7 @@ class DownloadsScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
+      )),
     );
   }
 }

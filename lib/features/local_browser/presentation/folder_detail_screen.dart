@@ -23,6 +23,7 @@ import 'widgets/video_option_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class FolderDetailScreen extends ConsumerStatefulWidget {
   final String folderPath;
   final String folderName;
@@ -160,7 +161,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
                 ),
               ],
             ),
-      body: videosAsync.whenOrFallback(
+      body: TabletConstrainedWidth(maxWidth: 840, child: videosAsync.whenOrFallback(
         data: (videos) {
           if (videos.isEmpty) {
             final query = ref.read(searchQueryProvider);
@@ -271,7 +272,7 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
             ),
           ),
         ),
-      ),
+      )),
       ),
     );
   }
