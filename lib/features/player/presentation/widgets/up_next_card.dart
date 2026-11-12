@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
 
 /// The end-of-video card: "Up next" with the next title, Play now and a
 /// close button, and — when autoplay is on and somebody has touched the
@@ -74,9 +75,11 @@ class _UpNextCardState extends State<UpNextCard>
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // The player's surface and corners (skill ui-design): it was a 90 %
+    // grey of its own, the picture showing through it.
     return Material(
-      color: const Color(0xE6202226),
-      borderRadius: BorderRadius.circular(12),
+      color: PlayerUi.surface,
+      borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
         width: 300,
@@ -91,16 +94,13 @@ class _UpNextCardState extends State<UpNextCard>
                   Expanded(
                     child: Text(
                       widget.askFirst ? s.vhStillWatching : s.vhUpNext,
-                      style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600),
+                      style: PlayerUi.sectionLabel,
                     ),
                   ),
                   IconButton(
                     tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                     icon: const Icon(Icons.close_rounded,
-                        color: Colors.white70, size: 20),
+                        color: PlayerUi.textSecondary, size: 20),
                     onPressed: widget.onClose,
                   ),
                 ],
@@ -111,10 +111,7 @@ class _UpNextCardState extends State<UpNextCard>
                   widget.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700),
+                  style: PlayerUi.title.copyWith(fontSize: 16),
                 ),
               ),
               const SizedBox(height: 10),

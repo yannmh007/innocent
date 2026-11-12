@@ -154,11 +154,17 @@ beside MX Player. Done:
   Build 43186533253: arm64 95641124 bytes `1560c80f…d4a8`, arm32 87609628
   bytes `beb69528…7733`, GitHub's digests agree; app_releases moved at
   09:19 UTC after a rolled-back dry run.
-- Left: the info dialog (VideoInfoDialog, shared with the library) and the
-  gestures help still wear the old look; the rest of the app's screens
-  were not audited this round (the owner asked for every view: next
-  session, from the same skill and harness idea); a test that drives the
-  750 ms engine check with a fake wedged engine.
+- Every other view, the same day (owner's request; session branch
+  9a4f531a, on this branch, not yet released): the screens harness
+  (`test_screens/`, 107 screens) in Burmese and English on both phones and
+  in Burmese at 320 dp — no overflow anywhere; looked at one by one. Fixed:
+  the downloader's tabs dropped the theme's font (a bare `labelStyle`); the
+  information dialog (`MxDialog`) moved onto the player's tokens; the Up
+  next card on the player's surface. Ships with the next release.
+- Left: the gestures help keeps its own full-screen look; the Folders
+  title is cut to "Folder မ…" on a 320 dp phone by its four actions; the
+  paste bar's Burmese hint sits a little high (the font's metrics); a test
+  that drives the 750 ms engine check with a fake wedged engine.
 
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,

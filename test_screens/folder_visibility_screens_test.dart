@@ -122,8 +122,14 @@ void main() {
     _fakeAdb();
     return const ShellScreen(child: LocalScreen());
   }, overrides: _overrides, act: (t) async {
+    // On a 320 dp phone the folder is below the fold: scrolled to first,
+    // and fixed pumps, not pumpAndSettle (a spinner never settles).
+    await t.ensureVisible(find.text('Telegram Video').last);
+    await t.pump(const Duration(milliseconds: 300));
     await t.longPress(find.text('Telegram Video').last);
-    await t.pumpAndSettle();
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
     await t.tap(find.byIcon(Icons.visibility_off_outlined).first);
     for (var i = 0; i < 6; i++) {
       await t.pump(const Duration(milliseconds: 100));
