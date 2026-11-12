@@ -59,11 +59,13 @@ final scenes = <Scene>[
   Scene('audio_sheet', (t, c, svc) async => _tapIcon(t, Icons.music_note),
       portrait: false),
   Scene('subtitle_tracks', (t, c, svc) async {
+    // A track chosen in the CC panel, then the panel again: the choice is
+    // checked.
     c.openSubtitleMenu();
     await _settle(t);
-    // The panel's second row: the track list.
-    final rows = find.byIcon(Icons.subtitles_outlined);
-    await t.tap(rows.last, warnIfMissed: false);
+    await t.tap(find.text('English').last, warnIfMissed: false);
+    await _settle(t);
+    c.openSubtitleMenu();
     await _settle(t);
   }),
   Scene('decoder', (t, c, svc) async {
@@ -75,9 +77,19 @@ final scenes = <Scene>[
     await _settle(t);
   }),
   Scene('locked', (t, c, svc) async => _tapIcon(t, Icons.lock_open)),
+  // An error that stopped the film: the card on the dimmed picture.
   Scene('error', (t, c, svc) async {
+    await svc.pause();
+    await _settle(t);
     svc.failWith('Failed to open https://stream.example/film/index.m3u8: '
         'connection reset by peer while reading the stream');
+    await _settle(t);
+  }),
+  // One the film survived: the card at the top, the controls in reach.
+  Scene('error_playing', (t, c, svc) async {
+    await svc.play();
+    await _settle(t);
+    svc.failWith('Error parsing subtitle line 42: invalid timestamp');
     await _settle(t);
   }),
   Scene('loop_menu', (t, c, svc) async {

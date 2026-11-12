@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../shortcut_item.dart';
-import '../../../../core/ui/tv_focus.dart';
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
 
 /// Audit fix (B4): logical grouping for the More menu items so the
 /// 14-item grid scans as five small sections instead of one
@@ -41,14 +40,14 @@ class MoreMenuItemData {
   });
 }
 
-/// Player ▸ Video Options overlay (innocent_player_options_spec).
+/// The ⋮ panel: the player's other actions as a grid of tiles, then the
+/// Video display switch and the choice of shortcuts on the row under the
+/// top bar. A side panel sideways, a bottom sheet upright (PlayerPanel).
 ///
-/// Two sections, each gated by a master Material switch in its header:
-///   1. Video Display — 4-column grid of circular icon buttons
-///   2. Shortcuts     — 2-column checkbox grid of toggleable controls
-///
-/// One widget for both orientations: a bottom-sheet in portrait, a
-/// right-side panel in landscape. Only the container placement changes.
+/// 12 Nov 2026, redrawn on player_ui.dart: it was a 92 % grey over a 38 %
+/// scrim with the controls still drawn under it, 47 dp outline rings, and
+/// a "Video display" switch that hid the sixteen actions as well as the
+/// picture. The switch now turns the picture off and nothing else.
 class MoreMenuPanel extends StatelessWidget {
   final List<MoreMenuItemData> items;
   final bool videoDisplayEnabled;
@@ -71,161 +70,66 @@ class MoreMenuPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isPortrait = size.height >= size.width;
-
-    final content = SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // ── Video Display section ──
-          _SectionHeader(
-            label: AppStrings.of(context).scVideoDisplay,
-            value: videoDisplayEnabled,
-            onChanged: onVideoDisplayToggle,
-          ),
-          const Divider(height: 1, color: Color(0xFF2A2A2A)),
-          if (videoDisplayEnabled) ...[
-            const SizedBox(height: 12),
-            // MX (portrait): four columns 89 dp apart, the first centred
-            // 72 dp in — 27 dp from each edge, 12 of them the sheet's.
-            // MX: one row every 84 dp — a 47 dp ring, 9 dp, then a label of
-            // up to two 12.5 sp lines. That is a Latin label's height. A
-            // Burmese one is nearly twice as tall per line (its vowels and
-            // medials stack above and below), so in a fixed 84 dp cell its
-            // second line was cut off on every phone
-            // (test/player_layout_test.dart). Each row is now as tall as
-            // its tallest label, never less than MX's 84 (grown with the
-            // system font size, as before).
-            for (var r = 0; r < items.length; r += 4)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight:
-                        84 + MediaQuery.textScalerOf(context).scale(28) - 28,
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var c = r; c < r + 4; c++)
-                        Expanded(
-                          child: c < items.length
-                              ? Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
-                                  child: _MoreMenuItem(data: items[c]),
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-                    ],
-                  ),
-                ),
+    final s = AppStrings.of(context);
+    return PlayerPanel(
+      title: s.moreOptions,
+      onDismiss: onDismiss,
+      children: [
+        PanelGrid(
+          rowGap: 4,
+          children: [
+            for (final item in items)
+              PanelTile(
+                icon: item.icon,
+                label: item.label,
+                dot: item.hasNotificationDot,
+                onTap: item.onTap,
               ),
           ],
-          const SizedBox(height: 14),
-          // ── Shortcuts section ──
-          _SectionHeader(
-            label: AppStrings.of(context).shortcuts,
-            value: visibleShortcuts.isNotEmpty,
-            onChanged: onShortcutsToggle,
-          ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.specInnerPanel,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                // MX: a checkbox row every 43 dp.
-                mainAxisExtent: 43,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 0,
-              ),
-              itemCount: ShortcutItem.values.length,
-              itemBuilder: (_, i) {
-                final item = ShortcutItem.values[i];
-                return _ShortcutCheckRow(
-                  label: item.labelIn(AppStrings.of(context)),
+        ),
+        const SizedBox(height: 14),
+        const Divider(height: 1, thickness: 1, color: PlayerUi.hairline),
+        const SizedBox(height: 6),
+        PanelSwitchRow(
+          icon: Icons.ondemand_video_outlined,
+          title: s.scVideoDisplay,
+          value: videoDisplayEnabled,
+          onChanged: onVideoDisplayToggle,
+        ),
+        PanelSwitchRow(
+          icon: Icons.dashboard_customize_outlined,
+          title: s.shortcuts,
+          value: visibleShortcuts.isNotEmpty,
+          onChanged: onShortcutsToggle,
+        ),
+        const SizedBox(height: 6),
+        PanelCard(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: PanelGrid(
+            columns: 2,
+            children: [
+              for (final item in ShortcutItem.values)
+                _ShortcutCheck(
+                  label: item.labelIn(s).replaceAll('\n', ' '),
                   value: visibleShortcuts.contains(item),
-                  onChanged: (_) => onShortcutToggle(item),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-
-    final sheet = Material(
-      color: AppColors.specSheetBg.withValues(alpha: 0.92),
-      borderRadius: isPortrait
-          ? const BorderRadius.vertical(top: Radius.circular(16))
-          : null,
-      clipBehavior: Clip.antiAlias,
-      child: SafeArea(
-        top: !isPortrait,
-        child: content,
-      ),
-    );
-
-    return Stack(
-      children: [
-        // Dismiss scrim
-        Positioned.fill(
-          // Read as Android reads a dialog's backdrop: "Dismiss".
-          child: Semantics(
-            label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-            child: GestureDetector(
-            onTap: onDismiss,
-            behavior: HitTestBehavior.opaque,
-            child: Container(color: Colors.black38),
-          ),
+                  onChanged: () => onShortcutToggle(item),
+                ),
+            ],
           ),
         ),
-        // Portrait → bottom-sheet; landscape → right-side panel.
-        if (isPortrait)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ConstrainedBox(
-              // Compact bottom-sheet ≈ 2/5 of the screen; the content
-              // scrolls within so the video stays visible above it.
-              constraints: BoxConstraints(maxHeight: size.height * 0.45),
-              child: sheet,
-            ),
-          )
-        else
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            // Narrower panel removes the wasted side gaps in landscape.
-            width: (size.width * 0.38).clamp(300.0, 420.0),
-            child: sheet,
-          ),
       ],
     );
   }
 }
 
-/// Section header: bold title on the left, compact master switch on the
-/// right (spec: 22×13 track, ON #64B7FD, white thumb).
-class _SectionHeader extends StatelessWidget {
+/// One shortcut of the checklist: a rounded check box and its name. The
+/// row takes the tap; the box is the one control TalkBack reads.
+class _ShortcutCheck extends StatelessWidget {
   final String label;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final VoidCallback onChanged;
 
-  const _SectionHeader({
+  const _ShortcutCheck({
     required this.label,
     required this.value,
     required this.onChanged,
@@ -233,161 +137,52 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // One control for TalkBack: the switch, named by the text beside it.
     return MergeSemantics(
-      child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            // MX: the section names are plain 16 sp, not small bold caps.
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          Transform.scale(
-            scale: 0.85,
-            child: Switch(
-              value: value,
-              onChanged: onChanged,
-              activeColor: Colors.white,
-              activeTrackColor: AppColors.specSwitchOn,
-              inactiveThumbColor: Colors.white,
-              inactiveTrackColor: Colors.white24,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-}
-
-class _MoreMenuItem extends StatelessWidget {
-  final MoreMenuItemData data;
-
-  const _MoreMenuItem({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return RemoteTappable(
-      onTap: data.onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // MX: a 47 dp ring you can actually see (white at ~45%, not
-              // the 12% hairline it was), a 24 dp icon inside.
-              Container(
-                width: 47,
-                height: 47,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Color(0x73FFFFFF), width: 1.2),
+      child: InkWell(
+        onTap: onChanged,
+        borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: ExcludeFocus(
+                    child: Checkbox(
+                      value: value,
+                      onChanged: (_) => onChanged(),
+                      activeColor: PlayerUi.accent,
+                      checkColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      side: const BorderSide(
+                          color: PlayerUi.textDisabled, width: 1.5),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
                 ),
-                child: Icon(data.icon, color: Colors.white, size: 24),
-              ),
-              if (data.hasNotificationDot)
-                // MX: a 10 dp dot sitting on the ring's top-right edge.
-                const Positioned(
-                  top: -1,
-                  right: -1,
-                  child: _NotificationDot(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: PlayerUi.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 9),
-          Text(
-            data.label,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            // No fixed line height: 1.1 suits Latin, and pressed Burmese
-            // lines into each other.
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12.5,
+              ],
             ),
           ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _NotificationDot extends StatelessWidget {
-  const _NotificationDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: const BoxDecoration(
-        color: AppColors.specNotifDot,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-/// One row in the Shortcuts grid: a 15 dp rounded checkbox + label.
-class _ShortcutCheckRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool?> onChanged;
-
-  const _ShortcutCheckRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return MergeSemantics(
-      child: RemoteTappable(
-      onTap: () => onChanged(!value),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Checkbox(
-              value: value,
-              onChanged: onChanged,
-              activeColor: AppColors.specCheckbox,
-              checkColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(3),
-              ),
-              side: const BorderSide(color: Colors.white38, width: 1.5),
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              visualDensity: VisualDensity.compact,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontSize: 16.5),
-            ),
-          ),
-        ],
-      ),
-    ),
     );
   }
 }

@@ -13,7 +13,7 @@ import '../../../../core/localization/app_strings.dart';
 import 'package:path/path.dart' as p;
 import '../../../../core/services/video_cut/video_cut_service.dart';
 import '../../../../core/ui/share_media.dart';
-import '../../../../core/ui/app_sheet.dart';
+import 'player_ui.dart';
 /// Phase 40: Video Cut/Trim editor (MX Player parity, Function PDF page 5).
 ///
 /// Lets the user mark a start (A) and end (B) point on the video timeline;
@@ -44,15 +44,7 @@ class CutSheet extends ConsumerStatefulWidget {
     // leave playback paused rather than resuming into a screen the user has
     // already left. See the longer note there.
     if (!context.mounted) return;
-    await showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.darkSurface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => const CutSheet(),
-    );
+    await showPlayerSheet<void>(context, builder: (_) => const CutSheet());
     // Resume only if WE paused. If the user paused before opening we
     // leave them in their chosen state.
     if (wasPlaying) {
@@ -309,54 +301,24 @@ class _CutSheetState extends ConsumerState<CutSheet> {
 
     // Scrolls when the screen is short: in landscape the sheet has about
     // 360 dp, less than it needs.
-    return SafeArea(
-      top: false,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PlayerSheetHeader(title: AppStrings.of(context).cut, divider: false),
+        Flexible(
       child: SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        padding: EdgeInsets.fromLTRB(
+            PlayerUi.pad(context), 0, PlayerUi.pad(context), 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(
-              children: [
-                const Icon(Icons.content_cut,
-                    color: AppColors.accentBlue, size: 22),
-                const SizedBox(width: 10),
-                Text(AppStrings.of(context).cut,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(AppStrings.of(context).markClipHint,
-              style: const TextStyle(
-                color: AppColors.white60,
-                fontSize: 12,
-              ),
-            ),
+            Text(AppStrings.of(context).markClipHint, style: PlayerUi.body),
             const SizedBox(height: 4),
             Text(AppStrings.of(context).cutHint,
-              style: const TextStyle(
-                color: AppColors.white50,
-                fontSize: 11.5,
-              ),
-            ),
+                style: PlayerUi.rowValue.copyWith(fontSize: 12)),
             const SizedBox(height: 20),
             _PointRow(
               label: AppStrings.of(context).pwStartA,
@@ -461,30 +423,19 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             Row(
               children: [
                 Expanded(
-                  child: TextButton(
+                  child: PlayerDialogButton(
+                    label: AppStrings.of(context).clear,
                     onPressed: (_startPoint == null && _endPoint == null)
                         ? null
                         : _clear,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(AppStrings.of(context).clear,
-                      style: const TextStyle(color: Colors.white70),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: ElevatedButton(
+                  child: PlayerDialogButton(
+                    label: AppStrings.of(context).export,
+                    primary: true,
                     onPressed: _export,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    child: Text(AppStrings.of(context).export,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
                   ),
                 ),
               ],
@@ -493,6 +444,8 @@ class _CutSheetState extends ConsumerState<CutSheet> {
         ),
       ),
       ),
+        ),
+      ],
     );
   }
 }

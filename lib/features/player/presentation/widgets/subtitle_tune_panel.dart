@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/ui/app_sheet.dart';
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
 
 /// v1.63 — adjust subtitles WITHOUT leaving the video.
 ///
@@ -54,13 +53,11 @@ class SubtitleTunePanel extends StatefulWidget {
     required ValueChanged<double> onScaleChanged,
     required ValueChanged<int> onVerticalPosChanged,
   }) {
-    return showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
+    return showPlayerSheet<void>(
+      context,
       // The video must stay visible and playing behind it: this panel exists
       // to be judged against the picture.
       barrierColor: Colors.transparent,
-      isScrollControlled: true,
       builder: (_) => SubtitleTunePanel(
         initialDelayMs: initialDelayMs,
         initialScale: initialScale,
@@ -153,6 +150,8 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
     return '${sec > 0 ? '+' : ''}${sec.toStringAsFixed(1)}s';
   }
 
+  /// One setting: its name on the left, − value + on the right, every
+  /// row's steppers in one column. A tap on the value puts it back.
   Widget _row({
     required IconData icon,
     required String label,
@@ -161,43 +160,43 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
     required VoidCallback onPlus,
     required VoidCallback onReset,
   }) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 74,
-          child: Text(label,
-              style: const TextStyle(color: Colors.white70, fontSize: 13)),
-        ),
-        IconButton(
-          icon: const Icon(Icons.remove, color: Colors.white),
-          onPressed: onMinus,
-          tooltip: AppStrings.of(context).pwDecrease(label),
-        ),
-        Expanded(
-          child: GestureDetector(
-            // Tapping the number resets that one row. Cheap to reach, and
-            // obvious once found — the value is the thing you are staring at.
-            onTap: onReset,
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFeatures: [FontFeature.tabularFigures()],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 56),
+      child: Row(
+        children: [
+          Icon(icon, color: PlayerUi.textSecondary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: PlayerUi.rowTitle)),
+          _StepButton(
+            icon: Icons.remove_rounded,
+            onPressed: onMinus,
+            tooltip: AppStrings.of(context).pwDecrease(label),
+          ),
+          SizedBox(
+            width: 76,
+            child: GestureDetector(
+              // Tapping the number resets that one row. Cheap to reach, and
+              // obvious once found — the value is the thing you are staring at.
+              onTap: onReset,
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: PlayerUi.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.add, color: Colors.white),
-          onPressed: onPlus,
-          tooltip: AppStrings.of(context).pwIncrease(label),
-        ),
-      ],
+          _StepButton(
+            icon: Icons.add_rounded,
+            onPressed: onPlus,
+            tooltip: AppStrings.of(context).pwIncrease(label),
+          ),
+        ],
+      ),
     );
   }
 
@@ -213,68 +212,94 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
           _dragDx = 0;
           _dragDy = 0;
         },
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xE6111111),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-          ),
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PlayerSheetHeader(
+              title: AppStrings.of(context)
+                  .subtitleDelayMenu
+                  .replaceAll('\n', ' '),
+              divider: false,
+              trailing: PanelHeaderAction(
+                label: AppStrings.of(context).done,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            // Scrolls only where it does not fit (a 320 dp phone held
+            // sideways): with room to spare a scroll view takes no drag, so
+            // the panel's own drags still reach the timing and position.
+            Flexible(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    PlayerUi.pad(context), 0, PlayerUi.pad(context) - 8, 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      AppStrings.of(context).pwTuneHint,
+                      style: PlayerUi.rowValue.copyWith(fontSize: 12),
+                    ),
+                    const SizedBox(height: 6),
+                    _row(
+                      icon: Icons.schedule,
+                      label: AppStrings.of(context).pwTiming,
+                      value: _fmtDelay(_delayMs),
+                      onMinus: () => _setDelay(_delayMs - 100),
+                      onPlus: () => _setDelay(_delayMs + 100),
+                      onReset: () => _setDelay(0),
+                    ),
+                    _row(
+                      icon: Icons.format_size,
+                      label: AppStrings.of(context).size,
+                      value: '${(_scale * 100).round()}%',
+                      onMinus: () => _setScale(_scale - 0.05),
+                      onPlus: () => _setScale(_scale + 0.05),
+                      onReset: () => _setScale(1.0),
+                    ),
+                    _row(
+                      icon: Icons.swap_vert,
+                      label: AppStrings.of(context).pwPosition,
+                      value: '$_pos%',
+                      onMinus: () => _setPos(_pos - 1),
+                      onPlus: () => _setPos(_pos + 1),
+                      onReset: () => _setPos(100),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                AppStrings.of(context).pwTuneHint,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 11.5),
-              ),
-              const SizedBox(height: 6),
-              _row(
-                icon: Icons.schedule,
-                label: AppStrings.of(context).pwTiming,
-                value: _fmtDelay(_delayMs),
-                onMinus: () => _setDelay(_delayMs - 100),
-                onPlus: () => _setDelay(_delayMs + 100),
-                onReset: () => _setDelay(0),
-              ),
-              _row(
-                icon: Icons.format_size,
-                label: AppStrings.of(context).size,
-                value: '${(_scale * 100).round()}%',
-                onMinus: () => _setScale(_scale - 0.05),
-                onPlus: () => _setScale(_scale + 0.05),
-                onReset: () => _setScale(1.0),
-              ),
-              _row(
-                icon: Icons.swap_vert,
-                label: AppStrings.of(context).pwPosition,
-                value: '$_pos%',
-                onMinus: () => _setPos(_pos - 1),
-                onPlus: () => _setPos(_pos + 1),
-                onReset: () => _setPos(100),
-              ),
-              const SizedBox(height: 4),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primaryBlue,
-                  ),
-                  child: Text(AppStrings.of(context).done),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// − or + of a stepper: a 40 dp tonal circle.
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        backgroundColor: PlayerUi.raised,
+        foregroundColor: PlayerUi.textPrimary,
+        fixedSize: const Size(40, 40),
+        minimumSize: const Size(40, 40),
       ),
     );
   }

@@ -449,6 +449,17 @@ class MediaKitPlayerService implements VideoPlayerService {
   /// Every change of [engineWedged], for the player to react to.
   Stream<bool> get engineWedgedChanges => _link.wedgedChanges;
 
+  /// The film kept playing while a call hung (engine_check.dart): libmpv is
+  /// alive, and the helper isolate is waiting on an answer it may never
+  /// get. Start a fresh one, so the heartbeat and the player's settings are
+  /// heard again. The engine itself is untouched.
+  void relink() {
+    if (!_link.wedged) return;
+    PlaybackLog.add('link renewed: the film moved while '
+        '${_link.wedgedOn ?? "a call"} hung');
+    _link.reset();
+  }
+
   void _startHeartbeat() {
     _heartbeat?.cancel();
     _heartbeat = Timer.periodic(const Duration(seconds: 3), (_) async {

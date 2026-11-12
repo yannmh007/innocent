@@ -48,6 +48,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 // v1.63: the subtitle tune panel calls setSubtitleScale /
 // setSubtitleVerticalPos, which live on the concrete service rather than
 // on the VideoPlayerService interface.
+import '../../../core/services/video_player/models/subtitle_track_info.dart';
 import '../../../core/services/video_player/video_player_service.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
@@ -61,6 +62,7 @@ import 'player_provider.dart';
 import 'player_stats_overlay.dart';
 import 'shortcut_item.dart';
 import 'video_adjust.dart';
+import '../domain/error_text.dart';
 import '../domain/speed_format.dart';
 import 'widgets/account_mark.dart';
 import 'widgets/brightness_indicator.dart';
@@ -75,6 +77,8 @@ import 'widgets/gestures_help_overlay.dart';
 import 'widgets/kids_lock_overlay.dart';
 import 'widgets/lock_overlay.dart';
 import 'widgets/more_menu_panel.dart';
+import 'widgets/player_error_card.dart';
+import 'widgets/player_ui.dart';
 import 'widgets/playing_queue_sheet.dart';
 import 'widgets/resume_dialog.dart';
 import 'widgets/seek_indicator.dart';
@@ -179,6 +183,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   Timer? _reportTimer;
 
   bool _videoDisplayEnabled = true;
+
+  /// The subtitle track libmpv chose itself, asked as the CC panel opens
+  /// (the panel marks it when the viewer has not chosen one).
+  SubtitleTrackInfo? _engineSubTrack;
   final GlobalKey _videoBoundaryKey = GlobalKey();
   final HardwareKeysService _hwKeys = HardwareKeysService();
   /// Subtitle timing currently in force, in ms.
@@ -324,6 +332,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   @override
   void initState() {
     super.initState();
+    PlayerToastController.current = _toast;
     _startReporting();
     // ignore: discarded_futures
     _refreshStableInsets();
@@ -1153,6 +1162,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // FIRST, before anything that could throw. A leaked observer is the one
     // failure that outlives the screen and keeps firing forever.
     _disposed = true;
+    if (PlayerToastController.current == _toast) {
+      PlayerToastController.current = null;
+    }
     try {
       WidgetsBinding.instance.removeObserver(this);
     } catch (_) {}
@@ -1402,7 +1414,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             // zero on a link that cannot work.
             ref.read(playerControllerProvider.notifier).activeUri ??
                 widget.videoUri,
-            widget.title,
+            _title,
             secure: widget.isPrivate || widget.secureScreen,
             ephemeral: widget.ephemeral,
           );
@@ -1451,7 +1463,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             // zero on a link that cannot work.
             ref.read(playerControllerProvider.notifier).activeUri ??
                 widget.videoUri,
-            widget.title,
+            _title,
             secure: widget.isPrivate || widget.secureScreen,
             ephemeral: widget.ephemeral,
           );
@@ -1522,6 +1534,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   Future<void> _addBookmark(BuildContext context) async {
+    // NOT FOR A SIGNED STREAM OR A PRIVATE FOLDER FILM (review, 12 Nov): a
+    // bookmark stores the address and the title in the ordinary list and
+    // in backups — the stream's credential, or a hidden film's name.
+    if (widget.ephemeral) {
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
+      return;
+    }
+    if (widget.isPrivate) {
+      _showSnack(context, AppStrings.of(context).plPrivateNoBookmark);
+      return;
+    }
     // Quick-add bookmark at current position, then show sheet
     final state = ref.read(playerControllerProvider);
     // Engine position: the UI copy is rounded to whole seconds and is only
@@ -1529,8 +1552,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final live = ref.read(videoPlayerServiceProvider).position;
     final position = live > Duration.zero ? live : state.position;
     await ref.read(bookmarksProvider.notifier).add(
-          videoUri: widget.videoUri,
-          videoTitle: widget.title,
+          videoUri: _videoUri,
+          videoTitle: _title,
           position: position,
         );
     if (!context.mounted) return;
@@ -1547,7 +1570,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     await BookmarksSheet.show(
       context,
       ref,
-      videoUri: widget.videoUri,
+      videoUri: _videoUri,
       onSeek: (pos) => controller.seek(pos),
     );
   }
@@ -1571,7 +1594,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     HapticService.medium();
     final added = await ref
         .read(favouritesProvider.notifier)
-        .toggle(widget.videoUri);
+        .toggle(_videoUri);
     if (!context.mounted) return;
     final t = AppStrings.of(context);
     _showSnack(context, added ? t.addedToFavourites : t.removedFromFavourites,
@@ -1639,7 +1662,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (picked == null || !context.mounted) return;
     await ref
         .read(playlistsProvider.notifier)
-        .addVideo(picked, widget.videoUri);
+        .addVideo(picked, _videoUri);
     if (!context.mounted) return;
     // `firstWhere` with no `orElse` THROWS. The sheet above is async, so a
     // playlist deleted from another screen while it was open would have taken
@@ -1664,7 +1687,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       return;
     }
     try {
-      await shareMedia(widget.videoUri, subject: widget.title);
+      await shareMedia(_videoUri, subject: _title);
     } catch (e) {
       if (!context.mounted) return;
       _showSnack(context, '${AppStrings.of(context).shareFailed}: $e');
@@ -1687,7 +1710,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       return;
     }
     try {
-      final uri = widget.videoUri;
+      final uri = _videoUri;
       String path;
       // Android/data (adb://) videos can't be read by the LAN server — pull a
       // local copy first, exactly like the Transfer picker does. Everything
@@ -1714,7 +1737,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         id: '${path.hashCode}',
         path: path,
         displayName:
-            widget.title.isNotEmpty ? widget.title : p.basename(path),
+            _title.isNotEmpty ? _title : p.basename(path),
         sizeBytes: size,
       );
       ref.read(transferProvider.notifier).addFiles([file]);
@@ -1743,17 +1766,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // it is given. The dialog now refuses such a string on its own (see
     // `media_address.dart`), and this stops building one in the first place:
     // two independent places have to fail before an address can be shown.
-    final remote = isRemoteAddress(widget.videoUri);
-    final path = widget.videoUri.startsWith('file://')
-        ? Uri.parse(widget.videoUri).toFilePath()
-        : widget.videoUri;
+    final remote = isRemoteAddress(_videoUri);
+    final path = _videoUri.startsWith('file://')
+        ? Uri.parse(_videoUri).toFilePath()
+        : _videoUri;
     final folder = (!remote && path.contains('/'))
         ? path.substring(0, path.lastIndexOf('/'))
         : '';
     final video = Video(
-      id: widget.videoUri,
-      uri: widget.videoUri,
-      title: widget.title,
+      id: _videoUri,
+      uri: _videoUri,
+      title: _title,
       folderPath: folder,
       duration: state.duration,
       sizeBytes: 0, // dialog resolves exact bytes from disk
@@ -1994,8 +2017,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// bottom, where the seek bar and the buttons are.
   double _toastTop(PlayerState state, int shortcuts) {
     final insets = _controlsInsets(context);
-    final controlsUp = state.controlsVisible && !state.isLocked && !state.sleepTimerDialogOpen;
-    if (!controlsUp) return insets.top + 16;
+    if (!_chromeUp(state)) return insets.top + 16;
     final barOnTop = ref.read(extraSettingsProvider).getStr(StringSetting.toolbarPosition) != 'bottom';
     if (!barOnTop) return insets.top + (shortcuts > 0 ? 100 : 16);
     // The bar is 56 high; the shortcut row's centre is 59 below the bar's
@@ -2042,21 +2064,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// pressing a button that cannot work. Asking for a fresh URL is a new
   /// server request, so entitlement is re-decided rather than extended.
   Future<void> _retryPlayback(PlayerController controller) async {
-    final current = controller.activeUri ?? widget.videoUri;
+    final current = controller.activeUri ?? _videoUri;
     if (StreamRenewal.canRenew(current)) {
       final fresh = await StreamRenewal.renew(current);
       if (!mounted) return;
       if (fresh != null) {
         await controller.openVideo(fresh,
-            title: widget.title,
+            title: _title,
             isPrivate: widget.isPrivate,
             ephemeral: true);
         return;
       }
     }
     if (!mounted) return;
-    await controller.openVideo(widget.videoUri,
-        title: widget.title,
+    await controller.openVideo(_videoUri,
+        title: _title,
         isPrivate: widget.isPrivate,
         ephemeral: widget.ephemeral);
   }
@@ -2201,6 +2223,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       controller.closePanel();
       return;
     }
+    if (_errorShown(state)) {
+      controller.dismissError();
+      return;
+    }
     final requireDouble =
         ref.read(playerSettingsProvider).get(PlayerSetting.doubleTapBack);
     final now = DateTime.now();
@@ -2271,34 +2297,73 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
   }
 
-  Future<void> _showSubtitleTracks(BuildContext context) async {
-    final state = ref.read(playerControllerProvider);
+  /// The film playing now and its title: after Next, the queue or Up next,
+  /// not the one this screen was opened with. Everything that acts on
+  /// "this film" (bookmarks, favourite, share, cut, info, Retry, the seek
+  /// bar's previews, the title on the top bar) used `widget.videoUri` and
+  /// `widget.title`, so after Next it acted on the first film of the
+  /// evening (12 Nov 2026).
+  String get _videoUri =>
+      ref.read(playerControllerProvider.notifier).libraryUri ??
+      widget.videoUri;
+  String get _title =>
+      ref.read(playerControllerProvider.notifier).currentTitle ?? widget.title;
+
+  /// CC: the panel, the track showing marked — the viewer's choice, else
+  /// the one libmpv picked itself, asked once as the panel opens.
+  void _openSubtitlePanel() {
     final controller = ref.read(playerControllerProvider.notifier);
-    final current = state.currentSubtitleTrack ??
-        await _engineTrack(state.subtitleTracks, 'sub', (t) => t.id);
-    if (!context.mounted) return;
-    await TrackSelectionSheet.showSubtitle(
-      context,
-      tracks: state.subtitleTracks,
-      current: current,
-      // Phase 45 (audit): same feedback toast as the audio picker, plus
-      // an explicit AppStrings.of(context).subtitleOff message when the user picks no
-      // subtitle (otherwise nothing changes visibly).
-      onSelect: (track) async {
-        await controller.selectSubtitleTrack(track);
-        if (context.mounted) {
-          _toast.show(
-            track == null
-                ? AppStrings.of(context).subtitleOff
-                : AppStrings.of(context).plSubtitle(track.displayName),
-            kind: PlayerToastKind.success,
-            icon: Icons.subtitles_outlined,
-          );
-        }
-      },
-      onLoadExternal: () => _pickExternalSubtitle(context),
-    );
+    controller.openSubtitleMenu();
+    setState(() => _engineSubTrack = null);
+    final state = ref.read(playerControllerProvider);
+    if (state.currentSubtitleTrack != null) return;
+    // ignore: discarded_futures
+    _engineTrack(state.subtitleTracks, 'sub', (t) => t.id).then((t) {
+      if (!mounted || t == null) return;
+      setState(() => _engineSubTrack = t);
+    });
   }
+
+  /// A menu, a dialog or the error card is over the picture.
+  bool _menuOpen(PlayerState state) =>
+      state.openPanel != SidePanel.none ||
+      state.decoderDialogOpen ||
+      state.sleepTimerDialogOpen ||
+      // The question, not the passing "continuing from where you stopped"
+      // card: the film is already playing under that one.
+      (state.resumeDialogOpen && state.resumeIsAskMode) ||
+      _errorBlocks(state);
+
+  /// The error card is up (Settings → Player → "Suppress error message"
+  /// keeps the error, and shows nothing).
+  bool _errorShown(PlayerState state) =>
+      state.errorMessage != null &&
+      !ref.read(playerSettingsProvider).get(PlayerSetting.suppressError);
+
+  /// The error stopped the film, so the card takes the screen. While the
+  /// film still moves (a line libmpv logged and survived), the card stays
+  /// out of the way and the controls in reach: the engine-stuck verdict was
+  /// this same false alarm (review of 12 Nov).
+  bool _errorBlocks(PlayerState state) =>
+      _errorShown(state) &&
+      (state.errorMessage == kPlayerEngineStuck ||
+          !state.isPlaying ||
+          state.isBuffering);
+
+  /// The top bar, the shortcut row and the bottom controls are on screen.
+  /// ONE LAYER AT A TIME (skill ui-design): under an open menu they step
+  /// aside — the clock, ♪, "Default" and the seek bar showed through ⋮
+  /// and the subtitle panel (owner's screenshots, 12 Nov 2026).
+  bool _chromeUp(PlayerState state) =>
+      state.controlsVisible &&
+      !state.isLocked &&
+      !_menuOpen(state) &&
+      !_routeOnTop;
+
+  /// A sheet or dialog route the player opened (audio, loop, bookmarks,
+  /// aspect ratio…) is over it: the controls step aside under it too.
+  /// ModalRoute.of makes the screen rebuild when that changes.
+  bool get _routeOnTop => !(ModalRoute.of(context)?.isCurrent ?? true);
 
   /// Phase 45 (audit refined): show the MX Player V3 explicit aspect
   /// ratio picker. 12 options matching the decompiled
@@ -2311,45 +2376,26 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final current = AspectRatioOverride.fromString(
         extras.getStr(StringSetting.aspectRatioOverride));
     final controller = ref.read(playerControllerProvider.notifier);
+    // A grid of the twelve ratios, the chosen one in the accent: all of
+    // them on screen at once, held sideways too (a list of twelve radios
+    // ran off it).
     final picked = await showDialog<AspectRatioOverride>(
       context: context,
-      builder: (dctx) => SimpleDialog(
-        backgroundColor: AppColors.darkSurface,
-        title: Text(AppStrings.of(context).aspectRatioTitle,
-            style: const TextStyle(color: Colors.white)),
-        children: AspectRatioOverride.values.map((r) {
-          final isSelected = r == current;
-          return SimpleDialogOption(
-            onPressed: () => Navigator.of(dctx).pop(r),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  size: 18,
-                  color: isSelected
-                      ? AppColors.accentBlue
-                      : Colors.white54,
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    r.labelIn(AppStrings.of(context)),
-                    style: TextStyle(
-                      color: isSelected
-                          ? AppColors.accentBlue
-                          : Colors.white,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+      builder: (dctx) => PlayerRouteDialog(
+        title: AppStrings.of(context).aspectRatioTitle,
+        icon: Icons.aspect_ratio_rounded,
+        maxWidth: 420,
+        child: PanelGrid(
+          columns: 3,
+          children: [
+            for (final r in AspectRatioOverride.values)
+              PanelChoiceChip(
+                label: r.labelIn(AppStrings.of(context)),
+                selected: r == current,
+                onTap: () => Navigator.of(dctx).pop(r),
+              ),
+          ],
+        ),
       ),
     );
     if (picked != null && context.mounted) {
@@ -2373,11 +2419,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         label: s.playingQueue,
         category: MoreMenuCategory.playback,
         icon: Icons.queue_music,
-        onTap: () {
+        onTap: () async {
           controller.closePanel();
-          PlayingQueueSheet.show(
+          // What Next plays through: the film's folder, in order.
+          final q = await controller.folderQueue();
+          if (!context.mounted) return;
+          await PlayingQueueSheet.show(
             context,
-            currentTitle: widget.title,
+            currentTitle: _title,
+            queue: [for (final v in q.videos) v.title],
+            durations: [for (final v in q.videos) v.duration],
+            currentIndex: q.current < 0 ? 0 : q.current,
+            onPick: q.videos.isEmpty
+                ? null
+                : (i) => controller.openVideo(q.videos[i].uri,
+                    title: q.videos[i].title),
           );
         },
       ),
@@ -2675,11 +2731,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
     final controller = ref.read(playerControllerProvider.notifier);
     final k = event.logicalKey;
-    // A panel or dialog is open (more menu, subtitles, sleep timer…): the
-    // remote is for it, not for seeking the video behind it. Step into it.
-    if (state.openPanel != SidePanel.none ||
-        state.decoderDialogOpen ||
-        state.sleepTimerDialogOpen) {
+    // A panel or dialog is open (more menu, subtitles, sleep timer, the
+    // error card…): the remote is for it, not for seeking the video behind
+    // it. Step into it.
+    if (_menuOpen(state)) {
       if (k == LogicalKeyboardKey.arrowLeft ||
           k == LogicalKeyboardKey.arrowRight ||
           k == LogicalKeyboardKey.arrowUp ||
@@ -2753,13 +2808,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       if (v || !mounted || _remoteFocus.hasPrimaryFocus) return;
       // Never out of a panel or a dialog — one may hold a text field the
       // viewer is typing in.
-      final st = ref.read(playerControllerProvider);
-      if (st.openPanel != SidePanel.none ||
-          st.decoderDialogOpen ||
-          st.sleepTimerDialogOpen ||
-          st.resumeDialogOpen) {
-        return;
-      }
+      if (_menuOpen(ref.read(playerControllerProvider))) return;
       _remoteFocus.requestFocus();
     });
     return Focus(
@@ -2870,7 +2919,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         state.openPanel != SidePanel.none ||
         state.decoderDialogOpen ||
         state.sleepTimerDialogOpen ||
-        state.resumeDialogOpen;
+        // Only the question waits for an answer; the passing card leaves a
+        // tap on the picture to show the controls, as any other moment.
+        (state.resumeDialogOpen && state.resumeIsAskMode);
 
     // Phase 42: also enforce "Double-tap the back button" on the SYSTEM back
     // gesture/button, not only the on-screen back arrow. Daily users on
@@ -3102,9 +3153,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // above the playback controls (~120 px from bottom edge)
           // so its buttons fall within the thumb-arc of a one-handed
           // grip. Default 'top' is the conventional position.
-          if (state.controlsVisible &&
-              !state.isLocked &&
-              !state.sleepTimerDialogOpen)
+          if (_chromeUp(state))
             Builder(builder: (ctx) {
               final pos = ref
                   .read(extraSettingsProvider)
@@ -3116,7 +3165,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 right: 0,
                 child: _TopBar(
                 insets: _controlsInsets(context),
-                title: widget.title,
+                title: _title,
                 decoderLabel: state.decoder == DecoderType.defaultMode
                     ? AppStrings.of(context).plDecoderDefault
                     : state.decoder.label,
@@ -3127,7 +3176,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 // actually closes the player.
                 onBack: _handleBackRequest,
                 onAudio: () => _showAudioTracks(context),
-                onSubtitle: controller.openSubtitleMenu,
+                onSubtitle: _openSubtitlePanel,
                 onDecoder: svc is MediaKitPlayerService && svc.playingLadder
                     ? null
                     : controller.openDecoderDialog,
@@ -3157,10 +3206,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                             .get(PlayerSetting.styleShowSourceUrl) &&
                         !widget.ephemeral &&
                         !widget.secureScreen &&
-                        (widget.videoUri.startsWith('http') ||
-                            widget.videoUri.startsWith('rtmp') ||
-                            widget.videoUri.startsWith('rtsp'))
-                    ? widget.videoUri
+                        (_videoUri.startsWith('http') ||
+                            _videoUri.startsWith('rtmp') ||
+                            _videoUri.startsWith('rtsp'))
+                    ? _videoUri
                     : null,
               ),
             );
@@ -3169,10 +3218,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // === LAYER 5: Speed indicator ===
           // Only a speed other than 1X needs saying, and not while the
           // shortcut row is on screen showing it as its "1.5X" item.
-          if (!state.sleepTimerDialogOpen &&
+          if (!_menuOpen(state) &&
+              !_routeOnTop &&
               state.playbackSpeed != 1.0 &&
-              !(state.controlsVisible &&
-                  !state.isLocked &&
+              !(_chromeUp(state) &&
                   visibleShortcutList.contains(ShortcutItem.playbackSpeed)))
             Positioned(
               // Clear of the camera cutout, as the controls are.
@@ -3185,10 +3234,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 6: Shortcut row ===
-          if (state.controlsVisible &&
-              !state.isLocked &&
-              !state.sleepTimerDialogOpen &&
-              visibleShortcutList.isNotEmpty)
+          if (_chromeUp(state) && visibleShortcutList.isNotEmpty)
             Positioned(
               // Landscape: clear of the cutout and side nav bar, as MX is.
               left: _controlsInsets(context).left,
@@ -3238,9 +3284,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // Hide the player's play/pause + seek bar while the Sleep Timer
           // dialog is open — its own STOP/START row sits at the bottom and
           // would otherwise overlap (and block taps on) these controls.
-          if (state.controlsVisible &&
-              !state.isLocked &&
-              !state.sleepTimerDialogOpen)
+          if (_chromeUp(state))
             Positioned(
               bottom: 0,
               left: 0,
@@ -3290,7 +3334,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onFrameStep: (forward) =>
                     controller.frameStep(forward: forward),
                 // Phase 45: video URI for scrub preview thumbnails.
-                videoUri: widget.videoUri,
+                videoUri: _videoUri,
                 // Audit fix (A1): forward slider drag activity to the
                 // controller so the auto-hide timer resets on each
                 // touch — controls don't vanish mid-scrub.
@@ -3396,15 +3440,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
           if (state.openPanel == SidePanel.subtitle)
             SubtitlePanel(
+              tracks: state.subtitleTracks,
+              current: state.currentSubtitleTrack ?? _engineSubTrack,
+              onSelectTrack: (track) async {
+                controller.closePanel();
+                await controller.selectSubtitleTrack(track);
+                // In the player's own message place: the choice made,
+                // or that subtitles are now off.
+                if (!context.mounted) return;
+                _toast.show(
+                  track == null
+                      ? AppStrings.of(context).subtitleOff
+                      : AppStrings.of(context).plSubtitle(track.displayName),
+                  kind: PlayerToastKind.success,
+                  icon: Icons.subtitles_outlined,
+                );
+              },
               onOpen: () {
                 controller.closePanel();
                 _pickExternalSubtitle(context);
               },
-              // The panel goes first, as for every other row: the track
-              // list used to open over it, the panel still up behind.
-              onSettings: () {
+              onDelay: () {
                 controller.closePanel();
-                _showSubtitleTracks(context);
+                _showSubtitleDelay(context);
               },
               onTextStyle: () {
                 controller.closePanel();
@@ -3426,12 +3484,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 // user can open it in their browser. A real OpenSubtitles API
                 // integration would need an account + REST client; this is
                 // the most useful thing we can do without adding url_launcher.
-                final fileName = widget.title.replaceAll(' ', '+');
+                // Encoded: a title with "#", "?", "&" or "/" broke the
+                // address it was put into.
+                final fileName = Uri.encodeComponent(_title)
+                    .replaceAll('%20', '+');
                 final url =
                     'https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-$fileName';
                 Share.share(
                   url,
-                  subject: AppStrings.of(context).plSearchSubs(widget.title),
+                  subject: AppStrings.of(context).plSearchSubs(_title),
                 );
               },
               onDismiss: controller.closePanel,
@@ -3582,105 +3643,32 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               !ref
                   .watch(playerSettingsProvider)
                   .get(PlayerSetting.suppressError))
-            Positioned(
-              // Clear of the camera cutout and the status bar.
-              top: _controlsInsets(context).top + 80,
-              left: _controlsInsets(context).left + 16,
-              right: _controlsInsets(context).right + 16,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.error_outline,
-                              color: Colors.white, size: 20),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              AppStrings.of(context).playbackFailed,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => controller.dismissError(),
-                            borderRadius: BorderRadius.circular(12),
-                            child: const Icon(Icons.close,
-                                color: Colors.white, size: 20),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        state.errorMessage == kPlayerEngineStuck
-                            ? AppStrings.of(context).playerEngineStuck
-                            : state.errorMessage == kPlayerDamagedStretch
-                                ? AppStrings.of(context).playerDamagedStretch
-                                : state.errorMessage!,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 12),
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 12),
-                      // Side by side when they fit, else one under the
-                      // other: in Burmese at a large font the pair ran 31 dp
-                      // past a 320 dp phone's banner.
-                      OverflowBar(
-                        spacing: 8,
-                        overflowSpacing: 4,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () {
-                              controller.dismissError();
-                              // ignore: discarded_futures
-                              _retryPlayback(controller);
-                            },
-                            icon: const Icon(Icons.refresh,
-                                color: Colors.white, size: 16),
-                            label: Text(AppStrings.of(context).retry,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.white24,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                            ),
-                          ),
-                          TextButton.icon(
-                            onPressed: () {
-                              _lockPortraitOnExit();
-                              _stopAudioIfLeaving();
-                              Navigator.of(context).pop();
-                            },
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white, size: 16),
-                            label: Text(AppStrings.of(context).goBack,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            PlayerErrorCard(
+              modal: _errorBlocks(state),
+              top: _toastTop(state, visibleShortcutList.length) -
+                  _controlsInsets(context).top,
+              // Not "Playback failed" over a film that is still playing.
+              title: _errorBlocks(state)
+                  ? AppStrings.of(context).playbackFailed
+                  : AppStrings.of(context).plPlaybackProblem,
+              message: state.errorMessage == kPlayerEngineStuck
+                  ? AppStrings.of(context).playerEngineStuck
+                  : state.errorMessage == kPlayerDamagedStretch
+                      ? AppStrings.of(context).playerDamagedStretch
+                      : scrubPlaybackError(state.errorMessage!),
+              retryLabel: AppStrings.of(context).retry,
+              backLabel: AppStrings.of(context).goBack,
+              onRetry: () {
+                controller.dismissError();
+                // ignore: discarded_futures
+                _retryPlayback(controller);
+              },
+              onBack: () {
+                _lockPortraitOnExit();
+                _stopAudioIfLeaving();
+                Navigator.of(context).pop();
+              },
+              onDismiss: controller.dismissError,
             ),
 
           // === LAYER 14b: Up next — what plays after this one ===
