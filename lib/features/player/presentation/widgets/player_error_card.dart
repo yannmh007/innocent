@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'player_ui.dart';
@@ -20,6 +22,8 @@ class PlayerErrorCard extends StatelessWidget {
     required this.onRetry,
     required this.onBack,
     required this.onDismiss,
+    this.modal = true,
+    this.top = 16,
   });
 
   final String title;
@@ -29,6 +33,15 @@ class PlayerErrorCard extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback onBack;
   final VoidCallback onDismiss;
+
+  /// The film has stopped: the card in the middle of the dimmed picture,
+  /// the controls away until it is answered. False while the film still
+  /// moves (libmpv logged something it survived): the card sits at [top],
+  /// no scrim, with a ✕, and the controls stay in reach.
+  final bool modal;
+  final double top;
+
+  static const Color _warning = Color(0xFFFFB74D);
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +63,17 @@ class PlayerErrorCard extends StatelessWidget {
                   Container(
                     width: 40,
                     height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0x29FF6B6B),
+                    decoration: BoxDecoration(
+                      color: (modal ? PlayerUi.danger : _warning)
+                          .withValues(alpha: 0.16),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.error_outline_rounded,
-                        color: PlayerUi.danger, size: 24),
+                    child: Icon(
+                        modal
+                            ? Icons.error_outline_rounded
+                            : Icons.warning_amber_rounded,
+                        color: modal ? PlayerUi.danger : _warning,
+                        size: 24),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -64,6 +82,14 @@ class PlayerErrorCard extends StatelessWidget {
                       child: Text(title, style: PlayerUi.title),
                     ),
                   ),
+                  if (!modal)
+                    IconButton(
+                      onPressed: onDismiss,
+                      tooltip: MaterialLocalizations.of(context)
+                          .closeButtonTooltip,
+                      icon: const Icon(Icons.close_rounded,
+                          size: 20, color: PlayerUi.textSecondary),
+                    ),
                 ],
               ),
             ),
@@ -110,6 +136,37 @@ class PlayerErrorCard extends StatelessWidget {
       ),
     );
 
+    // Said when it appears: TalkBack reads a live region as it arrives.
+    final announced = Semantics(
+      liveRegion: true,
+      container: true,
+      child: card,
+    );
+    if (!modal) {
+      return Positioned(
+        top: top + safe.top,
+        left: 16 + safe.left,
+        right: 16 + safe.right,
+        child: Center(
+          child: ConstrainedBox(
+            // As tall as the screen leaves below it: a fixed 260 cut a
+            // Burmese title of two lines and the stacked buttons on a
+            // 320 dp phone at the largest font.
+            constraints: BoxConstraints(
+              maxWidth: 480,
+              maxHeight: math.max(
+                  160.0,
+                  MediaQuery.sizeOf(context).height -
+                      top -
+                      safe.top -
+                      safe.bottom -
+                      16),
+            ),
+            child: announced,
+          ),
+        ),
+      );
+    }
     return Stack(
       children: [
         Positioned.fill(
@@ -133,7 +190,7 @@ class PlayerErrorCard extends StatelessWidget {
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 420),
-                child: card,
+                child: announced,
               ),
             ),
           ),

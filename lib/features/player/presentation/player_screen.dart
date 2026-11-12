@@ -1534,6 +1534,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   Future<void> _addBookmark(BuildContext context) async {
+    // NOT FOR A SIGNED STREAM OR A PRIVATE FOLDER FILM (review, 12 Nov): a
+    // bookmark stores the address and the title in the ordinary list and
+    // in backups — the stream's credential, or a hidden film's name.
+    if (widget.ephemeral) {
+      _showSnack(context, AppStrings.of(context).plOwnPageOnly);
+      return;
+    }
+    if (widget.isPrivate) {
+      _showSnack(context, AppStrings.of(context).plPrivateNoBookmark);
+      return;
+    }
     // Quick-add bookmark at current position, then show sheet
     final state = ref.read(playerControllerProvider);
     // Engine position: the UI copy is rounded to whole seconds and is only
@@ -2321,13 +2332,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // The question, not the passing "continuing from where you stopped"
       // card: the film is already playing under that one.
       (state.resumeDialogOpen && state.resumeIsAskMode) ||
-      _errorShown(state);
+      _errorBlocks(state);
 
   /// The error card is up (Settings → Player → "Suppress error message"
   /// keeps the error, and shows nothing).
   bool _errorShown(PlayerState state) =>
       state.errorMessage != null &&
       !ref.read(playerSettingsProvider).get(PlayerSetting.suppressError);
+
+  /// The error stopped the film, so the card takes the screen. While the
+  /// film still moves (a line libmpv logged and survived), the card stays
+  /// out of the way and the controls in reach: the engine-stuck verdict was
+  /// this same false alarm (review of 12 Nov).
+  bool _errorBlocks(PlayerState state) =>
+      _errorShown(state) &&
+      (state.errorMessage == kPlayerEngineStuck ||
+          !state.isPlaying ||
+          state.isBuffering);
 
   /// The top bar, the shortcut row and the bottom controls are on screen.
   /// ONE LAYER AT A TIME (skill ui-design): under an open menu they step
@@ -3623,7 +3644,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                   .watch(playerSettingsProvider)
                   .get(PlayerSetting.suppressError))
             PlayerErrorCard(
-              title: AppStrings.of(context).playbackFailed,
+              modal: _errorBlocks(state),
+              top: _toastTop(state, visibleShortcutList.length) -
+                  _controlsInsets(context).top,
+              // Not "Playback failed" over a film that is still playing.
+              title: _errorBlocks(state)
+                  ? AppStrings.of(context).playbackFailed
+                  : AppStrings.of(context).plPlaybackProblem,
               message: state.errorMessage == kPlayerEngineStuck
                   ? AppStrings.of(context).playerEngineStuck
                   : state.errorMessage == kPlayerDamagedStretch

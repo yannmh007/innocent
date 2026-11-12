@@ -77,9 +77,19 @@ final scenes = <Scene>[
     await _settle(t);
   }),
   Scene('locked', (t, c, svc) async => _tapIcon(t, Icons.lock_open)),
+  // An error that stopped the film: the card on the dimmed picture.
   Scene('error', (t, c, svc) async {
+    await svc.pause();
+    await _settle(t);
     svc.failWith('Failed to open https://stream.example/film/index.m3u8: '
         'connection reset by peer while reading the stream');
+    await _settle(t);
+  }),
+  // One the film survived: the card at the top, the controls in reach.
+  Scene('error_playing', (t, c, svc) async {
+    await svc.play();
+    await _settle(t);
+    svc.failWith('Error parsing subtitle line 42: invalid timestamp');
     await _settle(t);
   }),
   Scene('loop_menu', (t, c, svc) async {

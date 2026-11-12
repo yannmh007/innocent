@@ -1092,19 +1092,22 @@ class PlayerController extends StateNotifier<PlayerState> {
         _engineCheck = null;
         if (stuck) {
           PlaybackLog.add('engine slow on ${svc.engineWedgedReason}');
-          final since = DateTime.now();
-          final from = svc.position;
+          final started = DateTime.now();
+          var since = started;
+          var from = svc.position;
           var aliveSeen = false;
           _engineCheck = Timer.periodic(const Duration(milliseconds: 750), (t) {
             if (!mounted || !svc.engineWedged) {
               t.cancel();
               return;
             }
-            final waited = DateTime.now().difference(since);
+            final now = DateTime.now();
             final verdict = judgeSlowEngine(
               moved: svc.position - from,
-              playing: svc.isPlaying,
-              waited: waited,
+              // A stream waiting for data is judged as paused: its clock
+              // stands still for the network, not for the engine.
+              playing: svc.isPlaying && !state.isBuffering,
+              waited: now.difference(since),
             );
             if (verdict == EngineVerdict.alive) {
               if (!aliveSeen) {
@@ -1113,11 +1116,19 @@ class PlayerController extends StateNotifier<PlayerState> {
                     '${svc.engineWedgedReason} hung');
               }
               // Usually the call comes back and the alarm clears itself.
-              // One that has not after this long may never: listen anew.
-              if (waited >= const Duration(seconds: 15)) {
+              // One that has not after this long may never: listen anew,
+              // once a film.
+              if (now.difference(started) >= const Duration(seconds: 15) &&
+                  !_relinkedThisOpen) {
+                _relinkedThisOpen = true;
                 t.cancel();
                 svc.relink();
+                return;
               }
+              // Watching on from here, so a film that stops later is still
+              // caught.
+              since = now;
+              from = svc.position;
               return;
             }
             if (verdict == EngineVerdict.wait) return;
@@ -1516,6 +1527,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   int _speedDragBaseIdx = 2; // index of 1.0x in _speedSteps
   Timer? _zoomIndicatorTimer;
   bool _introSkipped = false;
+
+  /// The engine link was renewed once for this film (see the engine check):
+  /// a call that hangs on libmpv's own lock hangs again on a new link, so a
+  /// second renewal would only strand another isolate every few seconds.
+  bool _relinkedThisOpen = false;
   bool _outroSkipped = false;
   String? _currentVideoTitle;
 

@@ -220,13 +220,25 @@ void main() {
     svc.failWith('Failed to open https://cdn.example/v/1/index.m3u8'
         '?exp=9&sig=SECRET: HTTP error 403 Forbidden');
     await _settle(tester);
-    expect(find.text('Playback failed'), findsOneWidget);
+    // Not "Playback failed": the film is still playing.
+    expect(find.text('The player reported a problem'), findsOneWidget);
     expect(find.textContaining('SECRET'), findsNothing);
     expect(find.textContaining('https://cdn.example/…'), findsOneWidget);
+    // The film still plays (libmpv logged something it survived): the
+    // card stays out of the way and the controls in reach.
+    expect(find.byIcon(Icons.skip_next), findsOneWidget);
     // Back puts the card away, as it does a dialog, and leaves the film.
     await _back(tester);
-    expect(find.text('Playback failed'), findsNothing);
+    expect(find.text('The player reported a problem'), findsNothing);
     expect(find.byType(PlayerScreen), findsOneWidget);
+
+    // An error that stopped the film takes the screen until answered.
+    await svc.pause();
+    await _settle(tester);
+    svc.failWith('Failed to open the file');
+    await _settle(tester);
+    expect(find.text('Playback failed'), findsOneWidget);
+    expect(find.byIcon(Icons.skip_next), findsNothing);
     await leavePlayer(tester);
   });
 
