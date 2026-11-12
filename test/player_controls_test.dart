@@ -171,6 +171,26 @@ void main() {
     });
   }
 
+  testWidgets('upright, the picture rises to the top under ⋮ and comes back',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    // The fake engine's picture: a 16:9 frame, centred.
+    final frame = find.byType(AspectRatio).first;
+    final before = tester.getRect(frame).top;
+    expect(before, greaterThan(200));
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    expect(tester.getRect(frame).top, lessThan(1),
+        reason: 'the sheet covered the picture (owner, 12 Nov)');
+    // The sheet stays under the picture: the film is whole above it.
+    final sheetTop = tester.getRect(find.text('More').first).top;
+    expect(sheetTop, greaterThan(tester.getRect(frame).bottom));
+    playerContainer!.read(playerControllerProvider.notifier).closePanel();
+    await _settle(tester);
+    expect(tester.getRect(frame).top, closeTo(before, 1));
+    await leavePlayer(tester);
+  });
+
   testWidgets("the audio menu lists the film's tracks, not the engine's "
       'auto and no', (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');

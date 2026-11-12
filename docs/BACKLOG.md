@@ -160,7 +160,10 @@ beside MX Player. Done:
   in Burmese at 320 dp — no overflow anywhere; looked at one by one. Fixed:
   the downloader's tabs dropped the theme's font (a bare `labelStyle`); the
   information dialog (`MxDialog`) moved onto the player's tokens; the Up
-  next card on the player's surface. Ships with the next release.
+  next card on the player's surface. And (owner's screenshot): upright,
+  ⋮ rose over the whole picture — the picture now rises to the top while a
+  menu is open and the sheet stops at 60 % (session branch, on this
+  branch). Ships with the next release.
 - Left: the gestures help keeps its own full-screen look; the Folders
   title is cut to "Folder မ…" on a 320 dp phone by its four actions; the
   paste bar's Burmese hint sits a little high (the font's metrics); a test
