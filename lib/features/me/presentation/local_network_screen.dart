@@ -11,6 +11,7 @@ import '../../network/presentation/net_widgets.dart';
 import '../../network/presentation/server_form.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Me → Local Network: MX Player's "Networks" — SMB, FTP, FTPS and SFTP
 /// servers on this Wi-Fi, browsed and played like files on the phone.
@@ -115,7 +116,7 @@ class LocalNetworkScreen extends ConsumerWidget {
         child: Icon(Icons.add_rounded,
             color: Colors.white, size: 30, semanticLabel: s.addNewServer),
       ),
-      body: CustomScrollView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: CustomScrollView(
         slivers: <Widget>[
           const SliverToBoxAdapter(child: NetHero()),
           if (servers.isEmpty)
@@ -147,7 +148,7 @@ class LocalNetworkScreen extends ConsumerWidget {
             const SliverToBoxAdapter(child: SizedBox(height: 96)),
           ],
         ],
-      ),
+      )),
     );
   }
 }

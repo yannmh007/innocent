@@ -12,6 +12,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Player — full MX Player parity (UI PDF page 15)
 /// Sections: Interface, Playback, Background Play, Miscellaneous
 ///
@@ -48,7 +49,7 @@ class SettingsPlayerScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsPlayer)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).spInterface),
           SettingsNavTile(
@@ -302,7 +303,7 @@ class SettingsPlayerScreen extends ConsumerWidget {
               setting: PlayerSetting.loadingCircle),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

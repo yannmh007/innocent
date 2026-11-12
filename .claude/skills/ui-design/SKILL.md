@@ -98,6 +98,18 @@ an app screen with the screens harness (`test_screens/`, 107 screens):
 `SCREEN_PHONES=tiny` for 320 dp; fonts in `build/screen_fonts` (the SDK's
 Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
 
+## 3b. Every screen size (docs/devices_2026_11.md)
+- By the window, not the device: compact < 600 dp, medium 600–840,
+  expanded 840–1200, large 1200+. The shell's rail takes over at 600.
+- A list or form page caps its width (`TabletConstrainedWidth`, 840; a
+  reading page 640); hero, rails and grids use the width. A sheet or
+  panel is never full width on a large screen (≤ 640).
+- TV: the overscan margins are insets (`TvSafeArea`); every function by
+  the D-pad, focus always visible; the remote's media keys work.
+- Keyboard and mouse are first-class: Space/K, arrows/J/L, Esc, M, ?, a
+  right-click menu, hover shows the controls and the pointer hides.
+- Prove on `PLAYER_PHONES=all` and `SCREEN_PHONES=tablet,tablet_land,fold,tv`.
+
 ## 4. MX parity — keep the structure, refine the look
 Top bar `← title … ♪ CC HW ⋮`; shortcut row with its expand chevron;
 bottom row `lock | ⏮ ⏯ ⏭ | screen-mode PiP`; ⋮ = "Video display" tiles +

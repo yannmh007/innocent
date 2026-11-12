@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/ui/tv_focus.dart';
+import 'core/ui/tv_safe_area.dart';
 import 'core/services/preferences/extra_settings_service.dart';
 import 'core/services/preferences/player_settings_service.dart';
 import 'core/services/thumbnail/thumbnail_cache.dart';
@@ -625,12 +626,15 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // reporting 0 won't erase it.
         SystemInsets.observeBottom(MediaQuery.of(context).viewPadding.bottom);
         // The D-pad's focus ring sits over everything, the PiP window too.
+        // On a TV, the overscan margins as insets (tv_safe_area.dart).
         return FocusRingLayer(
-          child: Stack(
-            children: [
-              if (child != null) child,
-              const FloatingPipOverlay(),
-            ],
+          child: TvSafeArea(
+            child: Stack(
+              children: [
+                if (child != null) child,
+                const FloatingPipOverlay(),
+              ],
+            ),
           ),
         );
       },

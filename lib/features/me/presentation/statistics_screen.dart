@@ -6,6 +6,7 @@ import '../../local_browser/presentation/library_provider.dart';
 import '../../user_data/user_data_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class StatisticsScreen extends ConsumerWidget {
   const StatisticsScreen({super.key});
 
@@ -46,7 +47,7 @@ class StatisticsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).statistics)),
-      body: foldersAsync.when(
+      body: TabletConstrainedWidth(maxWidth: 840, child: foldersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => Center(
             child: Text(AppStrings.of(context).failedToLoad,
@@ -189,7 +190,7 @@ class StatisticsScreen extends ConsumerWidget {
             );
           },
         ),
-      ),
+      )),
     );
   }
 }

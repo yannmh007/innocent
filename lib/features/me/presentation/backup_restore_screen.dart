@@ -10,6 +10,7 @@ import 'cloud_drive_screen.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Backup & Restore screen — export/import app settings and playlists.
 ///
 /// Phase 41: merged the two prior backup screens. The presentation comes
@@ -145,7 +146,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).backupRestore)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           // Info card
@@ -259,7 +260,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           ),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 

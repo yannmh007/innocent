@@ -10,6 +10,7 @@ import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import 'receipt_picker.dart';
 import '../../../../core/theme/tab_title.dart';
+import '../../../../core/ui/tablet_constrained_width.dart';
 
 /// KPay payment instructions, and the form that records the claim.
 ///
@@ -163,7 +164,7 @@ class _PremiumRequestScreenState
         ),
         title: Text(s.vhPayTitle, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
-      body: _submitted
+      body: TabletConstrainedWidth(maxWidth: 840, child: _submitted
           ? _SubmittedState(onDone: () => Navigator.of(context).pop(true))
           : ListView(
               padding: EdgeInsets.fromLTRB(VH.gutter, VH.s2, VH.gutter,
@@ -350,7 +351,7 @@ class _PremiumRequestScreenState
                   ),
                 ],
               ],
-            ),
+            )),
     );
   }
 }

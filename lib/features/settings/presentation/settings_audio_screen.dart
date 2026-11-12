@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Audio — full MX Player parity (UI PDF page 17).
 /// Phase 41: all toggles persist via [playerSettingsProvider].
 class SettingsAudioScreen extends ConsumerWidget {
@@ -34,7 +35,7 @@ class SettingsAudioScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsAudio)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           // Phase 45 (audit refined, build 63): wire Audio output to
           // StringSetting.audioDevice (was visible-only list dialog).
@@ -189,7 +190,7 @@ class SettingsAudioScreen extends ConsumerWidget {
           // only tile removed here.
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

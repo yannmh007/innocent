@@ -18,6 +18,7 @@ import '../../local_browser/presentation/android_data_sync.dart';
 import '../../video_hub/data/diagnostics_report.dart';
 import '../../video_hub/presentation/account_provider.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Android/data access: pairing with, and connecting to, this phone's own
 /// Wireless debugging.
@@ -1568,7 +1569,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
     final needsSetup = _connected != true;
     return Scaffold(
       appBar: AppBar(title: Text(s.adbScreenTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32).plusNavBar(context),
         children: [
           if (_exposed) _exposureWarning(),
@@ -1596,7 +1597,7 @@ class _AdbConnectScreenState extends ConsumerState<AdbConnectScreen>
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 

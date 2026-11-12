@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Player > Style
 /// Player UI style options.
 ///
@@ -36,7 +37,7 @@ class PlayerStyleScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).styleTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).psTitleBar),
           _toggle(ref,
@@ -92,7 +93,7 @@ class PlayerStyleScreen extends ConsumerWidget {
           }),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

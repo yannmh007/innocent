@@ -202,12 +202,20 @@ class PlayerPanel extends StatelessWidget {
               bottom: 0,
               child: FractionalTranslation(
                 translation: Offset(0, 1 - t),
-                child: ConstrainedBox(
-                  // 55 %, not 72: upright it rose over the whole picture
-                  // (owner's screenshot, 12 Nov). What it covers shows
-                  // through its glass.
-                  constraints: BoxConstraints(maxHeight: size.height * 0.55),
-                  child: panel,
+                // No wider than 640, centred: on a tablet held upright the
+                // tiles stood 200 dp apart across the screen (Google's
+                // large-screen guideline: no full-width bottom sheets).
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  heightFactor: 1,
+                  child: ConstrainedBox(
+                    // 55 %, not 72: upright it rose over the whole picture
+                    // (owner's screenshot, 12 Nov). What it covers shows
+                    // through its glass.
+                    constraints: BoxConstraints(
+                        maxWidth: 640, maxHeight: size.height * 0.55),
+                    child: panel,
+                  ),
                 ),
               ),
             )
