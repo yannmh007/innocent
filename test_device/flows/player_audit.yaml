@@ -65,12 +65,12 @@ appId: com.innocent.media
 - takeScreenshot: 71_audit_more_portrait
 # The controls step aside while the menu is open (12 Nov): one layer
 # at a time, nothing showing through it.
-- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+- assertVisible: "(Playing Queue|ဖွင့်နေသော.*)"
 - back
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 72_audit_more_closed_by_back
-- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+- assertNotVisible: "(Playing Queue|ဖွင့်နေသော.*)"
 # Still in the player: a tap brings its controls back.
 - runFlow:
     # Fresh controls: hidden first if they are up, then shown, so the next
@@ -137,18 +137,13 @@ appId: com.innocent.media
     timeout: 1500
 - takeScreenshot: 75_audit_subtitle_panel_closed
 - assertNotVisible: "(Online.*|.*Online.*)"
+# Still in the player. One tap only if the controls are down: two taps a
+# moment apart are a double tap (run 43154335111's last check paused the
+# film instead).
 - runFlow:
-    # Fresh controls: hidden first if they are up, then shown, so the next
-    # step has the whole 4 s.
     when:
-      visible: "(Audio track|အသံ လိုင်း)"
+      notVisible: "(Audio track|အသံ လိုင်း)"
     commands:
       - tapOn:
           point: "50%,50%"
-      # Apart from the next tap, or the two make a double tap: play/pause,
-      # and the controls stay down (run 42993934736's last check).
-      - waitForAnimationToEnd:
-          timeout: 800
-- tapOn:
-    point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
