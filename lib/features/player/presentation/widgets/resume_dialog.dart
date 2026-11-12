@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
+
 /// Resume banner / dialog (MX Player V3 parity, refined Phase 45 audit).
 ///
 /// Has TWO modes:
@@ -23,8 +23,10 @@ import '../../../../core/localization/app_strings.dart';
 ///    'ask' (the MX Player default).
 class ResumeDialog extends StatefulWidget {
   final Duration savedPosition;
+
   /// Tapped when the user picks Resume. Caller seeks to [savedPosition].
   final void Function({required bool useByDefault}) onResume;
+
   /// Tapped when the user picks Start over. Caller seeks to 0.
   final void Function({required bool useByDefault}) onStartOver;
   final bool isAskMode;
@@ -53,179 +55,102 @@ class _ResumeDialogState extends State<ResumeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final s = AppStrings.of(context);
     if (widget.isAskMode) {
-      return Positioned.fill(
-        child: Container(
-          color: Colors.black54,
-          alignment: Alignment.center,
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 360),
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.darkSurface,
-                borderRadius: BorderRadius.circular(8),
+      // Stays until a choice is made: the film waits at 0 for it.
+      return PlayerDialog(
+        title: s.resumeTitle,
+        icon: Icons.history_rounded,
+        maxWidth: 380,
+        actions: [
+          PlayerDialogButton(
+            label: s.startOver,
+            onPressed: () => widget.onStartOver(useByDefault: _useByDefault),
+          ),
+          PlayerDialogButton(
+            label: s.resume,
+            primary: true,
+            icon: Icons.play_arrow_rounded,
+            onPressed: () => widget.onResume(useByDefault: _useByDefault),
+          ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(s.resumeBody, style: PlayerUi.body),
+              const SizedBox(height: 4),
+              Text(
+                s.savedAt(_fmt(widget.savedPosition)),
+                style: PlayerUi.rowValue.copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(AppStrings.of(context).resumeTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(AppStrings.of(context).resumeBody,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(AppStrings.of(context).savedAt(_fmt(widget.savedPosition)),
-                    style: const TextStyle(
-                      color: Colors.white38,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  // Phase 45 (audit): "Use by default" checkbox lets the
-                  // user persist their choice as the new resume_last
-                  // setting (matches MX Player V3 `ask_resume.xml`).
-                  InkWell(
-                    onTap: () => setState(() {
-                      _useByDefault = !_useByDefault;
-                    }),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: Checkbox(
-                              value: _useByDefault,
-                              onChanged: (v) => setState(() {
-                                _useByDefault = v ?? false;
-                              }),
-                              activeColor: AppColors.accentBlue,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              visualDensity: VisualDensity.compact,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(AppStrings.of(context).useByDefault,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  // Side by side when they fit; one above the other when a
-                  // large font or a 320 dp phone has no room ("Resume" was
-                  // cut in half).
-                  OverflowBar(
-                    alignment: MainAxisAlignment.end,
-                    overflowAlignment: OverflowBarAlignment.end,
-                    spacing: 4,
-                    children: [
-                      TextButton(
-                        onPressed: () => widget.onStartOver(
-                            useByDefault: _useByDefault),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        child: Text(AppStrings.of(context).startOver.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            widget.onResume(useByDefault: _useByDefault),
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(0, 36),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                        ),
-                        child: Text(AppStrings.of(context).resume,
-                          style: const TextStyle(
-                            color: AppColors.accentBlue,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              const SizedBox(height: 8),
+              // Phase 45 (audit): "Use by default" persists the choice as
+              // the resume_last setting (MX Player V3 `ask_resume.xml`).
+              PanelCheckRow(
+                label: s.useByDefault,
+                value: _useByDefault,
+                onChanged: (v) => setState(() => _useByDefault = v),
               ),
-            ),
+            ],
           ),
         ),
       );
     }
 
-    // Confirmation toast mode (legacy).
+    // Confirmation mode: the film has already resumed. A card floating
+    // above the controls, not a black strip over the seek bar.
+    final insets = MediaQuery.paddingOf(context);
     return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: SafeArea(
-        top: false,
-        child: Container(
-          color: Colors.black87,
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => widget.onResume(useByDefault: false),
-                tooltip: AppStrings.of(context).dismiss,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(AppStrings.of(context).continueFromStopped,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+      left: 16 + insets.left,
+      right: 16 + insets.right,
+      bottom: 96 + insets.bottom,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Material(
+            color: PlayerUi.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(6, 4, 8, 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded,
+                        color: PlayerUi.textSecondary, size: 20),
+                    onPressed: () => widget.onResume(useByDefault: false),
+                    tooltip: s.dismiss,
                   ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => widget.onStartOver(useByDefault: false),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: const Size(0, 32),
-                ),
-                child: Text(AppStrings.of(context).startOver.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.accentBlue,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      s.continueFromStopped,
+                      style: const TextStyle(
+                          color: PlayerUi.textPrimary, fontSize: 14),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () => widget.onStartOver(useByDefault: false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: PlayerUi.accent,
+                      minimumSize: const Size(48, 40),
+                      shape: const StadiumBorder(),
+                    ),
+                    child: Text(
+                      s.startOver,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -24,6 +24,7 @@ import '../../../core/services/network/throughput_memory.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
 import '../../user_data/domain/user_data_models.dart';
 import '../../user_data/user_data_providers.dart';
+import '../../local_browser/domain/video.dart';
 import '../../local_browser/presentation/library_provider.dart';
 import '../../music/presentation/music_providers.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
@@ -1524,6 +1525,14 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// answer one question before it decides whether to reopen a file: "is this
   /// already the video that is playing?"
   String? get activeUri => _currentUri;
+
+  /// The film playing now as the library knows it, and its title: what
+  /// the screen's bookmarks, favourite, share, cut, info, Retry and seek
+  /// previews mean by "this film". Null before the first open. After Next,
+  /// the queue or Up next they are the new film's; the screen's own
+  /// `videoUri` and `title` stay the one it was opened with.
+  String? get libraryUri => _libraryUri;
+  String? get currentTitle => _currentVideoTitle;
 
   /// The URI as the LIBRARY knows it, which is not always the URI libmpv is
   /// playing.

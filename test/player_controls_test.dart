@@ -19,6 +19,15 @@ const _phone = Phone('360x800', 360, 800, 2.0);
 
 PlayerState _state() => playerContainer!.read(playerControllerProvider);
 
+/// Frames enough for a panel to slide in (PlayerPanel animates 220 ms; a
+/// single long pump draws only its first frame, the panel still below the
+/// screen).
+Future<void> _settle(WidgetTester tester) async {
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 60));
+  }
+}
+
 Future<void> _back(WidgetTester tester) async {
   await tester.binding.handlePopRoute();
   for (var i = 0; i < 5; i++) {
@@ -43,6 +52,67 @@ void main() {
       expect(find.byType(PlayerScreen), findsOneWidget,
           reason: 'Back with the menu open left the film');
       expect(_state().openPanel, SidePanel.none);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('$o: an open menu hides the controls under it',
+        (tester) async {
+      await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
+      expect(find.byIcon(Icons.skip_next), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await _settle(tester);
+      // One layer at a time: nothing of the top bar, the shortcut row or
+      // the bottom row shows through ⋮ (owner's screenshots, 12 Nov 2026).
+      expect(find.byIcon(Icons.skip_next), findsNothing);
+      expect(find.byIcon(Icons.arrow_back), findsNothing);
+      expect(find.byIcon(Icons.more_vert), findsNothing);
+      playerContainer!.read(playerControllerProvider.notifier).closePanel();
+      await _settle(tester);
+      expect(find.byIcon(Icons.skip_next), findsOneWidget,
+          reason: 'the controls did not come back with the menu closed');
+      await leavePlayer(tester);
+    });
+
+    testWidgets('$o: CC chooses a subtitle track in one tap, and marks it',
+        (tester) async {
+      await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
+      await tester.tap(find.byIcon(Icons.subtitles_outlined));
+      await _settle(tester);
+      await tester.tap(find.text('English'));
+      await _settle(tester);
+      expect(_state().currentSubtitleTrack?.id, '2');
+      expect(_state().openPanel, SidePanel.none);
+
+      // The top bar's CC (the toast that says "Subtitle: English" shows
+      // the same icon).
+      await tester.tap(find.byIcon(Icons.subtitles_outlined).first);
+      await _settle(tester);
+      final englishRow = find.ancestor(
+          of: find.text('English'), matching: find.byType(InkWell));
+      expect(
+          find.descendant(
+              of: englishRow.first, matching: find.byIcon(Icons.check_rounded)),
+          findsOneWidget,
+          reason: 'the chosen track is not marked');
+      await tester.tap(find.text('Off'));
+      await _settle(tester);
+      expect(_state().currentSubtitleTrack, isNull);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('$o: Video display off turns the picture off, not the menu',
+        (tester) async {
+      await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await _settle(tester);
+      await tester.ensureVisible(find.text('Video Display'));
+      await tester.pump();
+      await tester.tap(find.text('Video Display'));
+      await _settle(tester);
+      expect(_state().openPanel, SidePanel.more);
+      // The sixteen actions stay: the switch used to hide them as well.
+      expect(find.byIcon(Icons.queue_music), findsOneWidget);
+      expect(find.byIcon(Icons.speed), findsOneWidget);
       await leavePlayer(tester);
     });
 
@@ -139,6 +209,24 @@ void main() {
     }
     expect(_state().isLocked, isTrue,
         reason: 'not locked on the first rotation');
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a playback error is a card that names no signed address',
+      (tester) async {
+    final svc = FakePlayerService();
+    await pumpPlayer(
+        tester, phone: _phone, landscape: false, lang: 'en', engine: svc);
+    svc.failWith('Failed to open https://cdn.example/v/1/index.m3u8'
+        '?exp=9&sig=SECRET: HTTP error 403 Forbidden');
+    await _settle(tester);
+    expect(find.text('Playback failed'), findsOneWidget);
+    expect(find.textContaining('SECRET'), findsNothing);
+    expect(find.textContaining('https://cdn.example/…'), findsOneWidget);
+    // Back puts the card away, as it does a dialog, and leaves the film.
+    await _back(tester);
+    expect(find.text('Playback failed'), findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
     await leavePlayer(tester);
   });
 

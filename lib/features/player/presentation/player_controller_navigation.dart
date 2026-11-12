@@ -57,6 +57,29 @@ extension PlayerNavigation on PlayerController {
     } catch (e) { if (kDebugMode) debugPrint('PlayerNav: $e'); }
   }
 
+  /// The folder the film is in, in the order Next plays it, and where the
+  /// film is in it: the Playing queue sheet. Empty for a film from the
+  /// catalogue or the network, which has no folder.
+  Future<({List<Video> videos, int current})> folderQueue() async {
+    const none = (videos: <Video>[], current: -1);
+    final key = _libraryUri ?? _currentUri;
+    if (key == null) return none;
+    try {
+      final all = await _ref.read(allVideosProvider.future);
+      final idx = all.indexWhere((v) => v.uri == key);
+      if (idx < 0) return none;
+      final folder = all[idx].folderPath;
+      final list = [
+        for (final v in all)
+          if (v.folderPath == folder) v,
+      ];
+      return (videos: list, current: list.indexWhere((v) => v.uri == key));
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerNav: $e');
+      return none;
+    }
+  }
+
   /// Audit fix (standard high-quality): forward-button handler that
   /// respects [StringSetting.forwardBackButtonAction]. nextPrev maps
   /// to playNextInFolder; seek10/30/60 map to relative seek by that

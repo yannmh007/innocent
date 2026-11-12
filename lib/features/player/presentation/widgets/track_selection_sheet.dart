@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/video_player/models/audio_track_info.dart';
-import '../../../../core/services/video_player/models/subtitle_track_info.dart';
-import '../../../../core/theme/app_colors.dart';
-
 import '../../../../core/localization/app_strings.dart';
-import '../../../../core/ui/app_sheet.dart';
-/// Bottom sheet for selecting audio or subtitle tracks
+import 'player_ui.dart';
+
+/// The audio track sheet (♪): the film's tracks, the playing one checked.
+/// Subtitle tracks are chosen in the CC panel itself (SubtitlePanel).
 class TrackSelectionSheet<T> extends StatelessWidget {
   final String title;
   final List<T> tracks;
   final T? currentTrack;
   final String Function(T) labelFor;
+
+  /// What makes two copies of a track the same track: the engine sends
+  /// its list afresh, and the chosen one is then an older copy.
+  final String Function(T) idFor;
   final ValueChanged<T?> onSelect;
-  final VoidCallback? onLoadExternal; // null for audio
-  final bool allowNone;
 
   const TrackSelectionSheet({
     super.key,
@@ -22,211 +23,68 @@ class TrackSelectionSheet<T> extends StatelessWidget {
     required this.tracks,
     required this.currentTrack,
     required this.labelFor,
+    required this.idFor,
     required this.onSelect,
-    this.onLoadExternal,
-    this.allowNone = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+    final current = currentTrack;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PlayerSheetHeader(title: title),
+        // The list gives way, not the sheet: on a phone held sideways
+        // the sheet is about 200 dp tall (test/player_layout_test.dart).
+        Flexible(
+          child: ListView(
+            shrinkWrap: true,
+            padding: EdgeInsets.fromLTRB(
+                PlayerUi.pad(context) - 4, 8, PlayerUi.pad(context) - 4, 16),
+            children: [
+              for (final t in tracks)
+                PanelRow(
+                  choice: true,
+                  title: labelFor(t),
+                  selected: current != null && idFor(t) == idFor(current),
+                  onTap: () => onSelect(t),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const Divider(height: 1, color: Colors.white12),
-            // The list gives way, not the sheet: on a phone held sideways
-            // the sheet is about 200 dp tall, and a list held at its full
-            // height pushed the tracks below the second (and "Load
-            // external") off the screen with nothing to scroll
-            // (test/player_layout_test.dart).
-            Flexible(
-              child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  if (allowNone)
-                    _TrackTile(
-                      label: AppStrings.of(context).langNone,
-                      isSelected: currentTrack == null,
-                      onTap: () => onSelect(null),
-                    ),
-                  ...tracks.map(
-                    (t) => _TrackTile(
-                      label: labelFor(t),
-                      isSelected: t == currentTrack,
-                      onTap: () => onSelect(t),
-                    ),
-                  ),
-                  if (tracks.isEmpty && !allowNone)
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(AppStrings.of(context).noTracksAvailable,
-                        style: const TextStyle(color: Colors.white54),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
-              ),
-              ),
-            ),
-            if (onLoadExternal != null) ...[
-              const Divider(height: 1, color: Colors.white12),
-              InkWell(
-                onTap: onLoadExternal,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.folder_open_outlined,
-                          color: AppColors.accentBlue, size: 22),
-                      const SizedBox(width: 16),
-                      // Wraps rather than running off a 320 dp phone at a
-                      // large font size (Burmese, 3.5 dp past the edge).
-                      Expanded(
-                        child: Text(AppStrings.of(context).loadExternalSubtitle,
-                          style: const TextStyle(
-                            color: AppColors.accentBlue,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+              if (tracks.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    AppStrings.of(context).noTracksAvailable,
+                    style: PlayerUi.body,
+                    textAlign: TextAlign.center,
                   ),
                 ),
-              ),
             ],
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  /// Helper for showing audio track selection
+  /// The audio track sheet.
   static Future<void> showAudio(
     BuildContext context, {
     required List<AudioTrackInfo> tracks,
     required AudioTrackInfo? current,
     required ValueChanged<AudioTrackInfo?> onSelect,
   }) {
-    return showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      constraints: tallSheetConstraints(context),
+    return showPlayerSheet<void>(
+      context,
       builder: (_) => TrackSelectionSheet<AudioTrackInfo>(
         title: AppStrings.of(context).audioTrack,
         tracks: tracks,
         currentTrack: current,
         labelFor: (t) => t.displayName,
+        idFor: (t) => t.id,
         onSelect: (t) {
           onSelect(t);
           Navigator.of(context).pop();
         },
-      ),
-    );
-  }
-
-  /// Helper for showing subtitle track selection
-  static Future<void> showSubtitle(
-    BuildContext context, {
-    required List<SubtitleTrackInfo> tracks,
-    required SubtitleTrackInfo? current,
-    required ValueChanged<SubtitleTrackInfo?> onSelect,
-    required VoidCallback onLoadExternal,
-  }) {
-    return showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      constraints: tallSheetConstraints(context),
-      builder: (_) => TrackSelectionSheet<SubtitleTrackInfo>(
-        title: AppStrings.of(context).pwSubTrack,
-        tracks: tracks,
-        currentTrack: current,
-        labelFor: (t) => t.displayName,
-        onSelect: (t) {
-          onSelect(t);
-          Navigator.of(context).pop();
-        },
-        onLoadExternal: () {
-          Navigator.of(context).pop();
-          onLoadExternal();
-        },
-        allowNone: true,
-      ),
-    );
-  }
-}
-
-class _TrackTile extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _TrackTile({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.check : Icons.radio_button_unchecked,
-              color: isSelected ? AppColors.accentBlue : Colors.white38,
-              size: 20,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? AppColors.accentBlue : Colors.white,
-                  fontSize: 15,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

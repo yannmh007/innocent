@@ -24,7 +24,9 @@ import os
 import re
 import sys
 
-OPEN = re.compile(r'(?<![A-Za-z0-9_.])IconButton(?:\.\w+)?\s*\(')
+# A constructor, named ones included (IconButton.filled); not the static
+# IconButton.styleFrom, which makes a ButtonStyle, not a button.
+OPEN = re.compile(r'(?<![A-Za-z0-9_.])IconButton(?:\.(?!styleFrom\b)\w+)?\s*\(')
 ALLOW = re.compile(r'//\s*ignore:\s*nameless_icon_button')
 
 

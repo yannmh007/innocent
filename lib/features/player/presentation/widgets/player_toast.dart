@@ -45,6 +45,11 @@ class PlayerToastData {
 class PlayerToastController extends ValueNotifier<PlayerToastData?> {
   PlayerToastController() : super(null);
 
+  /// The open player's toast, set by the player screen while it is up: a
+  /// sheet the player opens (skip markers) speaks through it, not through
+  /// the app's snackbar at the bottom, over the seek bar.
+  static PlayerToastController? current;
+
   Timer? _timer;
   int _serial = 0;
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/theme/app_colors.dart';
-
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
+
 /// Custom playback speed input dialog (Phase 11).
 /// Allows typing any speed between 0.25x and 4.0x.
 class CustomSpeedDialog extends StatefulWidget {
@@ -67,22 +67,16 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
       // the field's own height of screen left, and the range line and the
       // buttons ran off it.
       scrollable: true,
-      backgroundColor: AppColors.darkSurface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      backgroundColor: PlayerUi.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: PlayerUi.dialogShape,
       title: Row(
         children: [
-          const Icon(Icons.speed, color: AppColors.accentBlue, size: 22),
+          const Icon(Icons.speed_rounded, color: PlayerUi.accent, size: 22),
           const SizedBox(width: 12),
           Flexible(
             child: Text(AppStrings.of(context).customSpeedTitle,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+                style: PlayerUi.title),
           ),
         ],
       ),
@@ -107,15 +101,15 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
             decoration: InputDecoration(
               suffixText: 'x',
               suffixStyle: const TextStyle(
-                color: AppColors.accentBlue,
+                color: PlayerUi.accent,
                 fontSize: 20,
               ),
               hintText: '1.00',
-              hintStyle: const TextStyle(color: Colors.white54),
+              hintStyle: const TextStyle(color: PlayerUi.textDisabled),
               filled: true,
-              fillColor: AppColors.darkSurfaceVariant,
+              fillColor: PlayerUi.raised,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
                 borderSide: BorderSide.none,
               ),
               errorText: _error,
@@ -124,28 +118,18 @@ class _CustomSpeedDialogState extends State<CustomSpeedDialog> {
           ),
           const SizedBox(height: 12),
           Text(AppStrings.of(context).speedRangeHint,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppColors.darkOnSurfaceMuted,
-              fontSize: 12,
-            ),
-          ),
+              textAlign: TextAlign.center, style: PlayerUi.rowValue),
         ],
       ),
       actions: [
-        TextButton(
+        PlayerDialogButton(
+          label: AppStrings.of(context).cancel,
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(AppStrings.of(context).cancel,
-              style: const TextStyle(color: Colors.white70)),
         ),
-        TextButton(
+        PlayerDialogButton(
+          label: AppStrings.of(context).apply,
+          primary: true,
           onPressed: _apply,
-          child: Text(AppStrings.of(context).apply,
-            style: const TextStyle(
-              color: AppColors.accentBlue,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
         ),
       ],
     );

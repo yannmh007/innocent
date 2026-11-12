@@ -2576,6 +2576,7 @@ class AppStrings {
   String get pwSubTrack => _s('pwSubTrack');
   String get pwTextStyle => _s('pwTextStyle');
   String get pwPosLayout => _s('pwPosLayout');
+  String get plTracks => _s('plTracks');
 
   String get pwStartA => _s('pwStartA');
   String get pwEndB => _s('pwEndB');
@@ -4977,6 +4978,7 @@ class AppStrings {
     'pwSubTrack': 'Subtitle track',
     'pwTextStyle': 'Text style',
     'pwPosLayout': 'Position & layout',
+    'plTracks': 'Tracks',
     'pwStartA': 'Start (A)',
     'pwEndB': 'End (B)',
     'pwBrightness': 'Brightness',
@@ -7314,6 +7316,7 @@ class AppStrings {
     'pwSubTrack': 'စာတန်း track',
     'pwTextStyle': 'စာသား ပုံစံ',
     'pwPosLayout': 'နေရာ နဲ့ အပြင်အဆင်',
+    'plTracks': 'Track များ',
     'pwStartA': 'အစ (A)',
     'pwEndB': 'အဆုံး (B)',
     'pwBrightness': 'အလင်း',
@@ -9641,6 +9644,7 @@ class AppStrings {
     'pwSubTrack': 'แทร็กคำบรรยาย',
     'pwTextStyle': 'รูปแบบข้อความ',
     'pwPosLayout': 'ตำแหน่งและเลย์เอาต์',
+    'plTracks': 'แทร็ก',
     'pwStartA': 'เริ่ม (A)',
     'pwEndB': 'จบ (B)',
     'pwBrightness': 'ความสว่าง',

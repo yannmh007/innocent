@@ -2,10 +2,10 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/ui/tv_focus.dart';
+import 'player_ui.dart';
+
 /// Sleep timer mode
 enum SleepTimerMode { off, custom, endOfVideo }
 
@@ -28,12 +28,6 @@ const double _kKeyColPitch = 80.0; // column centre-to-centre
 const double _kKeyRowPitch = 53.0; // row centre-to-centre
 const double _kTimeNumeral = 44.0; // big h/m numerals
 const double _kTimeSuffix = 16.0; // small "h" / "m" suffix
-
-const TextStyle _kTitleStyle = TextStyle(
-  color: Colors.white,
-  fontSize: 17,
-  fontWeight: FontWeight.w700,
-);
 
 /// Sleep timer dialog — a keypad-driven custom timer (enter Hh Mm like
 /// MX Player) with a "Play last media to the end" toggle, plus STOP /
@@ -120,159 +114,118 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isPortrait =
-        MediaQuery.of(context).orientation == Orientation.portrait;
+    final size = MediaQuery.sizeOf(context);
+    final portrait = size.height >= size.width;
+    final padding = MediaQuery.paddingOf(context);
+    final pad = PlayerUi.pad(context);
+
+    // ON A SURFACE, LIKE EVERY OTHER MENU (12 Nov 2026): the title, the
+    // time and the keys were drawn straight onto the film under a 25 %
+    // scrim. Upright a bottom sheet, sideways a panel from the right.
+    final content = Padding(
+      padding: EdgeInsets.fromLTRB(pad, portrait ? 0 : 10, pad - 8, 10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(AppStrings.of(context).sleepTimer,
+                      style: PlayerUi.title),
+                ),
+              ),
+              _closeButton(),
+            ],
+          ),
+          Center(child: _timeDisplay()),
+          const SizedBox(height: 6),
+          const Divider(color: PlayerUi.hairline, height: 1, thickness: 1),
+          const SizedBox(height: 8),
+          // Sideways the keypad gives way, not STOP and START: four rows of
+          // keys are 212 dp, more than a phone held sideways has left
+          // (test/player_layout_test.dart). Full size wherever they fit.
+          if (portrait)
+            Center(child: _keypad())
+          else
+            Flexible(
+              child: Center(
+                child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
+              ),
+            ),
+          const SizedBox(height: 4),
+          _checkboxRow(),
+          _actionsRow(),
+        ],
+      ),
+    );
+
+    final surface = Material(
+      color: PlayerUi.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: portrait
+            ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
+            : const BorderRadius.horizontal(
+                left: Radius.circular(PlayerUi.radius)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: portrait ? 0 : padding.top,
+          right: portrait ? 0 : padding.right,
+          bottom: padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: portrait ? MainAxisSize.min : MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (portrait) const PlayerDragHandle(),
+            Flexible(child: content),
+          ],
+        ),
+      ),
+    );
+
     return Stack(
       children: [
-        // Light scrim — keeps the video visible behind the dialog while a
-        // tap anywhere outside the controls dismisses it.
+        // A tap anywhere outside the panel dismisses it.
         Positioned.fill(
           // Read as Android reads a dialog's backdrop: "Dismiss".
           child: Semantics(
             label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
             child: GestureDetector(
-            onTap: widget.onDismiss,
-            child: Container(color: AppColors.black25),
-          ),
+              onTap: widget.onDismiss,
+              behavior: HitTestBehavior.opaque,
+              child: const ColoredBox(color: PlayerUi.scrim),
+            ),
           ),
         ),
-        SafeArea(
-          child:
-              isPortrait ? _buildPortrait(context) : _buildLandscape(context),
-        ),
+        if (portrait)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Center(
+              child: ConstrainedBox(
+                // Capped so the column stays tidy on tablets.
+                constraints: BoxConstraints(
+                    maxWidth: 560, maxHeight: size.height * 0.85),
+                child: surface,
+              ),
+            ),
+          )
+        else
+          Positioned(
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: math.min(400.0, math.max(300.0, size.width * 0.46)) +
+                padding.right,
+            child: surface,
+          ),
       ],
-    );
-  }
-
-  // ── Portrait: one centred column, bottom-aligned, video letterboxed above.
-  Widget _buildPortrait(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: ConstrainedBox(
-        // Cap the width so the column stays tidy on tablets.
-        constraints: const BoxConstraints(maxWidth: 560),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(AppStrings.of(context).sleepTimer, style: _kTitleStyle),
-              ),
-              const SizedBox(height: 16),
-              // MX: the time centred, the close button at the right end.
-              SizedBox(
-                height: 48,
-                child: Stack(
-                  children: [
-                    Center(child: _timeDisplay()),
-                    Align(
-                        alignment: Alignment.centerRight,
-                        child: _closeButton()),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Divider(
-                color: AppColors.specSleepDivider,
-                height: 1,
-                thickness: 1,
-              ),
-              const SizedBox(height: 14),
-              Center(child: _keypad()),
-              // The row carries 12 dp of the gaps around it as its own
-              // padding: the same layout, with a 45 dp tall target instead
-              // of the 21 dp line of text.
-              const SizedBox(height: 6),
-              _checkboxRow(),
-              _actionsRow(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Landscape: title top-centre, video on the left, keypad block right.
-  Widget _buildLandscape(BuildContext context) {
-    final screenW = MediaQuery.of(context).size.width;
-    // Right-hand panel holds the time, keypad, checkbox and actions; the
-    // left of the screen stays clear so the video shows through. Capped so
-    // the keypad doesn't drift apart on very wide laptop screens.
-    final panelW = math.min(380.0, screenW * 0.42);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        children: [
-          SizedBox(
-            height: 48,
-            child: Stack(
-              children: [
-                Center(child: Text(AppStrings.of(context).sleepTimer, style: _kTitleStyle)),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _timeDisplay(),
-                      const SizedBox(width: 16),
-                      _closeButton(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // The "play to the end" line sits on the left, level with the
-          // buttons: under the keypad it pushed STOP and START 34 dp off a
-          // 360 dp-tall phone (screens harness, player_sleep_land).
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.bottomLeft,
-                    child: _checkboxRow(),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: panelW,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const Divider(
-                        color: AppColors.specSleepDivider,
-                        height: 1,
-                        thickness: 1,
-                      ),
-                      const SizedBox(height: 12),
-                      // The keypad gives way, not STOP and START: four rows
-                      // of keys are 212 dp, and on a phone 320 dp tall held
-                      // sideways the buttons were pushed 33 dp off the
-                      // screen (test/player_layout_test.dart). Smaller keys
-                      // there; full size wherever they fit.
-                      Expanded(
-                        child: Center(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: _keypad(),
-                          ),
-                        ),
-                      ),
-                      _actionsRow(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -326,10 +279,11 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             width: 32,
             height: 32,
             decoration: const BoxDecoration(
-              color: AppColors.specSleepClose,
+              color: PlayerUi.raised,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.close, color: Colors.white, size: 20),
+            child: const Icon(Icons.close_rounded,
+                color: PlayerUi.textPrimary, size: 20),
           ),
         ),
       ),
@@ -378,7 +332,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       height: _kKeyRowPitch,
       child: Center(
         child: ExcludeSemantics(child: Material(
-          color: AppColors.specSleepKeyFill,
+          color: PlayerUi.raised,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -390,7 +344,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                 child: Text(
                   digit,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: PlayerUi.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w400,
                   ),
@@ -422,11 +376,12 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           child: Checkbox(
             value: _playToEnd,
             onChanged: (v) => setState(() => _playToEnd = v ?? false),
-            side: const BorderSide(
-              color: AppColors.specSleepCheckBorder,
-              width: 2,
+            side: const BorderSide(color: PlayerUi.textDisabled, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5),
             ),
-            activeColor: AppColors.specCheckbox,
+            activeColor: PlayerUi.accent,
+            checkColor: Colors.white,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
           ),
@@ -435,7 +390,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         // Flexible: in Burmese the label is longer than a 320 dp phone.
         Flexible(
           child: Text(AppStrings.of(context).playLastToEnd,
-            style: const TextStyle(color: AppColors.white70, fontSize: 15),
+            style: const TextStyle(color: PlayerUi.textPrimary, fontSize: 14),
           ),
         ),
       ],
@@ -446,23 +401,20 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
   }
 
   Widget _actionsRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+    return OverflowBar(
+      alignment: MainAxisAlignment.end,
+      overflowAlignment: OverflowBarAlignment.end,
+      spacing: 8,
       children: [
-        TextButton(
+        PlayerDialogButton(
+          label: AppStrings.of(context).stop,
           onPressed: _stop,
-          style: TextButton.styleFrom(foregroundColor: AppColors.specCheckbox),
-          child: Text(AppStrings.of(context).stop.toUpperCase(),
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-          ),
         ),
-        const SizedBox(width: 24),
-        TextButton(
+        PlayerDialogButton(
+          label: AppStrings.of(context).start,
+          primary: true,
+          icon: Icons.bedtime_outlined,
           onPressed: _customDuration > Duration.zero ? _startCustom : null,
-          style: TextButton.styleFrom(foregroundColor: AppColors.specCheckbox),
-          child: Text(AppStrings.of(context).start.toUpperCase(),
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-          ),
         ),
       ],
     );
