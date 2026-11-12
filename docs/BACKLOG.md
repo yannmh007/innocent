@@ -161,9 +161,15 @@ beside MX Player. Done:
   the downloader's tabs dropped the theme's font (a bare `labelStyle`); the
   information dialog (`MxDialog`) moved onto the player's tokens; the Up
   next card on the player's surface. And (owner's screenshot): upright,
-  ⋮ rose over the whole picture — the picture now rises to the top while a
-  menu is open and the sheet stops at 60 % (session branch, on this
-  branch). Ships with the next release.
+  ⋮ rose over the whole picture. First the picture was lifted out of its
+  way; the owner then chose misted glass instead: every player menu is
+  frosted glass (`PlayerGlass`: the film blurred under a 72 % tint;
+  opaque on Android Go and 32-bit-only phones), the picture stays put,
+  the upright sheet stops at 55 %, and sideways every player sheet is a
+  full-height side panel (they were bottom sheets with ~300 dp that cut
+  their lists). Session branch a74047a6, on this branch; ships with the
+  next release — worth a look on the realme/OPPO for smoothness under
+  an open menu (the blur is redrawn every frame).
 - Left: the gestures help keeps its own full-screen look; the Folders
   title is cut to "Folder မ…" on a 320 dp phone by its four actions; the
   paste bar's Burmese hint sits a little high (the font's metrics); a test

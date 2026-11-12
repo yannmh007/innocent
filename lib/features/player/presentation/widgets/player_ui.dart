@@ -1,3 +1,7 @@
+import 'dart:io' show Platform;
+import 'dart:ui' show ImageFilter;
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -14,16 +18,45 @@ import '../../../../core/ui/app_sheet.dart';
 class PlayerUi {
   PlayerUi._();
 
-  /// Behind an open panel or dialog: the picture, dimmed.
-  static const Color scrim = Color(0x99000000);
+  /// Behind an open panel or dialog: the picture, dimmed — lightly, since
+  /// the menu itself is frosted glass.
+  static const Color scrim = Color(0x66000000);
 
-  /// A panel, sheet or dialog. Opaque: nothing shows through a menu.
+  /// A panel, sheet or dialog where there is no glass (a phone too weak to
+  /// blur the film every frame): opaque, nothing shows through.
   static const Color surface = Color(0xFF1C1C1E);
 
-  /// A tile, card or chip on [surface].
-  static const Color raised = Color(0xFF2A2A2D);
+  /// FROSTED GLASS (owner, 12 Nov: "a background like misted glass"): the
+  /// film behind a menu blurred to its colours, under this tint. Dark
+  /// enough that white text reads on a white scene; light enough that the
+  /// film is still there. The library's ⋮ sheet is the same glass.
+  static const Color glassTint = Color(0xB81C1C1E);
+  static const Color glassEdge = Color(0x1FFFFFFF);
+  static const double glassBlur = 30;
 
-  static const Color hairline = Color(0x14FFFFFF);
+  /// Frosted glass, or [surface] on a phone that cannot afford it: Android
+  /// Go (a low-RAM device) and 32-bit-only phones — the blur is redrawn on
+  /// every frame of the film under it. See [probeGlass].
+  static bool glass = true;
+
+  /// Asks the phone once whether it can afford [glass].
+  static Future<void> probeGlass() async {
+    if (_probed || !Platform.isAndroid) return;
+    _probed = true;
+    try {
+      final a = await DeviceInfoPlugin().androidInfo;
+      glass = !a.isLowRamDevice && a.supported64BitAbis.isNotEmpty;
+    } catch (_) {
+      // Unknown: keep the glass.
+    }
+  }
+
+  static bool _probed = false;
+
+  /// A tile, card or chip on a menu: a light film over the glass.
+  static const Color raised = Color(0x1FFFFFFF);
+
+  static const Color hairline = Color(0x1AFFFFFF);
   static const Color textPrimary = Color(0xEBFFFFFF);
   static const Color textSecondary = Color(0x9EFFFFFF);
   static const Color textDisabled = Color(0x61FFFFFF);
@@ -103,15 +136,11 @@ class PlayerPanel extends StatelessWidget {
     final pad = PlayerUi.pad(context);
     final padding = MediaQuery.paddingOf(context);
 
-    final surface = Material(
-      color: PlayerUi.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: portrait
-            ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-            : const BorderRadius.horizontal(
-                left: Radius.circular(PlayerUi.radius)),
-      ),
-      clipBehavior: Clip.antiAlias,
+    final surface = PlayerGlass(
+      borderRadius: portrait
+          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
+          : const BorderRadius.horizontal(
+              left: Radius.circular(PlayerUi.radius)),
       child: Padding(
         // Sideways the panel runs under the status bar and the navigation
         // buttons; its content keeps clear of both.
@@ -174,11 +203,10 @@ class PlayerPanel extends StatelessWidget {
               child: FractionalTranslation(
                 translation: Offset(0, 1 - t),
                 child: ConstrainedBox(
-                  // 60 %, not 72: upright it covered the whole picture
-                  // (owner's screenshot, 12 Nov). The picture rises to the
-                  // top as a panel opens (player_screen `_pictureLift`), so
-                  // a film up to 4:3 stays whole above it.
-                  constraints: BoxConstraints(maxHeight: size.height * 0.6),
+                  // 55 %, not 72: upright it rose over the whole picture
+                  // (owner's screenshot, 12 Nov). What it covers shows
+                  // through its glass.
+                  constraints: BoxConstraints(maxHeight: size.height * 0.55),
                   child: panel,
                 ),
               ),
@@ -694,7 +722,8 @@ class PanelCard extends StatelessWidget {
 }
 
 /// The header of a player bottom sheet: the drag handle, the title and an
-/// optional action, a hairline. Pair it with [kPlayerSheetDecoration].
+/// optional action, a hairline. Shown with [showPlayerSheet], which gives
+/// it the glass.
 class PlayerSheetHeader extends StatelessWidget {
   const PlayerSheetHeader({
     super.key,
@@ -709,12 +738,16 @@ class PlayerSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final upright = size.height >= size.width;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const PlayerDragHandle(),
-        _PanelHeader(title: title, trailing: trailing, top: 2),
+        // Sideways a sheet is a side panel (showPlayerSheet): nothing to
+        // drag.
+        if (upright) const PlayerDragHandle(),
+        _PanelHeader(title: title, trailing: trailing, top: upright ? 2 : 14),
         if (divider)
           const Divider(height: 1, thickness: 1, color: PlayerUi.hairline),
       ],
@@ -722,35 +755,117 @@ class PlayerSheetHeader extends StatelessWidget {
   }
 }
 
-/// The decoration of a player bottom sheet drawn by hand (one shown with
-/// [showPlayerSheet] has it already).
-const BoxDecoration kPlayerSheetDecoration = BoxDecoration(
-  color: PlayerUi.surface,
-  borderRadius: BorderRadius.vertical(top: Radius.circular(PlayerUi.radius)),
-);
-
-/// A sheet of the player: the panels' surface and corners, over the picture
-/// dimmed as a panel dims it ([barrierColor] transparent for a sheet that
-/// changes the picture, so the change can be seen), as tall as its content
-/// up to 85 % of the screen, no wider than 640 dp.
+/// A sheet of the player. Upright, a bottom sheet of frosted glass, as tall
+/// as its content up to 85 % of the screen, no wider than 640 dp. Sideways,
+/// the same content in a glass panel from the right, the whole height — as
+/// ⋮ and the subtitle panel are: a bottom sheet on a phone held sideways had
+/// some 300 dp and cut the lists, the sliders and the buttons (12 Nov).
+/// [barrierColor] transparent for a sheet that changes the picture, so the
+/// change can be seen.
 Future<T?> showPlayerSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   Color? barrierColor,
 }) {
+  final size = MediaQuery.sizeOf(context);
+  if (size.width > size.height) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: barrierColor ?? PlayerUi.scrim,
+      transitionDuration: PlayerUi.motion,
+      pageBuilder: (_, __, ___) => _PlayerSideSheet(builder: builder),
+      transitionBuilder: (_, animation, __, child) => SlideTransition(
+        position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+            .animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      ),
+    );
+  }
   return showAppModalBottomSheet<T>(
     context: context,
-    backgroundColor: PlayerUi.surface,
+    backgroundColor: Colors.transparent,
+    elevation: 0,
     barrierColor: barrierColor ?? PlayerUi.scrim,
-    shape: const RoundedRectangleBorder(
-      borderRadius:
-          BorderRadius.vertical(top: Radius.circular(PlayerUi.radius)),
-    ),
-    clipBehavior: Clip.antiAlias,
     isScrollControlled: true,
     constraints: tallSheetConstraints(context),
-    builder: builder,
+    builder: (sheet) => PlayerGlass(
+      borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius)),
+      child: builder(sheet),
+    ),
   );
+}
+
+/// A player sheet held sideways: a glass panel from the right, as wide as
+/// [PlayerPanel]'s, the whole height, the content at its top.
+class _PlayerSideSheet extends StatelessWidget {
+  const _PlayerSideSheet({required this.builder});
+
+  final WidgetBuilder builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final padding = MediaQuery.paddingOf(context);
+    return Align(
+      alignment: Alignment.centerRight,
+      child: SizedBox(
+        width: (size.width * 0.46).clamp(300.0, 400.0) + padding.right,
+        height: size.height,
+        child: PlayerGlass(
+          borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(PlayerUi.radius)),
+          child: Padding(
+            padding: EdgeInsets.only(top: padding.top, right: padding.right),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [Flexible(child: Builder(builder: builder))],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Frosted glass: the film behind blurred, under [PlayerUi.glassTint], a
+/// faint edge; [PlayerUi.surface] where the phone cannot afford the blur.
+/// Ink (a row's ripple) draws on it.
+class PlayerGlass extends StatelessWidget {
+  const PlayerGlass({
+    super.key,
+    required this.borderRadius,
+    required this.child,
+  });
+
+  final BorderRadius borderRadius;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final glass = PlayerUi.glass;
+    final body = DecoratedBox(
+      decoration: BoxDecoration(
+        color: glass ? PlayerUi.glassTint : PlayerUi.surface,
+        borderRadius: borderRadius,
+        border: Border.all(color: PlayerUi.glassEdge),
+      ),
+      child: Material(type: MaterialType.transparency, child: child),
+    );
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: glass
+          ? BackdropFilter(
+              filter: ImageFilter.blur(
+                  sigmaX: PlayerUi.glassBlur, sigmaY: PlayerUi.glassBlur),
+              child: body,
+            )
+          : body,
+    );
+  }
 }
 
 /// A small text action for a panel or sheet header ("Online subtitles",
@@ -880,10 +995,8 @@ class PlayerDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safe = MediaQuery.paddingOf(context);
-    final card = Material(
-      color: PlayerUi.surface,
-      shape: PlayerUi.dialogShape,
-      clipBehavior: Clip.antiAlias,
+    final card = PlayerGlass(
+      borderRadius: BorderRadius.circular(PlayerUi.radius),
       child: PlayerDialogBody(
         title: title,
         icon: icon,
@@ -956,18 +1069,21 @@ class PlayerRouteDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: PlayerUi.surface,
+      backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
-      shape: PlayerUi.dialogShape,
-      clipBehavior: Clip.antiAlias,
+      shadowColor: Colors.transparent,
+      elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
-        child: PlayerDialogBody(
-          title: title,
-          icon: icon,
-          actions: actions,
-          child: child,
+        child: PlayerGlass(
+          borderRadius: BorderRadius.circular(PlayerUi.radius),
+          child: PlayerDialogBody(
+            title: title,
+            icon: icon,
+            actions: actions,
+            child: child,
+          ),
         ),
       ),
     );

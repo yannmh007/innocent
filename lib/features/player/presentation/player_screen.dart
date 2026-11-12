@@ -333,6 +333,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     PlayerToastController.current = _toast;
+    // Can this phone afford the menus' frosted glass? (Asked once.)
+    // ignore: discarded_futures
+    PlayerUi.probeGlass();
     _startReporting();
     // ignore: discarded_futures
     _refreshStableInsets();
@@ -2373,36 +2376,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       !_menuOpen(state) &&
       !_routeOnTop;
 
-  /// How far the picture rises while a menu is open with the phone upright:
-  /// to the top of the screen, so the sheet under it covers none of the
-  /// film (the owner's screenshot of 12 Nov: ⋮ rose over the whole
-  /// picture). Zero sideways (the panel is at the side), in a mode that
-  /// fills the screen, or for a film as tall as the screen.
-  double _pictureLift(PlayerState state) {
-    final size = MediaQuery.sizeOf(context);
-    if (size.width >= size.height) return 0;
-    final sheetUp = state.openPanel != SidePanel.none ||
-        state.sleepTimerDialogOpen ||
-        _routeOnTop;
-    if (!sheetUp || state.aspectRatioMode != AspectRatioMode.fit) return 0;
-    final v = ref.read(playerControllerProvider.notifier).displayVideoSize ??
-        const Size(16, 9);
-    if (v.width <= 0 || v.height <= 0) return 0;
-    final picture = math.min(size.height, size.width * v.height / v.width);
-    final top = (size.height - picture) / 2;
-    return math.max(0, top - _controlsInsets(context).top);
-  }
-
-  /// [child] moved up by [lift], gliding there and back with the panels.
-  Widget _lifted(double lift, Widget child) => TweenAnimationBuilder<double>(
-        tween: Tween<double>(end: lift),
-        duration: PlayerUi.motion,
-        curve: Curves.easeOutCubic,
-        builder: (_, v, c) =>
-            v == 0 ? c! : Transform.translate(offset: Offset(0, -v), child: c),
-        child: child,
-      );
-
   /// A sheet or dialog route the player opened (audio, loop, bookmarks,
   /// aspect ratio…) is over it: the controls step aside under it too.
   /// ModalRoute.of makes the screen rebuild when that changes.
@@ -2689,10 +2662,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
   /// The account's code (AccountMark), on the part of the picture that is
   /// on screen — the same rectangle the subtitles are placed in.
-  /// The account's code over the picture; [lift] moves it with the picture
-  /// when a menu raises it (the code stays on the film it marks).
-  Widget _accountMarkLayer(PlayerState state, double lift) {
-    return _lifted(lift, LayoutBuilder(builder: (context, c) {
+  Widget _accountMarkLayer(PlayerState state) {
+    return LayoutBuilder(builder: (context, c) {
       final view = Size(c.maxWidth, c.maxHeight);
       final video = ref.read(playerControllerProvider.notifier).displayVideoSize;
       final scale = screenModeScale(
@@ -2713,7 +2684,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           state.videoOffset,
         ),
       );
-    }));
+    });
   }
 
   Widget _wrapVideoTransforms(Widget child, PlayerState state) {
@@ -2959,8 +2930,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             .where((i) => state.visibleShortcuts.contains(i))
             .toList();
 
-    final lift = _pictureLift(state);
-
     final blockGestures = state.isLocked ||
         state.isKidsLocked ||
         state.openPanel != SidePanel.none ||
@@ -2995,7 +2964,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         children: [
           // === LAYER 1: Video (with screenshot boundary) ===
           Positioned.fill(
-            child: _lifted(lift, RepaintBoundary(
+            child: RepaintBoundary(
               key: _videoBoundaryKey,
               child: Container(
                 color: Colors.black,
@@ -3011,20 +2980,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                           )
                         : const Center(child: CircularProgressIndicator())),
               ),
-            )),
+            ),
           ),
 
           // === LAYER 1b: Subtitles — over the video, outside its zoom ===
           if (_videoDisplayEnabled &&
               svc.isInitialized &&
               svc is MediaKitPlayerService)
-            Positioned.fill(child: _lifted(lift, _subtitleLayer(svc, state))),
+            Positioned.fill(child: _subtitleLayer(svc, state)),
 
           // === LAYER 1c: The account's code, on a paid film only ===
           // Over the picture, under every control. Not the vault: those are
           // the viewer's own files.
           if (widget.secureScreen && _videoDisplayEnabled && svc.isInitialized)
-            Positioned.fill(child: _accountMarkLayer(state, lift)),
+            Positioned.fill(child: _accountMarkLayer(state)),
 
           // === LAYER 2: Buffering ===
           // Phase 41: gated by "Loading circle animation" (Settings →
