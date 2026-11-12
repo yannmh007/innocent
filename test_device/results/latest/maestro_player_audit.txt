@@ -1,2 +1,56 @@
-
-Invalid Command Format: extendedWaitUntil at /home/runner/work/innocent/innocent/test_device/flows/player_audit.yaml:30:17
+Running on test
+ > Flow player_audit
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+Tap on point (50%,50%)... COMPLETED
+Take screenshot 70_audit_controls_portrait... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Assert that (Optional) "__no_such_text__" is visible... WARNED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Assert that "(Subtitle|စာတန်းထိုး)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Assert that (Optional) "__no_such_text__" is visible... WARNED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Tap on "(More|နောက်ထပ်)"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 71_audit_more_portrait... COMPLETED
+Assert that "(Playing Queue|ဖွင့်နေသော.*)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 72_audit_more_closed_by_back... COMPLETED
+Assert that "(Playing Queue|ဖွင့်နေသော.*)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Assert that (Optional) "__no_such_text__" is visible... WARNED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+Tap on point (50%,50%)... COMPLETED
+Long press on "(Next video|နောက် ဗီဒီယို).*"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 73_audit_repeat_menu... COMPLETED
+Assert that "(Loop one|တစ်ခု ထပ်ဖွင့်)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+Tap on point (50%,50%)... COMPLETED
+Tap on "(Subtitle|စာတန်းထိုး)"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 74_audit_subtitle_panel... COMPLETED
+Assert that "(Online.*|.*Online.*)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 75_audit_subtitle_panel_closed... COMPLETED
+Assert that "(Online.*|.*Online.*)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
+  Tap on point (50%,50%)... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
