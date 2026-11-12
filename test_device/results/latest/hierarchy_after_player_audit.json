@@ -588,8 +588,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "4:44 ",
-                      "accessibilityText" : "4:44 AM",
+                      "text" : "7:45 ",
+                      "accessibilityText" : "7:45 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -1266,30 +1266,6 @@
                         },
                         "children" : [ ],
                         "clickable" : true,
-                        "enabled" : true,
-                        "focused" : false,
-                        "checked" : false,
-                        "selected" : false
-                      }, {
-                        "attributes" : {
-                          "text" : "",
-                          "accessibilityText" : "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 26",
-                          "hintText" : "",
-                          "ignoreBoundsFiltering" : "false",
-                          "resource-id" : "",
-                          "clickable" : "false",
-                          "bounds" : "[32,1287][1048,1429]",
-                          "enabled" : "true",
-                          "focused" : "false",
-                          "checked" : "false",
-                          "scrollable" : "false",
-                          "selected" : "false",
-                          "class" : "android.view.View",
-                          "important-for-accessibility" : "true",
-                          "error" : ""
-                        },
-                        "children" : [ ],
-                        "clickable" : false,
                         "enabled" : true,
                         "focused" : false,
                         "checked" : false,
