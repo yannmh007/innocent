@@ -80,9 +80,19 @@ two lines at most · caption 11 sp.
   the top bar, shortcut row and bottom row while a panel, a dialog, the
   error card or a route the player opened is up.
 
-Never set `textStyle` in a ButtonStyle: it replaces the theme's, Roboto
-with it (the harness drew such a label in its fallback font). Put the size
-on the Text.
+Never set `textStyle` in a ButtonStyle, or a bare `TextStyle` as a
+TabBar's `labelStyle`: it replaces the theme's, Roboto and the Burmese
+fallback with it (the harnesses drew such labels as boxes: the player's
+header action, the downloader's tabs). Put the size on the Text, or start
+from `Theme.of(context).textTheme.labelLarge?.copyWith(...)`.
+
+**The rest of the app** uses the same tokens: `MxDialog` (core/ui, the
+information dialogs, opened over the player too) is the panel surface
+`#1C1C1E`, radius 20, labels 15 sp secondary, values 15 sp primary. Prove
+an app screen with the screens harness (`test_screens/`, 107 screens):
+`SCREEN_LOCALE=my|en flutter test test_screens --update-goldens`, and
+`SCREEN_PHONES=tiny` for 320 dp; fonts in `build/screen_fonts` (the SDK's
+Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
 
 ## 4. MX parity — keep the structure, refine the look
 Top bar `← title … ♪ CC HW ⋮`; shortcut row with its expand chevron;

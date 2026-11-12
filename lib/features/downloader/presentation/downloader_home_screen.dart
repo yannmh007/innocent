@@ -1689,10 +1689,18 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             labelColor: Colors.white,
             unselectedLabelColor: AppColors.white40,
             dividerColor: Colors.transparent,
-            labelStyle:
-                const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
-            unselectedLabelStyle:
-                const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+            // From the theme, sized: a bare TextStyle here REPLACES the
+            // theme's, its Roboto and Burmese fallback with it, and the tab
+            // names were drawn in whatever the phone's default font is
+            // (the screens harness drew them as boxes, 12 Nov).
+            labelStyle: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(fontSize: 13.5, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500),
             tabs: <Widget>[
               Tab(
                 height: 44,
