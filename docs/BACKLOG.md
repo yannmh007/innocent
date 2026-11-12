@@ -15,9 +15,9 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (11 Nov 2026)
+### WHERE THINGS STAND — read first in a new session (12 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.82, 72b20dd). A new session starts on main:
+  not yet live (main is 1.64.83, 27e6a938). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
@@ -35,6 +35,13 @@ does it.
   `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
   `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
   TLS apart in the trail)).
+- **1.64.83 (396) is out, 12 Nov**: the player redesigned (skill
+  `ui-design`, `widgets/player_ui.dart`) and the engine judged by the
+  film's clock, and nothing else: released like 1.64.82 from main plus the
+  session branch `claude/focused-johnson-1915dp`. On this branch too
+  (6a6bade6), so the next release from here carries it — and is 1.64.84:
+  the "1.64.83 candidate" of b3e2bad1 (5d's keepSpare, the play_summary
+  stash) has not shipped. Details under "Player redesign".
 - **1.64.82 (395) is out, 11 Nov**: the player audit
   (docs/player_ux_audit_2026_11.md), and nothing else: released from main
   1.64.81 plus the audit (session branch `claude/focused-johnson-1915dp`),
@@ -45,8 +52,9 @@ does it.
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov; update a phone to 1.64.82 and say if anything looks wrong (the player:
-  subtitles chosen upright, ⋮ then Back, Display Settings' sliders). (The
+  12 Nov; update a phone to 1.64.83 and say if the player's menus look
+  right now (⋮, CC, the error card), and if "stopped responding" ever shows
+  again on a file that plays. (The
   five open films were approved: every `open-film-%` title reads
   `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
   trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
@@ -117,6 +125,41 @@ does it.
   42999722877); Test Lab `cloud.env`: the realme alone (its rerun) — name
   both phones again for the next run.
 
+### Player redesign (12 Nov, 1.64.83) — skill `ui-design`
+The owner's screenshots of 1.64.82: "Playback failed / The player stopped
+responding" over a local file that kept playing; ⋮ and the subtitle panel
+translucent with the controls showing through, outline rings — "a toy"
+beside MX Player. Done:
+- The false alarm: MpvLink calls a call stuck after 4 s; the screen now
+  asks the film's clock (`domain/engine_check.dart`): moving → alive (the
+  link renewed once a film after 15 s), still 3 s playing / 8 s paused or
+  buffering → stuck. An error the film survives is a small warning card;
+  only one that stopped it takes the screen. Never a signed address on it
+  (`domain/error_text.dart`).
+- One look for every menu (`player_ui.dart`: PlayerPanel, PanelRow,
+  PanelTile, PanelSwitchRow, PanelChoiceChip, PlayerDialog,
+  showPlayerSheet…); the controls hide under a panel, dialog, the error
+  card and any sheet the player opens. CC lists the tracks itself.
+- Found on the way and fixed: after Next the screen acted on the FIRST
+  film (title, bookmarks, favourite, share, cut, info, Retry, seek
+  previews); the Video display switch hid ⋮'s sixteen actions; Playing
+  queue was a stub ("1 items", a dead drag handle) — now the folder; a
+  deleted bookmark stayed listed; bookmarks stored a signed stream's
+  address or a Private Folder film's name; the resume card blocked taps.
+- Proof: device lab 43185129320 (all four player flows exit 0 on the final
+  build; 43154335111 / 43176762134 before the review's fixes), Test Lab
+  43180990404 (realme, Sintel 16/16, no engine verdict), 1690 tests,
+  `player_layout_test` 1062 photographs, a reviewer pass (its findings
+  fixed: one relink a film, the warning card, TalkBack live region).
+  Build 43186533253: arm64 95641124 bytes `1560c80f…d4a8`, arm32 87609628
+  bytes `beb69528…7733`, GitHub's digests agree; app_releases moved at
+  09:19 UTC after a rolled-back dry run.
+- Left: the info dialog (VideoInfoDialog, shared with the library) and the
+  gestures help still wear the old look; the rest of the app's screens
+  were not audited this round (the owner asked for every view: next
+  session, from the same skill and harness idea); a test that drives the
+  750 ms engine check with a fake wedged engine.
+
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,
 in every language, MX-level. Found and fixed (1.64.82): Back closed the
@@ -126,9 +169,9 @@ auto/no" in the audio menu; a 4 s timer leaked per film; the last history
 entry lost on close; a dozen layouts cut off in Burmese, sideways or at a
 large font. Left open:
 1. On purpose, the owner's call: Back while the screen is locked still
-   leaves the film (Kids Lock swallows it); the error banner shows
-   libmpv's own sentence under its title; "Online subtitles" shares a
-   search link (no url_launcher in the app).
+   leaves the film (Kids Lock swallows it); the error card shows libmpv's
+   own sentence (host only since 1.64.83) under its title; "Online
+   subtitles" shares a search link (no url_launcher in the app).
 2. Toward MX, by what a viewer here would miss: chapters (libmpv's
    `chapter-list`; local MKVs have them, the catalogue does not); subtitle
    search and download in the app (OpenSubtitles, a key on the server);
