@@ -2576,6 +2576,9 @@ class AppStrings {
   String get pwSubTrack => _s('pwSubTrack');
   String get pwTextStyle => _s('pwTextStyle');
   String get pwPosLayout => _s('pwPosLayout');
+  String get plTracks => _s('plTracks');
+  String get plPrivateNoBookmark => _s('plPrivateNoBookmark');
+  String get plPlaybackProblem => _s('plPlaybackProblem');
 
   String get pwStartA => _s('pwStartA');
   String get pwEndB => _s('pwEndB');
@@ -4977,6 +4980,9 @@ class AppStrings {
     'pwSubTrack': 'Subtitle track',
     'pwTextStyle': 'Text style',
     'pwPosLayout': 'Position & layout',
+    'plTracks': 'Tracks',
+    'plPrivateNoBookmark': 'Bookmarks are not kept for Private Folder videos.',
+    'plPlaybackProblem': 'The player reported a problem',
     'pwStartA': 'Start (A)',
     'pwEndB': 'End (B)',
     'pwBrightness': 'Brightness',
@@ -7314,6 +7320,9 @@ class AppStrings {
     'pwSubTrack': 'စာတန်း track',
     'pwTextStyle': 'စာသား ပုံစံ',
     'pwPosLayout': 'နေရာ နဲ့ အပြင်အဆင်',
+    'plTracks': 'Track များ',
+    'plPrivateNoBookmark': 'Private Folder ထဲက ဗီဒီယိုတွေအတွက် Bookmark မသိမ်းပါ။',
+    'plPlaybackProblem': 'Player က ပြဿနာ တစ်ခု သတိပေးပါတယ်',
     'pwStartA': 'အစ (A)',
     'pwEndB': 'အဆုံး (B)',
     'pwBrightness': 'အလင်း',
@@ -9641,6 +9650,9 @@ class AppStrings {
     'pwSubTrack': 'แทร็กคำบรรยาย',
     'pwTextStyle': 'รูปแบบข้อความ',
     'pwPosLayout': 'ตำแหน่งและเลย์เอาต์',
+    'plTracks': 'แทร็ก',
+    'plPrivateNoBookmark': 'ไม่เก็บบุ๊กมาร์กของวิดีโอในโฟลเดอร์ส่วนตัว',
+    'plPlaybackProblem': 'เครื่องเล่นแจ้งปัญหา',
     'pwStartA': 'เริ่ม (A)',
     'pwEndB': 'จบ (B)',
     'pwBrightness': 'ความสว่าง',

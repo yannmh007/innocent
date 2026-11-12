@@ -172,6 +172,7 @@ extension PlayerPlayback on PlayerController {
     // playable URI is a local cache copy.
     _libraryUri = originalUri;
     _currentVideoTitle = title;
+    _relinkedThisOpen = false;
     // A new file (or a re-open of the same one) is a new viewing.
     _countedThisPlay = false;
     _introSkipped = false;

@@ -2,12 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../user_data/user_data_providers.dart';
 import '../player_provider.dart';
-
 import '../../../../core/localization/app_strings.dart';
-import '../../../../core/ui/app_sheet.dart';
+import 'player_ui.dart';
+
 /// Bottom sheet listing bookmarks for the current video with tap-to-seek
 class BookmarksSheet extends ConsumerWidget {
   final String videoUri;
@@ -44,11 +43,8 @@ class BookmarksSheet extends ConsumerWidget {
     // surprises. A paused player is recoverable with one tap; unexpected
     // sound coming out of a phone is not.
     if (!context.mounted) return;
-    await showAppModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      constraints: tallSheetConstraints(context),
+    await showPlayerSheet<void>(
+      context,
       builder: (_) => BookmarksSheet(videoUri: videoUri, onSeek: onSeek),
     );
     if (wasPlaying) {
@@ -67,119 +63,105 @@ class BookmarksSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bookmarks = ref
-        .watch(bookmarksProvider.notifier)
-        .forVideo(videoUri);
+    // The list itself, watched: watching only the notifier never rebuilt,
+    // so a bookmark deleted with its ✕ stayed on the list until the sheet
+    // was opened again (12 Nov 2026).
+    ref.watch(bookmarksProvider);
+    final bookmarks = ref.read(bookmarksProvider.notifier).forVideo(videoUri);
+    final s = AppStrings.of(context);
+    final pad = PlayerUi.pad(context);
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.darkSurface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PlayerSheetHeader(
+          title: s.bookmarksTitle,
+          trailing: bookmarks.isEmpty
+              ? null
+              : Text(s.itemsCount(bookmarks.length), style: PlayerUi.rowValue),
+        ),
+        if (bookmarks.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+            child: Column(
+              children: [
+                const Icon(Icons.bookmark_border_rounded,
+                    size: 36, color: PlayerUi.textDisabled),
+                const SizedBox(height: 10),
+                Text(
+                  s.pwNoBookmarks,
+                  textAlign: TextAlign.center,
+                  style: PlayerUi.body,
                 ),
-              ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.bookmark, color: AppColors.accentBlue, size: 20),
-                  const SizedBox(width: 12),
-                  Text(AppStrings.of(context).bookmarksTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
+          )
+        else
+          // The list gives way when the sheet is short (a phone held
+          // sideways, or a 320 dp one): it scrolls instead of running off
+          // the screen.
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: EdgeInsets.fromLTRB(pad - 8, 8, pad - 12, 16),
+              itemCount: bookmarks.length,
+              itemBuilder: (_, i) {
+                final b = bookmarks[i];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () {
+                    onSeek(b.position);
+                    Navigator.of(context).pop();
+                  },
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 52),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.bookmark_rounded,
+                              size: 20, color: PlayerUi.accent),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _fmt(b.position),
+                                  style: const TextStyle(
+                                    color: PlayerUi.textPrimary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures()
+                                    ],
+                                  ),
+                                ),
+                                if (b.label != null)
+                                  Text(b.label!, style: PlayerUi.rowValue),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            // It deletes the bookmark: TalkBack said "Close".
+                            tooltip: s.delete,
+                            icon: const Icon(Icons.close_rounded,
+                                color: PlayerUi.textSecondary, size: 20),
+                            onPressed: () => ref
+                                .read(bookmarksProvider.notifier)
+                                .delete(b.id),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-            const Divider(height: 12, color: Colors.white12),
-            if (bookmarks.isEmpty)
-              Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  AppStrings.of(context).pwNoBookmarks,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 13),
-                ),
-              )
-            else
-              // The list gives way when the sheet is short (a phone held
-              // sideways, or a 320 dp one): it scrolls instead of running
-              // off the screen.
-              Flexible(
-                child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 320),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: bookmarks.length,
-                  separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: Colors.white10),
-                  itemBuilder: (_, i) {
-                    final b = bookmarks[i];
-                    return ListTile(
-                      leading: const Icon(
-                        Icons.bookmark_outline,
-                        color: AppColors.accentBlue,
-                      ),
-                      title: Text(
-                        _fmt(b.position),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'monospace',
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      subtitle: b.label != null
-                          ? Text(
-                              b.label!,
-                              style: const TextStyle(
-                                color: AppColors.darkOnSurfaceMuted,
-                                fontSize: 12,
-                              ),
-                            )
-                          : null,
-                      trailing: IconButton(
-                        // It deletes the bookmark: TalkBack said "Close".
-                        tooltip: AppStrings.of(context).delete,
-                        icon: const Icon(
-                          Icons.close,
-                          color: AppColors.darkOnSurfaceMuted,
-                          size: 18,
-                        ),
-                        onPressed: () => ref
-                            .read(bookmarksProvider.notifier)
-                            .delete(b.id),
-                      ),
-                      onTap: () {
-                        onSeek(b.position);
-                        Navigator.of(context).pop();
-                      },
-                    );
-                  },
-                ),
-              ),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

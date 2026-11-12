@@ -11,6 +11,9 @@ paths:
   `_my`, `_th` in `lib/core/localization/app_strings.dart`, read through
   `AppStrings`. `tool/check.py` (ui_literals, verify) fails a bare literal
   or a missing key.
+- **A screen, menu, sheet or dialog changes: skill `ui-design` first.**
+  The player's menus are built from `widgets/player_ui.dart`; a new one
+  that draws its own surface, rows or buttons is how "a toy" happened.
 - **Flutter is 3.32.8** (CI). Not there: `RadioGroup` (use `RadioListTile`
   with `groupValue`). Use `withValues(alpha:)`, not `withOpacity`. Lints are
   strict: `prefer_const` and friends.
@@ -35,6 +38,9 @@ paths:
   such cuts (docs/player_ux_audit_2026_11.md). Check a player change with
   `test/player_layout_test.dart` (real fonts: `FONT_DIR`, see the doc) —
   320/360/411 dp, both orientations, `LANGS=my,en,th`, `SCALES=1.0,1.3`.
+- **`dart format` only the files you changed.** Formatting a directory
+  rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
+  the release review. Name the files.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.
