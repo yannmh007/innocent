@@ -27,7 +27,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - takeScreenshot: 70_audit_controls_portrait
@@ -47,7 +47,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - assertVisible: "(Subtitle|စာတန်းထိုး)"
@@ -68,7 +68,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - tapOn: "(More|နောက်ထပ်)"
@@ -99,7 +99,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
@@ -120,7 +120,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - longPressOn: "(Next video|နောက် ဗီဒီယို).*"
@@ -148,7 +148,7 @@ appId: com.innocent.media
       - extendedWaitUntil:
           visible: "__no_such_text__"
           timeout: 900
-        optional: true
+          optional: true
 - tapOn:
     point: "50%,50%"
 - tapOn: "(Subtitle|စာတန်းထိုး)"
