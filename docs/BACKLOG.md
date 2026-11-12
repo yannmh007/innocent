@@ -176,13 +176,33 @@ beside MX Player. Done:
   (session branch 851dce81, on this branch, ships with the next release):
   TV overscan margins as insets; the player's remote and keyboard keys
   (media keys, K/J/L, M, Esc, ?), mouse hover and right-click; 25 list and
-  form screens capped at 840 dp; upright player panels at 640. Phase 2
-  next: two panes on expanded widths, targetSdk 36 readiness (the player
-  unlocked), TV text entry, hover states.
-- Left: the gestures help keeps its own full-screen look; the Folders
-  title is cut to "Folder မ…" on a 320 dp phone by its four actions; the
-  paste bar's Burmese hint sits a little high (the font's metrics); a test
-  that drives the 750 ms engine check with a fake wedged engine.
+  form screens capped at 840 dp; upright player panels at 640.
+  **Phase 2 item 1 done** (12 Nov, on this branch, ships with 1.64.84):
+  two panes from 840 dp (`core/ui/list_detail.dart`) — Settings as the
+  list beside the open page (a page opened from it opens in the pane, Back
+  closes it first), the Video tab as the folders beside the open folder's
+  videos (one search for both; a selection of the videos is the pane's);
+  a window narrowed to one pane keeps what the person opened (never over
+  the player); grids add columns with width (posters 3 on a phone, 7–8 on
+  a tablet sideways; Status Saver, Private Folder, the picker); the
+  downloader capped at 840. Found on the way, fixed: four settings dialogs
+  closed through the page's context (in a pane they would have closed the
+  page, the pane blank); Back closed the Video tab's search but left its
+  query (the folders stayed filtered, nothing on screen to say why); a
+  folder found by its name opened as "No video matches"; a folder's own
+  search filtered the folder list behind it; on a TV the Video tab's title
+  sat 48 dp in from its list; the Folders title cut on a 320 dp phone (the
+  view mode goes into ⋮ there); a search that took the open folder away
+  left its videos selected. Proof: 1723 tests (19 new), the screens
+  harness on tablet, foldable at 841, Chromebook, TV and three phones in
+  Burmese and English, 1.3 at the tightest — no overflow; sheets sent.
+  Next: the ~19 list screens Phase 1 left at full width (History,
+  Playlists, Favourites, Watch later, Recycle bin, music's album / artist /
+  playlist / folder, Network stream, Stream cache, Cloud drive…), then
+  Phase 2 item 2 (targetSdk 36 readiness).
+- Left: the gestures help keeps its own full-screen look; the paste bar's
+  Burmese hint sits a little high (the font's metrics); a test that drives
+  the 750 ms engine check with a fake wedged engine.
 
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,

@@ -39,6 +39,7 @@ import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/app_sheet.dart';
 import '../../../core/ui/nav_bar_space.dart';
 import '../../../core/ui/transient_prompt.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Home of the downloader.
 ///
@@ -1668,7 +1669,12 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
+      // A readable width on a tablet, a Chromebook or a TV, as every list
+      // and form screen has (TabletConstrainedWidth): the link field ran
+      // 1250 dp across a tablet held sideways, its two tabs 640 dp apart.
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: Column(
         children: <Widget>[
           _pasteBar(s),
           _caption(s),
@@ -1721,6 +1727,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             ),
           ),
         ],
+      ),
       ),
     ));
   }

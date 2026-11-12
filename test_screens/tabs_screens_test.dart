@@ -39,6 +39,10 @@ void main() {
       overrides: libraryOverrides, prefs: {'lib.viewMode': 1}, phones: [large]);
   screens('folder_select', () => const _SelectHost(folders: true),
       overrides: libraryOverrides, phones: [large]);
+  // Two panes: the open folder's videos selected — the selection's bars are
+  // the pane's, the list keeps its own.
+  screens('pane_select', () => const _SelectHost(pane: true),
+      overrides: libraryOverrides, phones: [tabletLand]);
   screens('props_bulk', () => const _SelectHost(props: 1),
       overrides: libraryOverrides, prefs: {'lib.viewMode': 1}, phones: [large]);
   screens('props_video', () => const _SelectHost(props: 2),
@@ -99,8 +103,11 @@ class _SheetHostState extends State<_SheetHost> {
 
 /// The files list with two videos selected.
 class _SelectHost extends ConsumerStatefulWidget {
-  const _SelectHost({this.folders = false, this.props = 0});
+  const _SelectHost({this.folders = false, this.props = 0, this.pane = false});
   final bool folders;
+  /// Two of the open folder's videos (Camera, the first) — beside the list
+  /// on a wide window.
+  final bool pane;
   /// 1: the bulk Properties dialog, 2: one video's Properties.
   final int props;
   @override
@@ -127,7 +134,10 @@ class _SelectHostState extends ConsumerState<_SelectHost> {
         return;
       }
       final n = ref.read(selectionProvider.notifier);
-      for (final v in videos().take(2)) {
+      final pick = widget.pane
+          ? videos().where((v) => v.folderPath.endsWith('/Camera'))
+          : videos();
+      for (final v in pick.take(2)) {
         n.toggle(v.uri);
       }
     });

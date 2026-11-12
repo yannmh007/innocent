@@ -118,7 +118,8 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
                           VhInsets.scrollBottom(context)),
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: PosterMetrics.gridColumns,
+                          crossAxisCount:
+                              PosterMetrics.gridColumnsFor(box.maxWidth),
                           crossAxisSpacing: PosterMetrics.gridSpacing,
                           mainAxisSpacing: 14,
                           mainAxisExtent:

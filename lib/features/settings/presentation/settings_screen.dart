@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/list_detail.dart';
 import '../../../core/ui/tablet_constrained_width.dart';
 import 'settings_audio_screen.dart';
 import 'settings_decoder_screen.dart';
@@ -19,6 +20,11 @@ import '../../me/presentation/custom_popup_play_screen.dart';
 
 /// Settings screen matching MX Player (UI PDF page 14)
 /// 8 items with specific icons matching the real app exactly
+///
+/// On a window 840 dp wide or more, the list and the open page side by side
+/// (core/ui/list_detail.dart): the list keeps its row marked, the page opens
+/// in the right pane, and a page opened from it opens there too. A phone is
+/// never that wide, and keeps the list and a page pushed over it.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -29,19 +35,69 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   int _selectedIndex = -1;
 
+  /// Two panes: the open page is one the person chose, not the first page
+  /// shown by default — the page to keep when the window narrows to one pane.
+  bool _picked = false;
+
+  /// One pane or two at the last build, to see the window cross the line.
+  bool? _wasTwoPanes;
+
+  /// The right pane; a new key is a new pane (a fresh navigator).
+  GlobalKey<DetailNavigatorState> _detailKey = GlobalKey();
+
   void _open(int index, Widget screen) {
     setState(() => _selectedIndex = index);
     // Code-quality audit: was .then() without onError or mounted
     // check. The push future completes when the user returns to this
     // screen; if they navigated away in the meantime calling setState
     // on a disposed State would throw. Guard both paths.
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => screen))
-        .then((_) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen)).then(
+        (_) {
       if (!mounted) return;
-      setState(() => _selectedIndex = -1);
+      // Back from a page opened over the list. If the window has widened
+      // meanwhile, that page stays marked and opens beside the list.
+      if (ListDetail.twoPanes(context)) {
+        setState(() {
+          _picked = true;
+          _detailKey = GlobalKey();
+        });
+      } else {
+        setState(() => _selectedIndex = -1);
+      }
     }, onError: (e) {
       if (kDebugMode) debugPrint('Settings nav push failed: $e');
+    });
+  }
+
+  /// Two panes: a row tapped opens its page in the right pane; the open
+  /// page's row tapped again takes the pane back to that page's top (out of
+  /// Player → Controls, say).
+  void _select(int index) {
+    if (index == _selectedIndex) {
+      _detailKey.currentState?.popToRoot();
+      return;
+    }
+    setState(() {
+      _selectedIndex = index;
+      _picked = true;
+      _detailKey = GlobalKey();
+    });
+  }
+
+  /// A window narrowed from two panes to one (a foldable folded, a window
+  /// made smaller) keeps the page the person had open: it opens over the
+  /// list as it would on a phone. A page opened inside it does not come
+  /// along; the dialog or page over Settings, if any, is left alone.
+  void _followWindow(bool two, List<Widget> screens) {
+    final was = _wasTwoPanes;
+    _wasTwoPanes = two;
+    if (was != true || two || !_picked || _selectedIndex < 0) return;
+    _picked = false;
+    final index = _selectedIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ListDetail.twoPanes(context)) return;
+      if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      _open(index, screens[index]);
     });
   }
 
@@ -89,6 +145,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       const AppUpdateScreen(),
     ];
 
+    final two = ListDetail.twoPanes(context);
+    _followWindow(two, screens);
+    if (two) return _twoPanes(s, items, screens);
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(s.settings)),
@@ -133,6 +193,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  /// The list and the open page side by side. The list's rows are the
+  /// phone's, with the open page's row marked as ui-design marks a selected
+  /// row; the page is the one a phone opens, in the right pane's own
+  /// navigator, with no back arrow (Back leaves Settings, from either pane).
+  Widget _twoPanes(
+      AppStrings s, List<_SettingsEntry> items, List<Widget> screens) {
+    final selected = _selectedIndex < 0 ? 0 : _selectedIndex;
+    return Scaffold(
+      backgroundColor: AppColors.darkBackground,
+      body: ListDetailPanes(
+        list: Scaffold(
+          backgroundColor: AppColors.darkBackground,
+          appBar: AppBar(title: Text(s.settings)),
+          body: ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            itemCount: items.length,
+            itemBuilder: (_, i) => _PaneRow(
+              key: ValueKey(items[i].title),
+              entry: items[i],
+              selected: i == selected,
+              onTap: () => _select(i),
+            ),
+          ),
+        ),
+        detail: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeOut,
+          layoutBuilder: (current, previous) => Stack(
+            fit: StackFit.expand,
+            children: [...previous, if (current != null) current],
+          ),
+          child: DetailNavigator(key: _detailKey, page: screens[selected]),
+        ),
+      ),
+    );
+  }
+}
+
+/// A row of the list pane: the phone row's icon and title, the selected one
+/// on the accent's tint, inset and rounded, its icon and title in the accent.
+class _PaneRow extends StatelessWidget {
+  const _PaneRow({
+    super.key,
+    required this.entry,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _SettingsEntry entry;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Semantics(
+        selected: selected,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Ink(
+              decoration:
+                  selected ? listDetailSelection(AppColors.primaryBlue) : null,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+              child: Row(
+                children: [
+                  Icon(entry.icon, color: AppColors.primaryBlue, size: 22),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      entry.title,
+                      style: TextStyle(
+                        color: selected ? AppColors.primaryBlue : Colors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -35,6 +35,7 @@ import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/app_sheet.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/responsive.dart';
 
 part 'private_folder_pin_widgets.dart';
 
@@ -1016,16 +1017,19 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
   }
 
   Widget _gridBody(List<PrivateEntry> entries, bool showFolders) {
-    return GridView.count(
-      crossAxisCount: 3,
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 90).plusNavBar(context),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: [
-        if (showFolders)
-          for (final f in _folders) _folderCell(f),
-        for (final e in entries) _entryCell(e),
-      ],
+    // Three on a phone, more as the window widens (responsive.dart).
+    return LayoutBuilder(
+      builder: (context, box) => GridView.count(
+        crossAxisCount: Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 90).plusNavBar(context),
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        children: [
+          if (showFolders)
+            for (final f in _folders) _folderCell(f),
+          for (final e in entries) _entryCell(e),
+        ],
+      ),
     );
   }
 

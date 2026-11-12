@@ -31,6 +31,7 @@ import 'vault_progress.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/responsive.dart';
 
 // === Add Files flow spec (innocent_add_files_flow_spec, v0.50) ===
 // One full-screen route. A category strip (Videos · Images · Audio ·
@@ -2285,10 +2286,11 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         ],
       );
     }
-    return GridView.builder(
+    // Three on a phone, more as the window widens (responsive.dart).
+    return LayoutBuilder(builder: (context, box) => GridView.builder(
       padding: const EdgeInsets.all(8).plusNavBar(context),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 1,
@@ -2364,7 +2366,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           ),
         );
       },
-    );
+    ));
   }
 
   Widget _addNowBar() {

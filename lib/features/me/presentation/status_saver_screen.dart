@@ -14,6 +14,7 @@ import '../../../core/ui/app_snackbar.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/responsive.dart';
 /// Status Saver — lets the user view and keep WhatsApp / WA Business
 /// statuses (images & videos) before they disappear.
 ///
@@ -307,16 +308,20 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     }
     return RefreshIndicator(
       onRefresh: _load,
-      child: GridView.builder(
-        padding: const EdgeInsets.all(8).plusNavBar(context),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 0.72,
+      // Three on a phone, more as the window widens (responsive.dart).
+      child: LayoutBuilder(
+        builder: (context, box) => GridView.builder(
+          padding: const EdgeInsets.all(8).plusNavBar(context),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount:
+                Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 0.72,
+          ),
+          itemCount: files.length,
+          itemBuilder: (ctx, i) => _tile(files[i], isVideo: isVideo),
         ),
-        itemCount: files.length,
-        itemBuilder: (ctx, i) => _tile(files[i], isVideo: isVideo),
       ),
     );
   }

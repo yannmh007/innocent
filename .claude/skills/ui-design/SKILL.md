@@ -104,11 +104,23 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
 - A list or form page caps its width (`TabletConstrainedWidth`, 840; a
   reading page 640); hero, rails and grids use the width. A sheet or
   panel is never full width on a large screen (≤ 640).
+- A screen that is a list of things to open shows two panes from 840 dp of
+  window (`core/ui/list_detail.dart`: Settings, the Video tab's folders):
+  `ListDetailPanes` (list 360–400 dp, white-10 % hairline, each pane its
+  own top bar), the open row on `listDetailSelection` (accent 16 %, radius
+  14, inset 8), a page that opens pages in a `DetailNavigator`. Below 840
+  the phone's layout, untouched. A window that narrows keeps what the
+  person opened; never push over the player.
+- A grid adds columns with width (`Responsive.gridColumns`; posters
+  `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
+  cell stays about a phone's size.
 - TV: the overscan margins are insets (`TvSafeArea`); every function by
   the D-pad, focus always visible; the remote's media keys work.
 - Keyboard and mouse are first-class: Space/K, arrows/J/L, Esc, M, ?, a
   right-click menu, hover shows the controls and the pointer hides.
-- Prove on `PLAYER_PHONES=all` and `SCREEN_PHONES=tablet,tablet_land,fold,tv`.
+- Prove on `PLAYER_PHONES=all` and `SCREEN_PHONES=tablet,tablet_land,fold,
+  fold_land,chromebook,tv` (`fold_land`, 841 dp, is the tightest two-pane
+  width; a TV is drawn with its overscan margins).
 
 ## 4. MX parity — keep the structure, refine the look
 Top bar `← title … ♪ CC HW ⋮`; shortcut row with its expand chevron;

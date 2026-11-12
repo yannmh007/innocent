@@ -247,8 +247,15 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
             // in the same container: the rail. TalkBack on a tablet or TV
             // could not reach Video / Music / Transfer / Me at all (Pixel C
             // emulator; test/rail_semantics_test.dart).
+            // The rail has kept clear of the left inset (its SafeArea), so
+            // the page beside it does not keep clear of it again: on a TV
+            // the Video tab's title sat 48 dp further in than its list.
             Expanded(
-              child: Semantics(container: true, child: widget.child),
+              child: MediaQuery.removePadding(
+                context: context,
+                removeLeft: true,
+                child: Semantics(container: true, child: widget.child),
+              ),
             ),
           ],
         ),

@@ -99,3 +99,43 @@ served by ChromeOS and Android's desktop windows, which Phase 1–2 cover.
    TV (960x540): no overflow; the test_screens harness on tablet, foldable
    and TV: no overflow (776 photographs).
 Whole suite 1696, tool/check.py clean.
+
+## Phase 2 item 1 — done (12 Nov, on the work branch)
+1. `core/ui/list_detail.dart`: two panes from 840 dp of WINDOW (Material's
+   expanded class; 839 is one pane, tested): the list pane 36 % of the
+   width, 360–400 dp (at 320 the Video tab's title gave way to its four
+   buttons), a white-10 % hairline, the page in the rest; left and right
+   insets kept (a TV's margins). The open row: accent 16 %, radius 14,
+   inset 8 dp. `DetailNavigator`: the pane's own navigator (a page opened
+   from the page opens in the pane; Back — system, remote, predictive —
+   closes it first through `NavigatorPopHandler`), its own semantics
+   container (a navigator's ModalBarrier hid the list from TalkBack, as it
+   once hid the rail), new for each page (no lingering inner page).
+2. Settings: the list beside the open page (the first until one is
+   chosen); the open row tapped again goes back to its page's top. A
+   window narrowed to one pane opens the chosen page over the list; a
+   widened one keeps a page opened over the list on top until Back.
+3. The Video tab, folders view: the folders as rows (a grid choice is the
+   videos'), beside them the open folder (`FolderDetailScreen(embedded)`:
+   no back, no search of its own, the list's black). One search filters
+   both; a folder left out by a search hands the pane to the first result
+   and comes back when it clears. A selection of the videos is the pane's
+   (its bars; Back and another folder clear it). Narrowed to one pane, the
+   folder the person opened opens over the list — unless anything is over
+   the tab (the player: a foldable folded mid-film).
+4. Grids by width (`Responsive.gridColumns`): catalogue posters
+   (`PosterMetrics.gridColumnsFor`: 3 on a phone, a poster ≤ 170 dp —
+   4 upright, 5 on a TV, 7–8 sideways), Status Saver, Private Folder, the
+   picker's images. The folder and video grids already sized by cell.
+5. Found on the way (fixed): settings dialogs closed through the page's
+   context; Back left the Video tab's query behind; a folder found by its
+   name showed "No video matches"; a folder's search filtered the list
+   behind it; the TV title 48 dp in; the downloader at full width; the
+   Folders title on a 320 dp phone; a search that took the open folder
+   away left its videos selected. Harness: `fold_land` (841x673) and
+   `chromebook` (1280x720 @1.25) sizes; a TV is drawn with its margins.
+6. Proof: `test/list_detail_test.dart` (8), `test/video_tab_two_pane_test.dart`
+   (8, each fix's test seen to fail without it), `test/responsive_grid_test.dart`
+   (3); whole suite 1723; the harness on tablet_land, fold_land,
+   chromebook, tv, small, tiny in my/en and 1.3: no overflow.
+

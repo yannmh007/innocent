@@ -28,10 +28,18 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
   final String folderPath;
   final String folderName;
 
+  /// Beside the folder list on a wide window (the Video tab's two panes,
+  /// core/ui/list_detail.dart), not a page of its own: no way back (the list
+  /// is right there), no search of its own (the list's search filters both),
+  /// the list's black; Back is the Video tab's (a selection here is cleared
+  /// by it — inside the shell a PopScope is never asked, shell_back.dart).
+  final bool embedded;
+
   const FolderDetailScreen({
     super.key,
     required this.folderPath,
     required this.folderName,
+    this.embedded = false,
   });
 
   @override
@@ -40,6 +48,24 @@ class FolderDetailScreen extends ConsumerStatefulWidget {
 
 class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
   bool _searchActive = false;
+
+  /// This folder's own search, kept here: the Video tab's query is the
+  /// folder list's (search_app_bar.dart).
+  String _query = '';
+
+  List<Video> _shown(List<Video> videos) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return videos;
+    return [
+      for (final v in videos)
+        if (v.title.toLowerCase().contains(q)) v,
+    ];
+  }
+
+  void _closeSearch() => setState(() {
+        _searchActive = false;
+        _query = '';
+      });
   // Phase 45 (audit): preserve scroll position when the user opens a
   // video and comes back. MX Player V3 returns to the same spot in the
   // list — daily-use parity. PageStorage keys persist the offset
@@ -90,24 +116,17 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final videosAsync = ref.watch(filteredVideosProvider(widget.folderPath));
+    final videosAsync = ref
+        .watch(filteredVideosProvider(widget.folderPath))
+        .whenData(_shown);
 
     final selectionActive = ref.watch(selectionProvider).isNotEmpty;
+    final embedded = widget.embedded;
+    final background =
+        embedded ? AppColors.specScaffold : AppColors.darkBackground;
 
-    return PopScope(
-      // Back leaves SELECTION MODE before it leaves the folder. Without this
-      // the screen popped with the selection still set, so the Local tab
-      // underneath came up already in selection mode, holding items the user
-      // could no longer see — and the bottom bar's Move would then act on
-      // files from a folder they had just left.
-      canPop: !selectionActive,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && selectionActive) {
-          ref.read(selectionProvider.notifier).clear();
-        }
-      },
-      child: Scaffold(
-      backgroundColor: AppColors.darkBackground,
+    final Widget page = Scaffold(
+      backgroundColor: background,
       // Selection actions belong here too. Long-press already worked on this
       // screen, so a user could enter selection mode inside a folder and find
       // no way to act on it beyond the two icons that fit in the AppBar.
@@ -130,29 +149,33 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
             )
           : _searchActive
           ? (SearchAppBar(
-              onClose: () => setState(() => _searchActive = false),
+              onClose: _closeSearch,
+              onQuery: (v) => setState(() => _query = v),
             ) as PreferredSizeWidget)
           : AppBar(
-              backgroundColor: AppColors.darkBackground,
+              backgroundColor: background,
               elevation: 0,
               scrolledUnderElevation: 0,
               surfaceTintColor: Colors.transparent,
+              automaticallyImplyLeading: !embedded,
               title: Text(widget.folderName),
               actions: [
                 // Phase 28: 3-action bar parity with Local screen.
                 // The "All folders" icon mirrors MX Player's back-to-root
                 // shortcut — equivalent to tapping back. Phase 40: removed
                 // the confusing snackbar; just pop straight to the folder list.
-                IconButton(
-                  icon: const Icon(Icons.folder_copy_outlined),
-                  tooltip: AppStrings.of(context).fdBackAll,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                IconButton(
-                  tooltip: AppStrings.of(context).search,
-                  icon: const Icon(Icons.search),
-                  onPressed: () => setState(() => _searchActive = true),
-                ),
+                if (!embedded)
+                  IconButton(
+                    icon: const Icon(Icons.folder_copy_outlined),
+                    tooltip: AppStrings.of(context).fdBackAll,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                if (!embedded)
+                  IconButton(
+                    tooltip: AppStrings.of(context).search,
+                    icon: const Icon(Icons.search),
+                    onPressed: () => setState(() => _searchActive = true),
+                  ),
                 IconButton(
                   tooltip: AppStrings.of(context).svLayout,
                   // Phase 16: Layout-grid icon (MX Player parity)
@@ -164,7 +187,8 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
       body: TabletConstrainedWidth(maxWidth: 840, child: videosAsync.whenOrFallback(
         data: (videos) {
           if (videos.isEmpty) {
-            final query = ref.read(searchQueryProvider);
+            final own = _query.trim();
+            final query = own.isNotEmpty ? own : ref.read(searchQueryProvider);
             return Center(
               child: Text(
                 query.isNotEmpty
@@ -273,7 +297,25 @@ class _FolderDetailScreenState extends ConsumerState<FolderDetailScreen> {
           ),
         ),
       )),
-      ),
+    );
+    if (embedded) return page;
+    return PopScope(
+      // Back leaves SELECTION MODE before it leaves the folder. Without this
+      // the screen popped with the selection still set, so the Local tab
+      // underneath came up already in selection mode, holding items the user
+      // could no longer see — and the bottom bar's Move would then act on
+      // files from a folder they had just left. Then it closes this folder's
+      // search, as the Video tab's Back does its own.
+      canPop: !selectionActive && !_searchActive,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (selectionActive) {
+          ref.read(selectionProvider.notifier).clear();
+        } else if (_searchActive) {
+          _closeSearch();
+        }
+      },
+      child: page,
     );
   }
 }

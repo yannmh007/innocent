@@ -41,6 +41,12 @@ paths:
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
   the release review. Name the files.
+- **A dialog closes through ITS context.** `showDialog(builder: (_) => …
+  Navigator.of(context).pop())` pops the navigator the PAGE is in: on the
+  root one that happened to be the dialog; in a pane's own navigator
+  (Settings on a wide window, list_detail.dart) it closed the page and the
+  pane went blank (`_history.isNotEmpty`, 12 Nov). Name the builder's
+  context (`dialogContext`) and pop with it.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.
