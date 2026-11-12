@@ -3,26 +3,26 @@ Have questions, feedback, or issues? Get support by visiting:
   https://firebase.google.com/support/
 
 Uploading [app.apk] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/42986497192/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/43180990404/]
 
-Test [matrix-19j0757a4ny30] has been created in the Google Cloud.
+Test [matrix-2rqo2q9qc3zuv] has been created in the Google Cloud.
 Creating individual test executions...
-..............................................................done.
+.............................................................................done.
 Firebase Test Lab will execute your game-loop test on 1 device(s). More devices may be added later if flaky test attempts are specified.
 
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6653599466806315852 ].
-08:37:25 Test is Pending
-08:38:26 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
-08:38:26 Starting attempt 1.
-08:38:26 Test is Running
-08:43:53 Starting attempt 1.
-08:43:53 Test is Pending
-08:44:17 Starting results processing. Attempt: 1
-08:44:17 Test is Running
-08:44:29 Completed results processing. Time taken = 10 (secs)
-08:44:29 Test is Finished
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6339571422461195231 ].
+08:25:23 Test is Pending
+08:26:35 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
+08:26:35 Starting attempt 1.
+08:26:35 Test is Running
+08:32:01 Starting attempt 1.
+08:32:01 Test is Pending
+08:32:14 Starting results processing. Attempt: 1
+08:32:14 Test is Running
+08:32:26 Completed results processing. Time taken = 6 (secs)
+08:32:26 Test is Finished
 
 Game-loop testing complete.
 
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6653599466806315852 ].
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6339571422461195231 ].
 exit 0
