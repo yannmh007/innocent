@@ -18,6 +18,7 @@ import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/loopback_uri.dart';
 import '../../../core/services/video_player/seek_math.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
+import '../domain/engine_check.dart';
 import '../domain/playback_qoe.dart';
 import '../../../core/services/network/throughput_memory.dart';
 import '../../../core/services/video_player/stream_renewal.dart';
@@ -1078,18 +1079,58 @@ class PlayerController extends StateNotifier<PlayerState> {
       // THE ENGINE STOPPED ANSWERING (see MpvLink). Said plainly, with the way
       // out: Retry or another video gets a fresh engine. Before this the app
       // simply froze, and "Wait" led to the same freeze on the next video.
+      //
+      // A CALL THAT HANGS IS NOT YET A DEAD ENGINE. The film's clock (from
+      // libmpv's events, not from the call) decides: moving, it is alive and
+      // nothing is said; still while it should play, it is stuck. Said at
+      // once, this put "may be damaged" over local videos playing perfectly
+      // (12 Nov 2026). See engine_check.dart.
       _subs.add(svc.engineWedgedChanges.listen((stuck) {
         if (!mounted) return;
+        _engineCheck?.cancel();
+        _engineCheck = null;
         if (stuck) {
-          PlaybackLog.add('engine stuck on ${svc.engineWedgedReason}');
-          _stopDecodeWatch();
-          state = state.copyWith(
-            errorMessage: kPlayerEngineStuck,
-            isBuffering: false,
-            isOpening: false,
-            loadingMessage: null,
-          );
-          _reportError('engine_stuck');
+          PlaybackLog.add('engine slow on ${svc.engineWedgedReason}');
+          final since = DateTime.now();
+          final from = svc.position;
+          var aliveSeen = false;
+          _engineCheck = Timer.periodic(const Duration(milliseconds: 750), (t) {
+            if (!mounted || !svc.engineWedged) {
+              t.cancel();
+              return;
+            }
+            final waited = DateTime.now().difference(since);
+            final verdict = judgeSlowEngine(
+              moved: svc.position - from,
+              playing: svc.isPlaying,
+              waited: waited,
+            );
+            if (verdict == EngineVerdict.alive) {
+              if (!aliveSeen) {
+                aliveSeen = true;
+                PlaybackLog.add('engine alive: the film moved while '
+                    '${svc.engineWedgedReason} hung');
+              }
+              // Usually the call comes back and the alarm clears itself.
+              // One that has not after this long may never: listen anew.
+              if (waited >= const Duration(seconds: 15)) {
+                t.cancel();
+                svc.relink();
+              }
+              return;
+            }
+            if (verdict == EngineVerdict.wait) return;
+            t.cancel();
+            PlaybackLog.add('engine stuck on ${svc.engineWedgedReason}');
+            _stopDecodeWatch();
+            state = state.copyWith(
+              errorMessage: kPlayerEngineStuck,
+              isBuffering: false,
+              isOpening: false,
+              loadingMessage: null,
+            );
+            _reportError('engine_stuck');
+          });
         } else if (state.errorMessage == kPlayerEngineStuck) {
           // It came back by itself: slow, not dead.
           state = state.copyWith(errorMessage: null);
@@ -1582,6 +1623,10 @@ class PlayerController extends StateNotifier<PlayerState> {
   // quality cut that used to be applied to every device unconditionally.
   Timer? _decodeWatchTimer;
   int _decodeWatchDropped = 0;
+
+  /// While a libmpv call hangs: watches the film's clock to tell a slow
+  /// engine from a stuck one (engine_check.dart).
+  Timer? _engineCheck;
 
   /// Consecutive ticks that came back over the threshold.
   ///
@@ -2224,6 +2269,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     // holding its dead controller (test/player_layout_test.dart found it).
     _decodeWatchTimer?.cancel();
     _noAudioCheckTimer?.cancel();
+    _engineCheck?.cancel();
     // The background-playback service is an app-lifetime singleton, so our
     // callbacks must be cleared — never left pointing at a disposed notifier.
     _detachScreenStateHandlers();
