@@ -63,7 +63,8 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 81_audit_more_landscape
-# The menu holds the controls up while it is open.
+# The controls step aside while the menu is open (12 Nov): one layer
+# at a time, nothing showing through it.
 - assertVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
 - back
 - waitForAnimationToEnd:
