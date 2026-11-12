@@ -174,7 +174,11 @@ class PlayerPanel extends StatelessWidget {
               child: FractionalTranslation(
                 translation: Offset(0, 1 - t),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: size.height * 0.72),
+                  // 60 %, not 72: upright it covered the whole picture
+                  // (owner's screenshot, 12 Nov). The picture rises to the
+                  // top as a panel opens (player_screen `_pictureLift`), so
+                  // a film up to 4:3 stays whole above it.
+                  constraints: BoxConstraints(maxHeight: size.height * 0.6),
                   child: panel,
                 ),
               ),

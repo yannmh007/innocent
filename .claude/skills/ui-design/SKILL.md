@@ -49,8 +49,11 @@ two lines at most · caption 11 sp.
 ## 3. Components (all in player_ui.dart)
 - **Panel** (`PlayerPanel`, in the player's own Stack): landscape a side
   panel from the right, up to 400 dp of content plus the navigation strip,
-  46 % of the width; portrait a bottom sheet up to 72 % of the height with a
-  drag handle. Header: title + optional trailing (capped at half the row,
+  46 % of the width; portrait a bottom sheet up to 60 % of the height with a
+  drag handle. **Upright, the picture rises to the top** while a panel, the
+  sleep timer or a player sheet is open (`_pictureLift`), so the film stays
+  whole above the sheet: at 72 % with the picture centred the sheet covered
+  all of it ("it goes up too far", owner, 12 Nov). Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
