@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/localization/app_strings.dart';
 import 'package:innocent/features/video_hub/data/api/offline_library.dart';
+import 'package:innocent/features/video_hub/data/api/playback_reporter.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
 import 'package:innocent/features/video_hub/domain/account.dart';
 import 'package:innocent/features/video_hub/domain/account_repository.dart';
@@ -120,6 +121,23 @@ void main() {
     expect(repo.deleted, <String>['user-a']);
     expect(n.state.user, isNull);
     expect(shelf.drops, 1, reason: 'premium downloads go, as on sign-out');
+  });
+
+  test('a play_summary kept for later goes with the account', () async {
+    // Sent at the next start, it would have gone out under whoever was
+    // signed in then (review of 13 Nov).
+    for (final leave in <String>['sign out', 'delete']) {
+      SharedPreferences.setMockInitialValues(
+          <String, Object>{PlaybackReporter.stashKey: '{"kind":"play_summary"}'});
+      final (n, _, _) = await _signedIn();
+      if (leave == 'sign out') {
+        await n.signOut();
+      } else {
+        await n.deleteAccount();
+      }
+      final sp = await SharedPreferences.getInstance();
+      expect(sp.getString(PlaybackReporter.stashKey), isNull, reason: leave);
+    }
   });
 
   test('a different account chosen at the prompt deletes nothing', () async {

@@ -8,6 +8,7 @@ import '../data/api/api_content_repository.dart';
 import '../data/api/api_exception.dart';
 import '../data/api/backend_config.dart';
 import '../data/api/offline_library.dart';
+import '../data/api/playback_reporter.dart';
 import '../data/cache/catalogue_cache.dart';
 import '../data/device_identity.dart';
 import '../data/local_account_repository.dart';
@@ -219,6 +220,9 @@ class AccountNotifier extends StateNotifier<AccountState> {
 
   Future<void> signOut() async {
     await _repo.signOut();
+    // A play_summary kept for later is sent under whoever is signed in then:
+    // not this account's to give to the next (PlaybackReporter.dropStash).
+    await PlaybackReporter.dropStash();
     // THE DOWNLOADS GO WITH THE ACCOUNT, and this is the only enforcement
     // this side can honestly offer. A downloaded file is a plain file in
     // app-private storage — see the note on OfflineLibrary — so emptying the

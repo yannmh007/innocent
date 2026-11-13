@@ -222,10 +222,11 @@ beside MX Player. Done:
   folder; the wheel already zooms a photo. **The owner's three choices
   (13 Nov), done**: targetSdk raised to 36 (rotate shortcut and
   orientation settings hidden where Android ignores them: TV, Android 16
-  tablets); a media session for every film (`PlayerMediaSession.kt`: a
-  TV's voice commands and Now Playing card reach the player); TV text at
-  1.2. Left: frame-rate matching; an API 36 device-lab run before the
-  release.
+  tablets); a media session for every film on a TV (`PlayerMediaSession.kt`:
+  a TV's voice commands and Now Playing card reach the player; after the
+  release review, a TV's only, and ended while the film is off screen);
+  TV text at 1.2. The API 36 device-lab run: done (43420830536, all
+  flows passed on Android 16). Left: frame-rate matching.
 - **Item 5 done (13 Nov)**: the engine check has a test that drives it
   (and found a resumed stream called stuck — fixed); the gestures help is a
   player sheet (a TV's Tutorial is the remote's keys); the paste bar's hint

@@ -133,7 +133,7 @@ class PlaybackReporter {
       meta: meta,
     );
     // ignore: discarded_futures
-    _dropStash();
+    dropStash();
   }
 
   /// A SUMMARY THE APP NEVER CAME BACK TO SEND (11 Nov 2026). The summary
@@ -168,7 +168,11 @@ class PlaybackReporter {
     }
   }
 
-  static Future<void> _dropStash() async {
+  /// Forget a kept summary. Also on sign-out (account_provider.dart): an
+  /// event takes the account it is SENT under, so one kept under an account
+  /// that has since signed out — or been deleted — would have gone out as
+  /// the next person's (review of 13 Nov).
+  static Future<void> dropStash() async {
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.remove(stashKey);

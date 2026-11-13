@@ -12,6 +12,7 @@ import '../../../core/services/connectivity/connectivity_service.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../../core/ui/device_profile.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/video_player/incomplete_file.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
@@ -535,10 +536,20 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// what the film is doing — on a change of state ([force]: playing,
   /// paused, its length known), or when [position] is more than 1.5 s from
   /// where the session works the film out to be (a seek, a next film); the
-  /// system runs the clock in between, so not on every tick. Never for a
-  /// private film: its title would reach the system's media surfaces.
+  /// system runs the clock in between, so not on every tick.
+  ///
+  /// ON A TV ONLY: its voice commands and Now Playing card are what the
+  /// session is for. On a phone a session puts the film's title on a car's
+  /// screen, a watch, any app that reads notifications — and a headset's
+  /// buttons reach the player in front without one (review of 13 Nov).
+  /// Never for a private film: its title would reach the system's media
+  /// surfaces, and one left from the film before it ends.
   void _syncSession({Duration? position, bool force = false}) {
-    if (_isPrivate) return;
+    if (!DeviceProfile.isTv || _sessionAway) return;
+    if (_isPrivate) {
+      _dropSession();
+      return;
+    }
     final now = DateTime.now();
     final pos = position ?? _livePosition();
     final at = _sessionAt;
@@ -566,6 +577,37 @@ class PlayerController extends StateNotifier<PlayerState> {
             duration: duration,
             speed: state.playbackSpeed,
           );
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerProvider.session: $e');
+    }
+  }
+
+  /// The player left the screen with nothing to play on (Home, background
+  /// play off): its session ends, so a remote's, a headset's or a car's
+  /// PLAY cannot start the film where no one sees it — the session would
+  /// still be the system's last one, its command still reaching the player
+  /// (review of 13 Nov). Held off until [resumeSession]: the pause's own
+  /// "paused" event, a moment later, would start it again.
+  void endSession() {
+    _sessionAway = true;
+    _dropSession();
+  }
+
+  /// In front again: the session as the film stands.
+  void resumeSession() {
+    if (!_sessionAway) return;
+    _sessionAway = false;
+    _syncSession(force: true);
+  }
+
+  bool _sessionAway = false;
+
+  void _dropSession() {
+    if (_sessionAt == null) return;
+    _sessionAt = null;
+    try {
+      // ignore: discarded_futures
+      _ref.read(backgroundPlaybackServiceProvider).sessionStop();
     } catch (e) {
       if (kDebugMode) debugPrint('PlayerProvider.session: $e');
     }

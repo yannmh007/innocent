@@ -316,6 +316,8 @@ void main() {
     // The TV's "pause" and "skip 30 seconds" go to the playing app's media
     // session; the only one was background play's, so a film had none
     // (PlayerMediaSession, 13 Nov).
+    DeviceProfile.kind = DeviceKind.tv;
+    addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
     final calls = <MethodCall>[];
     const channel = MethodChannel('mx_clone/playback');
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
@@ -357,6 +359,71 @@ void main() {
     await leavePlayer(tester);
     expect(calls.any((c) => c.method == 'sessionStop'), isTrue,
         reason: 'the session outlived the player');
+  });
+
+  // The session is a TV's, and only while someone can see the film (review
+  // of 13 Nov): on a phone it put the title on a car's screen and a watch;
+  // left behind by Home, a car's PLAY started the film unseen.
+  group('the media session', () {
+    List<MethodCall> mockPlayback(WidgetTester tester) {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('mx_clone/playback'), (call) async {
+        calls.add(call);
+        return true;
+      });
+      return calls;
+    }
+
+    Future<void> lifecycle(
+        WidgetTester tester, List<AppLifecycleState> states) async {
+      for (final st in states) {
+        tester.binding.handleAppLifecycleStateChanged(st);
+        await tester.pump();
+      }
+      await _settle(tester);
+    }
+
+    testWidgets('a phone has none', (tester) async {
+      final calls = mockPlayback(tester);
+      await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+      await _settle(tester);
+      expect(calls.where((c) => c.method == 'sessionUpdate'), isEmpty);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('a TV\'s ends when the film leaves the screen, and comes '
+        'back with it', (tester) async {
+      DeviceProfile.kind = DeviceKind.tv;
+      addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
+      final calls = mockPlayback(tester);
+      await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+      await _settle(tester);
+      int count(String m) => calls.where((c) => c.method == m).length;
+      expect(count('sessionUpdate'), greaterThan(0));
+      // Home, background play off: the film pauses and its session goes —
+      // and the pause's own "paused" a moment later does not bring it back.
+      await lifecycle(tester, [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]);
+      expect(_state().isPlaying, isFalse);
+      expect(count('sessionStop'), 1);
+      final away = count('sessionUpdate');
+      await tester.pump(const Duration(seconds: 2));
+      expect(count('sessionUpdate'), away, reason: 'restarted while away');
+      // In front again: the session, as the film stands (paused).
+      await lifecycle(tester, [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]);
+      expect(count('sessionUpdate'), greaterThan(away));
+      expect((calls.lastWhere((c) => c.method == 'sessionUpdate').arguments
+          as Map)['isPlaying'], isFalse);
+      await leavePlayer(tester);
+    });
   });
 
   testWidgets('a remote\'s and a keyboard\'s keys reach the player',

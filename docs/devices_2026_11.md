@@ -216,6 +216,13 @@ voice commands.
   film. A media key with the app in front still reaches the activity
   first, so a headset behaves as before. Test: "a film has a media
   session…".
+  **Changed after the release review (13 Nov)**: on a TV only — on a
+  phone the session put the film's title on a car's screen, a watch, any
+  app that reads notifications, and a headset reaches the player in front
+  without one; and it ends when the film leaves the screen with
+  background play off (Home), back when the app is in front again — left
+  behind, a car's or a remote's PLAY started the film unseen. A private
+  film drops one left by the film before it. Tests: "the media session".
 - **TV text at 1.2** (`TvSafeArea.textFactor`, on top of the TV's own
   setting): every screen photographed on a TV at it in Burmese and
   English — one overflow, the network help's steps (now they scroll); the

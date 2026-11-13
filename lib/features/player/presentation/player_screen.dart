@@ -773,6 +773,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       _bgDetachTimer?.cancel();
       if (!isBackgroundPlay && !inSystemPip && !_pipTransitionInFlight) {
         controller.pause();
+        // And no session left to start it again unseen.
+        controller.endSession();
       } else if (isBackgroundPlay &&
           !inSystemPip &&
           !_pipTransitionInFlight) {
@@ -837,6 +839,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // picture is in sync again.
       // ignore: discarded_futures
       controller.setBackgroundAudioMode(false);
+      // The media session again, if leaving ended it (a TV's).
+      controller.resumeSession();
       // Re-apply immersive mode — but ONLY if this player is still the
       // top-most route. If the user backed out to the shell while the app
       // was in the background, re-asserting immersive here would hide the

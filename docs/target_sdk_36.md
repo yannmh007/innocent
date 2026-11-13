@@ -48,9 +48,16 @@ to every app; Android's page says apps targeting 37.)
    open ⋮ and a sheet, Back. Predictive back has no toggle: try it on the
    raised debug build (system Back and the gesture in the player with a
    menu open, in the browser mid-site, on the first tab).
-3. The device lab runs API 34 (`device-lab.yml`): an API 36 job with the
-   flag above is the place for the four player flows unlocked. Not added
-   yet — it shares `test_device/` with the streaming session's labs.
+3. **Proved on Android 16, 13 Nov** (device lab 43420830536, results
+   e13bc7bc): `EMU_API=36` in config.env (new; 34 by default), a Pixel C
+   (2560×1800, smallest width over 600 dp), the app at target 36. The main
+   tabs both ways round, then the lab film upright and sideways with the
+   player audit's checks — ⋮ then Back closes the menu and the film stays,
+   holding Next opens the repeat menu, CC's panel and Back: every flow
+   passed (screens_large 7, its sideways 7, player_audit 43, its sideways
+   52 steps), no ANR, no crash; the app laid out at 2560×1800 and
+   1800×2560 as the device turned (its own orientation request ignored, as
+   Android 16 does on a tablet). Not yet seen on a real Android 16 device.
 4. Release notes: nothing a viewer notices, except a tablet that now turns
    with the film.
 

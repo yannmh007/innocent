@@ -15,9 +15,12 @@ import android.media.session.PlaybackState
  * every film on a TV — Android had no session for the film, so a TV's voice
  * commands ("pause", "skip 30 seconds", "play the next one") and its Now
  * Playing card never reached the player. This one is active while the player
- * is open; with background play on, the service's session (and its
- * notification) is there too, and either one's command reaches the same
- * handler. It shows nothing by itself — no notification.
+ * is open and its film on screen; with background play on, the service's
+ * session (and its notification) is there too, and either one's command
+ * reaches the same handler. It shows nothing by itself — no notification.
+ * Dart starts it on a TV only, and stops it when the film leaves the
+ * screen (player_provider.dart, _syncSession / endSession; review of
+ * 13 Nov: on a phone it put the title on cars and watches).
  *
  * Its commands go the way the notification's buttons do: the same in-app
  * broadcast, received by MainActivity, one handler in Dart
