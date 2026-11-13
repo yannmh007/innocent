@@ -29,11 +29,33 @@ Run flow when "(Audio track|အသံ လိုင်း)" is visible...
   Wait for animation to end within 800 ms... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
-Assert that "(Audio track|အသံ လိုင်း)" is visible... FAILED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
+  Wait for animation to end within 800 ms... COMPLETED
+  Tap on point (50%,50%)... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Long press on "(Next video|နောက် ဗီဒီယို).*"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 73_audit_repeat_menu... COMPLETED
+Assert that "(Loop one|တစ်ခု ထပ်ဖွင့်)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+Tap on point (50%,50%)... COMPLETED
+Tap on "(Subtitle|စာတန်းထိုး)"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 74_audit_subtitle_panel... COMPLETED
+Assert that "(Online.*|.*Online.*)" is visible... FAILED
 
-Assertion is false: "(Audio track|အသံ လိုင်း)" is visible
+Assertion is false: "(Online.*|.*Online.*)" is visible
 
-Assertion '"(Audio track|အသံ လိုင်း)" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+Assertion '"(Online.*|.*Online.*)" is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
 
 Possible causes:
 - Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
@@ -42,4 +64,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-11-13_150312
+/home/runner/work/innocent/innocent/out/maestro_out/2026-11-13_152633
