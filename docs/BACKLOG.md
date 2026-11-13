@@ -369,9 +369,15 @@ security). Found, most urgent first:
    a failure goes to the owner on Telegram and is retried daily. First
    drill 03:52: backup #47 (sealed), 50 tables, passed. Still by hand: a
    full restore into an empty database.
+   **Checked 12 Nov (items 2–4):** event_daily runs to 11 Nov (the daily
+   rollup is alive); transport-check ran 12 times on its schedule since
+   7 Nov, all green (latest 43174698705, 12 Nov 07:21); the drill last
+   passed 7 Nov 03:52 on backup #47, no error since — within the week,
+   backups #48–#52 waiting for the next weekly drill.
 5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
    the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
-   12 Nov reminder asks for a screenshot showing Active. Never press Cancel
+   12 Nov reminder asks for a screenshot showing Active (asked of the owner
+   12 Nov; DNS lookups are refused from the sandbox). Never press Cancel
    Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
 6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
    half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
@@ -517,6 +523,20 @@ security). Found, most urgent first:
   gateway logs (edge_logs, `request.sb.jwt.apikey.payload.role`), no
   `service_role` or `anon` legacy JWT after 6 Nov 02:40 UTC, before the
   owner deactivates the legacy keys.
+  **12 Nov, quiet:** the gateway's 325 requests in 24 h all carried a new
+  key (94 publishable, 231 secret), none a legacy JWT as apikey; Bearer
+  tokens were users' sessions only (`authenticated`, signed ES256 — the
+  asymmetric signing key is in use); no 5xx. The two 401s were the
+  transport check asking `/rest/v1/` with the publishable key on purpose
+  ("Secret API key required": the schema stays unlisted). Every boot of
+  ingest, transcode and request-playback says
+  `SUPABASE_SECRET_KEYS.default`. Studio on the new key: five
+  `reviewApprove` in admin_audit on 6 Nov 16:22. Not yet seen in a log:
+  premium-request, delete-account, probe-media, backfill-dimensions,
+  self-test (no calls since). Every app version seen in 30 days is
+  1.64.69 or later, all on the publishable key (since 3 Oct). So the
+  owner can deactivate the legacy keys (dashboard → Settings → API Keys →
+  Legacy API keys; reversible).
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
   sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
   anywhere. Still to see: the console's Requests page opening it (the number
@@ -661,7 +681,13 @@ Things that are live and believed right, but whose proof comes later. Each
 says when, exactly what to run, and what counts as right. Tick it with the
 evidence; if it is wrong, it becomes an open item below.
 
-- [ ] **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
+- [x] **DONE 12 Nov: all twelve purged at 17:17:45 UTC, no error; BBB still
+  2 rung keys and 10 still keys.** They were due 12:42-12:43, but the
+  ingest runner (which empties the bin on every run) had last run at 11:31
+  and schedules run hours late, so ingest was dispatched on main by hand
+  (run 43267844479, green). The "3 of 3 copies sealed" check waits for the
+  next sealed lab run on BBB.
+  **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
   twins of Big Buck Bunny** (2 rungs, 10 stills, binned by run 42029250311).
   `select key, purged_at, purge_error from r2_trash where reason like
   'sealed copy replaced%'` → every row purged, no error. Then BBB still has
@@ -674,13 +700,18 @@ evidence; if it is wrong, it becomes an open item below.
   (the only one unused). Bin that one. `select count(*) from r2_inventory
   i where key like 's/%' and not exists (select 1 from r2_refs() r where
   r.key = i.key)` → 1 before, 0 after.
-- [ ] **R3 — daily until 12 Nov: the pipelines' function logs.** No
+- [x] **CLOSED 12 Nov: the last day was clean.** Over the logs' 24 h
+  (to 17:15 UTC): no "seal refused", "settle failed" or MEDIA_KEK message,
+  no error-level function log, every function call 200 (ingest 14,
+  request-playback 24, transcode 8); studio, probe-media and
+  backfill-dimensions were not called in that window.
+  **R3 — daily until 12 Nov: the pipelines' function logs.** No
   "seal refused", "settle failed", "MEDIA_KEK unreadable", and no 5xx from
   `transcode`, `ingest`, `studio`, `probe-media` or `backfill-dimensions`
   (`function_logs` / `function_edge_logs`). Live versions (5 Nov): transcode
   v25 (209f5e1), ingest v48 (1058fd5), studio v49 (6ecba09), probe-media v24
   and backfill-dimensions v27 (ac29482); migrations through 073.
-- [ ] **R4 — at the start of every session: the switch is `off`.**
+- [ ] **R4 — at the start of every session: the switch is `off`.** (12 Nov: off.)
   `select seal_new from admin_settings` → `off`, unless a canary is running
   that session. A switch left on hands open films to the branch runner
   only.
