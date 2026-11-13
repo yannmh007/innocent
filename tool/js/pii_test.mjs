@@ -44,7 +44,12 @@ check('moved to another row, it does not open',
 check('moved to another column, it does not open',
   (await pii.open(k1, sealed, `premium_requests:sender_phone:${id}`)) === null);
 check('under another key, it does not open', (await pii.open(k2, sealed, aad)) === null);
-const flipped = sealed.slice(0, -2) + (sealed.slice(-2) === 'AA' ? 'AB' : 'AA');
+// A character inside the ciphertext, not its last two: the last base64url
+// character here carries 2 bits of data and 4 a decoder ignores, so a seal
+// ending "AA" turned "AB" was the same bytes, opened, and failed this check
+// once in ~200 runs (13 Nov: 24 of 5000 seals; this flip, 0).
+const at = sealed.length - 6;
+const flipped = sealed.slice(0, at) + (sealed[at] === 'A' ? 'B' : 'A') + sealed.slice(at + 1);
 check('altered by a byte, it does not open', (await pii.open(k1, flipped, aad)) === null);
 check('not one of ours: null, not a throw', (await pii.open(k1, 'plain text', aad)) === null);
 check('Burmese text survives the round trip',

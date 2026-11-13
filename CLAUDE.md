@@ -30,7 +30,9 @@ in English. Why this file is shaped as it is: `docs/ai_workflow.md`.
   BACKLOG §0 names a work branch with no history in common with the
   session's branch (which starts at main), push to the work branch,
   fast-forward — the owner's choice of 8 Nov — never a force-push.
-- `python3 tool/check.py` passes before every push.
+- `python3 tool/check.py` passes before every push. Gate the push on its
+  exit code (`python3 tool/check.py > log && git push …`): a grep of its
+  output in a `;` chain let a push through a FAIL (13 Nov).
 - A push to `main` is a production deploy: `docs/**` republishes Pages and
   rebuilds both Workers; most other paths start the app Build. Releases:
   skill `release`. Database changes: skill `live-db-change`. Labs: skill
