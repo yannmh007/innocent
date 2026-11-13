@@ -1,19 +1,19 @@
-[15:24:24] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[15:24:24] install
-[15:24:34] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[15:24:35] network: eth0 has qdisc clsact
-[15:24:35] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[15:25:02] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[15:25:02] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[15:25:02] library: pushing 24 files
-[15:25:31] library: MediaStore lists 24 videos
-[15:25:31] cold start
+[15:37:05] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[15:37:06] install
+[15:37:20] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[15:37:20] network: eth0 has qdisc clsact
+[15:37:20] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[15:37:48] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[15:37:48] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[15:37:48] library: pushing 24 files
+[15:38:22] library: MediaStore lists 24 videos
+[15:38:22] cold start
 Status: ok
-TotalTime: 2081
-WaitTime: 2086
-[15:25:43] flow layout_portrait
-[15:25:45] rotation asked 0, now 0
-[15:26:22] flow layout_portrait exit 0
-[15:26:32] flow player_audit
-[15:27:51] flow player_audit exit 1
-[15:28:03] done
+TotalTime: 3334
+WaitTime: 3343
+[15:38:36] flow layout_portrait
+[15:38:38] rotation asked 0, now 0
+[15:39:17] flow layout_portrait exit 0
+[15:39:27] flow player_audit
+[15:40:52] flow player_audit exit 0
+[15:41:05] done
