@@ -51,8 +51,7 @@ does it.
   "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov; update a phone to 1.64.83 and say if the player's menus look
+- **The owner still has to**: (DNSSEC: Active, 13 Nov — done) update a phone to 1.64.83 and say if the player's menus look
   right now (⋮, CC, the error card), and if "stopped responding" ever shows
   again on a file that plays. (The
   five open films were approved: every `open-film-%` title reads
@@ -374,11 +373,10 @@ security). Found, most urgent first:
    7 Nov, all green (latest 43174698705, 12 Nov 07:21); the drill last
    passed 7 Nov 03:52 on backup #47, no error since — within the week,
    backups #48–#52 waiting for the next weekly drill.
-5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
-   the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
-   12 Nov reminder asks for a screenshot showing Active (asked of the owner
-   12 Nov; DNS lookups are refused from the sandbox). Never press Cancel
-   Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
+5. **DONE 13 Nov: DNSSEC Active.** The owner's screenshot (Cloudflare →
+   DNS → Settings): "Success! innocentplayer.com is protected with DNSSEC",
+   DS key tag 2371, algorithm 13, digest type 2. Enabled 7 Nov; the DS took
+   under six days. Never press Disable DNSSEC or Cancel Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
 6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
    half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
    = 0.45` set on the function (EXPLAIN: Seq Scan today, Bitmap Index Scan
