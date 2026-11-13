@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (12 Nov 2026)
+### WHERE THINGS STAND — read first in a new session (13 Nov 2026, evening)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 1.64.84, 333c7071). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
@@ -71,8 +71,28 @@ does it.
   the play_summary stash, the lab hooks). The audit is on this branch too
   (822a7e8f) and the next release from here carries it. Details under
   "Next app release"; what the audit left open under "Player audit".
-- **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
-  transport-check every 6 h, the backup drill.
+- **On the branch, not on main since 1.64.84 — and NO APP CODE among it**
+  (13 Nov evening): `lib/` differs from main only by the lab hooks and the
+  Google nonce (never shipped) and the version, so the next main push is a
+  sync of docs, tool and notes, not an app release. It carries: the stream
+  Worker's `STUDIO_ORIGINS` without the retired Pages origin (rebuilds the
+  Worker); `tool/playback/transport_check.py`'s new checks (the console's
+  cross-origin answers from studio and the Worker, the retired Pages page a
+  404) so the scheduled alarm on main has them; `docs/edge/studio.ts` and
+  `console_origins.js` (already live, main's copy is older);
+  `docs/console/README.md`, `tool/js/console_build_test.mjs`,
+  `tool/js/edge_blocks_test.mjs`, CLAUDE.md, the release skill and the
+  console rule. A tool/ change on main starts Build, which uploads nothing
+  for a published version; never push while a release build runs.
+- **Live already**: migrations 077–080; studio v55 (24a3365: answers only
+  `console.innocentplayer.com`, and asks R2 for each bucket's CORS —
+  `r2_cors` in its log and in "Check bucket access"); ingest v56,
+  transcode v28, probe-media v27 (ea45f9b: console origin only; ingest and
+  transcode answered 200 after); transport-check every 6 h; the backup
+  drill (last 7 Nov, next ~14 Nov). 13 Nov: DNSSEC Active, the legacy
+  Supabase keys off, the GitHub Pages console retired (security review
+  P4), R2 CORS of both buckets = the console alone (seen: console allowed,
+  Pages and a control refused).
 - **The owner still has to**: update a phone to 1.64.84 and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
   cost has no lab number), and if "stopped responding" ever shows again
