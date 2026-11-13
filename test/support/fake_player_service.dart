@@ -86,6 +86,10 @@ class FakePlayerService implements VideoPlayerService {
   /// Puts a playback error on the engine's error stream, as libmpv would.
   void failWith(String message) => _errorC.add(message);
 
+  /// The engine waits for data (true) or has it again (false), as
+  /// media_kit's buffering (libmpv's paused-for-cache) says.
+  void buffer(bool waiting) => _bufferingC.add(waiting);
+
   @override
   Future<void> initialize() async {
     calls.add('initialize');

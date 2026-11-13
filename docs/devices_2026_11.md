@@ -222,3 +222,21 @@ voice commands.
   player on a TV with its margins (the player harness now draws a TV as
   the app does): 472 layouts at 1.0 and 118 at 1.3, none overflowing.
 
+## Phase 2 item 5 — leftovers (13 Nov)
+- **The engine check has a test that drives it** ("a call to the engine
+  hangs", `test/player_controls_test.dart`): a fake engine hangs on
+  purpose (`SlowEngine`, engine_check.dart — the check ran only for
+  `MediaKitPlayerService` before), and the test's clock runs the 750 ms
+  looks: a film standing still is stuck at 3 s and said plainly, the card
+  goes when the call answers; a film playing on is never called stuck and
+  gets one new link at 15 s, never a second; paused waits 8 s. The loop
+  now times itself by `Timer.tick` (the periods that passed, a late
+  callback's included), which a test's clock moves and `DateTime.now()`
+  did not.
+- **Found by it, fixed: a stream that resumed during a hang was called
+  stuck.** Waiting for data counts as paused; when the data came, the
+  next look measured the film from when the call began to hang — more
+  than 3 s — and a film that had played for under 400 ms of it was
+  "stuck". Now a film meant to move again gets its own three seconds from
+  that look. Both rules proved by breaking them (the test fails each way).
+

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
+import 'package:innocent/features/player/domain/engine_check.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/player_screen.dart';
 import 'package:innocent/features/player/presentation/video_adjust.dart';
@@ -20,6 +21,9 @@ import 'support/fake_player_service.dart';
 import 'support/player_harness.dart';
 
 const _phone = Phone('360x800', 360, 800, 2.0);
+
+/// One look of the engine check (player_provider.dart).
+const _look = Duration(milliseconds: 750);
 
 PlayerState _state() => playerContainer!.read(playerControllerProvider);
 
@@ -481,6 +485,115 @@ void main() {
     await leavePlayer(tester);
   });
 
+  // THE ENGINE CHECK (engine_check.dart): while a call to the engine hangs,
+  // every 750 ms the film's own clock decides between "slow" and "stuck".
+  // The engine here hangs on purpose; time is the test's clock.
+  group('a call to the engine hangs', () {
+    Future<_HangingEngine> open(WidgetTester tester) async {
+      final svc = _HangingEngine();
+      await pumpPlayer(tester,
+          phone: _phone, landscape: true, lang: 'en', engine: svc);
+      expect(_state().isPlaying, isTrue);
+      return svc;
+    }
+
+    Future<void> looks(WidgetTester tester, int n,
+        {_HangingEngine? moving}) async {
+      for (var i = 0; i < n; i++) {
+        if (moving != null) {
+          await moving.seek(moving.position + _look);
+        }
+        await tester.pump(_look);
+      }
+    }
+
+    testWidgets(
+        'over a film that stands still: stuck at three seconds, '
+        'said plainly, and gone when the call answers', (tester) async {
+      final svc = await open(tester);
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 3);
+      expect(_state().errorMessage, isNull, reason: '2.25 s: too soon');
+      await looks(tester, 1);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await _settle(tester);
+      expect(find.text('Playback failed'), findsOneWidget);
+      expect(find.textContaining('stopped responding'), findsOneWidget);
+      expect(svc.relinks, 0);
+      // The call comes back by itself: slow, not dead.
+      svc.hang(false);
+      await _settle(tester);
+      expect(_state().errorMessage, isNull);
+      expect(find.text('Playback failed'), findsNothing);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('over a film that plays on: not a word, and one new link',
+        (tester) async {
+      final svc = await open(tester);
+      svc.hang(true);
+      await tester.pump();
+      // Fifteen seconds of a moving clock while the call hangs: alive.
+      // "May be damaged" over local videos playing perfectly was this
+      // check saying stuck at once (12 Nov).
+      for (var i = 1; i <= 20; i++) {
+        await looks(tester, 1, moving: svc);
+        expect(_state().errorMessage, isNull, reason: 'look $i');
+        expect(svc.relinks, i < 20 ? 0 : 1, reason: 'look $i');
+      }
+      expect(svc.engineWedged, isFalse);
+      // Hung again on the same film: watched again, never relinked again,
+      // and a film that stops now is caught.
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 4);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      expect(svc.relinks, 1);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('over a paused film: eight seconds, not three', (tester) async {
+      final svc = await open(tester);
+      await svc.pause();
+      await _settle(tester);
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 10);
+      expect(_state().errorMessage, isNull, reason: '7.5 s: too soon');
+      await looks(tester, 1);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await leavePlayer(tester);
+    });
+
+    testWidgets(
+        'a stream whose data comes mid-hang gets its own three '
+        'seconds', (tester) async {
+      final svc = await open(tester);
+      svc.buffer(true);
+      await tester.pump();
+      svc.hang(true);
+      await tester.pump();
+      // Waiting for data is judged as paused.
+      await looks(tester, 7);
+      expect(_state().errorMessage, isNull, reason: '5.25 s, buffering');
+      // The data comes, and by the next look the film has moved 300 ms:
+      // it was playing for less than half a look.
+      svc.buffer(false);
+      await tester.pump(const Duration(milliseconds: 450));
+      await svc.seek(svc.position + const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_state().errorMessage, isNull,
+          reason: 'resumed a moment ago, not stuck');
+      await looks(tester, 3, moving: svc);
+      expect(_state().errorMessage, isNull);
+      // A stream that resumes and then stands still is still caught.
+      await looks(tester, 4);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await leavePlayer(tester);
+    });
+  });
+
   testWidgets('Display Settings changes the picture, and keeps its values',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
@@ -505,4 +618,43 @@ void main() {
     expect(adjust.state.contrast, 0.4);
     await leavePlayer(tester);
   });
+}
+
+/// An engine whose calls hang on purpose: what MpvLink reports when libmpv
+/// has not answered a call for four seconds (engine_check.dart).
+class _HangingEngine extends FakePlayerService implements SlowEngine {
+  final _changes = StreamController<bool>.broadcast();
+  bool _hung = false;
+
+  /// How many times the player asked for a fresh link.
+  int relinks = 0;
+
+  @override
+  Stream<bool> get engineWedgedChanges => _changes.stream;
+
+  @override
+  bool get engineWedged => _hung;
+
+  @override
+  String? get engineWedgedReason => _hung ? 'get time-pos' : null;
+
+  /// As MediaKitPlayerService's: a fresh link, the hang forgotten.
+  @override
+  void relink() {
+    relinks++;
+    hang(false);
+  }
+
+  /// A call stops answering (true), or answers at last (false).
+  void hang(bool on) {
+    if (_hung == on) return;
+    _hung = on;
+    _changes.add(on);
+  }
+
+  @override
+  Future<void> close() async {
+    await _changes.close();
+    await super.close();
+  }
 }

@@ -1125,7 +1125,8 @@ class PlayerController extends StateNotifier<PlayerState> {
         }
       }
     }));
-    if (svc is MediaKitPlayerService) {
+    if (svc is SlowEngine) {
+      final engine = svc as SlowEngine;
       // THE ENGINE STOPPED ANSWERING (see MpvLink). Said plainly, with the way
       // out: Retry or another video gets a fresh engine. Before this the app
       // simply froze, and "Wait" led to the same freeze on the next video.
@@ -1135,43 +1136,60 @@ class PlayerController extends StateNotifier<PlayerState> {
       // nothing is said; still while it should play, it is stuck. Said at
       // once, this put "may be damaged" over local videos playing perfectly
       // (12 Nov 2026). See engine_check.dart.
-      _subs.add(svc.engineWedgedChanges.listen((stuck) {
+      _subs.add(engine.engineWedgedChanges.listen((stuck) {
         if (!mounted) return;
         _engineCheck?.cancel();
         _engineCheck = null;
         if (stuck) {
-          PlaybackLog.add('engine slow on ${svc.engineWedgedReason}');
-          final started = DateTime.now();
-          var since = started;
+          PlaybackLog.add('engine slow on ${engine.engineWedgedReason}');
+          // Time is the timer's own count of periods since the call was
+          // found hanging: Timer.tick counts the periods that passed, a late
+          // callback's included, and a test's fake clock moves it
+          // (DateTime.now() it does not: test/player_controls_test.dart).
+          const period = Duration(milliseconds: 750);
+          var since = Duration.zero;
           var from = svc.position;
           var aliveSeen = false;
-          _engineCheck = Timer.periodic(const Duration(milliseconds: 750), (t) {
-            if (!mounted || !svc.engineWedged) {
+          // A stream waiting for data is judged as paused: its clock stands
+          // still for the network, not for the engine.
+          bool meantToMove() => svc.isPlaying && !state.isBuffering;
+          var wasMeantToMove = meantToMove();
+          _engineCheck = Timer.periodic(period, (t) {
+            if (!mounted || !engine.engineWedged) {
               t.cancel();
               return;
             }
-            final now = DateTime.now();
+            final now = period * t.tick;
+            final playing = meantToMove();
+            if (playing && !wasMeantToMove) {
+              // Paused or waiting for data until a moment ago: its three
+              // seconds start now. Counted from when the call began to hang,
+              // a stream whose data had just come had moved under 400 ms by
+              // this look and was called stuck (13 Nov, the test below).
+              wasMeantToMove = true;
+              since = now;
+              from = svc.position;
+              return;
+            }
+            wasMeantToMove = playing;
             final verdict = judgeSlowEngine(
               moved: svc.position - from,
-              // A stream waiting for data is judged as paused: its clock
-              // stands still for the network, not for the engine.
-              playing: svc.isPlaying && !state.isBuffering,
-              waited: now.difference(since),
+              playing: playing,
+              waited: now - since,
             );
             if (verdict == EngineVerdict.alive) {
               if (!aliveSeen) {
                 aliveSeen = true;
                 PlaybackLog.add('engine alive: the film moved while '
-                    '${svc.engineWedgedReason} hung');
+                    '${engine.engineWedgedReason} hung');
               }
               // Usually the call comes back and the alarm clears itself.
               // One that has not after this long may never: listen anew,
               // once a film.
-              if (now.difference(started) >= const Duration(seconds: 15) &&
-                  !_relinkedThisOpen) {
+              if (now >= const Duration(seconds: 15) && !_relinkedThisOpen) {
                 _relinkedThisOpen = true;
                 t.cancel();
-                svc.relink();
+                engine.relink();
                 return;
               }
               // Watching on from here, so a film that stops later is still
@@ -1182,7 +1200,7 @@ class PlayerController extends StateNotifier<PlayerState> {
             }
             if (verdict == EngineVerdict.wait) return;
             t.cancel();
-            PlaybackLog.add('engine stuck on ${svc.engineWedgedReason}');
+            PlaybackLog.add('engine stuck on ${engine.engineWedgedReason}');
             _stopDecodeWatch();
             state = state.copyWith(
               errorMessage: kPlayerEngineStuck,
@@ -1197,6 +1215,8 @@ class PlayerController extends StateNotifier<PlayerState> {
           state = state.copyWith(errorMessage: null);
         }
       }));
+    }
+    if (svc is MediaKitPlayerService) {
       // THE DECODER WAS FLOODING and the service stopped the file (see
       // ErrorFloodGate). Said once, plainly; before this the flood itself
       // was the message — a thousand of them, and an app that stopped
