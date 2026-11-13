@@ -255,6 +255,19 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   origin to both buckets' policy and one upload works there; then the
   retirement (code ready to write in a few lines; its deploy and ship on
   the owner's word).
+  **Same day, later: proven, and the functions let the Pages copy go.**
+  The owner added the console origin to both buckets' CORS policy. Studio
+  v52–v53 asks R2 itself (an OPTIONS preflight per bucket per origin, in
+  "Check bucket access" and once per isolate as `r2_cors` in its log): both
+  buckets allow `console.innocentplayer.com` and refuse a control origin
+  (403), 13 Nov 18:08. The transport check now asks studio and the stream
+  Worker for the console's preflight and a stranger's (43456871904, green).
+  Studio v54 (5381656) answers only `console.innocentplayer.com`, and its
+  review notices link there. Still to follow: ingest, transcode and
+  probe-media drop the Pages origin with their next deploy (the shared
+  `console_origins.js`), the stream Worker with the next main push; the
+  owner signs out of the old Pages console, removes its Supabase redirect
+  URL and unpublishes GitHub Pages.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

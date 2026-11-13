@@ -6,9 +6,10 @@ paths:
 
 # The console
 
-- Served twice until the Pages copy retires: GitHub Pages
-  (`yannmh007.github.io/innocent/studio/`, CSP in a `<meta>`) and
-  `console.innocentplayer.com` (headers from `docs/console/build.mjs`). A
+- Served from `console.innocentplayer.com` (headers from
+  `docs/console/build.mjs`). The GitHub Pages copy
+  (`yannmh007.github.io/innocent/studio/`, CSP in a `<meta>`) was retired
+  13 Nov 2026: no function or Worker answers that origin any more. A
   new host the console calls must be added to that CSP and to
   `tool/js/console_build_test.mjs`.
 - **A new origin FOR the console is five places, not four**: the

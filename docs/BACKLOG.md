@@ -98,10 +98,13 @@ does it.
   transport-check every 6 h, the backup drill.
 - **The owner still has to**: update a phone to 1.64.83 and say if the
   player's menus look right now (⋮, CC, the error card), and if "stopped
-  responding" ever shows again on a file that plays; add
-  `https://console.innocentplayer.com` to the CORS policy of BOTH R2
-  buckets and try one upload on the new console — the Pages copy retires
-  only after that (security review P4, 13 Nov). Done 13 Nov: DNSSEC
+  responding" ever shows again on a file that plays; finish
+  retiring the Pages console (security review P4, 13 Nov): sign out of
+  the old Pages console, remove its Supabase redirect URL, unpublish
+  GitHub Pages, and drop the Pages origin from both buckets' CORS. (Done
+  13 Nov: the console origin added to both buckets' CORS, seen allowed by
+  studio's `r2_cors` check with a control refused; studio v54 answers only
+  the new origin.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
 - **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
