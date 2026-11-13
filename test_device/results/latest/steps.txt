@@ -1,29 +1,24 @@
-[12:52:04] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[12:52:04] install
-[12:52:26] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[12:52:26] network: eth0 has qdisc clsact
-[12:52:26] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[12:52:53] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[12:52:53] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[12:52:53] library: pushing 24 files
-[12:53:27] library: MediaStore lists 24 videos
-[12:53:27] cold start
+[15:00:19] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[15:00:19] install
+[15:00:41] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[15:00:41] network: eth0 has qdisc clsact
+[15:00:42] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[15:01:08] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[15:01:08] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[15:01:08] library: pushing 24 files
+[15:01:39] library: MediaStore lists 24 videos
+[15:01:39] cold start
 Status: ok
-TotalTime: 3712
-WaitTime: 3721
-[12:53:41] flow genres
-[12:55:01] flow genres exit 0
-[12:55:11] flow jumps
-[12:55:12] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[12:59:20] flow jumps done
-[12:59:20] flow layout_portrait
-[12:59:22] rotation asked 0, now 0
-[13:00:08] flow layout_portrait exit 0
-[13:00:19] flow player_audit
-[13:01:10] flow player_audit exit 1
-[13:01:29] flow layout_landscape
-[13:01:53] rotation asked 1, now 0
-[13:02:21] flow layout_landscape exit 0
-[13:02:32] flow player_audit_land
-[13:03:20] flow player_audit_land exit 1
-[13:03:35] done
+TotalTime: 5805
+WaitTime: 5809
+[15:01:55] flow layout_portrait
+[15:01:57] rotation asked 0, now 0
+[15:02:56] flow layout_portrait exit 0
+[15:03:10] flow player_audit
+[15:04:12] flow player_audit exit 1
+[15:04:25] flow layout_landscape
+[15:04:49] rotation asked 1, now 0
+[15:05:12] flow layout_landscape exit 0
+[15:05:25] flow player_audit_land
+[15:06:19] flow player_audit_land exit 0
+[15:06:36] done
