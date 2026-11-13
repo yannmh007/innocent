@@ -1,28 +1,29 @@
-[12:12:07] device: sdk_gphone64_x86_64 / Android 16 / ABIs x86_64,arm64-v8a
-[12:12:07] install
-[12:12:44] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[12:12:44] network: eth0 has qdisc clsact
-[12:12:45] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[12:13:07] library: pushing 52 files
-[12:14:06] library: MediaStore lists 52 videos
-[12:14:06] cold start
+[12:52:04] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[12:52:04] install
+[12:52:26] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[12:52:26] network: eth0 has qdisc clsact
+[12:52:26] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[12:52:53] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[12:52:53] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[12:52:53] library: pushing 24 files
+[12:53:27] library: MediaStore lists 24 videos
+[12:53:27] cold start
 Status: ok
-TotalTime: 4680
-WaitTime: 4715
-[12:14:21] flow screens_large
-[12:14:23] rotation asked 0, now 0
-[12:15:04] flow screens_large exit 0
-[12:15:15] flow screens_large_land
-[12:15:18] rotation asked 1, now 90
-[12:15:56] flow screens_large_land exit 0
-[12:16:08] flow layout_portrait
-[12:16:11] rotation asked 0, now 0
-[12:17:05] flow layout_portrait exit 0
-[12:17:16] flow player_audit
-[12:18:51] flow player_audit exit 0
-[12:19:03] flow layout_landscape
-[12:19:06] rotation asked 1, now 90
-[12:19:29] flow layout_landscape exit 0
-[12:19:41] flow player_audit_land
-[12:20:38] flow player_audit_land exit 0
-[12:20:55] done
+TotalTime: 3712
+WaitTime: 3721
+[12:53:41] flow genres
+[12:55:01] flow genres exit 0
+[12:55:11] flow jumps
+[12:55:12] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
+[12:59:20] flow jumps done
+[12:59:20] flow layout_portrait
+[12:59:22] rotation asked 0, now 0
+[13:00:08] flow layout_portrait exit 0
+[13:00:19] flow player_audit
+[13:01:10] flow player_audit exit 1
+[13:01:29] flow layout_landscape
+[13:01:53] rotation asked 1, now 0
+[13:02:21] flow layout_landscape exit 0
+[13:02:32] flow player_audit_land
+[13:03:20] flow player_audit_land exit 1
+[13:03:35] done
