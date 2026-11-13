@@ -8,6 +8,7 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Phase 34: Album detail screen — same layout as Artist Detail.
 class AlbumDetailScreen extends ConsumerWidget {
   final String name;
@@ -25,7 +26,11 @@ class AlbumDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         child: Column(
           children: [
             // Header
@@ -301,6 +306,7 @@ class AlbumDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

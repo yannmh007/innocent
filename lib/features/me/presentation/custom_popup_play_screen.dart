@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Custom Pop-up Play Controls matching MX Player (UI PDF page 13).
 /// 2 radio options: Previous/Next (Default) and Fast Forward/Rewind.
 ///
@@ -24,7 +25,11 @@ class CustomPopupPlayScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).popupPlay)),
-      body: ListView(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: ListView(
         padding: const EdgeInsets.all(16).plusNavBar(context),
         children: [
           Text(AppStrings.of(context).popupPlayControls,
@@ -49,6 +54,7 @@ class CustomPopupPlayScreen extends ConsumerWidget {
             selectedControl,
           ),
         ],
+      ),
       ),
     );
   }

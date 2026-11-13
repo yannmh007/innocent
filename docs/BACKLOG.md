@@ -196,10 +196,18 @@ beside MX Player. Done:
   left its videos selected. Proof: 1723 tests (19 new), the screens
   harness on tablet, foldable at 841, Chromebook, TV and three phones in
   Burmese and English, 1.3 at the tightest — no overflow; sheets sent.
-  Next: the ~19 list screens Phase 1 left at full width (History,
-  Playlists, Favourites, Watch later, Recycle bin, music's album / artist /
-  playlist / folder, Network stream, Stream cache, Cloud drive…), then
-  Phase 2 item 2 (targetSdk 36 readiness).
+  Then (13 Nov) the 20 list and form screens Phase 1 had left at full
+  width capped at 840 (History, Favourites, Watch later, Playlists and a
+  playlist, Recycle bin, Watch insights, music's album / artist /
+  playlist / folder, Stream cache, Delete account, Network stream, Cloud
+  drive, Pop-up play, Subtitle and Language settings, the player's
+  Customise, the equalizer, the age gate); a harness file for them with a
+  week's history (`test_screens/lists_screens_test.dart`). It found Watch
+  insights' week chart cut by 12 dp on every phone, its days in English
+  shorthand ('6d'…'Yd', 'To') and its total drawn without the app's font
+  (RichText): fixed (heights from the text size, dates and "Today" in
+  three languages, Text.rich). Next: Phase 2 item 2 (targetSdk 36
+  readiness).
 - Left: the gestures help keeps its own full-screen look; the paste bar's
   Burmese hint sits a little high (the font's metrics); a test that drives
   the 750 ms engine check with a fake wedged engine.

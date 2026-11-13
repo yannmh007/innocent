@@ -14,6 +14,7 @@ import '../user_data_providers.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -102,7 +103,11 @@ class HistoryScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: history.isEmpty
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: history.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -119,6 +124,7 @@ class HistoryScreen extends ConsumerWidget {
               ),
             )
           : _buildGroupedList(context, ref, history),
+      ),
     );
   }
 

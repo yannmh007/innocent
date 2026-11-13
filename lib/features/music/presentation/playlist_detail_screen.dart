@@ -9,6 +9,7 @@ import 'song_context_menu.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Phase 34: Playlist detail screen.
 /// Shows playlist header + Play All pill + song list.
 /// Used for My Favourites, Recently Played, and user-created playlists.
@@ -38,7 +39,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         child: Column(
           children: [
             // Header
@@ -334,6 +339,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

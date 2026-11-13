@@ -7,6 +7,7 @@ import '../account_provider.dart';
 import '../video_hub_theme.dart';
 import '../widgets/vh_insets.dart';
 import '../../../../core/ui/nav_bar_space.dart';
+import '../../../../core/ui/tablet_constrained_width.dart';
 
 /// The door.
 ///
@@ -177,7 +178,11 @@ class _AskView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: VH.canvas,
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         bottom: false,
         child: Column(
           children: <Widget>[
@@ -227,6 +232,7 @@ class _AskView extends StatelessWidget {
             _Actions(busy: busy, onAccept: onAccept, onDecline: onDecline),
           ],
         ),
+      ),
       ),
     );
   }
@@ -394,7 +400,11 @@ class _DeclinedView extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: VH.canvas,
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: VH.s6),
           child: Column(
@@ -431,6 +441,7 @@ class _DeclinedView extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

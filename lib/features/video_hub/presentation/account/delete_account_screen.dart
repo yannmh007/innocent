@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/tab_title.dart';
+import '../../../../core/ui/tablet_constrained_width.dart';
 import '../../domain/account.dart';
 import '../../domain/account_repository.dart';
 import '../account_provider.dart';
@@ -101,7 +102,11 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
         title: Text(s.vhDeleteAccount,
             style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
-      body: ListView(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: ListView(
         padding: EdgeInsets.fromLTRB(VH.gutter, VH.s4, VH.gutter,
             VhInsets.scrollBottom(context, extra: VH.s6)),
         children: <Widget>[
@@ -150,6 +155,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

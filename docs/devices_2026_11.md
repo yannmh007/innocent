@@ -138,4 +138,9 @@ Whole suite 1696, tool/check.py clean.
    (8, each fix's test seen to fail without it), `test/responsive_grid_test.dart`
    (3); whole suite 1723; the harness on tablet_land, fold_land,
    chromebook, tv, small, tiny in my/en and 1.3: no overflow.
-
+7. 13 Nov: the 20 list and form screens Phase 1 had left at full width
+   capped at 840 (`TabletConstrainedWidth`; list in BACKLOG §0), photographed
+   with a week of user data (`test_screens/lists_screens_test.dart`). Watch
+   insights, never photographed before: its week chart overflowed on every
+   phone, its day labels were English shorthand, its total ignored the
+   app's font — fixed.

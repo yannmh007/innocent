@@ -2477,6 +2477,8 @@ class AppStrings {
 
   String get wiEmpty => _s('wiEmpty');
   String get wiMin => _s('wiMin');
+  String get wiHour => _s('wiHour');
+  String get wiToday => _s('wiToday');
   String get wiVideos => _s('wiVideos');
   String get wiActiveDays => _s('wiActiveDays');
   String get wiStreakStart => _s('wiStreakStart');
@@ -4904,6 +4906,8 @@ class AppStrings {
     'hsClearAll': 'Clear all',
     'wiEmpty': 'Watch a few videos and come back: your weekly recap will show here.',
     'wiMin': 'min',
+    'wiHour': 'h',
+    'wiToday': 'Today',
     'wiVideos': 'Videos',
     'wiActiveDays': 'Active days',
     'wiStreakStart': 'Start a new streak today!',
@@ -7258,6 +7262,8 @@ class AppStrings {
     'hsClearAll': 'အားလုံး ဖျက်',
     'wiEmpty': 'ဗီဒီယို အနည်းငယ် ကြည့်ပြီး ပြန်လာပါ — အပတ်စဉ် အနှစ်ချုပ် ဒီမှာ ပေါ်ပါမယ်။',
     'wiMin': 'မိနစ်',
+    'wiHour': 'နာရီ',
+    'wiToday': 'ယနေ့',
     'wiVideos': 'ဗီဒီယို',
     'wiActiveDays': 'ကြည့်ခဲ့တဲ့ ရက်',
     'wiStreakStart': 'ဒီနေ့ စပြီး ဆက်တိုက် ကြည့်လိုက်ပါ!',
@@ -9598,6 +9604,8 @@ class AppStrings {
     'hsClearAll': 'ล้างทั้งหมด',
     'wiEmpty': 'ดูวิดีโอสักสองสามเรื่องแล้วกลับมา สรุปรายสัปดาห์จะแสดงที่นี่',
     'wiMin': 'นาที',
+    'wiHour': 'ชม.',
+    'wiToday': 'วันนี้',
     'wiVideos': 'วิดีโอ',
     'wiActiveDays': 'วันที่ดู',
     'wiStreakStart': 'เริ่มดูต่อเนื่องวันนี้เลย!',

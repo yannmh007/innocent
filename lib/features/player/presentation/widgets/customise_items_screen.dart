@@ -7,6 +7,7 @@ import '../shortcut_item.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/ui/nav_bar_space.dart';
+import '../../../../core/ui/tablet_constrained_width.dart';
 /// Customise Items screen — toggle which shortcuts appear in shortcut row
 class CustomiseItemsScreen extends ConsumerWidget {
   const CustomiseItemsScreen({super.key});
@@ -46,7 +47,11 @@ class CustomiseItemsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: GridView.count(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: GridView.count(
         crossAxisCount: 2,
         childAspectRatio: 4,
         padding: const EdgeInsets.all(8).plusNavBar(context),
@@ -71,6 +76,7 @@ class CustomiseItemsScreen extends ConsumerWidget {
             },
           );
         }).toList(),
+      ),
       ),
     );
   }

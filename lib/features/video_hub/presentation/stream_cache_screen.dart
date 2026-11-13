@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 import '../data/cache/catalogue_cache.dart';
 import '../data/cache/stream_cache_store.dart';
 import '../data/poster_cache.dart';
@@ -73,7 +74,11 @@ class _StreamCacheScreenState extends State<StreamCacheScreen> {
             style: const TextStyle(color: AppColors.darkOnSurface)),
         iconTheme: const IconThemeData(color: AppColors.darkOnSurface),
       ),
-      body: _busy
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: _busy
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
@@ -231,6 +236,7 @@ class _StreamCacheScreenState extends State<StreamCacheScreen> {
                 const SizedBox(height: 32),
               ],
             ),
+      ),
     );
   }
 }
