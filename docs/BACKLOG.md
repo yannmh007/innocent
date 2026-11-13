@@ -104,8 +104,9 @@ does it.
   (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
-- **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
-  default; ships with the next release)**: `StreamCacheServer.keepSpare`.
+- **5d, a connection kept open for a jump (11 Nov; LIVE in 1.64.84, 13 Nov,
+  on by default)**: `StreamCacheServer.keepSpare` (the release left the
+  lab's `_labTimedConnect` out).
   Measured first (device lab M1, 42951731347): on the weak line a jump's
   answer was 885 ms on a new connection (DNS 25 + TCP 147 + TLS 189 + the
   Worker's wait 441) against 466 on a kept one, and 33 of 34 jumps that cut
@@ -125,7 +126,8 @@ does it.
   when a read on it ends cut; the Worker's own wait (~0.3 s, R2 most
   likely) needs a `Server-Timing` header to split (a Worker change).
 - **play_summary was lost for a playback the app never came back to
-  (found 11 Nov, fixed on the branch)**: it was sent only as the player
+  (found 11 Nov; the fix LIVE in 1.64.84, the kept summary also dropped on
+  sign-out since the 13 Nov review)**: it was sent only as the player
   screen closed; an app sent to the background and closed from Recents
   never closed it (1.64.81's first viewer: 4 playbacks, 2 summaries; the
   labs' 79 force-stopped plays: none). Now kept on the phone when the app
@@ -165,11 +167,13 @@ does it.
   `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
   weakjumps flows; read the cap probe first; passes alternating per
   variant, then the other order; read a jump's answer in parts first; an
-  A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: G2's
-  `FLOWS="weakjumps jumps"`, two passes (on, off) then the gate — with 5d on
-  by default the gate passed 15 of 15 twice (G1 42995970597, G2
-  42999722877); Test Lab `cloud.env`: the realme alone (its rerun) — name
-  both phones again for the next run.
+  A/A of 21-28 pairs spreads 0.31-0.35 s). With 5d on by default the gate
+  passed 15 of 15 in G1 42995970597, G2 42999722877, the 1.64.83-era
+  candidate 43142688683 (+ Test Lab OPPO 43142688768 16/16) and 1.64.84's
+  43425944894. First look for item 2's failure (a climb then a stop) in
+  weakline passes on the live build before writing a rule: the ProxyMeter
+  already believes a recovery only once its slow average holds
+  (min(fast, slow)), and 5b's 32 passes had no stop.
 
 ### Player redesign (12 Nov, 1.64.83) — skill `ui-design`
 The owner's screenshots of 1.64.82: "Playback failed / The player stopped
