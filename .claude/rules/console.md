@@ -9,7 +9,11 @@ paths:
 - Served from `console.innocentplayer.com` (headers from
   `docs/console/build.mjs`). The GitHub Pages copy
   (`yannmh007.github.io/innocent/studio/`, CSP in a `<meta>`) was retired
-  13 Nov 2026: no function or Worker answers that origin any more. A
+  13 Nov 2026: no function or Worker answers that origin any more.
+  Pages must stay OFF with its source branch None: "Unpublish" alone did
+  not hold — the next docs/ push to main redeployed it (13 Nov, 19:00).
+  After any push to main, a "pages build and deployment" run means it is
+  back: tell the owner (Settings → Pages → Branch: None). A
   new host the console calls must be added to that CSP and to
   `tool/js/console_build_test.mjs`.
 - **A new origin FOR the console is five places, not four**: the

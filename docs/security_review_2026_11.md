@@ -278,6 +278,16 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   stream Worker's list (next main push) and ingest, transcode and
   probe-media (next deploy); a stale redirect URL to the studio function,
   the console's first home, is the owner's to remove.
+  **Republished by the next push, 19:00 the same evening.** Unpublishing
+  left Pages' source branch set, so the push of 4b005001 (the 1.64.84
+  record, docs/ only) ran "pages build and deployment" (43487949804,
+  deploy success 19:00:27 UTC): the old console page was served again.
+  Harm small — studio, the stream Worker and both buckets refuse that
+  origin and its redirect URL is gone, so it cannot sign in or call
+  anything — but P4 is closed only when the source is None (Settings →
+  Pages → Branch: None) and the transport check reads the page a 404
+  again. Lesson: after "Unpublish", any push to main's docs/ republishes;
+  the release skill's watch list reads any Pages deployment as a republish.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

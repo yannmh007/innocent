@@ -1,6 +1,7 @@
 # Innocent Studio — what it needs outside this repository
 
-The page: <https://yannmh007.github.io/innocent/studio/>
+The page: <https://console.innocentplayer.com/studio/> (built by `docs/console/`; the
+GitHub Pages copy retired 13 Nov 2026 and must stay unpublished)
 The API:  `docs/edge/studio.ts`, deployed as the `studio` edge function.
 
 Pick files, type a name, save. It is a draft until an editor approves it on
@@ -168,7 +169,7 @@ R2 → bucket → **Settings** → **CORS Policy**, for `innocent-media` **and**
 ```json
 [
   {
-    "AllowedOrigins": ["https://console.innocentplayer.com", "https://yannmh007.github.io"],
+    "AllowedOrigins": ["https://console.innocentplayer.com"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["Content-Type"],
     "ExposeHeaders": ["ETag"],
@@ -182,16 +183,17 @@ It changed once already, when the page moved off supabase.co, and again
 on 6 Nov 2026 when the console got its own origin
 (`console.innocentplayer.com`) — and the move's steps left this policy out
 (found 13 Nov, before any upload was tried there). Both origins until the
-Pages copy retires; then the console's alone.
+Pages copy retired (13 Nov 2026); since then the console's alone.
 
 ---
 
 ## The rest
 
-- **GitHub Pages**: Settings → Pages → `main` / `/docs`. The page is a
-  static file; there is no build step.
+- **GitHub Pages**: OFF (Settings → Pages → Branch: None) since the console
+  moved to its own origin; `docs/` is public source, not a site. Never
+  point Pages at `/docs` again (docs/console/README.md).
 - **Supabase redirect allow-list**: Authentication → URL Configuration must
-  contain `https://yannmh007.github.io/innocent/studio/`, or Google sends
+  contain `https://console.innocentplayer.com/studio/`, or Google sends
   the round trip somewhere else.
 - **Google web client**: the Supabase callback
   `https://<ref>.supabase.co/auth/v1/callback` must be an authorised
