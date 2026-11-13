@@ -16,9 +16,11 @@ and expert advice; plan; work systematically. This is the plan and the record.
 - **Window size classes** ([source](https://developer.android.com/develop/ui/compose/layouts/adaptive/window-size-classes)):
   compact < 600 dp, medium 600–840, expanded 840–1200, large 1200–1600,
   extra-large ≥ 1600; by the window, never "is it a tablet".
-- **Android 16/17**: at sw ≥ 600 dp an app targeting API 36 (17: every app)
-  has its orientation, aspect-ratio and resizability restrictions ignored —
-  `SystemChrome.setPreferredOrientations` included
+- **Android 16/17**: at sw ≥ 600 dp an app targeting API 36 has its
+  orientation, aspect-ratio and resizability restrictions ignored —
+  `SystemChrome.setPreferredOrientations` included (Android 17: apps
+  targeting 37, the temporary opt-out gone; not every app, as this said
+  until 13 Nov — docs/target_sdk_36.md)
   ([16](https://developer.android.com/about/versions/16/behavior-changes-16),
   [17](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)).
   The player must work in any shape, unlocked.
@@ -144,3 +146,18 @@ Whole suite 1696, tool/check.py clean.
    insights, never photographed before: its week chart overflowed on every
    phone, its day labels were English shorthand, its total ignored the
    app's font — fixed.
+
+## Phase 2 item 2 — targetSdk 36 readiness (13 Nov): docs/target_sdk_36.md
+Not raised (the owner decides). What changes at 36 and Innocent's state,
+each with its source; how to raise and prove it (`am compat enable
+UNIVERSAL_RESIZABLE_BY_DEFAULT` on a debuggable build, Android 16 tablet
+emulator). Done now: the player's sheets follow the window while open (they
+chose their form once: a phone turned under one left a 300 dp bottom sheet
+sideways; now one route, the content's state kept, pixel-identical at rest
+in all 51 sheet photographs); tests that the film, its place and an open
+menu survive turns and a tablet-window resize unlocked, and that an upright
+sheet drags down to close; the two WebView activities keep their history
+Back at 36 (`enableOnBackInvokedCallback="false"`). Left: hide the rotate
+button where Android 16 ignores it; an API 36 lab job; a foldable that
+starts folded stays a "phone" (DeviceProfile decides once).
+

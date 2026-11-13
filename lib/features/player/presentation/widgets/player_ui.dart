@@ -5,7 +5,6 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/ui/app_sheet.dart';
 
 /// The player's look, in one place (skill `ui-design`).
 ///
@@ -764,73 +763,142 @@ class PlayerSheetHeader extends StatelessWidget {
 }
 
 /// A sheet of the player. Upright, a bottom sheet of frosted glass, as tall
-/// as its content up to 85 % of the screen, no wider than 640 dp. Sideways,
-/// the same content in a glass panel from the right, the whole height — as
-/// ⋮ and the subtitle panel are: a bottom sheet on a phone held sideways had
-/// some 300 dp and cut the lists, the sliders and the buttons (12 Nov).
-/// [barrierColor] transparent for a sheet that changes the picture, so the
-/// change can be seen.
+/// as its content up to 85 % of the screen, no wider than 640 dp, dragged
+/// or flicked down to close. Sideways, the same content in a glass panel
+/// from the right, the whole height — as ⋮ and the subtitle panel are: a
+/// bottom sheet on a phone held sideways had some 300 dp and cut the lists,
+/// the sliders and the buttons (12 Nov). [barrierColor] transparent for a
+/// sheet that changes the picture, so the change can be seen.
+///
+/// The form follows the WINDOW while the sheet is open (_PlayerSheetFrame):
+/// it was chosen once, on opening, so a phone turned under an open sheet —
+/// or a tablet's window resized, which Android 16 lets happen whatever the
+/// player asks — left a bottom sheet some 300 dp tall sideways. One route
+/// for both forms, the content's state kept through the turn.
 Future<T?> showPlayerSheet<T>(
   BuildContext context, {
   required WidgetBuilder builder,
   Color? barrierColor,
 }) {
-  final size = MediaQuery.sizeOf(context);
-  if (size.width > size.height) {
-    return showGeneralDialog<T>(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: barrierColor ?? PlayerUi.scrim,
-      transitionDuration: PlayerUi.motion,
-      pageBuilder: (_, __, ___) => _PlayerSideSheet(builder: builder),
-      transitionBuilder: (_, animation, __, child) => SlideTransition(
-        position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-            .animate(
-                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
-        child: child,
-      ),
-    );
-  }
-  return showAppModalBottomSheet<T>(
+  return showGeneralDialog<T>(
     context: context,
-    backgroundColor: Colors.transparent,
-    elevation: 0,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: barrierColor ?? PlayerUi.scrim,
-    isScrollControlled: true,
-    constraints: tallSheetConstraints(context),
-    builder: (sheet) => PlayerGlass(
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius)),
-      child: builder(sheet),
-    ),
+    transitionDuration: PlayerUi.motion,
+    pageBuilder: (_, __, ___) => _PlayerSheetFrame(builder: builder),
+    transitionBuilder: (context, animation, __, child) {
+      final size = MediaQuery.sizeOf(context);
+      final sideways = size.width > size.height;
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: sideways ? const Offset(1, 0) : const Offset(0, 1),
+          end: Offset.zero,
+        ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+        child: child,
+      );
+    },
   );
 }
 
-/// A player sheet held sideways: a glass panel from the right, as wide as
-/// [PlayerPanel]'s, the whole height, the content at its top.
-class _PlayerSideSheet extends StatelessWidget {
-  const _PlayerSideSheet({required this.builder});
+/// The frame of a player sheet, by the window: a glass bottom sheet
+/// upright, a glass panel from the right, the whole height, sideways. Every
+/// widget above the content is the same in both forms — only their values
+/// change — so a turn keeps the content's element and its state (a cut's
+/// marks, the subtitle panel's values).
+class _PlayerSheetFrame extends StatefulWidget {
+  const _PlayerSheetFrame({required this.builder});
 
   final WidgetBuilder builder;
+
+  @override
+  State<_PlayerSheetFrame> createState() => _PlayerSheetFrameState();
+}
+
+class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
+    with SingleTickerProviderStateMixin {
+  /// How far the upright sheet has been dragged down.
+  double _drag = 0;
+  double _dragFrom = 0;
+  final GlobalKey _sheet = GlobalKey();
+  late final AnimationController _settle;
+
+  @override
+  void initState() {
+    super.initState();
+    _settle = AnimationController(vsync: this, duration: PlayerUi.motion)
+      ..addListener(() {
+        setState(() => _drag =
+            _dragFrom * (1 - Curves.easeOutCubic.transform(_settle.value)));
+      });
+  }
+
+  void _dragged(DragUpdateDetails d) {
+    _settle.stop();
+    setState(() => _drag = (_drag + d.delta.dy).clamp(0.0, double.infinity));
+  }
+
+  /// Down past a third of its height, or flicked: closed; else back up.
+  void _released(DragEndDetails d) {
+    final height = _sheet.currentContext?.size?.height ?? 0;
+    if ((d.primaryVelocity ?? 0) > 700 || _drag > height / 3) {
+      Navigator.of(context).maybePop();
+      return;
+    }
+    _dragFrom = _drag;
+    _settle.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _settle.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
+    final sideways = size.width > size.height;
+    final width = sideways
+        ? (size.width * 0.46).clamp(300.0, 400.0) + padding.right
+        : size.width.clamp(0.0, 640.0);
     return Align(
-      alignment: Alignment.centerRight,
-      child: SizedBox(
-        width: (size.width * 0.46).clamp(300.0, 400.0) + padding.right,
-        height: size.height,
-        child: PlayerGlass(
-          borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(PlayerUi.radius)),
-          child: Padding(
-            padding: EdgeInsets.only(top: padding.top, right: padding.right),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [Flexible(child: Builder(builder: builder))],
+      alignment: sideways ? Alignment.centerRight : Alignment.bottomCenter,
+      child: Transform.translate(
+        offset: Offset(0, sideways ? 0 : _drag),
+        child: GestureDetector(
+          // Upright, a drag that starts off the sheet's lists moves the
+          // sheet, as a bottom sheet's does; a list takes its own drags.
+          onVerticalDragUpdate: sideways ? null : _dragged,
+          onVerticalDragEnd: sideways ? null : _released,
+          child: ConstrainedBox(
+            key: _sheet,
+            constraints: sideways
+                ? BoxConstraints.tightFor(width: width, height: size.height)
+                : BoxConstraints(
+                    minWidth: width,
+                    maxWidth: width,
+                    maxHeight: size.height * 0.85,
+                  ),
+            child: PlayerGlass(
+              borderRadius: sideways
+                  ? const BorderRadius.horizontal(
+                      left: Radius.circular(PlayerUi.radius))
+                  : const BorderRadius.vertical(
+                      top: Radius.circular(PlayerUi.radius)),
+              child: Padding(
+                padding: sideways
+                    ? EdgeInsets.only(top: padding.top, right: padding.right)
+                    : EdgeInsets.only(bottom: padding.bottom),
+                child: Column(
+                  mainAxisSize:
+                      sideways ? MainAxisSize.max : MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [Flexible(child: Builder(builder: widget.builder))],
+                ),
+              ),
             ),
           ),
         ),

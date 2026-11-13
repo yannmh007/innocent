@@ -206,8 +206,14 @@ beside MX Player. Done:
   insights' week chart cut by 12 dp on every phone, its days in English
   shorthand ('6d'…'Yd', 'To') and its total drawn without the app's font
   (RichText): fixed (heights from the text size, dates and "Today" in
-  three languages, Text.rich). Next: Phase 2 item 2 (targetSdk 36
-  readiness).
+  three languages, Text.rich). **Phase 2 item 2 (13 Nov)**: targetSdk 36
+  readiness written up (`docs/target_sdk_36.md`; not raised — the owner's
+  call): the player's sheets now follow the window while open (one route,
+  state kept; the old ones left a 300 dp bottom sheet sideways after a
+  turn), the film and an open menu tested through turns and an unlocked
+  tablet resize, the WebView screens keep their history Back at 36. Left
+  there: the rotate button where Android 16 ignores it, an API 36 lab job,
+  local network permission before targeting 37 (Transfer, Network).
 - Left: the gestures help keeps its own full-screen look; the paste bar's
   Burmese hint sits a little high (the font's metrics); a test that drives
   the 750 ms engine check with a fake wedged engine.

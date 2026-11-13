@@ -69,9 +69,11 @@ two lines at most · caption 11 sp.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
 - **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): upright a glass
-  bottom sheet; **sideways a glass side panel from the right, the whole
-  height**, like ⋮ (a bottom sheet held sideways had ~300 dp and cut its
-  lists and sliders). `barrierColor: Colors.transparent` for a sheet that
+  bottom sheet (dragged down to close); **sideways a glass side panel from
+  the right, the whole height**, like ⋮ (a bottom sheet held sideways had
+  ~300 dp and cut its lists and sliders). The form follows the window
+  while the sheet is open — a turn or a resize keeps the content's state
+  (Android 16 ignores the player's orientation requests on tablets). `barrierColor: Colors.transparent` for a sheet that
   changes the picture (Display, subtitle delay) so the change can be seen.
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other

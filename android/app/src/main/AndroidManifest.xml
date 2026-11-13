@@ -294,11 +294,21 @@
         <!-- The in-app browser. Not exported: nothing outside Innocent has any
              business opening it, and an exported WebView activity is a way to
              be asked to render someone else's page. -->
+        <!-- enableOnBackInvokedCallback="false" on the two WebView screens:
+             each walks its page history (and a full-screen video) back in
+             onBackPressed(), which Android 16 stops calling for an app that
+             targets 36, where predictive back is on by default — Back would
+             close the browser from the middle of a site. False is what an
+             app targeting 35 gets anyway, so nothing changes today; moving
+             them to OnBackInvokedCallback, registered only while there is a
+             page to go back to, is the follow-up if the opt-out goes
+             (docs/target_sdk_36.md). -->
         <activity
             android:name=".BrowserActivity"
             android:exported="false"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:enableOnBackInvokedCallback="false"
             android:hardwareAccelerated="true" />
 
         <activity
@@ -306,6 +316,7 @@
             android:exported="false"
             android:label="Sign in"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:enableOnBackInvokedCallback="false"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
         <!-- v1.2: weekly engine update, app opened or not. BIND_JOB_SERVICE is

@@ -211,6 +211,99 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets(
+      'a sheet open while the phone turns follows the turn, its content kept',
+      (tester) async {
+    // A phone with auto-rotate, or a tablet's window that Android 16 lets
+    // turn whatever the player asks (docs/devices_2026_11.md): the sheet
+    // chose its form once, on opening, and a bottom sheet turned sideways
+    // was some 300 dp tall.
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
+    await _settle(tester);
+    final content = tester.element(find.text('Loop one'));
+    var glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.bottom, closeTo(_phone.height, 0.5), reason: 'not at the foot');
+    expect(glass.width, closeTo(_phone.width, 0.5));
+
+    Future<void> turn(bool sideways) async {
+      tester.view.physicalSize = sideways
+          ? Size(_phone.height * _phone.dpr, _phone.width * _phone.dpr)
+          : Size(_phone.width * _phone.dpr, _phone.height * _phone.dpr);
+      await _settle(tester);
+    }
+
+    await turn(true);
+    glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.height, closeTo(_phone.width, 0.5),
+        reason: 'sideways, not the whole height');
+    expect(glass.right, closeTo(_phone.height, 0.5));
+    expect(glass.width, lessThan(_phone.height * 0.6));
+    expect(identical(tester.element(find.text('Loop one')), content), isTrue,
+        reason: 'the turn rebuilt the sheet\'s content from scratch');
+
+    await turn(false);
+    glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.bottom, closeTo(_phone.height, 0.5));
+    expect(glass.width, closeTo(_phone.width, 0.5));
+    expect(identical(tester.element(find.text('Loop one')), content), isTrue);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets(
+      'the window turns and resizes mid-film: not reopened, its place and an '
+      'open menu kept', (tester) async {
+    // What Android 16 does to a tablet whatever the player asks (orientation
+    // requests ignored from 600 dp for an app that targets 36), and what a
+    // phone with auto-rotate and a resized desktop window do already.
+    final engine = FakePlayerService();
+    await pumpPlayer(tester,
+        phone: _phone, landscape: false, lang: 'en', engine: engine);
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
+    int opens() => engine.calls.where((c) => c == 'open').length;
+    final opened = opens();
+    final place = engine.position;
+    for (final size in <Size>[
+      Size(_phone.height, _phone.width), // turned
+      const Size(1280, 800), // a tablet's window, sideways
+      const Size(800, 1280), // and upright, the lock ignored
+      Size(_phone.width, _phone.height),
+    ]) {
+      tester.view.physicalSize = size * _phone.dpr;
+      await _settle(tester);
+      expect(_state().openPanel, SidePanel.more, reason: '$size closed ⋮');
+      expect(find.byType(MoreMenuPanel), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: '$size');
+    }
+    expect(opens(), opened, reason: 'a turn reopened the film');
+    expect(engine.position, place, reason: 'a turn moved the film');
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('upright, a sheet dragged down closes; a short drag does not',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
+    await _settle(tester);
+    final handle = find.byType(PlayerDragHandle);
+    expect(handle, findsOneWidget);
+    final top = tester.getRect(find.byType(PlayerGlass).last).top;
+    await tester.drag(handle, const Offset(0, 30));
+    await _settle(tester);
+    expect(find.text('Loop one'), findsOneWidget);
+    expect(tester.getRect(find.byType(PlayerGlass).last).top,
+        closeTo(top, 0.5), reason: 'a short drag did not settle back');
+    await tester.drag(handle, const Offset(0, 400));
+    await _settle(tester);
+    expect(find.text('Loop one'), findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
   testWidgets('a remote\'s and a keyboard\'s keys reach the player',
       (tester) async {
     final svc = FakePlayerService();
