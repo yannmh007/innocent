@@ -535,6 +535,14 @@ security). Found, most urgent first:
   1.64.69 or later, all on the publishable key (since 3 Oct). So the
   owner can deactivate the legacy keys (dashboard → Settings → API Keys →
   Legacy API keys; reversible).
+  **DONE 13 Nov: the owner disabled the JWT-based API keys (~09:50 UTC).**
+  Checked before: all nine functions pick the new key first
+  (`prefer: 'new'`), no workflow, Worker or console holds a legacy key, no
+  pg_cron / pg_net calls out of the database. After: ingest dispatched on
+  main green (43404807961), transport check green (43404811682), the
+  gateway since 09:50 all 200/204 but the transport check's deliberate
+  `/rest/v1/` 401, no request with a legacy key. Undo, if ever needed: the
+  same page, Re-enable.
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
   sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
   anywhere. Still to see: the console's Requests page opening it (the number
