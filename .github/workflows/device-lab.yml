@@ -157,6 +157,10 @@ jobs:
           # Which screen to emulate (config.env EMU_PROFILE): pixel_6 by
           # default, pixel_tablet / pixel_c / nexus_10 for large screens.
           echo "profile=${EMU_PROFILE:-pixel_6}" >> "$GITHUB_OUTPUT"
+          # Which Android (config.env EMU_API): 34 by default; 36 for
+          # Android 16's rules on an app that targets 36 (docs/target_sdk_36.md).
+          api=$(printf '%s' "${EMU_API:-34}" | tr -cd '0-9')
+          echo "api=${api:-34}" >> "$GITHUB_OUTPUT"
           # The emulator's back camera (config.env EMU_CAMERA): none by
           # default; `emulated` gives the QR scanner a moving test picture.
           case "${EMU_CAMERA:-none}" in
@@ -370,7 +374,7 @@ jobs:
           # Screenshots are kept only encrypted with this — see run.sh.
           LAB_RESULTS_KEY: ${{ secrets.LAB_RESULTS_KEY }}
         with:
-          api-level: 34
+          api-level: ${{ steps.apk.outputs.api }}
           target: google_apis
           arch: x86_64
           profile: ${{ steps.apk.outputs.profile }}
