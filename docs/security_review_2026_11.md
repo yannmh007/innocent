@@ -245,7 +245,16 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   COOP, `nosniff` and no referrer, and `/edge/studio.ts`, a migration,
   `BACKLOG.md` and `console/wrangler.toml` answer 404.
 - **Next:** retire the Pages copy after a week of use (from 13 Nov), as
-  the README's "Afterwards" says.
+  the README's "Afterwards" says. **13 Nov: not yet.** Proven on the new
+  origin: sign-in with the authenticator code (6 Nov), the Dashboard and
+  Review (6 Nov approvals; 13 Nov 09:40 a session refresh and a full
+  Dashboard load, all 200), previews and the speed test (the stream Worker
+  answers the origin). NOT proven: an upload — it goes from the page to R2
+  directly, and the buckets' CORS policy as recorded names only the Pages
+  origin; the 6 Nov steps did not change it. The owner adds the console
+  origin to both buckets' policy and one upload works there; then the
+  retirement (code ready to write in a few lines; its deploy and ship on
+  the owner's word).
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

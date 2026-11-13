@@ -73,11 +73,17 @@ fail on the new console only.
 
 ## Afterwards
 
-When the new console has been used for a week without trouble:
+When the new console has been used for a week without trouble — and an
+UPLOAD has worked there: uploads go from the page straight to R2, so both
+buckets' CORS policy must name `https://console.innocentplayer.com`
+(`docs/studio/README.md`, "CORS, on both buckets"). The 6 Nov steps left
+that out; sign-in, the Dashboard, Review, previews and the speed test do
+not need it, which is why a week of use without an upload proves nothing
+about it (13 Nov).
 
 * Retire the Pages copy. Remove `https://yannmh007.github.io` from
-  `console_origins.js` and from the stream Worker's `STUDIO_ORIGINS`, and
-  from Supabase's Redirect URLs.
+  `console_origins.js` and from the stream Worker's `STUDIO_ORIGINS`, from
+  Supabase's Redirect URLs, and from both buckets' CORS policy.
 * Point studio's `CONSOLE_URL` (the link in review notices) at the new
   origin.
 * Settings → Pages: publish nothing, or only what must be public.

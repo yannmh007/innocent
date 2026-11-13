@@ -51,12 +51,14 @@ does it.
   "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: (DNSSEC: Active, 13 Nov — done) update a phone to 1.64.83 and say if the player's menus look
-  right now (⋮, CC, the error card), and if "stopped responding" ever shows
-  again on a file that plays. (The
-  five open films were approved: every `open-film-%` title reads
-  `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
-  trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
+- **The owner still has to**: update a phone to 1.64.83 and say if the
+  player's menus look right now (⋮, CC, the error card), and if "stopped
+  responding" ever shows again on a file that plays; add
+  `https://console.innocentplayer.com` to the CORS policy of BOTH R2
+  buckets and try one upload on the new console — the Pages copy retires
+  only after that (security review P4, 13 Nov). Done 13 Nov: DNSSEC
+  Active; the legacy Supabase keys off. (The five open films were
+  approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
 - **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
   default; ships with the next release)**: `StreamCacheServer.keepSpare`.
   Measured first (device lab M1, 42951731347): on the weak line a jump's
