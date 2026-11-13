@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:flutter/widgets.dart';
+
 /// GRIDS THAT ADD COLUMNS AS THE WINDOW WIDENS (docs/devices_2026_11.md,
 /// Phase 2).
 ///
@@ -27,3 +29,23 @@ class Responsive {
     return math.max(min, ((width + spacing) / (maxCell + spacing)).ceil());
   }
 }
+
+/// A grid's width to build with, a TV's side margins kept clear: on a TV the
+/// overscan margins are insets (TvSafeArea), and a full-screen grid ran its
+/// first and last columns into them. A phone upright has no side insets.
+class SafeGridWidth extends StatelessWidget {
+  const SafeGridWidth({super.key, required this.builder});
+
+  /// Builds the grid for [width], the room it has.
+  final Widget Function(BuildContext context, double width) builder;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, box) => builder(context, box.maxWidth),
+        ),
+      );
+}
+

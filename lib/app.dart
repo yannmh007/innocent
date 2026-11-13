@@ -825,8 +825,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // reporting 0 won't erase it.
         SystemInsets.observeBottom(MediaQuery.of(context).viewPadding.bottom);
         // The D-pad's focus ring sits over everything, the PiP window too.
-        // On a TV, the overscan margins as insets (tv_safe_area.dart).
-        return FocusRingLayer(
+        // On a TV, the overscan margins as insets (tv_safe_area.dart). The
+        // D-pad leaves a text field (tv_focus.dart: Flutter's own keeps it).
+        return DpadLeavesTextFields(
+          child: FocusRingLayer(
           child: TvSafeArea(
             child: Stack(
               children: [
@@ -834,6 +836,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
                 const FloatingPipOverlay(),
               ],
             ),
+          ),
           ),
         );
       },

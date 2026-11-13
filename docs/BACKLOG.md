@@ -214,6 +214,13 @@ beside MX Player. Done:
   tablet resize, the WebView screens keep their history Back at 36. Left
   there: the rotate button where Android 16 ignores it, an API 36 lab job,
   local network permission before targeting 37 (Transfer, Network).
+  **Phase 2 item 3, TV (13 Nov, first part)**: the D-pad can leave a text
+  field (Flutter 3.32's single-line fields kept every arrow — the search
+  field held a remote for good); Back by D-pad from a pane goes to the
+  list's open row before it leaves; a 190-photograph overscan audit fixed
+  a film's page, the poster and media grids, the picker and the shell's
+  right side. Left: TV type scale (an owner question), focus rings on
+  GestureDetector tiles, frame-rate matching, MediaSession voice.
 - Left: the gestures help keeps its own full-screen look; the paste bar's
   Burmese hint sits a little high (the font's metrics); a test that drives
   the 750 ms engine check with a fake wedged engine.

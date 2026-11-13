@@ -875,12 +875,18 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             ),
         ],
       ),
-      body: Column(
+      // A TV keeps its margins clear (TvSafeArea): the chips and the lists
+      // ran to the edges. A phone upright has no side insets.
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
         children: [
           _catBar(),
           _breadcrumb(),
           Expanded(child: _body()),
         ],
+      ),
       ),
       bottomNavigationBar: _picked.isNotEmpty ? _addNowBar() : null,
     );
@@ -2287,10 +2293,10 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
       );
     }
     // Three on a phone, more as the window widens (responsive.dart).
-    return LayoutBuilder(builder: (context, box) => GridView.builder(
+    return SafeGridWidth(builder: (context, width) => GridView.builder(
       padding: const EdgeInsets.all(8).plusNavBar(context),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
+        crossAxisCount: Responsive.gridColumns(width - 16, spacing: 8),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 1,

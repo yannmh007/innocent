@@ -16,6 +16,7 @@ import 'widgets/poster_metrics.dart';
 import 'widgets/vh_insets.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../../core/ui/transient_prompt.dart';
+import '../../../core/ui/responsive.dart';
 
 /// The Bookmarks shelf: the titles the viewer saved, newest first.
 ///
@@ -85,8 +86,8 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
           await ref.read(titleBookmarksProvider.notifier).sync();
           ref.invalidate(bookmarkedTitlesProvider);
         },
-        child: LayoutBuilder(
-          builder: (context, box) => CustomScrollView(
+        child: SafeGridWidth(
+          builder: (context, width) => CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: <Widget>[
               if (!signedIn && ledger.length > 0)
@@ -119,11 +120,11 @@ class _BookmarksScreenState extends ConsumerState<BookmarksScreen> {
                       sliver: SliverGrid(
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount:
-                              PosterMetrics.gridColumnsFor(box.maxWidth),
+                              PosterMetrics.gridColumnsFor(width),
                           crossAxisSpacing: PosterMetrics.gridSpacing,
                           mainAxisSpacing: 14,
                           mainAxisExtent:
-                              PosterMetrics.gridExtent(context, box.maxWidth),
+                              PosterMetrics.gridExtent(context, width),
                         ),
                         delegate: SliverChildBuilderDelegate(
                           (context, i) => _SavedCard(

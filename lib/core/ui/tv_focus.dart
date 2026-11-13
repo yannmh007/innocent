@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import 'device_profile.dart';
 
 /// ONE visible focus ring for the whole app, drawn over whatever has focus.
 ///
@@ -221,3 +222,75 @@ class RemoteFocusable extends StatelessWidget {
 class _MenuIntent extends Intent {
   const _MenuIntent();
 }
+
+/// THE D-PAD LEAVES A TEXT FIELD.
+///
+/// Flutter keeps a focused single-line text field's arrow keys for its
+/// caret: ↓ goes to the end, ↑ to the start, ← and → stop at the edges, and
+/// focus never leaves (flutter#147772; probed on 3.32.8, 13 Nov). On a TV a
+/// search field the remote landed in — it opens focused — held the D-pad
+/// for good: the results under it could not be reached, only Back, which
+/// closed the search. Installed once above the navigator (app.dart), below
+/// the app's text-editing shortcuts so it hears the key first: in a
+/// single-line field ↑ and ↓ move focus to what is above and below it (with
+/// nothing there, the caret moves as before); on a TV ← and → leave from the
+/// field's ends too. A multi-line field keeps its arrows.
+class DpadLeavesTextFields extends StatelessWidget {
+  const DpadLeavesTextFields({super.key, required this.child, this.tv});
+
+  final Widget child;
+
+  /// Overrides [DeviceProfile.isTv] (tests).
+  final bool? tv;
+
+  @override
+  Widget build(BuildContext context) => Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: (_, event) => leave(event, tv: tv ?? DeviceProfile.isTv),
+        child: child,
+      );
+
+  /// What [event] does to the focused text field, if anything.
+  @visibleForTesting
+  static KeyEventResult leave(KeyEvent event, {required bool tv}) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final focus = FocusManager.instance.primaryFocus;
+    final editable =
+        focus?.context?.findAncestorStateOfType<EditableTextState>();
+    if (focus == null ||
+        editable == null ||
+        editable.widget.focusNode != focus ||
+        editable.widget.maxLines != 1) {
+      return KeyEventResult.ignored;
+    }
+    final selection = editable.widget.controller.selection;
+    final length = editable.widget.controller.text.length;
+    final key = event.logicalKey;
+    final TraversalDirection? direction;
+    if (key == LogicalKeyboardKey.arrowDown) {
+      direction = TraversalDirection.down;
+    } else if (key == LogicalKeyboardKey.arrowUp) {
+      direction = TraversalDirection.up;
+    } else if (tv &&
+        key == LogicalKeyboardKey.arrowLeft &&
+        selection.isCollapsed &&
+        selection.baseOffset <= 0) {
+      direction = TraversalDirection.left;
+    } else if (tv &&
+        key == LogicalKeyboardKey.arrowRight &&
+        selection.isCollapsed &&
+        selection.baseOffset >= length) {
+      direction = TraversalDirection.right;
+    } else {
+      direction = null;
+    }
+    if (direction == null) return KeyEventResult.ignored;
+    return focus.focusInDirection(direction)
+        ? KeyEventResult.handled
+        : KeyEventResult.ignored;
+  }
+}
+

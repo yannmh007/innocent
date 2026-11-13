@@ -30,6 +30,9 @@ class FolderListItem extends ConsumerWidget {
   /// and rounded, and the open folder's sits on the accent's tint.
   final bool? open;
 
+  /// The row's focus, for the screen to send a D-pad's focus back to it.
+  final FocusNode? focusNode;
+
   const FolderListItem({
     super.key,
     required this.folder,
@@ -38,6 +41,7 @@ class FolderListItem extends ConsumerWidget {
     this.selectionMode = false,
     this.selected = false,
     this.open,
+    this.focusNode,
   });
 
   @override
@@ -117,6 +121,7 @@ class FolderListItem extends ConsumerWidget {
           // (matches MX Player). Properties remain available from the folder's
           // own info affordance elsewhere.
           onLongPress: onLongPress,
+          focusNode: focusNode,
           borderRadius: inPane ? BorderRadius.circular(14) : null,
           child: child,
         );

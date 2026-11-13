@@ -45,6 +45,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   /// The right pane; a new key is a new pane (a fresh navigator).
   GlobalKey<DetailNavigatorState> _detailKey = GlobalKey();
 
+  /// Two panes: focus is on the page (by D-pad or keyboard), and the open
+  /// row to send it back to — Back steps out of the page before Settings.
+  bool _pageFocused = false;
+  final FocusNode _openRow = FocusNode(debugLabel: 'settings open row');
+
+  void _keysOrTouch(FocusHighlightMode _) {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_keysOrTouch);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_keysOrTouch);
+    _openRow.dispose();
+    super.dispose();
+  }
+
   void _open(int index, Widget screen) {
     setState(() => _selectedIndex = index);
     // Code-quality audit: was .then() without onError or mounted
@@ -208,6 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: ListDetailPanes(
+        onDetailFocus: (focused) => setState(() => _pageFocused = focused),
         list: Scaffold(
           backgroundColor: AppColors.darkBackground,
           appBar: AppBar(title: Text(s.settings)),
@@ -218,6 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               key: ValueKey(items[i].title),
               entry: items[i],
               selected: i == selected,
+              focusNode: i == selected ? _openRow : null,
               onTap: () => _select(i),
             ),
           ),
@@ -230,7 +254,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             fit: StackFit.expand,
             children: [...previous, if (current != null) current],
           ),
-          child: DetailNavigator(key: _detailKey, page: screens[selected]),
+          child: DetailNavigator(
+            key: _detailKey,
+            page: screens[selected],
+            backToList: _pageFocused && ListDetail.usingKeys
+                ? _openRow.requestFocus
+                : null,
+          ),
         ),
       ),
     );
@@ -245,11 +275,13 @@ class _PaneRow extends StatelessWidget {
     required this.entry,
     required this.selected,
     required this.onTap,
+    this.focusNode,
   });
 
   final _SettingsEntry entry;
   final bool selected;
   final VoidCallback onTap;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -261,6 +293,7 @@ class _PaneRow extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             onTap: onTap,
+            focusNode: focusNode,
             borderRadius: BorderRadius.circular(14),
             child: Ink(
               decoration:

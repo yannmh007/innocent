@@ -116,8 +116,13 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
 - A grid adds columns with width (`Responsive.gridColumns`; posters
   `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
   cell stays about a phone's size.
-- TV: the overscan margins are insets (`TvSafeArea`); every function by
-  the D-pad, focus always visible; the remote's media keys work.
+- TV: the overscan margins are insets (`TvSafeArea`): a body that draws
+  words or tiles keeps clear of the side insets (a SafeArea, or
+  `SafeGridWidth` for a grid; the shell's right side does it for the tabs),
+  pictures may bleed; every function by the D-pad, focus always visible;
+  the remote's media keys work; the D-pad leaves a text field
+  (`DpadLeavesTextFields`); Back by D-pad from a pane goes to its list
+  first. Prove it: `SCREEN_PHONES=tv` and measure the 48 dp side bands.
 - Keyboard and mouse are first-class: Space/K, arrows/J/L, Esc, M, ?, a
   right-click menu, hover shows the controls and the pointer hides.
 - Prove on `PLAYER_PHONES=all` and `SCREEN_PHONES=tablet,tablet_land,fold,

@@ -63,6 +63,9 @@ class _NoWarm extends MediaPrewarmService {
 }
 
 late GoRouter _router;
+
+/// Times the app asked Android to leave (Back with nothing left to undo).
+int _exits = 0;
 late ProviderContainer _container;
 
 /// The Video tab in a shell with the shell's Back rule (ShellBackScope),
@@ -72,8 +75,12 @@ Future<void> _pump(WidgetTester tester, Size size) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  tester.binding.defaultBinaryMessenger
-      .setMockMethodCallHandler(SystemChannels.platform, (call) async => null);
+  _exits = 0;
+  tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform, (call) async {
+    if (call.method == 'SystemNavigator.pop') _exits++;
+    return null;
+  });
   _router = GoRouter(initialLocation: Routes.local, routes: [
     ShellRoute(
       builder: (context, state, child) => Consumer(
@@ -133,6 +140,51 @@ Future<void> _settle(WidgetTester tester) async {
   for (var i = 0; i < 15; i++) {
     await tester.pump(const Duration(milliseconds: 60));
   }
+}
+
+/// Focus on the first focusable thing inside [area], as a D-pad would.
+void _focusInside(Finder area) {
+  final inside = area.evaluate().first;
+  for (final node in FocusManager.instance.rootScope.descendants) {
+    final c = node.context;
+    if (c == null || !node.canRequestFocus || node.skipTraversal) continue;
+    var found = false;
+    c.visitAncestorElements((e) {
+      if (e == inside) found = true;
+      return !found;
+    });
+    if (found) {
+      node.requestFocus();
+      return;
+    }
+  }
+  fail('nothing focusable inside $area');
+}
+
+/// Whether the primary focus is inside [area] (or [area] inside it).
+bool _focusedIn(Finder area) {
+  final c = FocusManager.instance.primaryFocus?.context;
+  if (c == null) return false;
+  final targets = area.evaluate().toSet();
+  if (targets.contains(c)) return true;
+  var found = false;
+  c.visitAncestorElements((e) {
+    if (targets.contains(e)) found = true;
+    return !found;
+  });
+  if (found) return true;
+  var below = false;
+  void visit(Element e) {
+    if (below) return;
+    if (targets.contains(e)) {
+      below = true;
+      return;
+    }
+    e.visitChildren(visit);
+  }
+
+  (c as Element).visitChildren(visit);
+  return below;
 }
 
 Future<void> _back(WidgetTester tester) async {
@@ -230,6 +282,35 @@ void main() {
     await _settle(tester);
     expect(tester.widget<FolderDetailScreen>(_pane()).folderPath, _movies);
     expect(_container.read(selectionProvider), isEmpty);
+    await _end(tester);
+  });
+
+  testWidgets(
+      'wide, by D-pad: Back from the videos goes to the open folder, then '
+      'out of the app; by touch, out at once', (tester) async {
+    await _pump(tester, const Size(1280, 800));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    _focusInside(_pane());
+    await _settle(tester);
+    expect(FocusManager.instance.highlightMode, FocusHighlightMode.traditional);
+    await _back(tester);
+    expect(_exits, 0, reason: 'Back from the videos left the app');
+    expect(_focusedIn(_pane()), isFalse);
+    expect(_focusedIn(_row('Camera')), isTrue,
+        reason: 'focus is not on the open folder');
+    await _back(tester);
+    expect(_exits, 1);
+    await _end(tester);
+  });
+
+  testWidgets('wide, by touch: Back with the videos focused leaves',
+      (tester) async {
+    await _pump(tester, const Size(1280, 800));
+    _focusInside(_pane());
+    await _settle(tester);
+    expect(FocusManager.instance.highlightMode, FocusHighlightMode.touch);
+    await _back(tester);
+    expect(_exits, 1);
     await _end(tester);
   });
 

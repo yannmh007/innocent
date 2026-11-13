@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/responsive.dart';
 import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'content_detail_screen.dart';
@@ -190,14 +191,14 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
         }
         // Three posters on a phone, more on a wider window
         // (PosterMetrics.gridColumnsFor).
-        return LayoutBuilder(builder: (context, box) => GridView.builder(
+        return SafeGridWidth(builder: (context, width) => GridView.builder(
           padding: EdgeInsets.fromLTRB(
               14, 12, 14, VhInsets.scrollBottom(context)),
           keyboardDismissBehavior:
               ScrollViewKeyboardDismissBehavior.onDrag,
           itemCount: results.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: PosterMetrics.gridColumnsFor(box.maxWidth),
+            crossAxisCount: PosterMetrics.gridColumnsFor(width),
             crossAxisSpacing: 10,
             mainAxisSpacing: 14,
             childAspectRatio: 0.56,

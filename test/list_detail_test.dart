@@ -2,6 +2,7 @@
 // (core/ui/list_detail.dart, docs/devices_2026_11.md Phase 2), and a phone
 // exactly as before.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/localization/app_strings.dart';
@@ -47,6 +48,53 @@ Future<void> _settle(WidgetTester tester) async {
   for (var i = 0; i < 12; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
+}
+
+/// Focus on the first focusable thing inside [area], as a D-pad press
+/// would put it there.
+void _focusInside(Finder area) {
+  final inside = area.evaluate().first;
+  for (final node in FocusManager.instance.rootScope.descendants) {
+    final c = node.context;
+    if (c == null || !node.canRequestFocus || node.skipTraversal) continue;
+    var found = false;
+    c.visitAncestorElements((e) {
+      if (e == inside) found = true;
+      return !found;
+    });
+    if (found) {
+      node.requestFocus();
+      return;
+    }
+  }
+  fail('nothing focusable inside $area');
+}
+
+/// Whether the primary focus is inside [area].
+bool _focusedIn(Finder area) {
+  final c = FocusManager.instance.primaryFocus?.context;
+  if (c == null) return false;
+  final targets = area.evaluate().toSet();
+  if (targets.contains(c)) return true;
+  var found = false;
+  c.visitAncestorElements((e) {
+    if (targets.contains(e)) found = true;
+    return !found;
+  });
+  if (found) return true;
+  // The row's text sits beside, not above, its InkWell's focus: look down
+  // from the focused element too.
+  var below = false;
+  void visit(Element e) {
+    if (below) return;
+    if (targets.contains(e)) {
+      below = true;
+      return;
+    }
+    e.visitChildren(visit);
+  }
+  (c as Element).visitChildren(visit);
+  return below;
 }
 
 Future<void> _back(WidgetTester tester) async {
@@ -193,6 +241,41 @@ void main() {
     await _back(tester);
     expect(find.byType(SettingsPlayerScreen), findsNothing);
     expect(find.text('Player'), findsOneWidget);
+  });
+
+  testWidgets(
+      'wide, by D-pad: Back from the page goes to its row, then leaves; '
+      'by touch it leaves at once', (tester) async {
+    await _pump(tester, const Size(1280, 800));
+    await tester.tap(find.text('Player'));
+    await _settle(tester);
+    // A key press: Flutter's focus is the D-pad's from here (traditional).
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    _focusInside(find.byType(SettingsPlayerScreen));
+    await _settle(tester);
+    expect(FocusManager.instance.highlightMode, FocusHighlightMode.traditional);
+
+    await _back(tester);
+    expect(find.byType(SettingsScreen), findsOneWidget,
+        reason: 'Back from the page left Settings');
+    expect(_focusedIn(find.byType(SettingsPlayerScreen)), isFalse);
+    expect(_focusedIn(find.text('Player').first), isTrue,
+        reason: 'focus is not on the open row');
+
+    await _back(tester);
+    expect(find.byType(SettingsScreen), findsNothing);
+  });
+
+  testWidgets('wide, by touch: Back from the page leaves Settings',
+      (tester) async {
+    await _pump(tester, const Size(1280, 800));
+    await tester.tap(find.text('Player'));
+    await _settle(tester);
+    _focusInside(find.byType(SettingsPlayerScreen));
+    await _settle(tester);
+    expect(FocusManager.instance.highlightMode, FocusHighlightMode.touch);
+    await _back(tester);
+    expect(find.byType(SettingsScreen), findsNothing);
   });
 
   testWidgets('wide: TalkBack reaches the list beside the page',

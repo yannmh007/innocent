@@ -309,12 +309,12 @@ class _StatusSaverScreenState extends State<StatusSaverScreen>
     return RefreshIndicator(
       onRefresh: _load,
       // Three on a phone, more as the window widens (responsive.dart).
-      child: LayoutBuilder(
-        builder: (context, box) => GridView.builder(
+      child: SafeGridWidth(
+        builder: (context, width) => GridView.builder(
           padding: const EdgeInsets.all(8).plusNavBar(context),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount:
-                Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
+                Responsive.gridColumns(width - 16, spacing: 8),
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
             childAspectRatio: 0.72,

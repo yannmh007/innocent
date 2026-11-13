@@ -29,6 +29,12 @@ class ListDetail {
   /// has the rest (400 dp at the tightest: a foldable turned, beside the
   /// rail). At 320 the Video tab's title gave way to its four buttons.
   static double listWidth(double width) => (width * 0.36).clamp(360.0, 400.0);
+
+  /// The person is moving by keys — a TV's D-pad, a keyboard — not by touch
+  /// (Flutter's focus highlight mode: traditional from a key press until the
+  /// next touch).
+  static bool get usingKeys =>
+      FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
 }
 
 /// The two panes: [list] at [ListDetail.listWidth], a hairline, [detail] in
@@ -38,11 +44,22 @@ class ListDetail {
 /// It keeps clear of the left and right insets — a TV's overscan margins, a
 /// cutout sideways — which a list's own padding does not (a vertical list
 /// takes only the top and bottom ones), and hands them to neither pane.
+///
+/// [onDetailFocus] hears focus enter and leave the detail pane: on a TV a
+/// D-pad's Back from inside the page goes back to the list's open row
+/// before it leaves the screen (Android TV's rule: Back steps out of a
+/// pane, then out of the screen), as a touch never needs.
 class ListDetailPanes extends StatelessWidget {
-  const ListDetailPanes({super.key, required this.list, required this.detail});
+  const ListDetailPanes({
+    super.key,
+    required this.list,
+    required this.detail,
+    this.onDetailFocus,
+  });
 
   final Widget list;
   final Widget detail;
+  final ValueChanged<bool>? onDetailFocus;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +79,14 @@ class ListDetailPanes extends StatelessWidget {
               thickness: 1,
               color: AppColors.white10,
             ),
-            Expanded(child: detail),
+            Expanded(
+              child: Focus(
+                canRequestFocus: false,
+                skipTraversal: true,
+                onFocusChange: onDetailFocus,
+                child: detail,
+              ),
+            ),
           ],
         ),
       ),
@@ -85,10 +109,16 @@ class ListDetailPanes extends StatelessWidget {
 /// Key it by what it shows: a new page is a new navigator, so a page opened
 /// inside the last one does not linger under the next.
 class DetailNavigator extends StatefulWidget {
-  const DetailNavigator({super.key, required this.page});
+  const DetailNavigator({super.key, required this.page, this.backToList});
 
   /// The page at the bottom of the pane.
   final Widget page;
+
+  /// What Back does at the page at the bottom of the pane instead of
+  /// leaving the screen — focus to the list's open row, when the person is
+  /// on the page by D-pad or keyboard ([ListDetailPanes.onDetailFocus]).
+  /// Null: Back leaves.
+  final VoidCallback? backToList;
 
   @override
   State<DetailNavigator> createState() => DetailNavigatorState();
@@ -96,6 +126,23 @@ class DetailNavigator extends StatefulWidget {
 
 class DetailNavigatorState extends State<DetailNavigator> {
   final GlobalKey<NavigatorState> _navigator = GlobalKey<NavigatorState>();
+
+  /// [DetailNavigator.backToList], for the page at the bottom: the route is
+  /// built once, so it listens rather than being rebuilt.
+  late final ValueNotifier<VoidCallback?> _backToList =
+      ValueNotifier<VoidCallback?>(widget.backToList);
+
+  @override
+  void didUpdateWidget(DetailNavigator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _backToList.value = widget.backToList;
+  }
+
+  @override
+  void dispose() {
+    _backToList.dispose();
+    super.dispose();
+  }
 
   /// Back to the page at the bottom of the pane (its row tapped again).
   void popToRoot() => _navigator.currentState?.popUntil((r) => r.isFirst);
@@ -117,7 +164,21 @@ class DetailNavigatorState extends State<DetailNavigator> {
             // being opened over another (the switch above fades it).
             PageRouteBuilder<void>(
               settings: const RouteSettings(name: 'detail'),
-              pageBuilder: (_, __, ___) => widget.page,
+              // A Back the page at the bottom holds (canPop false) is one
+              // this navigator handles (NavigatorPopHandler): focus goes to
+              // the list instead of the screen closing.
+              pageBuilder: (_, __, ___) =>
+                  ValueListenableBuilder<VoidCallback?>(
+                valueListenable: _backToList,
+                builder: (_, back, page) => PopScope<Object?>(
+                  canPop: back == null,
+                  onPopInvokedWithResult: (didPop, _) {
+                    if (!didPop) back?.call();
+                  },
+                  child: page!,
+                ),
+                child: widget.page,
+              ),
               transitionDuration: Duration.zero,
               reverseTransitionDuration: Duration.zero,
             ),

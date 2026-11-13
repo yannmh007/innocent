@@ -161,3 +161,33 @@ Back at 36 (`enableOnBackInvokedCallback="false"`). Left: hide the rotate
 button where Android 16 ignores it; an API 36 lab job; a foldable that
 starts folded stays a "phone" (DeviceProfile decides once).
 
+## Phase 2 item 3 — TV, first part (13 Nov)
+1. **The D-pad leaves a text field** (`DpadLeavesTextFields`, tv_focus.dart,
+   once above the navigator in app.dart). Probed on Flutter 3.32.8: a
+   focused single-line field kept ↓ ↑ ← → for its caret and focus never
+   left it — on a TV the search field (it opens focused) held the remote
+   for good (flutter#147772's family). Now ↑ ↓ move focus out of any
+   single-line field; on a TV ← → too from the field's ends; a multi-line
+   field keeps its arrows. `test/dpad_text_field_test.dart` (6).
+2. **Back from a pane by D-pad** (Settings, the Video tab on two panes):
+   with focus in the page or the folder's videos, Back goes to the list's
+   open row first (Android TV: Back steps out of a pane, then out of the
+   screen); by touch Back leaves at once, as before. Settings' pane holds
+   it with a PopScope on its root page, which its NavigatorPopHandler
+   counts (`routeBlocksPop`); the Video tab through the shell's tab Back.
+   Tests in both files, D-pad and touch.
+3. **Overscan audit, every screen** (190 TV photographs, the side margins
+   measured for bright ink): fixed a film's page (its words 14 dp from the
+   edge; the picture still bleeds), the saved posters, the catalogue's
+   See all and search grids, the Status Saver, Private Folder and its
+   picker (`SafeGridWidth`), and the shell's right side (the tabs' lists ran
+   their ⋮ and sizes into it: the page now keeps clear of the right inset
+   as the rail does of the left). Left in the margins, rightly: the film,
+   full-screen photos. Phones and tablets pixel-identical but the two-pane
+   hairline, now over the Video tab's own black.
+Left in item 3: the 10-foot type scale (text is the phone's sp; on a TV
+from a sofa the 11–12 sp captions are small — a TV text scale is the
+question for the owner), focus rings on custom tiles (RemoteTappable is
+there; GestureDetector tiles to sweep), frame-rate matching, MediaSession
+voice commands.
+

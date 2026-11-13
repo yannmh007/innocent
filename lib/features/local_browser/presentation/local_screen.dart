@@ -90,6 +90,27 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   bool _twoPanes = false;
   String? _paneOpen;
 
+  /// Two panes: focus is among the open folder's videos (by D-pad or
+  /// keyboard), and the open folder's row to send it back to — on a TV,
+  /// Back steps out of the videos to the folders before it leaves the app.
+  bool _paneFocused = false;
+  final FocusNode _openRow = FocusNode(debugLabel: 'open folder row');
+
+  void _keysOrTouch(FocusHighlightMode _) {
+    if (mounted) setState(() {});
+  }
+
+  void _focusOpenRow() {
+    _openRow.requestFocus();
+    final row = _openRow.context;
+    if (row != null) {
+      // ignore: discarded_futures
+      Scrollable.ensureVisible(row,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+          duration: const Duration(milliseconds: 200));
+    }
+  }
+
   /// The Video tab's query, taken while mounted: the search ends with the
   /// tab (dispose).
   late final StateController<String> _query;
@@ -99,6 +120,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     super.initState();
     _fabVisibility = FabScrollVisibility();
     _query = ref.read(searchQueryProvider.notifier);
+    FocusManager.instance.addHighlightModeListener(_keysOrTouch);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Leaving the tab before the first frame completes disposes this State;
       // both helpers below touch `ref` and `context`, which throws after that.
@@ -168,6 +190,8 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
 
   @override
   void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_keysOrTouch);
+    _openRow.dispose();
     _fabVisibility.dispose();
     // A search ends with the tab: switching tabs disposes this screen and
     // took its search bar away, but the query stayed and the next visit's
@@ -560,18 +584,6 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     // moved on, so the prompt goes (transient_prompt.dart).
     if (selectionActive) TransientPrompt.close();
 
-    // Back: a selection first, then the search, then the shell's rule.
-    // The shell does it — a PopScope here is never asked (shell_back.dart).
-    // On two panes that includes a selection of the open folder's videos.
-    tabBack(selectionActive
-        ? () {
-            ref.read(folderSelectionProvider.notifier).clear();
-            ref.read(selectionProvider.notifier).clear();
-          }
-        : _searchActive
-            ? _closeSearch
-            : null);
-
     // TWO PANES on a wide window (core/ui/list_detail.dart): the folders,
     // and beside them the open folder's videos — the page a tap opens on a
     // phone, in place. The files view is one list either way.
@@ -593,6 +605,20 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
         if (mounted) ref.read(selectionProvider.notifier).clear();
       });
     }
+    // Back: a selection first, then the search, then the shell's rule.
+    // The shell does it — a PopScope here is never asked (shell_back.dart).
+    // On two panes that includes a selection of the open folder's videos.
+    tabBack(selectionActive
+        ? () {
+            ref.read(folderSelectionProvider.notifier).clear();
+            ref.read(selectionProvider.notifier).clear();
+          }
+        : _searchActive
+            ? _closeSearch
+            : two && _paneFocused && ListDetail.usingKeys
+                ? _focusOpenRow
+                : null);
+
     // The open folder's selection is its pane's: its bars are there.
     final listVideoSel = videoSelActive && !two;
     // The list's own width: a two-pane list is at least 360 dp; one pane is
@@ -792,6 +818,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     );
     if (!two) return page;
     return ListDetailPanes(
+      onDetailFocus: (focused) => setState(() => _paneFocused = focused),
       list: page,
       detail: open == null
           ? const ColoredBox(color: AppColors.specScaffold)
@@ -1099,6 +1126,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     return FolderListItem(
       folder: folder,
       open: _twoPanes ? folder.path == _paneOpen : null,
+      focusNode: _twoPanes && folder.path == _paneOpen ? _openRow : null,
       selectionMode: selectionMode,
       selected: selectedFolders.contains(folder.path),
       onTap: () => _openFolder(folder),

@@ -1018,9 +1018,9 @@ class _PrivateFolderScreenState extends ConsumerState<PrivateFolderScreen>
 
   Widget _gridBody(List<PrivateEntry> entries, bool showFolders) {
     // Three on a phone, more as the window widens (responsive.dart).
-    return LayoutBuilder(
-      builder: (context, box) => GridView.count(
-        crossAxisCount: Responsive.gridColumns(box.maxWidth - 16, spacing: 8),
+    return SafeGridWidth(
+      builder: (context, width) => GridView.count(
+        crossAxisCount: Responsive.gridColumns(width - 16, spacing: 8),
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 90).plusNavBar(context),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,

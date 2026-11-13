@@ -250,11 +250,24 @@ class _ShellScreenState extends ConsumerState<ShellScreen>
             // The rail has kept clear of the left inset (its SafeArea), so
             // the page beside it does not keep clear of it again: on a TV
             // the Video tab's title sat 48 dp further in than its list.
+            // And keeps clear of the right inset (a TV's 5 % margin) as the
+            // rail does of the left: the tabs' lists ran their ⋮ and sizes
+            // into it (13 Nov). The strip shows the tab's own background.
             Expanded(
-              child: MediaQuery.removePadding(
-                context: context,
-                removeLeft: true,
-                child: Semantics(container: true, child: widget.child),
+              child: ColoredBox(
+                color: currentIndex == 0
+                    ? AppColors.specScaffold
+                    : AppColors.darkBackground,
+                child: SafeArea(
+                  left: false,
+                  top: false,
+                  bottom: false,
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeLeft: true,
+                    child: Semantics(container: true, child: widget.child),
+                  ),
+                ),
               ),
             ),
           ],

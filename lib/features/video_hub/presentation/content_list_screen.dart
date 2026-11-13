@@ -112,7 +112,10 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
     final appNames = ref.watch(genreNamesProvider);
     final genreNames =
         (facets?.genreNames.isEmpty ?? true) ? appNames : facets!.genreNames;
-    final maxWidth = MediaQuery.of(context).size.width;
+    // The grid's own width: the window less a TV's side margins (the body
+    // keeps clear of them), so its posters are sized for the room they have.
+    final mq = MediaQuery.of(context);
+    final maxWidth = mq.size.width - mq.padding.horizontal;
 
     return Scaffold(
       backgroundColor: VH.canvas,
@@ -127,7 +130,12 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
         ),
         title: Text(widget.title, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
-      body: RefreshIndicator(
+      // A TV keeps its margins clear (TvSafeArea): the grid ran to the
+      // edges. A phone upright has no side insets.
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: RefreshIndicator(
         onRefresh: () =>
             ref.read(pagedCatalogueProvider(key).notifier).refresh(),
         backgroundColor: VH.surface2,
@@ -204,6 +212,7 @@ class _ContentListScreenState extends ConsumerState<ContentListScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
