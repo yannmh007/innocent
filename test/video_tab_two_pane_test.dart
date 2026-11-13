@@ -4,6 +4,7 @@
 // too. Driven through GoRouter and a real system Back, as Android sends it.
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,6 +22,7 @@ import 'package:innocent/features/local_browser/presentation/folder_list_item.da
 import 'package:innocent/features/local_browser/presentation/library_provider.dart';
 import 'package:innocent/features/local_browser/presentation/local_screen.dart';
 import 'package:innocent/features/local_browser/presentation/selection_provider.dart';
+import 'package:innocent/features/local_browser/presentation/widgets/video_option_menu.dart';
 import 'package:innocent/features/local_browser/presentation/widgets/selection_app_bar.dart';
 import 'package:innocent/features/shell/shell_back.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -311,6 +313,27 @@ void main() {
     expect(FocusManager.instance.highlightMode, FocusHighlightMode.touch);
     await _back(tester);
     expect(_exits, 1);
+    await _end(tester);
+  });
+
+  testWidgets(
+      'a mouse: right-click opens a video\'s menu, and selects a folder',
+      (tester) async {
+    await _pump(tester, const Size(1280, 800));
+    await tester.tap(find.text('VID_20261012_190755'),
+        buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await _settle(tester);
+    expect(find.byType(VideoOptionMenu), findsOneWidget,
+        reason: 'right-click on a video opened no menu');
+    await _back(tester);
+    expect(find.byType(VideoOptionMenu), findsNothing);
+
+    await tester.tap(_row('Movies'),
+        buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await _settle(tester);
+    expect(_container.read(folderSelectionProvider), contains(_movies));
+    // A right-click selects; it does not open the folder.
+    expect(tester.widget<FolderDetailScreen>(_pane()).folderPath, _camera);
     await _end(tester);
   });
 

@@ -191,3 +191,22 @@ question for the owner), focus rings on custom tiles (RemoteTappable is
 there; GestureDetector tiles to sweep), frame-rate matching, MediaSession
 voice commands.
 
+## Phase 2 item 4 — mouse and keyboard (13 Nov, first part)
+- Right-click: a video's row or tile opens its menu (as ⋮); a folder's
+  row or tile selects it (as a long press). Test: "a mouse: right-click".
+- The mouse wheel already zooms a photo (InteractiveViewer, probed: one
+  notch 1.8×, paging locked while zoomed) — no change.
+- Hover: every InkWell target has Material's hover; the tap targets built
+  as a 48 dp GestureDetector around a smaller InkWell keep the InkWell's
+  focus and hover. `RemoteTappable` (24 uses) draws no hover of its own —
+  left, as each such tile has its own look.
+
+## Found in item 3, for the owner (13 Nov)
+- The video's MediaSession exists only while background play is on
+  (PlaybackService, with its notification). In ordinary playback — every
+  film on a TV — there is none, so the TV's voice commands ("pause",
+  "skip 30 seconds") and its Now Playing card do not reach the player.
+  A session for the player's lifetime (no notification) would fix it; it
+  also takes the headset buttons from the activity's key handling to the
+  session on phones. A native change to prove on the lab before shipping.
+

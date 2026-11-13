@@ -121,6 +121,8 @@ class FolderListItem extends ConsumerWidget {
           // (matches MX Player). Properties remain available from the folder's
           // own info affordance elsewhere.
           onLongPress: onLongPress,
+          // A mouse's right-click does what a long press does: select.
+          onSecondaryTap: onLongPress,
           focusNode: focusNode,
           borderRadius: inPane ? BorderRadius.circular(14) : null,
           child: child,
