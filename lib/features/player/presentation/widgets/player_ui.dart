@@ -380,6 +380,19 @@ class _FadingScrollState extends State<_FadingScroll> {
   }
 }
 
+/// A sheet's body that fades at an edge with more beyond it, as ⋮'s does:
+/// for a sheet whose list always runs on (the gestures help).
+class PanelScroll extends StatelessWidget {
+  const PanelScroll({super.key, required this.padding, required this.children});
+
+  final EdgeInsets padding;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) =>
+      _FadingScroll(padding: padding, children: children);
+}
+
 /// The player's switch: accent track, white thumb, no outline; drawn only
 /// (the row around it takes the tap, so TalkBack and a TV remote meet one
 /// control, not two).

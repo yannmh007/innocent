@@ -226,9 +226,11 @@ beside MX Player. Done:
   TV's voice commands and Now Playing card reach the player); TV text at
   1.2. Left: frame-rate matching; an API 36 device-lab run before the
   release.
-- Left: the gestures help keeps its own full-screen look; the paste bar's
-  Burmese hint sits a little high (the font's metrics); a test that drives
-  the 750 ms engine check with a fake wedged engine.
+- **Item 5 done (13 Nov)**: the engine check has a test that drives it
+  (and found a resumed stream called stuck — fixed); the gestures help is a
+  player sheet (a TV's Tutorial is the remote's keys); the paste bar's hint
+  is centred (it sat high in every language: a dense field); the mouse
+  wheel over the film is the volume. docs/devices_2026_11.md.
 
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,

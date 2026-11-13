@@ -1892,7 +1892,8 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 50,
+        // 50 dp, or taller rather than cut when the font is large.
+        constraints: const BoxConstraints(minHeight: 50),
         decoration: BoxDecoration(
           color: AppColors.specInnerPanel,
           borderRadius: BorderRadius.circular(14),
@@ -1909,12 +1910,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             const Icon(Icons.link_rounded, size: 19, color: AppColors.white40),
             const SizedBox(width: 10),
             // The field fills the bar's 48 dp (it was a 28 dp line inside
-            // it): a tap anywhere on the bar's text area lands.
+            // it): a tap anywhere on the bar's text area lands. Not dense:
+            // the field is then 48 dp by itself and centres its line in them
+            // (InputDecorator's own minimum). Dense, it was one line high at
+            // the top of a 48 dp box, and the link and its hint sat high —
+            // most in Burmese, whose line is the tallest (13 Nov).
             Expanded(
-              child: SizedBox(
-                height: 48,
-                child: TextField(
-                textAlignVertical: TextAlignVertical.center,
+              child: TextField(
                 controller: _linkController,
                 focusNode: _linkFocus,
                 keyboardType: TextInputType.url,
@@ -1924,14 +1926,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                 maxLines: 1,
                 style: const TextStyle(color: Colors.white, fontSize: 13.5),
                 decoration: InputDecoration(
-                  isDense: true,
                   border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
                   hintText: s.downloaderPasteHint,
                   hintStyle:
                       const TextStyle(color: AppColors.white40, fontSize: 13.5),
                 ),
                 onSubmitted: _handleLink,
-              ),
               ),
             ),
             if (hasText)

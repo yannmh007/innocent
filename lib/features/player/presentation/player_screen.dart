@@ -2571,7 +2571,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         icon: Icons.help_outline,
         onTap: () {
           controller.closePanel();
-          GesturesHelpOverlay.show(context);
+          // A TV has no touch screen: its tutorial is the remote's keys.
+          if (DeviceProfile.isTv) {
+            _showKeys(context);
+          } else {
+            GesturesHelpOverlay.show(context);
+          }
         },
       ),
       MoreMenuItemData(
@@ -3260,6 +3265,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       e.buttons & kSecondaryMouseButton != 0) {
                     controller.openMoreMenu();
                   }
+                },
+                // The wheel is the volume, as in desktop players: a notch
+                // (64 dp of scroll) is 5 %, a trackpad's small steps in
+                // proportion. Through the swipe's own path, so the
+                // indicator, the booster above 100 % and the lock hold
+                // (13 Nov, Phase 2 item 5). Something scrolling above the
+                // film takes its wheel first (the resolver).
+                onPointerSignal: (e) {
+                  if (e is! PointerScrollEvent) return;
+                  GestureBinding.instance.pointerSignalResolver.register(e,
+                      (ev) {
+                    final dy = (ev as PointerScrollEvent).scrollDelta.dy;
+                    if (dy != 0) controller.onVolumeDelta(-dy / 64 * 0.05);
+                  });
                 },
                 child: MouseRegion(
                 cursor: state.controlsVisible

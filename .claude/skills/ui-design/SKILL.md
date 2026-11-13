@@ -75,6 +75,10 @@ two lines at most · caption 11 sp.
   while the sheet is open — a turn or a resize keeps the content's state
   (Android 16 ignores the player's orientation requests on tablets). `barrierColor: Colors.transparent` for a sheet that
   changes the picture (Display, subtitle delay) so the change can be seen.
+  A sheet whose list always runs on takes `PanelScroll` (it fades at an
+  edge with more, as ⋮ does). Rows that only inform (the gestures help)
+  take focus, so a remote can walk and scroll them. No menu draws its own
+  page (the gestures help was 87 % black with its own header and discs).
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other
   plain; max width 360–420.

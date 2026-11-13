@@ -239,4 +239,22 @@ voice commands.
   than 3 s — and a film that had played for under 400 ms of it was
   "stuck". Now a film meant to move again gets its own three seconds from
   that look. Both rules proved by breaking them (the test fails each way).
+- **The gestures help is a player sheet** (⋮ → Tutorial): it was a page of
+  its own — 87 % black, its own header and close, blue discs, its own type,
+  "Tap anywhere to dismiss". Now the player's glass sheet: bottom upright,
+  from the right sideways, the shared header and row type, the list fading
+  where it runs on (`PanelScroll`); its rows take focus so a remote walks
+  and scrolls them; Back closes it. On a TV, which has no touch, Tutorial
+  opens the remote's keys instead. Photographed in 56 layouts (320–900 dp,
+  TV, both ways, my/en, 1.0/1.3), none overflowing. Tests: "the gestures
+  help is a player sheet a keyboard can walk", "on a TV, the tutorial is
+  the remote's keys".
+- **The downloader's paste hint sat high — in every language, most in
+  Burmese.** A dense field is one line high; inside its 48 dp box that
+  line sat at the top (`textAlignVertical` aligns only within the line).
+  Not dense, the field is 48 dp by itself and centres its line; the bar is
+  50 dp or taller, no longer cut at large text. Photographed my/en, my at
+  1.3, a TV.
+- **The mouse wheel over the film is the volume** (decided): as desktop
+  players do; through the swipe's path. docs/player_gestures.md.
 

@@ -8,11 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
+import 'package:innocent/core/ui/device_profile.dart';
 import 'package:innocent/features/player/domain/engine_check.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/player_screen.dart';
 import 'package:innocent/features/player/presentation/video_adjust.dart';
 import 'package:innocent/features/player/presentation/widgets/display_settings_sheet.dart';
+import 'package:innocent/features/player/presentation/widgets/gestures_help_overlay.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
 import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -414,6 +416,34 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets('a mouse wheel over the film is the volume; not when locked',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    final mouse = TestPointer(1, PointerDeviceKind.mouse);
+    const at = Offset(400, 180);
+    await tester.sendEventToBinding(mouse.hover(at));
+    Future<double> notch(double dy) async {
+      await tester.sendEventToBinding(mouse.scroll(Offset(0, dy)));
+      await tester.pump();
+      return _state().volume;
+    }
+
+    // Two notches towards you, one away: 5 % a notch, the swipe's
+    // indicator on screen.
+    final start = _state().volume;
+    final down = await notch(128);
+    expect(down, closeTo((start - 0.10).clamp(0.0, 1.0), 1e-9));
+    expect(_state().activeIndicator, isNotNull);
+    final up = await notch(-64);
+    expect(up, closeTo(down + 0.05, 1e-9));
+    // Locked, the wheel does nothing, as a swipe does nothing.
+    playerContainer!.read(playerControllerProvider.notifier).toggleLock();
+    await tester.pump();
+    expect(_state().isLocked, isTrue);
+    expect(await notch(-64), closeTo(up, 1e-9));
+    await leavePlayer(tester);
+  });
+
   testWidgets("the audio menu lists the film's tracks, not the engine's "
       'auto and no', (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
@@ -482,6 +512,63 @@ void main() {
     await _settle(tester);
     expect(find.text('Playback failed'), findsOneWidget);
     expect(find.byIcon(Icons.skip_next), findsNothing);
+    await leavePlayer(tester);
+  });
+
+  // ⋮ → Tutorial (Phase 2 item 5, 13 Nov): the gestures help was a page of
+  // its own look (87 % black, its own header, discs and type).
+  Future<void> tutorial(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.more_vert).first, warnIfMissed: false);
+    await _settle(tester);
+    final item = find.descendant(
+        of: find.byType(MoreMenuPanel),
+        matching: find.byIcon(Icons.help_outline));
+    await tester.ensureVisible(item.first);
+    await tester.pump();
+    await tester.tap(item.first, warnIfMissed: false);
+    await _settle(tester);
+  }
+
+  testWidgets('the gestures help is a player sheet a keyboard can walk',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tutorial(tester);
+    final help = find.byType(GesturesHelpOverlay);
+    expect(help, findsOneWidget);
+    // On the player's glass, as every menu of the player.
+    expect(find.ancestor(of: help, matching: find.byType(PlayerGlass)),
+        findsOneWidget);
+    expect(find.text('Player gestures'), findsOneWidget);
+    expect(find.text('Tap anywhere to dismiss'), findsNothing);
+    // A keyboard or a remote walks the twelve rows, and the list scrolls
+    // to the last.
+    final last = find.text('Headset button');
+    for (var i = 0; i < 12; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+    }
+    await _settle(tester);
+    final focused = FocusManager.instance.primaryFocus?.context;
+    expect(
+        focused?.findAncestorWidgetOfExactType<GesturesHelpOverlay>(),
+        isNotNull,
+        reason: 'focus stays in the help');
+    expect(tester.getRect(last).bottom,
+        lessThanOrEqualTo(_phone.height), reason: 'scrolled to the last row');
+    // Back closes it, and only it.
+    await _back(tester);
+    expect(help, findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("on a TV, the tutorial is the remote's keys", (tester) async {
+    DeviceProfile.kind = DeviceKind.tv;
+    addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tutorial(tester);
+    expect(find.byType(GesturesHelpOverlay), findsNothing);
+    expect(find.text('Keyboard and remote'), findsOneWidget);
     await leavePlayer(tester);
   });
 
