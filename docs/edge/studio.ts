@@ -734,10 +734,14 @@ const ALLOWED_ORIGINS = consoleOrigins(Deno.env.get('STUDIO_ORIGINS'));
 /// CORS headers with its errors), but a preflight asked from here can: R2
 /// answers an OPTIONS with an Origin by its policy alone, no signature
 /// needed. Origins and buckets only in what it returns, never the endpoint.
+/// A CHECK THAT CANNOT SAY NO PROVES NOTHING: an origin that is in no policy
+/// is asked too, and must come back refused, or the "allowed" beside it
+/// means only that R2 answers everyone.
+const CORS_CONTROL = 'https://cors-control.invalid';
 async function r2CorsFor(bucket: string): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${bucket}/_selftest/cors-probe`;
-  for (const origin of ALLOWED_ORIGINS) {
+  for (const origin of [...ALLOWED_ORIGINS, CORS_CONTROL]) {
     try {
       const res = await fetch(url, {
         method: 'OPTIONS',
