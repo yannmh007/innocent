@@ -87,6 +87,19 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+# The controls can hide on their own between the check above and its tap
+# (they hide 4 s after the last touch, and Back's menu had just closed):
+# that tap then showed them and this one hid them (run 43447577014, the
+# film playing throughout). Still in the player is what this proves: one
+# more tap, apart from the last, if they are down.
+- runFlow:
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
 
 # ── B3: hold Next ────────────────────────────────────────────────────────
