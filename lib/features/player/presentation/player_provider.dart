@@ -526,6 +526,51 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// The position, play state and moment the media session was last told.
+  Duration _sessionPosition = Duration.zero;
+  bool _sessionPlaying = false;
+  DateTime? _sessionAt;
+
+  /// Tell the player's media session (BackgroundPlaybackService.sessionUpdate)
+  /// what the film is doing — on a change of state ([force]: playing,
+  /// paused, its length known), or when [position] is more than 1.5 s from
+  /// where the session works the film out to be (a seek, a next film); the
+  /// system runs the clock in between, so not on every tick. Never for a
+  /// private film: its title would reach the system's media surfaces.
+  void _syncSession({Duration? position, bool force = false}) {
+    if (_isPrivate) return;
+    final now = DateTime.now();
+    final pos = position ?? _livePosition();
+    final at = _sessionAt;
+    if (!force && at != null) {
+      final ran = _sessionPlaying
+          ? now.difference(at) * state.playbackSpeed
+          : Duration.zero;
+      final expected = _sessionPosition + ran;
+      if ((pos - expected).abs() < const Duration(milliseconds: 1500) &&
+          _sessionPlaying == state.isPlaying) {
+        return;
+      }
+    }
+    final duration = _liveDuration();
+    if (duration <= Duration.zero && at == null) return;
+    _sessionPosition = pos;
+    _sessionPlaying = state.isPlaying;
+    _sessionAt = now;
+    try {
+      // ignore: discarded_futures
+      _ref.read(backgroundPlaybackServiceProvider).sessionUpdate(
+            title: _currentVideoTitle ?? 'Innocent',
+            isPlaying: state.isPlaying,
+            position: pos,
+            duration: duration,
+            speed: state.playbackSpeed,
+          );
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerProvider.session: $e');
+    }
+  }
+
   /// Phase 45: audio focus event subscription. Cancelled in dispose.
   StreamSubscription<AudioFocusEvent>? _focusSub;
 
@@ -841,6 +886,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     _subs.add(svc.positionStream.listen((p) {
       if (!mounted) return;
       _scheduleAutoSave();
+      _syncSession(position: p);
       // A-B Repeat: jump back to A if we passed B
       final a = state.abPointA;
       final b = state.abPointB;
@@ -918,12 +964,15 @@ class PlayerController extends StateNotifier<PlayerState> {
       }
     }));
     _subs.add(svc.durationStream.listen((d) {
-      if (mounted) state = state.copyWith(duration: d);
+      if (!mounted) return;
+      state = state.copyWith(duration: d);
+      _syncSession(force: true);
     }));
     _subs.add(svc.playingStream.listen((p) {
       if (!mounted) return;
       state = state.copyWith(isPlaying: p);
       _updateBackgroundWakeLock(p);
+      _syncSession(force: true);
       qoe.playing(p, DateTime.now());
     }));
     _subs.add(svc.bufferingStream.listen((b) {
@@ -2316,6 +2365,13 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       _ref.read(backgroundPlaybackServiceProvider).stop();
     } catch (e) { if (kDebugMode) debugPrint('PlayerProvider: $e'); }
+    // The player's own media session goes with it.
+    if (_sessionAt != null) {
+      try {
+        // ignore: discarded_futures
+        _ref.read(backgroundPlaybackServiceProvider).sessionStop();
+      } catch (e) { if (kDebugMode) debugPrint('PlayerProvider: $e'); }
+    }
     // Phase 45: release audio focus so other apps can take over.
     try {
       _focusSub?.cancel();

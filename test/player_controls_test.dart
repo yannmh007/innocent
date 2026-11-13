@@ -304,6 +304,55 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets(
+      'a film has a media session while the player is open, and a voice '
+      'command on it reaches the player', (tester) async {
+    // The TV's "pause" and "skip 30 seconds" go to the playing app's media
+    // session; the only one was background play's, so a film had none
+    // (PlayerMediaSession, 13 Nov).
+    final calls = <MethodCall>[];
+    const channel = MethodChannel('mx_clone/playback');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      calls.add(call);
+      return true;
+    });
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    List<MethodCall> updates() =>
+        calls.where((c) => c.method == 'sessionUpdate').toList();
+    expect(updates(), isNotEmpty, reason: 'no session for the film');
+    final first = updates().last.arguments as Map;
+    expect(first['title'], contains('The Long Road Home'));
+    expect(first['isPlaying'], isTrue);
+    expect(first['durationMs'], greaterThan(0));
+
+    // "Pause", from the TV: the session's command, as the notification's.
+    Future<void> command(String action, [int positionMs = -1]) async {
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          channel.name,
+          channel.codec.encodeMethodCall(MethodCall('onPlaybackAction',
+              {'action': action, 'positionMs': positionMs})),
+          (_) {});
+      await _settle(tester);
+    }
+
+    await command('pause');
+    expect(_state().isPlaying, isFalse);
+    expect((updates().last.arguments as Map)['isPlaying'], isFalse,
+        reason: 'the session was not told the film paused');
+
+    // "Skip 30 seconds" arrives as a seek to a place; the session hears the
+    // jump at once rather than at its next tick.
+    final before = updates().length;
+    await command('seek', 30 * 60 * 1000);
+    expect(_state().position.inMinutes, 30);
+    expect(updates().length, greaterThan(before));
+
+    await leavePlayer(tester);
+    expect(calls.any((c) => c.method == 'sessionStop'), isTrue,
+        reason: 'the session outlived the player');
+  });
+
   testWidgets('a remote\'s and a keyboard\'s keys reach the player',
       (tester) async {
     final svc = FakePlayerService();

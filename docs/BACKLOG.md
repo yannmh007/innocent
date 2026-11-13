@@ -219,11 +219,14 @@ beside MX Player. Done:
   field held a remote for good); Back by D-pad from a pane goes to the
   list's open row before it leaves; a 190-photograph overscan audit fixed
   a film's page, the poster and media grids, the picker and the shell's
-  right side. Left: TV type scale (an owner question), frame-rate
-  matching, MediaSession voice — the video's session exists only with
-  background play on, so a TV's voice commands never reach a film (a
-  native change; the owner's call). Item 4: right-click opens a video's
-  menu and selects a folder; the wheel already zooms a photo.
+  right side. Item 4: right-click opens a video's menu and selects a
+  folder; the wheel already zooms a photo. **The owner's three choices
+  (13 Nov), done**: targetSdk raised to 36 (rotate shortcut and
+  orientation settings hidden where Android ignores them: TV, Android 16
+  tablets); a media session for every film (`PlayerMediaSession.kt`: a
+  TV's voice commands and Now Playing card reach the player); TV text at
+  1.2. Left: frame-rate matching; an API 36 device-lab run before the
+  release.
 - Left: the gestures help keeps its own full-screen look; the paste bar's
   Burmese hint sits a little high (the font's metrics); a test that drives
   the 750 ms engine check with a fake wedged engine.

@@ -16,9 +16,23 @@ class DeviceProfile {
 
   static DeviceKind kind = DeviceKind.phone;
 
+  /// The Android API level (0 off Android, or not known).
+  static int sdk = 0;
+
   static bool get isPhone => kind == DeviceKind.phone;
   static bool get isTablet => kind == DeviceKind.tablet;
   static bool get isTv => kind == DeviceKind.tv;
+
+  /// The screen turns as the device does, whatever an app asks: a TV never
+  /// turns, and Android 16 ignores an app's orientation requests on a
+  /// screen 600 dp wide or more once the app targets 36 (it does, since
+  /// 13 Nov; docs/target_sdk_36.md). The player's rotate button and its
+  /// orientation settings do nothing there, so they are not offered.
+  static bool get orientationFixed =>
+      isTv || (isTablet && sdk >= androidSdk16);
+
+  /// Android 16's API level.
+  static const int androidSdk16 = 36;
 
   static const MethodChannel _channel = MethodChannel('mx_clone/pip');
 
@@ -37,6 +51,7 @@ class DeviceProfile {
       tv = m?['tv'] == true;
       final v = (m?['sw'] as num?)?.toDouble();
       if (v != null && v > 0) sw = v;
+      sdk = (m?['sdk'] as num?)?.toInt() ?? 0;
     } catch (_) {
       try {
         tv = await _channel.invokeMethod<bool>('isTv') ?? false;

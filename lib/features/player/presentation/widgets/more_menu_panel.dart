@@ -108,7 +108,7 @@ class MoreMenuPanel extends StatelessWidget {
           child: PanelGrid(
             columns: 2,
             children: [
-              for (final item in ShortcutItem.values)
+              for (final item in ShortcutItem.available())
                 _ShortcutCheck(
                   label: item.labelIn(s).replaceAll('\n', ' '),
                   value: visibleShortcuts.contains(item),

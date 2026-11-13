@@ -138,5 +138,40 @@ class BackgroundPlaybackService {
     }
   }
 
+  /// THE PLAYER'S OWN MEDIA SESSION, while a film is open (native
+  /// PlayerMediaSession, 13 Nov): what a TV's voice commands ("pause",
+  /// "skip 30 seconds") and its Now Playing card reach. The background-play
+  /// session above existed only with background play on, so ordinary
+  /// playback had none. Its commands arrive through [onPlaybackAction] like
+  /// the notification's. The first update starts it; [sessionStop] ends it.
+  Future<void> sessionUpdate({
+    required String title,
+    required bool isPlaying,
+    required Duration position,
+    required Duration duration,
+    required double speed,
+  }) async {
+    if (!_isAndroid) return;
+    try {
+      await _channel.invokeMethod<bool>('sessionUpdate', {
+        'title': title,
+        'isPlaying': isPlaying,
+        'positionMs': position.inMilliseconds,
+        'durationMs': duration.inMilliseconds,
+        'speed': speed,
+      });
+    } catch (_) {
+      // An older native side: no session, as before.
+    }
+  }
+
+  /// The player closed: its session goes.
+  Future<void> sessionStop() async {
+    if (!_isAndroid) return;
+    try {
+      await _channel.invokeMethod<bool>('sessionStop');
+    } catch (_) {}
+  }
+
   bool get _isAndroid => defaultTargetPlatform == TargetPlatform.android;
 }

@@ -3073,8 +3073,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     // PDF page 4: When collapsed only essentials show; when expanded ALL shortcuts available
     final visibleShortcutList = state.shortcutsExpanded
-        ? ShortcutItem.values.toList()
-        : ShortcutItem.values
+        ? ShortcutItem.available()
+        : ShortcutItem.available()
             .where((i) => state.visibleShortcuts.contains(i))
             .toList();
 
@@ -3607,7 +3607,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               onShortcutsToggle: (v) {
                 if (v) {
                   controller
-                      .updateVisibleShortcuts(ShortcutItem.values.toSet());
+                      .updateVisibleShortcuts(ShortcutItem.available().toSet());
                 } else {
                   controller.updateVisibleShortcuts({});
                 }

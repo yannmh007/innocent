@@ -17,6 +17,7 @@ import 'package:innocent/core/localization/app_strings.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/services/video_player/models/subtitle_track_info.dart';
 import 'package:innocent/core/theme/app_theme.dart';
+import 'package:innocent/core/ui/tv_safe_area.dart';
 import 'package:innocent/features/player/presentation/player_screen.dart';
 
 import 'fake_player_service.dart';
@@ -212,6 +213,10 @@ Future<void> pumpPlayer(
           supportedLocales: AppStrings.supportedLocales,
           // As in the app: the player is pushed over another screen, so
           // Back has somewhere to go.
+          // A TV as the app draws one (app.dart): the overscan margins as
+          // insets and the larger text (TvSafeArea).
+          builder: (context, app) =>
+              TvSafeArea(isTv: phone.name.endsWith('tv'), child: app!),
           routerConfig: GoRouter(
             initialLocation: '/player',
             routes: [

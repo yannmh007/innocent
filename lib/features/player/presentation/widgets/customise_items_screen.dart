@@ -17,7 +17,7 @@ class CustomiseItemsScreen extends ConsumerWidget {
     final state = ref.watch(playerControllerProvider);
     final controller = ref.read(playerControllerProvider.notifier);
     final visible = state.visibleShortcuts;
-    const allItems = ShortcutItem.values;
+    final allItems = ShortcutItem.available();
 
     return Scaffold(
       backgroundColor: AppColors.darkBackground,

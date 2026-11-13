@@ -201,12 +201,24 @@ voice commands.
   focus and hover. `RemoteTappable` (24 uses) draws no hover of its own —
   left, as each such tile has its own look.
 
-## Found in item 3, for the owner (13 Nov)
-- The video's MediaSession exists only while background play is on
-  (PlaybackService, with its notification). In ordinary playback — every
-  film on a TV — there is none, so the TV's voice commands ("pause",
-  "skip 30 seconds") and its Now Playing card do not reach the player.
-  A session for the player's lifetime (no notification) would fix it; it
-  also takes the headset buttons from the activity's key handling to the
-  session on phones. A native change to prove on the lab before shipping.
+## The owner's three choices, done (13 Nov)
+- **targetSdk 36** (docs/target_sdk_36.md): raised; where Android ignores
+  an orientation request (a TV; a tablet on Android 16) the player's
+  rotate shortcut and its orientation settings are not offered
+  (`DeviceProfile.orientationFixed`; the TV's rotate button did nothing
+  before, too). `test/orientation_fixed_test.dart`.
+- **A media session for every film** (`PlayerMediaSession.kt`): the only
+  session was background play's, so in ordinary playback a TV's voice
+  commands and Now Playing card never reached the film. Now one for as
+  long as the player is open — no notification; its commands come back
+  the way the notification's do (`onPlaybackAction`); pushed on a change
+  of state or a jump, never on every tick; never for a Private Folder
+  film. A media key with the app in front still reaches the activity
+  first, so a headset behaves as before. Test: "a film has a media
+  session…".
+- **TV text at 1.2** (`TvSafeArea.textFactor`, on top of the TV's own
+  setting): every screen photographed on a TV at it in Burmese and
+  English — one overflow, the network help's steps (now they scroll); the
+  player on a TV with its margins (the player harness now draws a TV as
+  the app does): 472 layouts at 1.0 and 118 at 1.3, none overflowing.
 
