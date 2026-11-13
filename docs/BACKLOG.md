@@ -17,7 +17,7 @@ does it.
 
 ### WHERE THINGS STAND — read first in a new session (12 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.83, 27e6a938). A new session starts on main:
+  not yet live (main is 1.64.84, 333c7071). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
@@ -35,6 +35,28 @@ does it.
   `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
   `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
   TLS apart in the trail)).
+- **1.64.84 (397) is out, 13 Nov**: main 333c7071, Build 43456848305
+  (every step green, CDN and GitHub release included; Static analysis,
+  Dependency scan and CodeQL green), Playback check 43462010173 passed on
+  main. GitHub release v1.64.84-397: arm64 95671464 bytes
+  `13658a77…d7a6`, arm32 87646148 bytes `d46052e2…413c` (the release
+  body and GitHub's asset digests agree). `app_releases` id 1 moved at
+  18:49 UTC after a rolled-back dry run read it back as anon; it waited
+  three hours for the Supabase connector, which answered 502 in this
+  session after a worker restart (connectors are read when a session's
+  worker starts; the next restart brought it back).
+  WHAT IT CARRIES: Phase 1–2 of every screen size (docs/devices_2026_11.md),
+  targetSdk 36 (docs/target_sdk_36.md), a TV's media session (ended off
+  screen), the glass menus, 5d's kept connection and the play_summary
+  stash (dropped on sign-out), the engine check's resume fix, the gestures
+  help sheet, the paste hint. PROVED: device lab gate 43425944894 (genres
+  37 steps, jumps 15 of 15), the player audit on the phone 52/52 sideways
+  (43447577014) and 55/55 upright (43453790923), Android 16 on a Pixel C
+  (43420830536), Test Lab 43422832434 (realme 16/16, OPPO 15 and one skip
+  on its line), branch Build 43425976389, the release tree's 1749 tests
+  and check.py, a release review whose three findings were fixed
+  (71eb5e98). Left out by design: the Google sign-in nonce and the lab's
+  hooks (list below), test_device/results.
 - **1.64.83 (396) is out, 12 Nov**: the player redesigned (skill
   `ui-design`, `widgets/player_ui.dart`) and the engine judged by the
   film's clock, and nothing else: released like 1.64.82 from main plus the
@@ -51,12 +73,16 @@ does it.
   "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: update a phone to 1.64.83 and say if the
-  player's menus look right now (⋮, CC, the error card), and if "stopped
-  responding" ever shows again on a file that plays; add
-  `https://console.innocentplayer.com` to the CORS policy of BOTH R2
-  buckets and try one upload on the new console — the Pages copy retires
-  only after that (security review P4, 13 Nov). Done 13 Nov: DNSSEC
+- **The owner still has to**: update a phone to 1.64.84 and say if the
+  player's glass menus are smooth over a playing film (⋮, CC — the blur's
+  cost has no lab number), and if "stopped responding" ever shows again
+  on a file that plays; on a tablet or a TV if one is at hand; finish
+  retiring the Pages console (security review P4, 13 Nov): sign out of
+  the old Pages console, remove its Supabase redirect URL, unpublish
+  GitHub Pages, and drop the Pages origin from both buckets' CORS. (Done
+  13 Nov: the console origin added to both buckets' CORS, seen allowed by
+  studio's `r2_cors` check with a control refused; studio v54 answers only
+  the new origin.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
 - **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
