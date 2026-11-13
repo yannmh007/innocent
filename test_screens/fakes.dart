@@ -43,6 +43,25 @@ List<Video> videos() => [
           height: [1080, 720, 1920, 2160, 1280, 2400][i],
           dateAdded: _now.subtract(Duration(days: i * 3)),
         ),
+      // Camera, the first folder by name: what a wide window shows beside
+      // the folder list before one is opened (two panes).
+      for (final (i, t) in [
+        'VID_20261012_190755.mp4',
+        'PXL_20261012_093011.mp4',
+        'VID_20261011_174502.mp4',
+        'VID_20261008_201511.mp4',
+      ].indexed)
+        Video(
+          id: 'c$i',
+          uri: '/storage/emulated/0/DCIM/Camera/$t',
+          title: t,
+          folderPath: '/storage/emulated/0/DCIM/Camera',
+          duration: Duration(minutes: [12, 2, 0, 1][i], seconds: [40, 5, 38, 24][i]),
+          sizeBytes: [1500000000, 260000000, 81000000, 175000000][i],
+          width: 1080,
+          height: 1920,
+          dateAdded: _now.subtract(Duration(days: i + 1)),
+        ),
     ];
 
 List<Song> songs() => [

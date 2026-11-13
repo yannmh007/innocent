@@ -2477,6 +2477,8 @@ class AppStrings {
 
   String get wiEmpty => _s('wiEmpty');
   String get wiMin => _s('wiMin');
+  String get wiHour => _s('wiHour');
+  String get wiToday => _s('wiToday');
   String get wiVideos => _s('wiVideos');
   String get wiActiveDays => _s('wiActiveDays');
   String get wiStreakStart => _s('wiStreakStart');
@@ -2577,6 +2579,16 @@ class AppStrings {
   String get pwTextStyle => _s('pwTextStyle');
   String get pwPosLayout => _s('pwPosLayout');
   String get plTracks => _s('plTracks');
+  String get plKeysTitle => _s('plKeysTitle');
+  String get plKeyPlay => _s('plKeyPlay');
+  String get plKeySeek => _s('plKeySeek');
+  String get plKeyNext => _s('plKeyNext');
+  String get plKeyMute => _s('plKeyMute');
+  String get plKeyFrame => _s('plKeyFrame');
+  String get plKeySpeed => _s('plKeySpeed');
+  String get plKeyMenu => _s('plKeyMenu');
+  String get plKeyClose => _s('plKeyClose');
+  String get plKeyHelp => _s('plKeyHelp');
   String get plPrivateNoBookmark => _s('plPrivateNoBookmark');
   String get plPlaybackProblem => _s('plPlaybackProblem');
 
@@ -4894,6 +4906,8 @@ class AppStrings {
     'hsClearAll': 'Clear all',
     'wiEmpty': 'Watch a few videos and come back: your weekly recap will show here.',
     'wiMin': 'min',
+    'wiHour': 'h',
+    'wiToday': 'Today',
     'wiVideos': 'Videos',
     'wiActiveDays': 'Active days',
     'wiStreakStart': 'Start a new streak today!',
@@ -4981,6 +4995,16 @@ class AppStrings {
     'pwTextStyle': 'Text style',
     'pwPosLayout': 'Position & layout',
     'plTracks': 'Tracks',
+    'plKeysTitle': 'Keyboard and remote',
+    'plKeyPlay': 'Play or pause',
+    'plKeySeek': 'Back or forward 10 s',
+    'plKeyNext': 'Previous or next video',
+    'plKeyMute': 'Sound off or on',
+    'plKeyFrame': 'One frame back or forward',
+    'plKeySpeed': 'Slower or faster',
+    'plKeyMenu': 'The ⋮ menu (or a right-click)',
+    'plKeyClose': 'Close a menu, or leave the player',
+    'plKeyHelp': 'These keys',
     'plPrivateNoBookmark': 'Bookmarks are not kept for Private Folder videos.',
     'plPlaybackProblem': 'The player reported a problem',
     'pwStartA': 'Start (A)',
@@ -7238,6 +7262,8 @@ class AppStrings {
     'hsClearAll': 'အားလုံး ဖျက်',
     'wiEmpty': 'ဗီဒီယို အနည်းငယ် ကြည့်ပြီး ပြန်လာပါ — အပတ်စဉ် အနှစ်ချုပ် ဒီမှာ ပေါ်ပါမယ်။',
     'wiMin': 'မိနစ်',
+    'wiHour': 'နာရီ',
+    'wiToday': 'ယနေ့',
     'wiVideos': 'ဗီဒီယို',
     'wiActiveDays': 'ကြည့်ခဲ့တဲ့ ရက်',
     'wiStreakStart': 'ဒီနေ့ စပြီး ဆက်တိုက် ကြည့်လိုက်ပါ!',
@@ -7321,6 +7347,16 @@ class AppStrings {
     'pwTextStyle': 'စာသား ပုံစံ',
     'pwPosLayout': 'နေရာ နဲ့ အပြင်အဆင်',
     'plTracks': 'Track များ',
+    'plKeysTitle': 'Keyboard နဲ့ remote',
+    'plKeyPlay': 'ဖွင့် / ခဏရပ်',
+    'plKeySeek': '၁၀ စက္ကန့် နောက် / ရှေ့',
+    'plKeyNext': 'အရင် / နောက် ဗီဒီယို',
+    'plKeyMute': 'အသံ ပိတ် / ဖွင့်',
+    'plKeyFrame': 'frame တစ်ကွက် နောက် / ရှေ့',
+    'plKeySpeed': 'နှေး / မြန်',
+    'plKeyMenu': '⋮ menu (သို့) mouse ညာကလစ်',
+    'plKeyClose': 'menu ပိတ် (သို့) player က ထွက်',
+    'plKeyHelp': 'ဒီ key စာရင်း',
     'plPrivateNoBookmark': 'Private Folder ထဲက ဗီဒီယိုတွေအတွက် Bookmark မသိမ်းပါ။',
     'plPlaybackProblem': 'Player က ပြဿနာ တစ်ခု သတိပေးပါတယ်',
     'pwStartA': 'အစ (A)',
@@ -9568,6 +9604,8 @@ class AppStrings {
     'hsClearAll': 'ล้างทั้งหมด',
     'wiEmpty': 'ดูวิดีโอสักสองสามเรื่องแล้วกลับมา สรุปรายสัปดาห์จะแสดงที่นี่',
     'wiMin': 'นาที',
+    'wiHour': 'ชม.',
+    'wiToday': 'วันนี้',
     'wiVideos': 'วิดีโอ',
     'wiActiveDays': 'วันที่ดู',
     'wiStreakStart': 'เริ่มดูต่อเนื่องวันนี้เลย!',
@@ -9651,6 +9689,16 @@ class AppStrings {
     'pwTextStyle': 'รูปแบบข้อความ',
     'pwPosLayout': 'ตำแหน่งและเลย์เอาต์',
     'plTracks': 'แทร็ก',
+    'plKeysTitle': 'คีย์บอร์ดและรีโมต',
+    'plKeyPlay': 'เล่นหรือหยุดชั่วคราว',
+    'plKeySeek': 'ถอยหลังหรือไปข้างหน้า 10 วินาที',
+    'plKeyNext': 'วิดีโอก่อนหน้าหรือถัดไป',
+    'plKeyMute': 'ปิดหรือเปิดเสียง',
+    'plKeyFrame': 'ถอยหรือเดินหน้าหนึ่งเฟรม',
+    'plKeySpeed': 'ช้าลงหรือเร็วขึ้น',
+    'plKeyMenu': 'เมนู ⋮ (หรือคลิกขวา)',
+    'plKeyClose': 'ปิดเมนู หรือออกจากเครื่องเล่น',
+    'plKeyHelp': 'รายการปุ่มนี้',
     'plPrivateNoBookmark': 'ไม่เก็บบุ๊กมาร์กของวิดีโอในโฟลเดอร์ส่วนตัว',
     'plPlaybackProblem': 'เครื่องเล่นแจ้งปัญหา',
     'pwStartA': 'เริ่ม (A)',

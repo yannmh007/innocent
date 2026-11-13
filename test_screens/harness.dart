@@ -18,6 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:innocent/core/localization/app_strings.dart';
 import 'package:innocent/core/theme/app_theme.dart';
+import 'package:innocent/core/ui/tv_safe_area.dart';
 import 'package:innocent/features/music/presentation/music_providers.dart';
 
 /// A phone to draw on: logical size and pixel ratio.
@@ -41,12 +42,18 @@ const tablet = Phone('tablet', Size(800, 1280), ratio: 2.0, top: 24, bottom: 48)
 const tabletLand = Phone('tablet_land', Size(1280, 800), ratio: 2.0, top: 24, bottom: 48);
 const fold = Phone('fold', Size(673, 841), ratio: 2.6, top: 30, bottom: 24);
 const tv = Phone('tv', Size(960, 540), ratio: 2.0, top: 0, bottom: 0);
+/// The foldable turned sideways: 841 dp, just over the 840 dp line where
+/// the list-and-page layouts take two panes — the tightest two-pane width.
+const foldLand = Phone('fold_land', Size(841, 673), ratio: 2.6, top: 30, bottom: 24);
+/// A 13" Chromebook's window (1600 x 900 at 1.25): no system bars inside it.
+const chromebook = Phone('chromebook', Size(1280, 720), ratio: 1.25, top: 0, bottom: 0);
 /// The smallest phones still sold (Android Go class, 320 dp wide).
 const tiny = Phone('tiny', Size(320, 640), ratio: 1.5, top: 24, bottom: 48);
 
 const _allPhones = {
   'small': small, 'large': large, 'tablet': tablet,
-  'tablet_land': tabletLand, 'fold': fold, 'tv': tv, 'tiny': tiny,
+  'tablet_land': tabletLand, 'fold': fold, 'fold_land': foldLand,
+  'chromebook': chromebook, 'tv': tv, 'tiny': tiny,
 };
 
 /// SCREEN_PHONES=tablet,tv,... draws every screen on those instead of each
@@ -151,6 +158,9 @@ List<Override> baseOverrides() => [
       musicPlayingProvider.overrideWith((ref) => _QuietMusic()),
     ];
 
+Widget _tvMargins(Phone phone, Widget app) =>
+    phone.name == 'tv' ? TvSafeArea(isTv: true, child: app) : app;
+
 /// Overflows and other layout errors seen while drawing, for the run log.
 final List<String> problems = [];
 
@@ -240,8 +250,10 @@ Future<void> shoot(
         supportedLocales: AppStrings.supportedLocales,
         home: child,
         // Check mode draws the system bar over the bottom, as the phone does.
-        builder: navCheck && phone.bottom > 0
-            ? (context, app) => Stack(children: [
+        // A TV draws as the app does on one: the overscan margins as insets
+        // (TvSafeArea, app.dart's builder).
+        builder: (context, app) => _tvMargins(phone, navCheck && phone.bottom > 0
+            ? Stack(children: [
                   app!,
                   Positioned(
                     left: 0,
@@ -259,7 +271,7 @@ Future<void> shoot(
                     ),
                   ),
                 ])
-            : null,
+            : app!),
       ),
     ),
   ));

@@ -25,6 +25,14 @@ class FolderListItem extends ConsumerWidget {
   final bool selectionMode;
   final bool selected;
 
+  /// Two panes (core/ui/list_detail.dart): whether this folder's videos are
+  /// the ones beside the list. Null on one pane. In a pane the row is inset
+  /// and rounded, and the open folder's sits on the accent's tint.
+  final bool? open;
+
+  /// The row's focus, for the screen to send a D-pad's focus back to it.
+  final FocusNode? focusNode;
+
   const FolderListItem({
     super.key,
     required this.folder,
@@ -32,6 +40,8 @@ class FolderListItem extends ConsumerWidget {
     this.onLongPress,
     this.selectionMode = false,
     this.selected = false,
+    this.open,
+    this.focusNode,
   });
 
   @override
@@ -93,27 +103,61 @@ class FolderListItem extends ConsumerWidget {
     // Audit: same RepaintBoundary trick as video_list_item — limit
     // the repaint surface so a cover-thumb update doesn't redraw
     // neighbouring folder tiles.
+    final inPane = open != null;
+    final isOpen = open ?? false;
+    // MX: a selected row is lifted in grey; in a pane, the open folder's row
+    // is on the accent's tint (ui-design: selected, container accent 16 %).
+    final Color? lift = selected
+        ? const Color(0x29FFFFFF)
+        : isOpen
+            ? AppColors.specPrimary.withValues(alpha: 0.16)
+            : null;
+    Widget tappable(Widget child) => InkWell(
+          // In selection mode a tap toggles this folder; otherwise it opens.
+          onTap: selectionMode ? onLongPress : onTap,
+          // Long-press enters (or extends) folder selection mode. The folder
+          // properties sheet is still reachable via a normal long-press when
+          // NOT in selection mode? No — long-press now always drives selection
+          // (matches MX Player). Properties remain available from the folder's
+          // own info affordance elsewhere.
+          onLongPress: onLongPress,
+          // A mouse's right-click does what a long press does: select.
+          onSecondaryTap: onLongPress,
+          focusNode: focusNode,
+          borderRadius: inPane ? BorderRadius.circular(14) : null,
+          child: child,
+        );
+    // In a pane: inset 8 dp and rounded, the content still 16 dp from the
+    // pane's edge, every row alike so the open one does not shift.
+    Widget surface(Widget child) => inPane
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: lift,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: tappable(child),
+              ),
+            ),
+          )
+        : Material(
+            color: lift ?? Colors.transparent,
+            child: tappable(child),
+          );
+
     return Semantics(
       label: AppStrings.of(context)
           .folderRowLabel(folder.name, folder.videoCount),
       button: true,
-      selected: selected,
+      selected: selected || isOpen,
       child: RepaintBoundary(
-      child: Material(
-        // MX: a selected row is lifted in grey.
-        color: selected ? const Color(0x29FFFFFF) : Colors.transparent,
-        child: InkWell(
-      // In selection mode a tap toggles this folder; otherwise it opens.
-      onTap: selectionMode ? onLongPress : onTap,
-      // Long-press enters (or extends) folder selection mode. The folder
-      // properties sheet is still reachable via a normal long-press when
-      // NOT in selection mode? No — long-press now always drives selection
-      // (matches MX Player). Properties remain available from the folder's
-      // own info affordance elsewhere.
-      onLongPress: onLongPress,
-      child: Padding(
+      child: surface(
+      Padding(
         // 9 + 54 + 9 = MX Player's 72 dp row pitch, 16 dp from the edge.
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        padding: EdgeInsets.symmetric(horizontal: inPane ? 8 : 16, vertical: 9),
         child: Row(
           children: [
             // MX PLAYER'S FOLDER, measured from its screenshots (2026-10-04,
@@ -186,9 +230,11 @@ class FolderListItem extends ConsumerWidget {
                   Text(
                     folder.name,
                     style: TextStyle(
-                      color: isActiveFolder
-                          ? AppColors.specSelectedLabel
-                          : AppColors.textPrimary,
+                      color: isOpen
+                          ? AppColors.specPrimary
+                          : isActiveFolder
+                              ? AppColors.specSelectedLabel
+                              : AppColors.textPrimary,
                       fontSize: 15.5,
                       fontWeight: FontWeight.w400,
                     ),
@@ -238,7 +284,6 @@ class FolderListItem extends ConsumerWidget {
           ],
         ),
       ),
-    ),
     ),
     ),
     );

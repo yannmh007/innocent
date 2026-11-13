@@ -17,6 +17,7 @@ import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/safe_popup_menu.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Video Playlists screen matching MX Player (UI PDF page 9)
 /// "Create New Playlist" button at top + Favourites entry + user playlists
 class PlaylistsScreen extends ConsumerWidget {
@@ -140,7 +141,11 @@ class PlaylistsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).videoPlaylists)),
-      body: ListView(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: ListView(
         children: [
           // ─── CREATE NEW PLAYLIST BUTTON ───
           Padding(
@@ -389,6 +394,7 @@ class PlaylistsScreen extends ConsumerWidget {
             ),
         ],
       ),
+      ),
     );
   }
 }
@@ -437,7 +443,11 @@ class PlaylistDetailScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: current.videoUris.isEmpty
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: current.videoUris.isEmpty
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -509,6 +519,7 @@ class PlaylistDetailScreen extends ConsumerWidget {
                 },
               ),
             ),
+      ),
     );
   }
 }

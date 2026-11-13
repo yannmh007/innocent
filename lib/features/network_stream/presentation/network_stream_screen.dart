@@ -7,6 +7,7 @@ import '../../../core/router/routes.dart';
 import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Network stream screen — paste URL to play any media_kit-supported stream.
 /// Supported: HTTP/HTTPS, RTSP, RTMP, HLS (.m3u8), DASH (.mpd), direct video files.
 class NetworkStreamScreen extends ConsumerStatefulWidget {
@@ -98,7 +99,11 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).networkStream)),
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -230,6 +235,7 @@ class _NetworkStreamScreenState extends ConsumerState<NetworkStreamScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

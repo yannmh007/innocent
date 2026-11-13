@@ -83,6 +83,8 @@ class FolderGridTile extends ConsumerWidget {
     return InkWell(
       onTap: selectionMode ? onLongPress : onTap,
       onLongPress: onLongPress,
+      // A mouse's right-click does what a long press does: select.
+      onSecondaryTap: onLongPress,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -276,6 +278,8 @@ class VideoGridTile extends ConsumerWidget {
           ? () => ref.read(selectionProvider.notifier).toggle(video.uri)
           : onTap,
       onLongPress: onLongPress,
+      // A mouse's right-click opens the tile's menu, as ⋮ does.
+      onSecondaryTap: selectionActive ? null : onMoreTap,
       child: LayoutBuilder(builder: (context, box) => Stack(children: <Widget>[
         Container(
         decoration: BoxDecoration(

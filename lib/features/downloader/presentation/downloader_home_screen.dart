@@ -39,6 +39,7 @@ import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/app_sheet.dart';
 import '../../../core/ui/nav_bar_space.dart';
 import '../../../core/ui/transient_prompt.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// Home of the downloader.
 ///
@@ -1668,7 +1669,12 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
+      // A readable width on a tablet, a Chromebook or a TV, as every list
+      // and form screen has (TabletConstrainedWidth): the link field ran
+      // 1250 dp across a tablet held sideways, its two tabs 640 dp apart.
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: Column(
         children: <Widget>[
           _pasteBar(s),
           _caption(s),
@@ -1689,10 +1695,18 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             labelColor: Colors.white,
             unselectedLabelColor: AppColors.white40,
             dividerColor: Colors.transparent,
-            labelStyle:
-                const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
-            unselectedLabelStyle:
-                const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+            // From the theme, sized: a bare TextStyle here REPLACES the
+            // theme's, its Roboto and Burmese fallback with it, and the tab
+            // names were drawn in whatever the phone's default font is
+            // (the screens harness drew them as boxes, 12 Nov).
+            labelStyle: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(fontSize: 13.5, fontWeight: FontWeight.w600),
+            unselectedLabelStyle: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(fontSize: 13.5, fontWeight: FontWeight.w500),
             tabs: <Widget>[
               Tab(
                 height: 44,
@@ -1713,6 +1727,7 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             ),
           ),
         ],
+      ),
       ),
     ));
   }
@@ -1877,7 +1892,8 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        height: 50,
+        // 50 dp, or taller rather than cut when the font is large.
+        constraints: const BoxConstraints(minHeight: 50),
         decoration: BoxDecoration(
           color: AppColors.specInnerPanel,
           borderRadius: BorderRadius.circular(14),
@@ -1894,12 +1910,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
             const Icon(Icons.link_rounded, size: 19, color: AppColors.white40),
             const SizedBox(width: 10),
             // The field fills the bar's 48 dp (it was a 28 dp line inside
-            // it): a tap anywhere on the bar's text area lands.
+            // it): a tap anywhere on the bar's text area lands. Not dense:
+            // the field is then 48 dp by itself and centres its line in them
+            // (InputDecorator's own minimum). Dense, it was one line high at
+            // the top of a 48 dp box, and the link and its hint sat high —
+            // most in Burmese, whose line is the tallest (13 Nov).
             Expanded(
-              child: SizedBox(
-                height: 48,
-                child: TextField(
-                textAlignVertical: TextAlignVertical.center,
+              child: TextField(
                 controller: _linkController,
                 focusNode: _linkFocus,
                 keyboardType: TextInputType.url,
@@ -1909,14 +1926,13 @@ class _DownloaderHomeScreenState extends ConsumerState<DownloaderHomeScreen>
                 maxLines: 1,
                 style: const TextStyle(color: Colors.white, fontSize: 13.5),
                 decoration: InputDecoration(
-                  isDense: true,
                   border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
                   hintText: s.downloaderPasteHint,
                   hintStyle:
                       const TextStyle(color: AppColors.white40, fontSize: 13.5),
                 ),
                 onSubmitted: _handleLink,
-              ),
               ),
             ),
             if (hasText)

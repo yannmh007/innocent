@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/device_profile.dart';
 
 /// All 15 shortcuts available in player shortcut row.
 ///
@@ -141,6 +142,17 @@ enum ShortcutItem {
         return Icons.flip_camera_android_outlined;
     }
   }
+
+  /// The shortcuts this screen can offer, in order: all of them, but Screen
+  /// rotation where the screen turns as the device does whatever the
+  /// player asks (a TV; a tablet on Android 16 — DeviceProfile): there the
+  /// button did nothing but announce a mode.
+  static List<ShortcutItem> available({bool? orientationFixed}) => [
+        for (final item in ShortcutItem.values)
+          if (item != ShortcutItem.screenRotation ||
+              !(orientationFixed ?? DeviceProfile.orientationFixed))
+            item,
+      ];
 }
 
 /// Decoder type.

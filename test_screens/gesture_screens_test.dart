@@ -10,6 +10,7 @@ import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/widgets/brightness_indicator.dart';
 import 'package:innocent/features/player/presentation/widgets/gesture_hud.dart';
 import 'package:innocent/features/player/presentation/widgets/gestures_help_overlay.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:innocent/features/player/presentation/widgets/volume_indicator.dart';
 
 import 'harness.dart';
@@ -89,8 +90,24 @@ void main() {
   setUpAll(loadScreenFonts);
   const one = [large];
 
-  screens('gestures_help', () => const GesturesHelpOverlay(),
-      phones: one, scrolls: 2);
+  // A player sheet (⋮ → Tutorial), on its glass as it opens upright;
+  // test/player_layout_test.dart's "help" scene photographs the real one.
+  screens(
+      'gestures_help',
+      () => _over((c) => Align(
+            alignment: Alignment.bottomCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(c).height * 0.85),
+              child: const PlayerGlass(
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(PlayerUi.radius)),
+                child: GesturesHelpOverlay(),
+              ),
+            ),
+          )),
+      phones: one,
+      scrolls: 2);
   screens('gesture_volume_boost',
       () => _over((_) => const VolumeIndicator(value: 1.6)),
       phones: one);

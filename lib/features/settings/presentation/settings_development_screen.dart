@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Development settings — debugging and advanced options.
 ///
 /// Phase 41: toggles persist via [playerSettingsProvider]; "Reset all
@@ -68,7 +69,7 @@ class SettingsDevelopmentScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsDevelopment)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).sdvDebug),
           _toggle(ref,
@@ -94,7 +95,7 @@ class SettingsDevelopmentScreen extends ConsumerWidget {
             onTap: () => _confirmAndResetAll(context, ref),
           ),
         ],
-      ),
+      )),
     );
   }
 }

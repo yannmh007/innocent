@@ -355,9 +355,14 @@ Future<void> showNetInfo(BuildContext context) {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const NetHero(compact: true),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: NetHowTo(),
+          // The steps scroll when the dialog is taller than the screen —
+          // a TV's 540 dp at its larger text cut them by 26 dp (13 Nov);
+          // where they fit, nothing changes.
+          const Flexible(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: NetHowTo(),
+            ),
           ),
           Align(
             alignment: Alignment.centerRight,

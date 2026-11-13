@@ -202,6 +202,14 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
               ),
             ),
           ),
+          // On a TV the page's words keep out of the overscan margins
+          // (TvSafeArea hands them in as insets): they sat 14 dp from the
+          // edge, where a TV that overscans cuts (13 Nov). The picture above
+          // still runs to the edges; a phone has no side insets upright.
+          SliverSafeArea(
+            top: false,
+            bottom: false,
+            sliver: SliverMainAxisGroup(slivers: <Widget>[
           SliverToBoxAdapter(
             child: _Header(
               content: content,
@@ -375,6 +383,8 @@ class _ContentDetailScreenState extends ConsumerState<ContentDetailScreen> {
                 ),
               ),
             ),
+          ),
+            ]),
           ),
         ],
       ),

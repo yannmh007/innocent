@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/localization/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 
 /// App Language selection.
 ///
@@ -26,7 +27,11 @@ class SettingsLanguageScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(s.language)),
-      body: ListView(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: ListView(
         children: [
           for (final (code, name, native) in _options)
             _LanguageRow(
@@ -47,6 +52,7 @@ class SettingsLanguageScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

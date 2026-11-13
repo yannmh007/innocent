@@ -111,12 +111,8 @@ class _ResumeDialogState extends State<ResumeDialog> {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 480),
-          child: Material(
-            color: PlayerUi.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
-            ),
-            clipBehavior: Clip.antiAlias,
+          child: PlayerGlass(
+            borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(6, 4, 8, 4),
               child: Row(

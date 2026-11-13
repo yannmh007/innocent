@@ -9,6 +9,7 @@ import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/tab_title.dart';
 import '../../me/presentation/statistics_screen.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Personal watch-history dashboard. Reads entirely from on-device
 /// history; nothing leaves the device. Surface cards from highest
 /// emotional weight (total time + streak) to most analytical
@@ -42,7 +43,11 @@ class WatchInsightsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: insights.videosWatched == 0
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: insights.videosWatched == 0
           ? const _EmptyState()
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32)
@@ -67,6 +72,7 @@ class WatchInsightsScreen extends ConsumerWidget {
                 const _PrivacyFootnote(),
               ],
             ),
+      ),
     );
   }
 }
@@ -141,8 +147,11 @@ class _HeroCard extends StatelessWidget {
               style: const TextStyle(
                   color: AppColors.white60, fontSize: 12)),
           const SizedBox(height: 6),
-          RichText(
-            text: TextSpan(
+          // Text.rich, not RichText: RichText takes no theme, so the
+          // figures were drawn in the phone's own font, not the app's
+          // (the screens harness drew them as boxes, 13 Nov).
+          Text.rich(
+            TextSpan(
               children: [
                 TextSpan(
                   text: '$h',
@@ -152,9 +161,9 @@ class _HeroCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const TextSpan(
-                  text: ' h ',
-                  style: TextStyle(
+                TextSpan(
+                  text: ' ${AppStrings.of(context).wiHour} ',
+                  style: const TextStyle(
                     color: AppColors.white60,
                     fontSize: 18,
                   ),
@@ -296,7 +305,19 @@ class _SevenDayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxV = insights.lastSevenDaysMinutes
         .fold<int>(1, (a, b) => b > a ? b : a);
-    const labels = ['6d', '5d', '4d', '3d', '2d', 'Yd', 'To'];
+    // Each bar's day: its date, and "Today" for the last — they were
+    // '6d'…'Yd', 'To', English shorthand on every language's screen.
+    final now = DateTime.now();
+    final labels = [
+      for (var i = 0; i < 7; i++)
+        i == 6
+            ? AppStrings.of(context).wiToday
+            : '${DateTime(now.year, now.month, now.day - (6 - i)).day}',
+    ];
+    // The figure over a bar and the day under it, at the phone's text size
+    // and the tallest line any of its languages draws: a fixed 86 dp cut
+    // the tallest bar's column by 12 dp (13 Nov).
+    final line = MediaQuery.textScalerOf(context).scale(10) * 1.5;
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,7 +327,7 @@ class _SevenDayCard extends StatelessWidget {
                   color: AppColors.white60, fontSize: 12)),
           const SizedBox(height: 14),
           SizedBox(
-            height: 86,
+            height: 64 + 6 + line * 2,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -343,6 +364,8 @@ class _SevenDayCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(labels[i],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                                 color: AppColors.white40,
                                 fontSize: 10)),

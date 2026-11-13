@@ -230,6 +230,9 @@ class MainActivity : AudioServiceFragmentActivity() {
 
     /** Play/pause + stop clicks from the background-playback notification. */
     private var playbackControlReceiver: BroadcastReceiver? = null
+
+    /** The player's media session while a film is open (13 Nov). */
+    private var playerSession: PlayerMediaSession? = null
     private var audioFocusChannel: MethodChannel? = null
     private var musicWidgetChannel: MethodChannel? = null
     private var transferServiceChannel: MethodChannel? = null
@@ -346,7 +349,10 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }
                     result.success(hashMapOf(
                         "tv" to tv,
-                        "sw" to resources.configuration.smallestScreenWidthDp
+                        "sw" to resources.configuration.smallestScreenWidthDp,
+                        // Android 16 ignores an app's orientation requests
+                        // from 600 dp when it targets 36 (DeviceProfile).
+                        "sdk" to Build.VERSION.SDK_INT
                     ))
                 }
                 "isTv" -> {
@@ -1125,6 +1131,27 @@ class MainActivity : AudioServiceFragmentActivity() {
                     } catch (e: Throwable) {
                         result.success(false)
                     }
+                }
+                // The player's own media session, while a film is open
+                // (PlayerMediaSession: a TV's voice commands, its Now
+                // Playing card). Started by the first update.
+                "sessionUpdate" -> {
+                    val session = playerSession
+                        ?: PlayerMediaSession(applicationContext)
+                            .also { playerSession = it }
+                    session.update(
+                        call.argument<String>("title") ?: "Innocent",
+                        call.argument<Boolean>("isPlaying") ?: false,
+                        call.argument<Number>("positionMs")?.toLong() ?: -1L,
+                        call.argument<Number>("durationMs")?.toLong() ?: -1L,
+                        call.argument<Number>("speed")?.toFloat() ?: 1f
+                    )
+                    result.success(true)
+                }
+                "sessionStop" -> {
+                    playerSession?.release()
+                    playerSession = null
+                    result.success(true)
                 }
                 "isInteractive" -> {
                     // Lets Dart resolve the ambiguity of
@@ -3228,6 +3255,8 @@ class MainActivity : AudioServiceFragmentActivity() {
         // the whole Activity, so they are dropped here rather than per-use.
         unregisterScreenStateReceiver()
         unregisterPlaybackControlReceiver()
+        playerSession?.release()
+        playerSession = null
         // Phase 45: drop any audio focus we still own.
         try {
             abandonAudioFocus()

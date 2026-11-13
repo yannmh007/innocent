@@ -10,6 +10,7 @@ import 'subtitle_layout_screen.dart';
 import 'subtitle_text_screen.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Subtitle — full MX Player parity (UI PDF page 17).
 /// Sections: default, Appearance, Text processing.
 ///
@@ -38,7 +39,11 @@ class SettingsSubtitleScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsSubtitle)),
-      body: ListView(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: ListView(
         children: [
           // Phase 45 (audit): Subtitle Folder backed by ExtraSettings.
           Builder(builder: (ctx) {
@@ -231,6 +236,7 @@ class SettingsSubtitleScreen extends ConsumerWidget {
               setting: PlayerSetting.subtitleItalicEffect),
           const SizedBox(height: 24),
         ],
+      ),
       ),
     );
   }

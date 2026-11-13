@@ -111,6 +111,9 @@ class VideoListItem extends ConsumerWidget {
           ? () => ref.read(selectionProvider.notifier).toggle(video.uri)
           : onTap,
       onLongPress: onLongPress,
+      // A mouse's right-click opens the row's menu, as ⋮ does (large-screen
+      // quality: a context menu where a phone has a long press or ⋮).
+      onSecondaryTap: selectionActive ? null : onMoreTap,
       child: Container(
         // MX: a selected row is lifted in grey; the blue is on its thumbnail.
         color: isSelected

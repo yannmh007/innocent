@@ -9,6 +9,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Player > Navigation
 /// Seeking settings, forward/backward buttons, etc.
 ///
@@ -37,7 +38,7 @@ class PlayerNavigationScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).navigationTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(AppStrings.of(context).pnSeekBar),
           _toggle(ref,
@@ -129,7 +130,7 @@ class PlayerNavigationScreen extends ConsumerWidget {
           }),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

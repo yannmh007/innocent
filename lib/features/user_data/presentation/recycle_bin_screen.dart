@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../user_data_providers.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class RecycleBinScreen extends ConsumerWidget {
   const RecycleBinScreen({super.key});
 
@@ -88,7 +89,11 @@ class RecycleBinScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: Column(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: Column(
         children: [
           // Orange info banner (MX Player parity)
           Container(
@@ -333,6 +338,7 @@ class RecycleBinScreen extends ConsumerWidget {
  ),
           ),
         ],
+      ),
       ),
     );
   }

@@ -14,7 +14,9 @@ Future<String?> showSettingsListDialog({
 }) async {
   return showDialog<String>(
     context: context,
-    builder: (_) => AlertDialog(
+    // The dialog closes through ITS context: the page's may be a pane's own
+    // navigator (list_detail.dart), where pop() would close the page instead.
+    builder: (dialogContext) => AlertDialog(
       backgroundColor: AppColors.darkSurface,
       title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 17)),
       contentPadding: const EdgeInsets.only(top: 12),
@@ -36,14 +38,14 @@ Future<String?> showSettingsListDialog({
                 ),
               ),
               activeColor: AppColors.primaryBlue,
-              onChanged: (v) => Navigator.of(context).pop(v),
+              onChanged: (v) => Navigator.of(dialogContext).pop(v),
             );
           },
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
         ),
       ],
@@ -140,7 +142,7 @@ Future<String?> showSettingsTextDialog({
   final controller = TextEditingController(text: currentValue);
   final result = await showDialog<String>(
     context: context,
-    builder: (_) => AlertDialog(
+    builder: (dialogContext) => AlertDialog(
       backgroundColor: AppColors.darkSurface,
       title: Text(title, style: const TextStyle(color: Colors.white, fontSize: 17)),
       content: Column(
@@ -170,11 +172,11 @@ Future<String?> showSettingsTextDialog({
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogContext).pop(),
           child: Text(AppStrings.of(context).cancel, style: const TextStyle(color: Colors.white70)),
         ),
         TextButton(
-          onPressed: () => Navigator.of(context).pop(controller.text),
+          onPressed: () => Navigator.of(dialogContext).pop(controller.text),
           child: Text(AppStrings.of(context).ok, style: const TextStyle(color: AppColors.primaryBlue)),
         ),
       ],

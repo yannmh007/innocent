@@ -19,6 +19,7 @@ import 'premium_request_screen.dart';
 import 'report_problem_sheet.dart';
 import 'sign_in_sheet.dart';
 import '../../../../core/theme/tab_title.dart';
+import '../../../../core/ui/tablet_constrained_width.dart';
 
 /// Account and subscription status.
 ///
@@ -110,7 +111,7 @@ class AccountScreen extends ConsumerWidget {
         ),
         title: Text(s.vhAccountTitle, style: kAppBarTitleStyle.copyWith(color: VH.textPrimary)),
       ),
-      body: RefreshIndicator(
+      body: TabletConstrainedWidth(maxWidth: 840, child: RefreshIndicator(
         onRefresh: () async {
           await ref.read(accountProvider.notifier).refresh();
           ref.invalidate(myPremiumRequestsProvider);
@@ -182,7 +183,7 @@ class AccountScreen extends ConsumerWidget {
             ],
           ],
         ),
-      ),
+      )),
     );
   }
 }

@@ -10,6 +10,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 import '../../../core/services/cache/media_prewarm_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/adb_required_dialog.dart';
+import '../../../core/ui/list_detail.dart';
 import '../../settings/presentation/adb_connect_screen.dart';
 import '../../user_data/user_data_providers.dart';
 import '../../../core/app_version.dart';
@@ -19,6 +20,7 @@ import '../domain/folder.dart';
 import '../domain/new_badge.dart';
 import '../domain/sort_options.dart';
 import '../domain/video.dart';
+import 'folder_detail_screen.dart';
 import 'folder_list_item.dart';
 import 'grid_tiles.dart';
 import 'library_provider.dart';
@@ -71,10 +73,54 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   // quick-peek shelf works in polished players: on demand, not permanent.
   bool _showContinueWatching = false;
 
+  /// The folder last opened. Two panes: the one beside the list (the first
+  /// folder until one is opened, and the first while a search leaves this
+  /// one out — clearing the search brings it back). One pane: remembered,
+  /// so a window that widens shows it beside the list.
+  String? _openPath;
+
+  /// Two panes: the person opened [_openPath] (the first folder, shown by
+  /// default, does not count) — the folder to keep when the window narrows.
+  bool _pickedFolder = false;
+
+  /// Two panes at the last build (the window, not the view mode).
+  bool? _wasWide;
+
+  /// This build's layout, for the folder rows and [_openFolder].
+  bool _twoPanes = false;
+  String? _paneOpen;
+
+  /// Two panes: focus is among the open folder's videos (by D-pad or
+  /// keyboard), and the open folder's row to send it back to — on a TV,
+  /// Back steps out of the videos to the folders before it leaves the app.
+  bool _paneFocused = false;
+  final FocusNode _openRow = FocusNode(debugLabel: 'open folder row');
+
+  void _keysOrTouch(FocusHighlightMode _) {
+    if (mounted) setState(() {});
+  }
+
+  void _focusOpenRow() {
+    _openRow.requestFocus();
+    final row = _openRow.context;
+    if (row != null) {
+      // ignore: discarded_futures
+      Scrollable.ensureVisible(row,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+          duration: const Duration(milliseconds: 200));
+    }
+  }
+
+  /// The Video tab's query, taken while mounted: the search ends with the
+  /// tab (dispose).
+  late final StateController<String> _query;
+
   @override
   void initState() {
     super.initState();
     _fabVisibility = FabScrollVisibility();
+    _query = ref.read(searchQueryProvider.notifier);
+    FocusManager.instance.addHighlightModeListener(_keysOrTouch);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Leaving the tab before the first frame completes disposes this State;
       // both helpers below touch `ref` and `context`, which throws after that.
@@ -144,8 +190,71 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
 
   @override
   void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_keysOrTouch);
+    _openRow.dispose();
     _fabVisibility.dispose();
+    // A search ends with the tab: switching tabs disposes this screen and
+    // took its search bar away, but the query stayed and the next visit's
+    // folder list came up filtered, with no search bar to say so. After the
+    // frame: a provider may not change while the tree is torn down.
+    final query = _query;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (query.mounted && query.state.isNotEmpty) query.state = '';
+    });
     super.dispose();
+  }
+
+  /// The search closed, by its ✕ or by Back: its query goes with it. Back
+  /// used to close the bar and leave the query, and the folder list stayed
+  /// filtered with nothing on screen to say why (12 Nov).
+  void _closeSearch() {
+    ref.read(searchQueryProvider.notifier).state = '';
+    setState(() => _searchActive = false);
+  }
+
+  /// The tab's page is the screen on top: its own route current in the
+  /// shell's navigator, and the shell's current in the root one (the
+  /// player, or a page opened over the shell, keeps it mounted underneath).
+  bool get _onTop {
+    final route = ModalRoute.of(context);
+    if (route == null || !route.isCurrent) return false;
+    final navigator = Navigator.maybeOf(context);
+    final outer = navigator == null ? null : ModalRoute.of(navigator.context);
+    return outer?.isCurrent ?? true;
+  }
+
+  /// A window narrowed from two panes to one (a foldable folded, a window
+  /// made smaller) keeps the folder the person had open: it opens over the
+  /// list, as a tap does on a phone. Not when something is over the tab —
+  /// the player above all: a foldable folded mid-film must not get a folder
+  /// pushed over the film.
+  void _followWindow(bool wide, bool foldersView) {
+    final was = _wasWide;
+    _wasWide = wide;
+    if (was != true || wide || !foldersView || !_pickedFolder) return;
+    _pickedFolder = false;
+    final path = _openPath;
+    if (path == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || ListDetail.twoPanes(context) || !_onTop) return;
+      final folders = ref.read(filteredFoldersProvider).valueOrNull;
+      if (folders == null) return;
+      for (final f in folders) {
+        if (f.path == path) {
+          _pushFolder(f);
+          return;
+        }
+      }
+    });
+  }
+
+  /// The folder beside the list: the one opened, else the first.
+  Folder? _openFolderIn(List<Folder>? folders) {
+    if (folders == null || folders.isEmpty) return null;
+    for (final f in folders) {
+      if (f.path == _openPath) return f;
+    }
+    return folders.first;
   }
 
   Future<void> _checkPermission() async {
@@ -189,6 +298,9 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   /// online help site to link out to.
   Future<void> _onAppBarMenu(BuildContext context, String value) async {
     switch (value) {
+      case 'view':
+        ref.read(libraryPreferencesProvider.notifier).cycleViewMode();
+        break;
       case 'refresh':
         // Invalidate the library providers to force a re-scan of the
         // device's media — and, when ADB is connected, re-scan Android/data
@@ -472,22 +584,52 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     // moved on, so the prompt goes (transient_prompt.dart).
     if (selectionActive) TransientPrompt.close();
 
+    // TWO PANES on a wide window (core/ui/list_detail.dart): the folders,
+    // and beside them the open folder's videos — the page a tap opens on a
+    // phone, in place. The files view is one list either way.
+    final wide = ListDetail.twoPanes(context);
+    final foldersView = prefs.viewMode != ViewMode.files;
+    _followWindow(wide, foldersView);
+    final two = wide && foldersView && _permissionChecked && _hasPermission;
+    final Folder? open = two
+        ? _openFolderIn(ref.watch(filteredFoldersProvider).valueOrNull)
+        : null;
+    final wasOpen = _paneOpen;
+    _twoPanes = two;
+    _paneOpen = open?.path;
+    if (two && wasOpen != null && open?.path != wasOpen && videoSelActive) {
+      // The pane went to another folder (a search left this one out): the
+      // selection was of videos no longer on screen, and its Move would act
+      // on them. After the frame: a provider may not change while building.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(selectionProvider.notifier).clear();
+      });
+    }
     // Back: a selection first, then the search, then the shell's rule.
     // The shell does it — a PopScope here is never asked (shell_back.dart).
+    // On two panes that includes a selection of the open folder's videos.
     tabBack(selectionActive
         ? () {
             ref.read(folderSelectionProvider.notifier).clear();
             ref.read(selectionProvider.notifier).clear();
           }
         : _searchActive
-            ? () => setState(() => _searchActive = false)
-            : null);
+            ? _closeSearch
+            : two && _paneFocused && ListDetail.usingKeys
+                ? _focusOpenRow
+                : null);
 
-    return Scaffold(
+    // The open folder's selection is its pane's: its bars are there.
+    final listVideoSel = videoSelActive && !two;
+    // The list's own width: a two-pane list is at least 360 dp; one pane is
+    // the window, beside the rail from 600 dp.
+    final narrowBar = !two && MediaQuery.sizeOf(context).width < 360;
+
+    final Widget page = Scaffold(
       backgroundColor: AppColors.specScaffold,
       appBar: ref.watch(folderSelectionProvider).isNotEmpty
           ? const FolderSelectionAppBar()
-          : ref.watch(selectionProvider).isNotEmpty
+          : listVideoSel
           ? SelectionAppBar(
               totalVisible: ref.watch(filteredAllVideosProvider).maybeWhen(
                     data: (list) => list.length,
@@ -496,7 +638,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
             )
           : _searchActive
           ? (SearchAppBar(
-              onClose: () => setState(() => _searchActive = false),
+              onClose: _closeSearch,
             ) as PreferredSizeWidget)
           : AppBar(
               backgroundColor: Colors.transparent,
@@ -510,11 +652,12 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                 style: kTabTitleStyle.copyWith(color: Colors.white),
               ),
               actions: [
-                IconButton(
-                  icon: Icon(_viewModeIcon(prefs.viewMode)),
-                  tooltip: AppStrings.of(context).lsViewMode(prefs.viewMode.labelIn(AppStrings.of(context))),
-                  onPressed: notifier.cycleViewMode,
-                ),
+                if (!narrowBar)
+                  IconButton(
+                    icon: Icon(_viewModeIcon(prefs.viewMode)),
+                    tooltip: AppStrings.of(context).lsViewMode(prefs.viewMode.labelIn(AppStrings.of(context))),
+                    onPressed: notifier.cycleViewMode,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.search),
                   tooltip: AppStrings.of(context).search,
@@ -543,6 +686,25 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                     color: AppColors.darkSurface,
                     onSelected: (v) => _onAppBarMenu(context, v),
                     itemBuilder: (_) => [
+                      // On a bar too narrow for four buttons and the title
+                      // (a 320 dp phone: "Folder မ…"), the view mode is
+                      // the first thing in the menu instead.
+                      if (narrowBar)
+                        PopupMenuItem(
+                          value: 'view',
+                          child: Row(children: [
+                            Icon(_viewModeIcon(prefs.viewMode),
+                                size: 20, color: Colors.white70),
+                            const SizedBox(width: 12),
+                            Flexible(
+                              child: Text(
+                                  AppStrings.of(context).lsViewMode(prefs
+                                      .viewMode
+                                      .labelIn(AppStrings.of(context))),
+                                  style: const TextStyle(color: Colors.white)),
+                            ),
+                          ]),
+                        ),
                       PopupMenuItem(
                         value: 'refresh',
                         child: Row(children: [
@@ -633,7 +795,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
       // The selection actions live down here, not in the AppBar. Seven icons
       // do not fit in an AppBar on a phone, and the ones that overflowed were
       // simply invisible — Delete among them.
-      bottomNavigationBar: videoSelActive
+      bottomNavigationBar: listVideoSel
           ? const SelectionActionBar()
           : folderSelActive
               ? const FolderSelectionActionBar()
@@ -652,6 +814,20 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                 visibilityListenable: _fabVisibility.visible,
                 onLongPress: _toggleContinueWatching,
               ),
+            ),
+    );
+    if (!two) return page;
+    return ListDetailPanes(
+      onDetailFocus: (focused) => setState(() => _paneFocused = focused),
+      list: page,
+      detail: open == null
+          ? const ColoredBox(color: AppColors.specScaffold)
+          : FolderDetailScreen(
+              // A folder is its own page: its scroll, its search.
+              key: ValueKey(open.path),
+              folderPath: open.path,
+              folderName: open.name,
+              embedded: true,
             ),
     );
   }
@@ -821,6 +997,10 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   Widget _buildFolderList() {
     final foldersAsync = ref.watch(filteredFoldersProvider);
     final prefs = ref.watch(libraryPreferencesProvider);
+    // Beside the open folder (two panes) the folders are rows, whatever the
+    // layout: a narrow column of folders to choose from, and the grid, if
+    // chosen, is the videos' beside it.
+    final grid = prefs.layout == LayoutMode.grid && !_twoPanes;
 
     return foldersAsync.whenOrFallback(
       data: (folders) {
@@ -846,9 +1026,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                 // 840 dp: Material's widest single-column body. 640 left a
                 // landscape tablet (1200 dp beside the rail) looking like a
                 // phone screen floating in the middle.
-                maxWidth: prefs.layout == LayoutMode.grid
-                    ? double.infinity
-                    : 840,
+                maxWidth: grid ? double.infinity : 840,
               ),
               child: CustomScrollView(
                 controller: _fabVisibility.controller,
@@ -868,7 +1046,7 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
                     const SliverToBoxAdapter(child: ContinueWatchingSection()),
                   if (ref.watch(searchQueryProvider).isEmpty)
                     const SliverToBoxAdapter(child: RecentlyAddedSection()),
-                  if (prefs.layout == LayoutMode.grid)
+                  if (grid)
                     SliverPadding(
                       // MX PLAYER'S GRID: three columns on a phone (137 dp
                       // pitch on 411 dp; more on tablets), 107 dp rows —
@@ -947,6 +1125,8 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
     final selectionMode = selectedFolders.isNotEmpty;
     return FolderListItem(
       folder: folder,
+      open: _twoPanes ? folder.path == _paneOpen : null,
+      focusNode: _twoPanes && folder.path == _paneOpen ? _openRow : null,
       selectionMode: selectionMode,
       selected: selectedFolders.contains(folder.path),
       onTap: () => _openFolder(folder),
@@ -1059,7 +1239,8 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
   Future<void> _openFolder(Folder folder) async {
     // Opening a folder is a navigation away from the list — collapse the
     // Continue Watching peek so it doesn't linger behind the new screen.
-    _hideContinueWatching();
+    // Beside the list (two panes) nothing goes away, and it stays.
+    if (!_twoPanes) _hideContinueWatching();
     // Android/data and Android/obb folders are only readable while an ADB
     // connection is live. Opening one after the connection dropped used to give
     // an empty folder with no explanation; now the user gets one prompt and a
@@ -1072,6 +1253,24 @@ class _LocalScreenState extends ConsumerState<LocalScreen>
       if (!ok || !mounted) return;
     }
     if (!mounted) return;
+    if (_twoPanes) {
+      // In place, beside the list. A selection of the last folder's videos
+      // goes with it: its Move would act on files no longer on screen.
+      if (_openPath != folder.path) {
+        ref.read(selectionProvider.notifier).clear();
+      }
+      setState(() {
+        _openPath = folder.path;
+        _pickedFolder = true;
+      });
+      return;
+    }
+    _openPath = folder.path;
+    _pushFolder(folder);
+  }
+
+  /// The folder as a page of its own, over the list.
+  void _pushFolder(Folder folder) {
     // Pass path + name as query parameters. Using Uri(...).toString() lets
     // Dart encode arbitrary UTF-8 (emoji, Thai, Burmese, a literal '%',
     // etc.) correctly and exactly once, so any folder name opens reliably.

@@ -31,6 +31,7 @@ import 'vault_progress.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/responsive.dart';
 
 // === Add Files flow spec (innocent_add_files_flow_spec, v0.50) ===
 // One full-screen route. A category strip (Videos · Images · Audio ·
@@ -874,12 +875,18 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
             ),
         ],
       ),
-      body: Column(
+      // A TV keeps its margins clear (TvSafeArea): the chips and the lists
+      // ran to the edges. A phone upright has no side insets.
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
         children: [
           _catBar(),
           _breadcrumb(),
           Expanded(child: _body()),
         ],
+      ),
       ),
       bottomNavigationBar: _picked.isNotEmpty ? _addNowBar() : null,
     );
@@ -2285,10 +2292,11 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
         ],
       );
     }
-    return GridView.builder(
+    // Three on a phone, more as the window widens (responsive.dart).
+    return SafeGridWidth(builder: (context, width) => GridView.builder(
       padding: const EdgeInsets.all(8).plusNavBar(context),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: Responsive.gridColumns(width - 16, spacing: 8),
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 1,
@@ -2364,7 +2372,7 @@ class _AddFilesPickerState extends ConsumerState<AddFilesPicker> {
           ),
         );
       },
-    );
+    ));
   }
 
   Widget _addNowBar() {

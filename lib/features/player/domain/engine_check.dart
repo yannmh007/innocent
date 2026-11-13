@@ -21,6 +21,23 @@ enum EngineVerdict {
   stuck,
 }
 
+/// An engine whose calls can hang (libmpv, through MpvLink). The player
+/// watches one ([EngineVerdict], every 750 ms) while a call hangs; a test's
+/// fake engine implements it to hang on purpose (13 Nov: the check had no
+/// test that drove it).
+abstract interface class SlowEngine {
+  /// True while a call has not come back (MpvLink's 4 s), false again when
+  /// it does.
+  Stream<bool> get engineWedgedChanges;
+  bool get engineWedged;
+
+  /// The call that hangs, for the trail.
+  String? get engineWedgedReason;
+
+  /// Listen to the engine anew (once a film, when it moves on regardless).
+  void relink();
+}
+
 /// How long a playing film may stand still while a call hangs before the
 /// engine is called stuck.
 const Duration kStuckWhilePlaying = Duration(seconds: 3);

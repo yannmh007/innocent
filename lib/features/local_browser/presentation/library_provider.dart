@@ -1219,12 +1219,35 @@ bool _hasVideoListDiff(List<Video> a, List<Video> b) {
   return aUris.length != bUris.length || !aUris.containsAll(bUris);
 }
 
+/// Whether the folder list's search matched [folderPath] by its NAME — the
+/// name the list shows (filteredFoldersProvider matches folder names or the
+/// names of the videos inside).
+bool folderNameMatches(String folderPath, String query) {
+  final base = p.basename(folderPath);
+  if ((base.isEmpty ? folderPath : base).toLowerCase().contains(query)) {
+    return true;
+  }
+  return (folderPath.contains('/Android/data/') ||
+          folderPath.contains('/Android/obb/')) &&
+      _adbFolderDisplayName(folderPath).toLowerCase().contains(query);
+}
+
 /// Sorted + filtered video list inside folder
+///
+/// The Video tab's search follows the person into a folder it found: a
+/// folder found by a video's name shows the videos that matched; a folder
+/// found by ITS name shows all its videos. It showed "No video matches
+/// 'camera'" in Camera, found by its name (12 Nov), and beside the list on a
+/// wide window that read as the folder being empty. A folder's own search
+/// filters on the screen that has it (FolderDetailScreen), not here.
 final filteredVideosProvider =
     Provider.family<AsyncValue<List<Video>>, String>((ref, folderPath) {
   final videosAsync = ref.watch(videosInFolderProvider(folderPath));
   final prefs = ref.watch(libraryPreferencesProvider);
-  final query = ref.watch(searchQueryProvider).trim().toLowerCase();
+  final listQuery = ref.watch(searchQueryProvider).trim().toLowerCase();
+  final query = listQuery.isEmpty || folderNameMatches(folderPath, listQuery)
+      ? ''
+      : listQuery;
 
   return videosAsync.whenData((videos) {
     // Fold in hidden filesystem videos that belong to THIS folder (deduped),

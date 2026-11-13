@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/theme/app_colors.dart';
-
 import '../../../../core/localization/app_strings.dart';
+import 'player_ui.dart';
 
-/// Full-screen overlay showing all player gestures (Phase 14).
-/// Tappable to dismiss.
+/// Every gesture of the player (⋮ → Tutorial; docs/player_gestures.md).
+///
+/// A player sheet like every other menu of the player: frosted glass, a
+/// bottom sheet upright and a panel from the right sideways, closed by a
+/// drag, a tap on the picture or Back. It was a page of its own — the film
+/// behind 87 % black, its own header and close button, blue discs, its own
+/// type and "Tap anywhere to dismiss" — the last menu with a look of its
+/// own (docs/devices_2026_11.md, Phase 2 item 5, 13 Nov).
 class GesturesHelpOverlay extends StatelessWidget {
   const GesturesHelpOverlay({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showDialog<void>(
-      context: context,
-      barrierColor: Colors.black87,
-      builder: (_) => const GesturesHelpOverlay(),
-    );
-  }
+  static Future<void> show(BuildContext context) =>
+      showPlayerSheet<void>(context,
+          builder: (_) => const GesturesHelpOverlay());
 
   /// Every gesture, as Settings → Controls names it (docs/player_gestures.md).
   /// The volume keys move the system volume — they never seek (this list
@@ -66,72 +67,20 @@ class GesturesHelpOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gestures = _gestures(AppStrings.of(context));
-    // showDialog puts no Material under its page (Dialog brings its own;
-    // this overlay is not one), so without this every line fell back to
-    // Flutter's "no Material" style: monospace, double yellow underline.
-    return Material(
-      type: MaterialType.transparency,
-      child: GestureDetector(
-        onTap: () => Navigator.of(context).pop(),
-        child: Container(
-          color: Colors.transparent,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.touch_app,
-                          color: AppColors.accentBlue, size: 24),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          AppStrings.of(context).playerGestures,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: AppStrings.of(context).close,
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: gestures.length,
-                      separatorBuilder: (_, __) => const Divider(
-                        height: 16,
-                        color: Colors.white12,
-                      ),
-                      itemBuilder: (_, i) => _GestureItem(gestures[i]),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Center(
-                    child: Text(
-                      AppStrings.of(context).tapToDismiss,
-                      style: const TextStyle(
-                        color: AppColors.darkOnSurfaceMuted,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
+    final s = AppStrings.of(context);
+    final pad = PlayerUi.pad(context);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PlayerSheetHeader(title: s.playerGestures),
+        Flexible(
+          child: PanelScroll(
+            padding: EdgeInsets.fromLTRB(pad - 4, 8, pad - 4, 16),
+            children: [for (final g in _gestures(s)) _GestureRow(g)],
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -147,48 +96,46 @@ class _Gesture {
   });
 }
 
-class _GestureItem extends StatelessWidget {
+/// One gesture: its icon, what to do, what it does, in the player's row
+/// type. Not a button, but it takes focus, so a keyboard or a remote can
+/// walk the list and the list scrolls with it (FocusRingLayer shows where).
+class _GestureRow extends StatelessWidget {
+  const _GestureRow(this.gesture);
+
   final _Gesture gesture;
-  const _GestureItem(this.gesture);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: const BoxDecoration(
-            color: AppColors.accentBlue15,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(gesture.icon, color: AppColors.accentBlue, size: 20),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                gesture.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+    return Focus(
+      child: MergeSemantics(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 52),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Icon(gesture.icon,
+                      size: 22, color: PlayerUi.textSecondary),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                gesture.description,
-                style: const TextStyle(
-                  color: AppColors.darkOnSurfaceMuted,
-                  fontSize: 12,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(gesture.title, style: PlayerUi.rowTitle),
+                      const SizedBox(height: 2),
+                      Text(gesture.description, style: PlayerUi.rowValue),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

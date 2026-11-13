@@ -113,9 +113,12 @@ jobs:
           # MODE=stream: the catalogue title the phones play, compiled in.
           # MEDIA_SEAL=1: a build that asks for the sealed copies
           # (docs/MEDIA_ENCRYPTION.md §6), as device-lab.yml builds one.
+          # STREAM_AUTOJUMPS: after the checks, jumps in Auto to these
+          # shares of the film, the jump rule on and off in turn (BACKLOG 5c).
           flutter build apk --release --target-platform android-arm64 \
             --dart-define=INNOCENT_LAB=true \
             --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
+            --dart-define=INNOCENT_LAB_AUTOJUMPS="${STREAM_AUTOJUMPS:-}" \
             --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
           # DEVICES32: phones that run 32-bit Android take the armeabi-v7a
@@ -125,6 +128,7 @@ jobs:
             INNOCENT_LAB_ABI=armeabi-v7a flutter build apk --release --target-platform android-arm \
               --dart-define=INNOCENT_LAB=true \
               --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
+              --dart-define=INNOCENT_LAB_AUTOJUMPS="${STREAM_AUTOJUMPS:-}" \
               --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
             cp build/app/outputs/flutter-apk/app-release.apk app32.apk
             ls -la app32.apk

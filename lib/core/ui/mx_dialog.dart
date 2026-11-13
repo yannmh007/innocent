@@ -2,29 +2,35 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// The look of MX Player's information dialogs (Properties, folder details),
-/// measured from its screenshots on a 411 dp phone: a warm dark grey card
-/// with nearly square corners, 32 dp from the screen edges, labels in grey
-/// and values in white at the same size, no rules between rows, and a bold
-/// light-blue "Okay" at the bottom right.
+/// The look of the app's information dialogs (Properties, folder details),
+/// on the same tokens as the player's menus (skill ui-design,
+/// player_ui.dart): the dark surface, 20 dp corners, labels in the
+/// secondary grey and values in white at one size, no rules between rows,
+/// the accent "Okay" at the bottom right.
+///
+/// It was MX Player's card measured from screenshots — a warm grey with
+/// 4 dp corners and 16.5 sp rows — and beside the redesigned player (the
+/// Information tile opens it over the film) it read as another app's
+/// (12 Nov 2026). The layout, the table of rows and the sizes' wording stay
+/// MX's.
 class MxDialog {
   MxDialog._();
 
-  static const Color background = Color(0xFF383435);
-  static const double radius = 4;
+  static const Color background = Color(0xFF1C1C1E);
+  static const double radius = 20;
   static const EdgeInsets inset =
-      EdgeInsets.symmetric(horizontal: 32, vertical: 24);
+      EdgeInsets.symmetric(horizontal: 24, vertical: 24);
   static const ShapeBorder shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.all(Radius.circular(radius)));
 
   static const TextStyle title = TextStyle(
-      color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700);
+      color: Color(0xEBFFFFFF), fontSize: 18, fontWeight: FontWeight.w600);
   static const TextStyle label =
-      TextStyle(color: Color(0xFFB4AFB0), fontSize: 16.5, height: 1.3);
+      TextStyle(color: Color(0x9EFFFFFF), fontSize: 15, height: 1.35);
   static const TextStyle value =
-      TextStyle(color: Colors.white, fontSize: 16.5, height: 1.3);
+      TextStyle(color: Color(0xEBFFFFFF), fontSize: 15, height: 1.35);
   static const TextStyle ok = TextStyle(
-      color: AppColors.specCheckbox, fontSize: 16, fontWeight: FontWeight.w700);
+      color: AppColors.specPrimary, fontSize: 15, fontWeight: FontWeight.w600);
 
   /// Label and value rows laid out as a table: the values line up one gap
   /// after the LONGEST label, as MX's do, instead of at a fixed width that

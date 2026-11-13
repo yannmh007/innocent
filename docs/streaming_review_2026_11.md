@@ -377,3 +377,226 @@ than in run 42376634865: the realme's read 0.4-1.1 Mbit/s at first
 2.6 s at 240p, OPPO 0.9 s at 720p (its 537,551 B segment in 800 ms) — are
 the line, not comparable with that run, and the baseline for 5c stays
 that run's (realme 1.7 s on a 720p segment at ~4.6 Mbit/s).
+
+**Runs J and J2 (42616754742, 42628158249; 9 Nov): BACKLOG 5c, a jump's
+first segment from a rung that arrives quickly.** The rule
+(`Steer.jumpLow`, `SteeredSelection`): in Auto, a jump out of the buffer
+takes its first segment from the best rung whose segment arrives in
+~0.5 s at the meter's estimate (rate × 2 s / line), the second from the
+rung before the jump again. Flow `weakjumps`: Sintel on the weak line
+held at 4 Mbit/s (60 ms each way, 0.5 % loss; probes 785 and 783 kbps
+under 900 kbit), 16 passes from a cleared app, `lab_jump` on and off in turn
+(J on first, J2 off first); each pass jumps in Auto to 40, 70, 20, 85,
+55, 31, 95 % of the film, each far from what is in hand. 224 jumps;
+the same jump of a pair of passes lands on the same moment, so they are
+compared pair by pair:
+
+| | J on | J off | J2 on | J2 off |
+|---|---|---|---|---|
+| The jump's stop (frozen, median) | 1719 ms | 1842 ms | 2096 ms | 2082 ms |
+| First picture after the seek (median) | 1544 ms | 1531 ms | 1802 ms | 1646 ms |
+| A second stop ≥ 0.6 s within 20 s | 7 (13.0 s) | 2 (2.1 s) | 16 (16.1 s) | 3 (2.0 s) |
+| Mean rung over the 20 s after | 485p | 494p | 439p | 465p |
+| First segment (median) | 79 KB in 425 ms | 228 KB in 772 ms | 83 KB in 760 ms | 267 KB in 916 ms |
+| The Worker's answer before it (median) | 798 ms | 790 ms | 804 ms | 800 ms |
+
+- **Over both runs, 112 pairs**: the jump's own stop was shorter under the
+  rule in 62 and longer in 42 (8 alike; sign test p 0.03), by a median
+  0.18 s. Counting the stop right after the jump too, 54 against 50,
+  median 0.04 s: nothing. The first picture came no sooner (J) or later
+  (J2).
+- **Why so little: the segment is not the wait.** The Worker's answer is
+  ~0.8 s of the ~1.6 s to the first picture, and ExoPlayer starts once
+  1 s of film is in (half a segment), not the whole segment. And at
+  120 ms and 0.5 % loss an 80 KB segment cost nearly what a 250 KB one
+  did (J2: 760 against 916 ms) — most likely TCP's slow start on the
+  jump's fresh read, where round trips, not bytes, set the time.
+  BACKLOG's premise ("a jump needs one whole segment, so its size is the
+  wait") is wrong for this line.
+- **And the rule costs a second stop.** The rung before the jump, asked
+  for with 2 s in hand on a connection still in slow start, did not come
+  in time: 23 jumps of 112 stopped again for 0.6-2.7 s within seconds of
+  starting, against 5 of 112 without the rule. A viewer who sees a film
+  start and freeze again is worse off than one who waits 0.2 s longer.
+  The picture is softer too: 240p for the first segment where Auto plays
+  480p.
+- `stall_ms` under ~500 ms is the position's own tick (250 ms, stretched
+  by the emulator): 183 of 224 jumps read 231-490 ms, 13 read 500-600 ms,
+  28 read 0.6 s or more. The flow's summary now counts a stop after the
+  jump from 600 ms and pairs the jump's stop and that one together.
+
+**Test Lab, run 42641532315** (the rule present and off for the checks,
+then six jumps in Auto, the rule on for the odd ones): the phones' lines
+put both outside the band where the rule acts (a line between a rung's
+peak / 0.7 and four times it). The realme's read 3-28 Mbit/s (median
+14.8): the quick rung was 720p, the rung Auto held, on all six; each
+jump: the Worker's answer ~290 ms, the 270-540 KB 720p segment whole in
+0.4-0.8 s, the first picture at 1.0-1.2 s, frozen 1.1-1.4 s, rule on or
+off alike — the last 0.4-0.7 s, after the segment was in, is the phone
+(the decoder starting again), not the line. The OPPO's read 64-3885 kbps (median 330 of 92 readings,
+the slowest it has had): 240p all along, the rule acted once (360p → 240p:
+frozen 1.2 s, no stop after). Checks: realme 15 of 16 (the Original,
+9989 kbps, opened on a line measured at 3.0-9.3 Mbit/s — BACKLOG's
+"Original on a borderline line"), OPPO 12 of 15 (seek, quality->240 and
+tour->360 waited for bytes that a 330 kbps line did not bring; the OPPO
+runs again alone).
+
+**The decision (9 Nov): 5c's rule is taken out.** Over 224 jumps on the
+emulator's weak line it shortened the jump's own stop by a median 0.18 s
+in 62 pairs of 104 that differed, gave no sooner first picture, stopped
+the film a second time right after the jump in 23 jumps against 5, and
+softened the picture; on the phones' lines it had nothing to act on. A
+jump's wait is, in order: the Worker's answer (0.3 s on the realme's good
+line, 0.8 s on the weak one, 0.2-0.9 s on the OPPO's), the phone's own
+restart (0.4-0.7 s on the realme), and only then the bytes of half a
+segment. What could shorten it is the answer — a connection kept warm
+for a jump, say — not the rung; untried. The `weakjumps`
+flow and the jumps in Auto (`_labAutoJumps`, `STREAM_AUTOJUMPS` on Test
+Lab) stay, to measure that.
+
+**After the decision.** Device lab J3 (42655210613), the build with the
+rule taken out: the jumps on Big Buck Bunny 15 of 15; then an A/A of
+`weakjumps`, eight passes, both words alike (probe 750 kbps under
+900 kbit). Identical variants came apart by a median 0.35 s in the
+jump's own stop over 28 pairs (15 shorter against 10, sign p 0.21), with
+a stop after the jump in 1 and 2 of 28. So the flow's own spread is of
+the size of 5c's gain in the jump's stop (0.18 s over 112 pairs; a median
+over four times the pairs spreads about half as far): that gain is not
+shown. The second stops are: 23 of 112 under the rule against 5 of 112
+without it and 3 of 56 in the A/A. Test Lab 42655210615, the OPPO alone
+on the same build: 16 of 16 on a line of 11.5-38.6 Mbit/s (median 31),
+seek frozen 400 ms at 720p, far-jump 599 ms — run 42641532315's three
+failures were its 0.3 Mbit/s line.
+
+**Runs M1, S1, S2 (11 Nov): what a jump's answer is made of, and a
+connection kept open for a jump.** M1 (42951731347) was the build before,
+with a richer trail only: each jump's first read now names its connection
+(new or kept, told by its local port), what getting it took (lab builds:
+DNS, TCP and TLS apart), the wait from the request going out to the
+Worker's answer, and whether a read was cut for the jump. Six weakjumps
+passes on the weak line (an A/A) after the jumps on Big Buck Bunny (15 of
+15). All 93 reads that jumped:
+
+| M1 | reads | answer (median / p90) | getting the connection | the Worker's wait |
+|---|---|---|---|---|
+| on a new connection | 57 | 885 / 1337 ms | 383 ms: DNS 25, TCP 147, TLS 189 (p90 853) | 441 ms |
+| on a kept connection | 36 | 466 / 738 ms | 0 | 466 ms |
+
+- **Why new: a jump cuts the read ahead in flight, and a response cut
+  before its end takes its connection with it** (Dart's HttpClient
+  destroys a socket whose body was not read through; shown on a local TLS
+  server too). 34 of the 42 jumps in Auto cut a read, and 33 of those
+  waited for a new connection. A read cut for a rung change (another
+  rung's read ahead ended) does the same.
+- **The wait is the round trip and the Worker**: 466 ms on a kept
+  connection = 120 ms of round trip on this line + ~300-350 ms of the
+  Worker and R2; on the emulator's own line (the jumps flow, a round trip
+  of ~30 ms) 260-500 ms. The app cannot shorten that part (an edge copy or
+  the bucket's place could; both are the Worker's, not tried). The
+  handshake, ~0.4 s here, it can.
+- The cut read's writer closing (`before`) costs nothing: median 0, p90
+  47 ms, waited for alongside the answer.
+- The A/A: the jump's stop came apart by 0.31 s over 21 pairs (9 against
+  12), as J3's 0.35 s over 28.
+
+**The change (`StreamCacheServer.keepSpare`, lab switch `lab_jump`
+on/off):** a ladder gets a second pool, and its segment reads take turns
+on the two (each read that carries on goes to the pool used less
+recently), so while one read is in flight the other pool's connection
+stays open; a jump, or a rung's first read, takes the pool with no read on
+it whose last read came in whole most recently (`firstPool`). The same
+reads: no request more to the Worker.
+
+| | S1 on | S1 off | S2 on | S2 off |
+|---|---|---|---|---|
+| The Worker's answer to the jump's first read (median) | 478 ms | 870 ms | 442 ms | 676 ms |
+| On a kept connection | 51 of 56 | 6 of 56 | 49 of 56 | 9 of 56 |
+| The jump's own stop (median) | 1726 ms | 2098 ms | 1468 ms | 1682 ms |
+| First picture after the seek (median) | 1233 ms | 1698 ms | 1057 ms | 1340 ms |
+| Stops ≥ 0.6 s within 20 s after | 2 (609, 728 ms) | 0 | 1 (679 ms) | 0 |
+| Mean rung over the 20 s after | 455p | 463p | 493p | 511p |
+
+- **S1 (42957372146, on first), 56 pairs**: the answer sooner under on in
+  46, off in 4 (median -395 ms); the jump's stop shorter under on in 39
+  against 14 (median -390 ms, sign p 0.0004); with any stop after it 38
+  against 15 (-367 ms, p 0.0011); the first picture sooner in 39 against
+  9 (-340 ms).
+- **S2 (42982586873, off first, another runner), 56 pairs**: the answer
+  sooner under on in 36, off in 6 (-218 ms); the jump's stop shorter under
+  on in 30 against 19 (-134 ms, sign p 0.08); the first picture sooner in
+  37 against 8 (-266 ms). Then the jumps on Big Buck Bunny with the spare
+  on (`JUMPS_JUMP=on`): 15 of 15.
+- **Both, 112 pairs**: the jump's stop shorter under on in 69 against 33,
+  median -312 ms, sign p 0.0002 (the A/A: 15 against 10 and 9 against 12,
+  p 0.21 and 0.33); with any stop after it 68 against 34 (-303 ms, p
+  0.0005); the first picture sooner in 76 against 17 (-300 ms); the answer
+  sooner in 82 against 10 (-303 ms). The stops after the jump, 3 of
+  0.61-0.73 s against 0, sit at the flow's tick and inside the A/A's own
+  rate (3 of 56 in J3); the one read in the trail (S1 pass 13) was a rung
+  change a second after the jump whose read found its pool's connection
+  gone — a handshake either way. The mean rung after paired: lower under on
+  in 14 and 21 pairs, higher in 11 and 17 (p 0.35, 0.31; the A/A runs
+  differ by +23p and -10p): alike. The first picture after the start
+  (`first frame`) paired: -130 and -65 ms, alike.
+
+**Test Lab** (the spare on for the whole playback, the checks included;
+six jumps in Auto, the spare taken by the odd ones, the even ones sent
+onto the pool whose read they cut, as one pool would): run 42982587122,
+the OPPO 16 of 16 on 10.5-40 Mbit/s (median 27; seek frozen 600 ms,
+far-jump 598, first frame 1.69 s), its six jumps all on a kept connection,
+the answer 215-272 ms, frozen ~0.4 s, on and off alike — on a fast line a
+read is in whole well before the next jump, so one pool's connection is
+open anyway. The realme's line read 64-303 kbps for its first 110 s (its
+first TCP handshake 621 ms; 0.5 MB in 110 s): stops of 30, 16 and 8.5 s,
+and the checks never began; its later jumps on 0.1-4 Mbit/s waited for TCP
+handshakes of 288-862 ms, the cost the spare removes, too few to compare.
+Run again alone, 42985879375: 16 of 16 on 10-47 Mbit/s (median 20; first
+frame 1.43 s), its six jumps all on a kept connection, 222-359 ms.
+
+**The decision (11 Nov): the spare is on by default.** A jump's wait on a
+weak line was the Worker's answer (~0.9 s), and nearly half of that was a
+handshake the jump paid because it cut the read in flight; a second pool,
+read in turn, removes it in nine jumps of ten (0.30 s off the answer, the
+stop and the first picture over 112 pairs, both orders, past the A/A's
+spread), costs no Worker request, and changed nothing the labs could see
+in the picture after or on the phones' fast lines. One fix with it: a read
+that carries on from a short one (the head at the start) stays on that
+pool, so the length check's connection carries the first fragment as
+before (the alternation had sent it to the second pool's first handshake;
+stream_cache_hls_test caught it). On that build, with no word (the
+build's own): the jumps on Big Buck Bunny 15 of 15 twice, G1 (42995970597;
+first frame 2.8 s, one sample, against the 1.64.81 candidate's 2.2 s) and
+G2 (42999722877, after two weakjumps passes, which also proved the jumps
+flow's trail now holds its own lines only).
+
+**What is left of a jump's wait, and what it would take.**
+- The Worker's own wait, ~0.35-0.47 s on a kept connection: a round trip
+  plus the Worker and R2 (~0.25-0.35 s: on the emulator's own line, a
+  round trip of ~30 ms, it was 0.26-0.50 s). Not the app's. Most likely
+  R2's read from the data centre that answers (where the bucket is), but
+  that is not measured: splitting the Worker's time from R2's needs a
+  `Server-Timing` header from the Worker (a Worker change, the owner's
+  call).
+- A pool's connection found gone though the rule took it for open: in
+  S2's on passes, a read that jumped found its pool's connection open in
+  91 of 100 when the pool's last whole read was under 10 s before, in 8 of
+  48 when 10-30 s. Over M1, S1 and S2, reads that cut nothing found it open
+  in 88 % under 2 s after, 44 % at 4-6 s, 18 % at 8-10 s. That fits a read
+  that took the connection since and was ended (by a rung change, taking
+  it with it) as well as a server closing idle connections early; the
+  trail cannot tell them apart yet. Marking a pool's connection lost when
+  a read on it ends cut would settle the first; a follow-up, untried.
+- The phone's restart after the bytes (0.4-0.7 s on the realme) and half
+  a segment's bytes, as before.
+
+**BACKLOG 5 (two connections for a ladder's reads on a lossy line), in
+Worker requests.** At 2 MB a read, an hour of film is 360 reads at 720p
+(1683 kbps), 196 at 480p (912), 124 at 360p (578), 66 at 240p (306).
+Split in two connections at once, each read is two requests: on the Free
+plan's 100,000 a day, ~510 viewer-hours at 480p become ~255 (720p: ~280 to
+~140). It would also take the spare away — both connections busy when a
+jump comes — and so cost the 0.3 s just won, for throughput a viewer sees
+only on a line that holds one connection under a rung. The spare costs
+none of that: the same reads, one more connection held while a ladder
+plays, and a handshake (~5 KB) off the jump's path when a pool's
+connection has closed (at 240p, reads ~55 s apart, most of them).

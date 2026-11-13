@@ -227,7 +227,11 @@ android {
         // because the app has no users.
         applicationId = "com.innocent.media"
         minSdk = 24
-        targetSdk = flutter.targetSdkVersion
+        // 36 (Android 16), not Flutter 3.32's default 35: the owner's choice,
+        // 13 Nov. What it changes and what the app does about each —
+        // predictive back, orientation requests ignored from 600 dp, the
+        // WebView screens' Back — docs/target_sdk_36.md.
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 

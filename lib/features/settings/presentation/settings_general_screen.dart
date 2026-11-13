@@ -20,6 +20,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > General — full MX Player parity (UI PDF page 18).
 /// Sections: default, Edit, User data.
 ///
@@ -375,7 +376,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).settingsGeneral)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           // There were two language rows here: this one said "System
           // default" whatever the app was actually set to, and the live one
@@ -536,7 +537,7 @@ class SettingsGeneralScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

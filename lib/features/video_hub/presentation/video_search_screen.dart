@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/responsive.dart';
 import '../data/api/event_sender.dart';
 import '../domain/video_content.dart';
 import 'content_detail_screen.dart';
 import 'video_hub_provider.dart';
 import 'widgets/hub_states.dart';
 import 'widgets/poster_card.dart';
+import 'widgets/poster_metrics.dart';
 import 'widgets/vh_insets.dart';
 import 'video_hub_theme.dart';
 import 'account_provider.dart';
@@ -187,14 +189,16 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
             icon: Icons.search_off,
           );
         }
-        return GridView.builder(
+        // Three posters on a phone, more on a wider window
+        // (PosterMetrics.gridColumnsFor).
+        return SafeGridWidth(builder: (context, width) => GridView.builder(
           padding: EdgeInsets.fromLTRB(
               14, 12, 14, VhInsets.scrollBottom(context)),
           keyboardDismissBehavior:
               ScrollViewKeyboardDismissBehavior.onDrag,
           itemCount: results.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: PosterMetrics.gridColumnsFor(width),
             crossAxisSpacing: 10,
             mainAxisSpacing: 14,
             childAspectRatio: 0.56,
@@ -213,7 +217,7 @@ class _VideoSearchScreenState extends ConsumerState<VideoSearchScreen> {
               ),
             );
           },
-        );
+        ));
       },
     );
   }

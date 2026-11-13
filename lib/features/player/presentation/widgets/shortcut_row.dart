@@ -79,7 +79,7 @@ class ShortcutRow extends StatelessWidget {
 
   List<ShortcutItem> get _expandedItems {
     if (allItemsOverride != null) return allItemsOverride!;
-    final all = ShortcutItem.values
+    final all = ShortcutItem.available()
         .where((i) => i != ShortcutItem.customiseItems)
         .toList();
     return [

@@ -63,13 +63,15 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 71_audit_more_portrait
-# The menu holds the controls up while it is open.
-- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+# The menu holds the controls up while it is open. Its first tile, not
+# "Video Display": since 1.64.83 that switch sits under eighteen tiles, out
+# of sight on a phone either way round (run 43425944894; on a tablet it fits).
+- assertVisible: "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*"
 - back
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 72_audit_more_closed_by_back
-- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+- assertNotVisible: "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*"
 # Still in the player: a tap brings its controls back.
 - runFlow:
     # Fresh controls: hidden first if they are up, then shown, so the next
@@ -85,6 +87,19 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+# The controls can hide on their own between the check above and its tap
+# (they hide 4 s after the last touch, and Back's menu had just closed):
+# that tap then showed them and this one hid them (run 43447577014, the
+# film playing throughout). Still in the player is what this proves: one
+# more tap, apart from the last, if they are down.
+- runFlow:
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
 
 # ── B3: hold Next ────────────────────────────────────────────────────────
@@ -126,6 +141,16 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+- runFlow:
+    # Down after all (their own 4 s timer, between a check and its tap):
+    # one more tap, apart from the last (runs 43447577014, 43451712785).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - tapOn: "(Subtitle|စာတန်းထိုး)"
 - waitForAnimationToEnd:
     timeout: 1500
@@ -150,4 +175,14 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+- runFlow:
+    # Down after all (their own 4 s timer, between a check and its tap):
+    # one more tap, apart from the last (runs 43447577014, 43451712785).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"

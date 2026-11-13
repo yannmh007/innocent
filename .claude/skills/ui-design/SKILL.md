@@ -13,10 +13,11 @@ on a phone. The player's building blocks live in
 ## 1. Principles
 1. **The picture is the hero.** Chrome recedes: one accent (brand blue
    `#3D8DF0`, `AppColors.specPrimary`), greys for everything else.
-2. **One layer at a time.** An open panel, sheet or dialog sits on an
-   OPAQUE surface over a dimmed picture, and the controls under it hide.
-   Nothing shows through a menu (11 Nov: the clock, ♪, "Default" and the
-   seek bar showed through ⋮ and the subtitle panel).
+2. **One layer at a time.** An open panel, sheet or dialog is frosted
+   glass over a dimmed picture, and the controls under it hide: the film
+   shows through as colour, nothing sharp does (11 Nov: the clock, ♪,
+   "Default" and the seek bar showed through a translucent ⋮; 12 Nov the
+   owner chose misted glass over moving the picture out of the way).
 3. **Every menu looks like every other menu**: same surface, header, row,
    spacing. A new menu is built from player_ui.dart, not from scratch.
 4. **It fits everywhere**: 320–411 dp, portrait and landscape, Burmese,
@@ -28,10 +29,10 @@ on a phone. The player's building blocks live in
 ## 2. Tokens (dark; the player is always dark)
 | | value |
 |---|---|
-| scrim behind a panel/dialog | black 60 % (`PlayerUi.scrim`) |
-| surface (panel, sheet, dialog) | `#1C1C1E`, opaque (`PlayerUi.surface`) |
-| raised (card, tile, chip on a surface) | `#2A2A2D` (`PlayerUi.raised`) |
-| hairline | white 8 % |
+| scrim behind a panel/dialog | black 40 % (`PlayerUi.scrim`) |
+| surface (panel, sheet, dialog) | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
+| hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
 | selected | accent text/icon; container accent 16 % |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
@@ -49,8 +50,9 @@ two lines at most · caption 11 sp.
 ## 3. Components (all in player_ui.dart)
 - **Panel** (`PlayerPanel`, in the player's own Stack): landscape a side
   panel from the right, up to 400 dp of content plus the navigation strip,
-  46 % of the width; portrait a bottom sheet up to 72 % of the height with a
-  drag handle. Header: title + optional trailing (capped at half the row,
+  46 % of the width; portrait a bottom sheet up to 60 % of the height with a
+  drag handle, up to 55 % (at 72 % it rose over the whole picture: "it
+  goes up too far", owner, 12 Nov). The picture never moves. Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
@@ -66,9 +68,17 @@ two lines at most · caption 11 sp.
 - **Card** (`PanelCard`): raised, radius 14, for a checklist or a group.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
-- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): the panels' surface,
-  radius, scrim; `barrierColor: Colors.transparent` for a sheet that
+- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): upright a glass
+  bottom sheet (dragged down to close); **sideways a glass side panel from
+  the right, the whole height**, like ⋮ (a bottom sheet held sideways had
+  ~300 dp and cut its lists and sliders). The form follows the window
+  while the sheet is open — a turn or a resize keeps the content's state
+  (Android 16 ignores the player's orientation requests on tablets). `barrierColor: Colors.transparent` for a sheet that
   changes the picture (Display, subtitle delay) so the change can be seen.
+  A sheet whose list always runs on takes `PanelScroll` (it fades at an
+  edge with more, as ⋮ does). Rows that only inform (the gestures help)
+  take focus, so a remote can walk and scroll them. No menu draws its own
+  page (the gestures help was 87 % black with its own header and discs).
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other
   plain; max width 360–420.
@@ -80,9 +90,48 @@ two lines at most · caption 11 sp.
   the top bar, shortcut row and bottom row while a panel, a dialog, the
   error card or a route the player opened is up.
 
-Never set `textStyle` in a ButtonStyle: it replaces the theme's, Roboto
-with it (the harness drew such a label in its fallback font). Put the size
-on the Text.
+Never set `textStyle` in a ButtonStyle, or a bare `TextStyle` as a
+TabBar's `labelStyle`: it replaces the theme's, Roboto and the Burmese
+fallback with it (the harnesses drew such labels as boxes: the player's
+header action, the downloader's tabs). Put the size on the Text, or start
+from `Theme.of(context).textTheme.labelLarge?.copyWith(...)`.
+
+**The rest of the app** uses the same tokens: `MxDialog` (core/ui, the
+information dialogs, opened over the player too) is the panel surface
+`#1C1C1E`, radius 20, labels 15 sp secondary, values 15 sp primary. Prove
+an app screen with the screens harness (`test_screens/`, 107 screens):
+`SCREEN_LOCALE=my|en flutter test test_screens --update-goldens`, and
+`SCREEN_PHONES=tiny` for 320 dp; fonts in `build/screen_fonts` (the SDK's
+Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
+
+## 3b. Every screen size (docs/devices_2026_11.md)
+- By the window, not the device: compact < 600 dp, medium 600–840,
+  expanded 840–1200, large 1200+. The shell's rail takes over at 600.
+- A list or form page caps its width (`TabletConstrainedWidth`, 840; a
+  reading page 640); hero, rails and grids use the width. A sheet or
+  panel is never full width on a large screen (≤ 640).
+- A screen that is a list of things to open shows two panes from 840 dp of
+  window (`core/ui/list_detail.dart`: Settings, the Video tab's folders):
+  `ListDetailPanes` (list 360–400 dp, white-10 % hairline, each pane its
+  own top bar), the open row on `listDetailSelection` (accent 16 %, radius
+  14, inset 8), a page that opens pages in a `DetailNavigator`. Below 840
+  the phone's layout, untouched. A window that narrows keeps what the
+  person opened; never push over the player.
+- A grid adds columns with width (`Responsive.gridColumns`; posters
+  `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
+  cell stays about a phone's size.
+- TV: the overscan margins are insets (`TvSafeArea`): a body that draws
+  words or tiles keeps clear of the side insets (a SafeArea, or
+  `SafeGridWidth` for a grid; the shell's right side does it for the tabs),
+  pictures may bleed; every function by the D-pad, focus always visible;
+  the remote's media keys work; the D-pad leaves a text field
+  (`DpadLeavesTextFields`); Back by D-pad from a pane goes to its list
+  first. Prove it: `SCREEN_PHONES=tv` and measure the 48 dp side bands.
+- Keyboard and mouse are first-class: Space/K, arrows/J/L, Esc, M, ?, a
+  right-click menu, hover shows the controls and the pointer hides.
+- Prove on `PLAYER_PHONES=all` and `SCREEN_PHONES=tablet,tablet_land,fold,
+  fold_land,chromebook,tv` (`fold_land`, 841 dp, is the tightest two-pane
+  width; a TV is drawn with its overscan margins).
 
 ## 4. MX parity — keep the structure, refine the look
 Top bar `← title … ♪ CC HW ⋮`; shortcut row with its expand chevron;

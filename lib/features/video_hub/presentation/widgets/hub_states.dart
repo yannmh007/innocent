@@ -20,12 +20,14 @@ import '../../../../core/ui/nav_bar_space.dart';
 /// forever.
 class PosterSkeletonGrid extends StatefulWidget {
   final int count;
-  final int crossAxisCount;
+
+  /// Null: as many as the real grid has at this width.
+  final int? crossAxisCount;
 
   const PosterSkeletonGrid({
     super.key,
     this.count = 9,
-    this.crossAxisCount = 3,
+    this.crossAxisCount,
   });
 
   @override
@@ -53,18 +55,19 @@ class _PosterSkeletonGridState extends State<PosterSkeletonGrid>
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 24).plusNavBar(context),
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemCount: widget.count,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: widget.crossAxisCount,
+        crossAxisCount:
+            widget.crossAxisCount ?? PosterMetrics.gridColumnsFor(width),
         crossAxisSpacing: PosterMetrics.gridSpacing,
         mainAxisSpacing: 14,
         // Same extent as the real grid, so nothing shifts when data lands.
-        mainAxisExtent: PosterMetrics.gridExtent(
-            context, MediaQuery.of(context).size.width),
+        mainAxisExtent: PosterMetrics.gridExtent(context, width),
       ),
       itemBuilder: (context, index) {
         return AnimatedBuilder(

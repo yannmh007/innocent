@@ -389,7 +389,10 @@ class _VideoHubScreenState extends ConsumerState<VideoHubScreen>
     final appNames = ref.watch(genreNamesProvider);
     final genreNames =
         (facets?.genreNames.isEmpty ?? true) ? appNames : facets!.genreNames;
-    final maxWidth = MediaQuery.of(context).size.width;
+    // The grid's own width: the window less a TV's side margins (the body's
+    // SafeArea keeps clear of them).
+    final mq = MediaQuery.of(context);
+    final maxWidth = mq.size.width - mq.padding.horizontal;
 
     // Filters changed means a different result set, so the old scroll offset
     // points at nothing meaningful - land the user on the new first row

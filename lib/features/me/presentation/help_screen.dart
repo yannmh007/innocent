@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Help screen — FAQ items and support contact
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -25,7 +26,7 @@ class HelpScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).help)),
-      body: ListView.builder(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView.builder(
         padding: const EdgeInsets.all(16).plusNavBar(context),
         itemCount: faqItems.length,
         itemBuilder: (_, i) {
@@ -53,7 +54,7 @@ class HelpScreen extends StatelessWidget {
             ],
           );
         },
-      ),
+      )),
     );
   }
 }

@@ -6,11 +6,21 @@ import 'library_provider.dart';
 import '../../../core/localization/app_strings.dart';
 
 /// Search bar overlay AppBar — replaces normal AppBar when active
+///
+/// The Video tab's search writes [searchQueryProvider], which its folder
+/// list (and a folder it found) follow. A screen's OWN search — a folder's
+/// videos — passes [onQuery] and keeps its text to itself: through the
+/// shared query it filtered the folder list behind it too, and Back out of
+/// the folder left that list filtered with no search bar in sight (12 Nov).
 class SearchAppBar extends ConsumerStatefulWidget
     implements PreferredSizeWidget {
   final VoidCallback onClose;
 
-  const SearchAppBar({super.key, required this.onClose});
+  /// The screen's own search: the text goes here, not to the Video tab's
+  /// [searchQueryProvider].
+  final ValueChanged<String>? onQuery;
+
+  const SearchAppBar({super.key, required this.onClose, this.onQuery});
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -24,10 +34,22 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
   late final FocusNode _focusNode;
   ProviderSubscription<String>? _querySub;
 
+  bool get _own => widget.onQuery != null;
+
+  void _set(String value) {
+    final own = widget.onQuery;
+    if (own != null) {
+      own(value);
+    } else {
+      ref.read(searchQueryProvider.notifier).state = value;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: ref.read(searchQueryProvider));
+    _controller =
+        TextEditingController(text: _own ? '' : ref.read(searchQueryProvider));
     _focusNode = FocusNode();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Dismissing search before the first frame disposes the FocusNode;
@@ -37,6 +59,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
     });
     // Phase 30: Sync controller text when provider changes externally
     // (e.g. recent-search chip tapped).
+    if (_own) return;
     _querySub = ref.listenManual<String>(
       searchQueryProvider,
       (_, next) {
@@ -66,7 +89,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
         tooltip: AppStrings.of(context).close,
         icon: const Icon(Icons.close),
         onPressed: () {
-          ref.read(searchQueryProvider.notifier).state = '';
+          _set('');
           widget.onClose();
         },
       ),
@@ -82,7 +105,9 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
           icon: Icon(Icons.search, color: Colors.white54, size: 20),
         ),
         onChanged: (value) {
-          ref.read(searchQueryProvider.notifier).state = value;
+          _set(value);
+          // The ✕ that clears the text comes and goes with it.
+          if (_own) setState(() {});
         },
         onSubmitted: (value) {
           // Phase 12: save to search history when user submits
@@ -98,7 +123,7 @@ class _SearchAppBarState extends ConsumerState<SearchAppBar> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               _controller.clear();
-              ref.read(searchQueryProvider.notifier).state = '';
+              _set('');
               setState(() {});
             },
           ),

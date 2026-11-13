@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/ui/responsive.dart';
+
 /// One place that decides how a poster card is shaped.
 ///
 /// WHY THIS FILE EXISTS: the row and the grid used to size cards
@@ -24,9 +26,24 @@ class PosterMetrics {
   /// width / height of the artwork.
   static const double aspect = 0.72;
 
+  /// A phone's columns. A wider grid adds columns ([gridColumnsFor]).
   static const int gridColumns = 3;
   static const double gridSpacing = 10;
   static const double gridPadding = 14;
+
+  /// The widest a grid poster gets before the grid adds a column: 121 dp on
+  /// a 411 dp phone (three), about 160 on a tablet (seven sideways, four
+  /// upright) — not three of 384 dp, two to a screen's height.
+  static const double gridMaxCell = 170;
+
+  /// Columns for a grid [maxWidth] wide: [gridColumns] on a phone, more as
+  /// the width grows (core/ui/responsive.dart).
+  static int gridColumnsFor(double maxWidth) => Responsive.gridColumns(
+        maxWidth - gridPadding * 2,
+        min: gridColumns,
+        maxCell: gridMaxCell,
+        spacing: gridSpacing,
+      );
 
   /// Width of a card inside a horizontally-scrolling row.
   static const double rowCardWidth = 108;
@@ -54,9 +71,9 @@ class PosterMetrics {
 
   /// Width of one grid cell, given the width available to the grid.
   static double gridCellWidth(double maxWidth) {
-    final usable =
-        maxWidth - gridPadding * 2 - gridSpacing * (gridColumns - 1);
-    return usable / gridColumns;
+    final columns = gridColumnsFor(maxWidth);
+    final usable = maxWidth - gridPadding * 2 - gridSpacing * (columns - 1);
+    return usable / columns;
   }
 
   /// Absolute cell height for the grid delegate.

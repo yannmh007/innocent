@@ -12,6 +12,7 @@ import '../../../core/services/connectivity/connectivity_service.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/di/core_providers.dart';
 import '../../../core/services/diagnostics/playback_log.dart';
+import '../../../core/ui/device_profile.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../../core/services/video_player/incomplete_file.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
@@ -526,6 +527,92 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// The position, play state and moment the media session was last told.
+  Duration _sessionPosition = Duration.zero;
+  bool _sessionPlaying = false;
+  DateTime? _sessionAt;
+
+  /// Tell the player's media session (BackgroundPlaybackService.sessionUpdate)
+  /// what the film is doing — on a change of state ([force]: playing,
+  /// paused, its length known), or when [position] is more than 1.5 s from
+  /// where the session works the film out to be (a seek, a next film); the
+  /// system runs the clock in between, so not on every tick.
+  ///
+  /// ON A TV ONLY: its voice commands and Now Playing card are what the
+  /// session is for. On a phone a session puts the film's title on a car's
+  /// screen, a watch, any app that reads notifications — and a headset's
+  /// buttons reach the player in front without one (review of 13 Nov).
+  /// Never for a private film: its title would reach the system's media
+  /// surfaces, and one left from the film before it ends.
+  void _syncSession({Duration? position, bool force = false}) {
+    if (!DeviceProfile.isTv || _sessionAway) return;
+    if (_isPrivate) {
+      _dropSession();
+      return;
+    }
+    final now = DateTime.now();
+    final pos = position ?? _livePosition();
+    final at = _sessionAt;
+    if (!force && at != null) {
+      final ran = _sessionPlaying
+          ? now.difference(at) * state.playbackSpeed
+          : Duration.zero;
+      final expected = _sessionPosition + ran;
+      if ((pos - expected).abs() < const Duration(milliseconds: 1500) &&
+          _sessionPlaying == state.isPlaying) {
+        return;
+      }
+    }
+    final duration = _liveDuration();
+    if (duration <= Duration.zero && at == null) return;
+    _sessionPosition = pos;
+    _sessionPlaying = state.isPlaying;
+    _sessionAt = now;
+    try {
+      // ignore: discarded_futures
+      _ref.read(backgroundPlaybackServiceProvider).sessionUpdate(
+            title: _currentVideoTitle ?? 'Innocent',
+            isPlaying: state.isPlaying,
+            position: pos,
+            duration: duration,
+            speed: state.playbackSpeed,
+          );
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerProvider.session: $e');
+    }
+  }
+
+  /// The player left the screen with nothing to play on (Home, background
+  /// play off): its session ends, so a remote's, a headset's or a car's
+  /// PLAY cannot start the film where no one sees it — the session would
+  /// still be the system's last one, its command still reaching the player
+  /// (review of 13 Nov). Held off until [resumeSession]: the pause's own
+  /// "paused" event, a moment later, would start it again.
+  void endSession() {
+    _sessionAway = true;
+    _dropSession();
+  }
+
+  /// In front again: the session as the film stands.
+  void resumeSession() {
+    if (!_sessionAway) return;
+    _sessionAway = false;
+    _syncSession(force: true);
+  }
+
+  bool _sessionAway = false;
+
+  void _dropSession() {
+    if (_sessionAt == null) return;
+    _sessionAt = null;
+    try {
+      // ignore: discarded_futures
+      _ref.read(backgroundPlaybackServiceProvider).sessionStop();
+    } catch (e) {
+      if (kDebugMode) debugPrint('PlayerProvider.session: $e');
+    }
+  }
+
   /// Phase 45: audio focus event subscription. Cancelled in dispose.
   StreamSubscription<AudioFocusEvent>? _focusSub;
 
@@ -841,6 +928,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     _subs.add(svc.positionStream.listen((p) {
       if (!mounted) return;
       _scheduleAutoSave();
+      _syncSession(position: p);
       // A-B Repeat: jump back to A if we passed B
       final a = state.abPointA;
       final b = state.abPointB;
@@ -918,12 +1006,15 @@ class PlayerController extends StateNotifier<PlayerState> {
       }
     }));
     _subs.add(svc.durationStream.listen((d) {
-      if (mounted) state = state.copyWith(duration: d);
+      if (!mounted) return;
+      state = state.copyWith(duration: d);
+      _syncSession(force: true);
     }));
     _subs.add(svc.playingStream.listen((p) {
       if (!mounted) return;
       state = state.copyWith(isPlaying: p);
       _updateBackgroundWakeLock(p);
+      _syncSession(force: true);
       qoe.playing(p, DateTime.now());
     }));
     _subs.add(svc.bufferingStream.listen((b) {
@@ -1076,7 +1167,8 @@ class PlayerController extends StateNotifier<PlayerState> {
         }
       }
     }));
-    if (svc is MediaKitPlayerService) {
+    if (svc is SlowEngine) {
+      final engine = svc as SlowEngine;
       // THE ENGINE STOPPED ANSWERING (see MpvLink). Said plainly, with the way
       // out: Retry or another video gets a fresh engine. Before this the app
       // simply froze, and "Wait" led to the same freeze on the next video.
@@ -1086,43 +1178,60 @@ class PlayerController extends StateNotifier<PlayerState> {
       // nothing is said; still while it should play, it is stuck. Said at
       // once, this put "may be damaged" over local videos playing perfectly
       // (12 Nov 2026). See engine_check.dart.
-      _subs.add(svc.engineWedgedChanges.listen((stuck) {
+      _subs.add(engine.engineWedgedChanges.listen((stuck) {
         if (!mounted) return;
         _engineCheck?.cancel();
         _engineCheck = null;
         if (stuck) {
-          PlaybackLog.add('engine slow on ${svc.engineWedgedReason}');
-          final started = DateTime.now();
-          var since = started;
+          PlaybackLog.add('engine slow on ${engine.engineWedgedReason}');
+          // Time is the timer's own count of periods since the call was
+          // found hanging: Timer.tick counts the periods that passed, a late
+          // callback's included, and a test's fake clock moves it
+          // (DateTime.now() it does not: test/player_controls_test.dart).
+          const period = Duration(milliseconds: 750);
+          var since = Duration.zero;
           var from = svc.position;
           var aliveSeen = false;
-          _engineCheck = Timer.periodic(const Duration(milliseconds: 750), (t) {
-            if (!mounted || !svc.engineWedged) {
+          // A stream waiting for data is judged as paused: its clock stands
+          // still for the network, not for the engine.
+          bool meantToMove() => svc.isPlaying && !state.isBuffering;
+          var wasMeantToMove = meantToMove();
+          _engineCheck = Timer.periodic(period, (t) {
+            if (!mounted || !engine.engineWedged) {
               t.cancel();
               return;
             }
-            final now = DateTime.now();
+            final now = period * t.tick;
+            final playing = meantToMove();
+            if (playing && !wasMeantToMove) {
+              // Paused or waiting for data until a moment ago: its three
+              // seconds start now. Counted from when the call began to hang,
+              // a stream whose data had just come had moved under 400 ms by
+              // this look and was called stuck (13 Nov, the test below).
+              wasMeantToMove = true;
+              since = now;
+              from = svc.position;
+              return;
+            }
+            wasMeantToMove = playing;
             final verdict = judgeSlowEngine(
               moved: svc.position - from,
-              // A stream waiting for data is judged as paused: its clock
-              // stands still for the network, not for the engine.
-              playing: svc.isPlaying && !state.isBuffering,
-              waited: now.difference(since),
+              playing: playing,
+              waited: now - since,
             );
             if (verdict == EngineVerdict.alive) {
               if (!aliveSeen) {
                 aliveSeen = true;
                 PlaybackLog.add('engine alive: the film moved while '
-                    '${svc.engineWedgedReason} hung');
+                    '${engine.engineWedgedReason} hung');
               }
               // Usually the call comes back and the alarm clears itself.
               // One that has not after this long may never: listen anew,
               // once a film.
-              if (now.difference(started) >= const Duration(seconds: 15) &&
-                  !_relinkedThisOpen) {
+              if (now >= const Duration(seconds: 15) && !_relinkedThisOpen) {
                 _relinkedThisOpen = true;
                 t.cancel();
-                svc.relink();
+                engine.relink();
                 return;
               }
               // Watching on from here, so a film that stops later is still
@@ -1133,7 +1242,7 @@ class PlayerController extends StateNotifier<PlayerState> {
             }
             if (verdict == EngineVerdict.wait) return;
             t.cancel();
-            PlaybackLog.add('engine stuck on ${svc.engineWedgedReason}');
+            PlaybackLog.add('engine stuck on ${engine.engineWedgedReason}');
             _stopDecodeWatch();
             state = state.copyWith(
               errorMessage: kPlayerEngineStuck,
@@ -1148,6 +1257,8 @@ class PlayerController extends StateNotifier<PlayerState> {
           state = state.copyWith(errorMessage: null);
         }
       }));
+    }
+    if (svc is MediaKitPlayerService) {
       // THE DECODER WAS FLOODING and the service stopped the file (see
       // ErrorFloodGate). Said once, plainly; before this the flood itself
       // was the message — a thousand of them, and an app that stopped
@@ -2316,6 +2427,13 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       _ref.read(backgroundPlaybackServiceProvider).stop();
     } catch (e) { if (kDebugMode) debugPrint('PlayerProvider: $e'); }
+    // The player's own media session goes with it.
+    if (_sessionAt != null) {
+      try {
+        // ignore: discarded_futures
+        _ref.read(backgroundPlaybackServiceProvider).sessionStop();
+      } catch (e) { if (kDebugMode) debugPrint('PlayerProvider: $e'); }
+    }
     // Phase 45: release audio focus so other apps can take over.
     try {
       _focusSub?.cancel();

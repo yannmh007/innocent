@@ -106,6 +106,12 @@ fake clock.
 * **Haptics.** A tick at the limits (0 / 100 / 200 %), on each speed step,
   and on each stacked double tap.
 * **Lock.** Locked: taps only bring up the unlock button; no gesture acts.
+* **A mouse** (a Chromebook, a phone on a desk; 13 Nov): moving it shows
+  the controls, a right-click opens ⋮, and the wheel is the volume — a
+  notch 5 %, a trackpad's steps in proportion — through the swipe's own
+  path (indicator, booster above 100 %, lock). Not under the "Swipe for
+  volume" switch: a wheel is not a swipe. Test: "a mouse wheel over the
+  film is the volume".
 
 ## 5. Verified on Android (device lab, 2026-10-05)
 

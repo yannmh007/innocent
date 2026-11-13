@@ -1,56 +1,51 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 
-/// Phase 45 (audit): responsive layout helpers for Innocent.
+/// GRIDS THAT ADD COLUMNS AS THE WINDOW WIDENS (docs/devices_2026_11.md,
+/// Phase 2).
 ///
-/// MX Player V3 works on phones (320–480 dp wide), small tablets
-/// (600–720 dp), and large tablets / foldables (840+ dp). Hardcoded
-/// 2-column or 3-column grids look sparse on tablets and cramped on
-/// foldables. This helper provides one place to make those decisions.
+/// A phone's grid keeps its count; a tablet, a foldable, a Chromebook window
+/// or a TV gets more columns of about the same size, not the phone's three
+/// stretched across the screen — on a tablet the catalogue's posters were
+/// 384 dp wide, two to a screen's height: a phone app blown up. By the
+/// width the grid has, never "is it a tablet".
 ///
-/// Breakpoints follow Material Design's accepted tablet boundary:
-///   - phone:        <  600 dp (shortest side)
-///   - small tablet: ≥ 600 dp
-///   - large tablet: ≥ 840 dp
+/// (This file held phone/tablet column counts nothing used; the folder and
+/// video grids size by a maximum cell width already.)
 class Responsive {
   Responsive._();
 
-  /// True when the device's shortest side is at least 600 dp — the
-  /// canonical "this is a tablet" threshold used by Android, iPadOS,
-  /// and Material Design.
-  static bool isTablet(BuildContext context) =>
-      MediaQuery.of(context).size.shortestSide >= 600;
-
-  /// True when the shortest side is at least 840 dp — large tablets
-  /// and unfolded foldables (Galaxy Z Fold, Pixel Fold).
-  static bool isLargeTablet(BuildContext context) =>
-      MediaQuery.of(context).size.shortestSide >= 840;
-
-  /// Number of columns for the folder GRID view.
-  /// - Phone portrait: 2
-  /// - Phone landscape: 3
-  /// - Tablet portrait: 3
-  /// - Tablet landscape / large tablet: 4
-  static int folderGridColumns(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width >= 1100) return 5;
-    if (width >= 840) return 4;
-    if (width >= 600) return 3;
-    if (width >= 480) return 3; // phone landscape
-    return 3; // phone portrait — 3-up grid (Folders spec)
-  }
-
-  /// Number of columns for the VIDEO GRID view (used in folder detail
-  /// and Files-mode library). Wider columns since each thumb is 16:9.
-  /// - Phone portrait: 2
-  /// - Phone landscape: 3
-  /// - Tablet portrait: 3
-  /// - Tablet landscape / large tablet: 4
-  static int videoGridColumns(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    if (width >= 1100) return 5;
-    if (width >= 840) return 4;
-    if (width >= 600) return 3;
-    if (width >= 480) return 3; // phone landscape
-    return 2;
+  /// Columns for a grid [width] dp wide (its own padding taken off): at
+  /// least [min] — the phone's count — and as many more as keep a cell no
+  /// wider than [maxCell], cells [spacing] apart.
+  static int gridColumns(
+    double width, {
+    int min = 3,
+    double maxCell = 170,
+    double spacing = 0,
+  }) {
+    if (!width.isFinite || width <= 0) return min;
+    return math.max(min, ((width + spacing) / (maxCell + spacing)).ceil());
   }
 }
+
+/// A grid's width to build with, a TV's side margins kept clear: on a TV the
+/// overscan margins are insets (TvSafeArea), and a full-screen grid ran its
+/// first and last columns into them. A phone upright has no side insets.
+class SafeGridWidth extends StatelessWidget {
+  const SafeGridWidth({super.key, required this.builder});
+
+  /// Builds the grid for [width], the room it has.
+  final Widget Function(BuildContext context, double width) builder;
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+        top: false,
+        bottom: false,
+        child: LayoutBuilder(
+          builder: (context, box) => builder(context, box.maxWidth),
+        ),
+      );
+}
+

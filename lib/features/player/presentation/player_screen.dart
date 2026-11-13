@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -333,6 +334,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     PlayerToastController.current = _toast;
+    // Can this phone afford the menus' frosted glass? (Asked once.)
+    // ignore: discarded_futures
+    PlayerUi.probeGlass();
     _startReporting();
     // ignore: discarded_futures
     _refreshStableInsets();
@@ -742,6 +746,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final inSystemPip = playerState.inSystemPip;
     final controller = ref.read(playerControllerProvider.notifier);
 
+    // Before any branch below can return: what watching was like so far,
+    // kept on the phone in case the app is closed from the background and
+    // this screen never gets to send it (PlaybackReporter.stashSummary).
+    if (appState == AppLifecycleState.paused ||
+        appState == AppLifecycleState.hidden) {
+      try {
+        // ignore: discarded_futures
+        _reporter?.stashSummary(controller.qoe.toMeta(DateTime.now()));
+      } catch (e) {
+        PlaybackLog.add('summary keep failed: $e');
+      }
+    }
+
     // Privacy override: a Private Folder video is ALWAYS paused the moment
     // we lose the foreground — no background play, no PiP exemption.
     if (widget.isPrivate) {
@@ -756,6 +773,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       _bgDetachTimer?.cancel();
       if (!isBackgroundPlay && !inSystemPip && !_pipTransitionInFlight) {
         controller.pause();
+        // And no session left to start it again unseen.
+        controller.endSession();
       } else if (isBackgroundPlay &&
           !inSystemPip &&
           !_pipTransitionInFlight) {
@@ -820,6 +839,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // picture is in sync again.
       // ignore: discarded_futures
       controller.setBackgroundAudioMode(false);
+      // The media session again, if leaving ended it (a TV's).
+      controller.resumeSession();
       // Re-apply immersive mode — but ONLY if this player is still the
       // top-most route. If the user backed out to the shell while the app
       // was in the background, re-asserting immersive here would hide the
@@ -2554,7 +2575,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         icon: Icons.help_outline,
         onTap: () {
           controller.closePanel();
-          GesturesHelpOverlay.show(context);
+          // A TV has no touch screen: its tutorial is the remote's keys.
+          if (DeviceProfile.isTv) {
+            _showKeys(context);
+          } else {
+            GesturesHelpOverlay.show(context);
+          }
         },
       ),
       MoreMenuItemData(
@@ -2726,6 +2752,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
     final state = ref.read(playerControllerProvider);
     if (state.isLocked || state.isKidsLocked) return KeyEventResult.ignored;
+    final anywhere = _keyAnywhere(event);
+    if (anywhere != null) return anywhere;
     // Only when nothing inside the player has focus: a focused button or the
     // seek bar handles its own keys (the slider seeks with left/right).
     if (!node.hasPrimaryFocus) return KeyEventResult.ignored;
@@ -2775,6 +2803,151 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  /// Keys that act wherever focus is in the player — a focused button does
+  /// not take them, so they come up to here: a TV remote's and a keyboard's
+  /// media keys (the TV quality guideline: play/pause, fast-forward, rewind
+  /// must work), Esc (leaves a menu, then the player), and the letters a
+  /// desktop player answers to (K J L, M, comma and full stop, [ ], ?).
+  /// Null: not one of them. 12 Nov 2026, docs/devices_2026_11.md.
+  KeyEventResult? _keyAnywhere(KeyEvent event) {
+    final controller = ref.read(playerControllerProvider.notifier);
+    final s = AppStrings.of(context);
+    final k = event.logicalKey;
+    final once = event is KeyDownEvent;
+    KeyEventResult act(void Function() f, {bool repeats = false}) {
+      if (once || repeats) f();
+      return KeyEventResult.handled;
+    }
+
+    void speedBy(double step) {
+      final now = ref.read(playerControllerProvider).playbackSpeed;
+      final next = ((now + step) * 4).round().clamp(1, 16) / 4;
+      // ignore: discarded_futures
+      controller.setSpeed(next);
+      _toast.show(s.plSpeed(formatSpeed(next)),
+          kind: PlayerToastKind.info, icon: Icons.speed_rounded);
+    }
+
+    if (k == LogicalKeyboardKey.mediaPlayPause || k == LogicalKeyboardKey.keyK) {
+      return act(() {
+        // ignore: discarded_futures
+        controller.playOrPause();
+        controller.showControls();
+      });
+    }
+    if (k == LogicalKeyboardKey.mediaPlay) {
+      return act(() {
+        // ignore: discarded_futures
+        controller.play();
+        controller.showControls();
+      });
+    }
+    if (k == LogicalKeyboardKey.mediaPause || k == LogicalKeyboardKey.mediaStop) {
+      return act(() {
+        // ignore: discarded_futures
+        controller.pause();
+        controller.showControls();
+      });
+    }
+    if (k == LogicalKeyboardKey.mediaFastForward || k == LogicalKeyboardKey.keyL) {
+      // ignore: discarded_futures
+      return act(() => controller.seekRelative(10), repeats: true);
+    }
+    if (k == LogicalKeyboardKey.mediaRewind || k == LogicalKeyboardKey.keyJ) {
+      // ignore: discarded_futures
+      return act(() => controller.seekRelative(-10), repeats: true);
+    }
+    if (k == LogicalKeyboardKey.mediaTrackNext) {
+      // ignore: discarded_futures
+      return act(() => controller.playNextInFolder());
+    }
+    if (k == LogicalKeyboardKey.mediaTrackPrevious) {
+      // ignore: discarded_futures
+      return act(() => controller.playPreviousInFolder());
+    }
+    if (k == LogicalKeyboardKey.keyM) {
+      return act(() async {
+        await controller.toggleMute();
+        if (!mounted) return;
+        final muted = ref.read(playerControllerProvider).isMuted;
+        _toast.show(muted ? s.plMuted : s.plUnmuted,
+            kind: PlayerToastKind.info,
+            icon: muted ? Icons.volume_off_rounded : Icons.volume_up_rounded);
+      });
+    }
+    if (k == LogicalKeyboardKey.comma || k == LogicalKeyboardKey.period) {
+      // ignore: discarded_futures
+      return act(() => controller.frameStep(forward: k == LogicalKeyboardKey.period),
+          repeats: true);
+    }
+    if (k == LogicalKeyboardKey.bracketLeft) return act(() => speedBy(-0.25));
+    if (k == LogicalKeyboardKey.bracketRight) return act(() => speedBy(0.25));
+    if (k == LogicalKeyboardKey.contextMenu) return act(controller.openMoreMenu);
+    if (k == LogicalKeyboardKey.escape) return act(_handleBackRequest);
+    if (k == LogicalKeyboardKey.slash && HardwareKeyboard.instance.isShiftPressed ||
+        k == LogicalKeyboardKey.question) {
+      return act(() => _showKeys(context));
+    }
+    return null;
+  }
+
+  /// "?": the keys the player answers to, for a keyboard or a remote.
+  void _showKeys(BuildContext context) {
+    final s = AppStrings.of(context);
+    final rows = <(String, String)>[
+      ('Space · K · ⏯', s.plKeyPlay),
+      ('← → · J L · ⏪ ⏩', s.plKeySeek),
+      ('⏮ ⏭', s.plKeyNext),
+      ('M', s.plKeyMute),
+      (', .', s.plKeyFrame),
+      ('[ ]', s.plKeySpeed),
+      ('☰', s.plKeyMenu),
+      ('Esc', s.plKeyClose),
+      ('?', s.plKeyHelp),
+    ];
+    // ignore: discarded_futures
+    showDialog<void>(
+      context: context,
+      builder: (dctx) => PlayerRouteDialog(
+        title: s.plKeysTitle,
+        icon: Icons.keyboard_rounded,
+        maxWidth: 460,
+        actions: [
+          PlayerDialogButton(
+            label: s.close,
+            onPressed: () => Navigator.of(dctx).pop(),
+          ),
+        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (keys, what) in rows)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 150,
+                      child: Text(
+                        keys,
+                        style: const TextStyle(
+                          color: PlayerUi.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(what, style: PlayerUi.body)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   int _labSemDumps = 0;
@@ -2909,8 +3082,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     // PDF page 4: When collapsed only essentials show; when expanded ALL shortcuts available
     final visibleShortcutList = state.shortcutsExpanded
-        ? ShortcutItem.values.toList()
-        : ShortcutItem.values
+        ? ShortcutItem.available()
+        : ShortcutItem.available()
             .where((i) => state.visibleShortcuts.contains(i))
             .toList();
 
@@ -3087,6 +3260,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               child: Semantics(
                 label: AppStrings.of(context).playerSurface,
                 onTapHint: AppStrings.of(context).playerSurfaceHint,
+                // A mouse (a Chromebook, a phone on a desk): moving it shows
+                // the controls, the pointer hides with them, and a
+                // right-click opens ⋮ (docs/devices_2026_11.md).
+                child: Listener(
+                onPointerDown: (e) {
+                  if (e.kind == PointerDeviceKind.mouse &&
+                      e.buttons & kSecondaryMouseButton != 0) {
+                    controller.openMoreMenu();
+                  }
+                },
+                // The wheel is the volume, as in desktop players: a notch
+                // (64 dp of scroll) is 5 %, a trackpad's small steps in
+                // proportion. Through the swipe's own path, so the
+                // indicator, the booster above 100 % and the lock hold
+                // (13 Nov, Phase 2 item 5). Something scrolling above the
+                // film takes its wheel first (the resolver).
+                onPointerSignal: (e) {
+                  if (e is! PointerScrollEvent) return;
+                  GestureBinding.instance.pointerSignalResolver.register(e,
+                      (ev) {
+                    final dy = (ev as PointerScrollEvent).scrollDelta.dy;
+                    if (dy != 0) controller.onVolumeDelta(-dy / 64 * 0.05);
+                  });
+                },
+                child: MouseRegion(
+                cursor: state.controlsVisible
+                    ? MouseCursor.defer
+                    : SystemMouseCursors.none,
+                onHover: (_) {
+                  if (ref.read(playerControllerProvider).controlsVisible) {
+                    controller.bumpControlsTimer();
+                  } else {
+                    controller.showControls();
+                  }
+                },
                 child: GestureOverlay(
                 onTap: controller.toggleControls,
                 onDoubleTapRewind: controller.onDoubleTapRewind,
@@ -3143,6 +3351,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 longPressSpeedEnabled: ref
                     .watch(playerSettingsProvider)
                     .get(PlayerSetting.ctlLongPressSpeed),
+              ),
+              ),
               ),
               ),
             ),
@@ -3420,7 +3630,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               onShortcutsToggle: (v) {
                 if (v) {
                   controller
-                      .updateVisibleShortcuts(ShortcutItem.values.toSet());
+                      .updateVisibleShortcuts(ShortcutItem.available().toSet());
                 } else {
                   controller.updateVisibleShortcuts({});
                 }

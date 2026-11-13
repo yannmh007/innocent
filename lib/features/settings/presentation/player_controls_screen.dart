@@ -8,6 +8,7 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Settings > Player > Controls
 /// Touch actions, gestures, lock mode, etc.
 ///
@@ -37,7 +38,7 @@ class PlayerControlsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(s.controlsTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
           SettingsSectionHeader(s.gtSection),
           _toggle(ref,
@@ -128,7 +129,7 @@ class PlayerControlsScreen extends ConsumerWidget {
               setting: PlayerSetting.ctlLockOnRotation),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

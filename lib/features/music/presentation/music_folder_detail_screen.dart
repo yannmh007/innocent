@@ -9,6 +9,7 @@ import '../../../core/utils/async_value_extensions.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/theme/tab_title.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Phase 34: Music folder detail screen.
 class MusicFolderDetailScreen extends ConsumerWidget {
   final String name;
@@ -71,7 +72,11 @@ class MusicFolderDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: songsAsync.whenOrFallback(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: songsAsync.whenOrFallback(
         data: (songs) {
           if (songs.isEmpty) {
             return Center(
@@ -202,6 +207,7 @@ class MusicFolderDetailScreen extends ConsumerWidget {
           child:
               Text(AppStrings.of(context).errorWord, style: const TextStyle(color: Colors.white54)),
         ),
+      ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import 'models/audio_track_info.dart';
 import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
+import '../../../features/player/domain/engine_check.dart';
 import 'disk_cache_dir.dart';
 import 'error_flood.dart';
 import 'exo_engine.dart';
@@ -74,7 +75,7 @@ const String _networkStreamOptions = 'reconnect=1,'
     'multiple_requests=1,'
     'seekable=1';
 
-class MediaKitPlayerService implements VideoPlayerService {
+class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   // NOT `late final`: dropping `final` makes a second assignment legal, which
   // matters because initialize() can now be re-entered after dispose(). The
   // real protection against double-init is [_initFuture] below.
@@ -438,21 +439,25 @@ class MediaKitPlayerService implements VideoPlayerService {
   // ─── A STUCK ENGINE ──────────────────────────────────────────────────────
 
   /// True while libmpv has not answered a call for [MpvLink.timeout].
+  @override
   bool get engineWedged => _link.wedged;
 
   /// Which call was hanging, for the playback log.
+  @override
   String? get engineWedgedReason => _link.wedgedOn;
 
   /// The hwdec mode last applied (`no` is software decoding).
   String? get currentHwdec => _currentHwdec;
 
   /// Every change of [engineWedged], for the player to react to.
+  @override
   Stream<bool> get engineWedgedChanges => _link.wedgedChanges;
 
   /// The film kept playing while a call hung (engine_check.dart): libmpv is
   /// alive, and the helper isolate is waiting on an answer it may never
   /// get. Start a fresh one, so the heartbeat and the player's settings are
   /// heard again. The engine itself is untouched.
+  @override
   void relink() {
     if (!_link.wedged) return;
     PlaybackLog.add('link renewed: the film moved while '

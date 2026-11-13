@@ -8,6 +8,7 @@ import 'song_context_menu.dart';
 import '../../../core/utils/async_value_extensions.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Phase 30: Artist detail screen (MX Player parity).
 /// Shows artist avatar header + Play All pill + songs list.
 /// Verified against MX Player screen recording (frame 80-85).
@@ -28,7 +29,11 @@ class ArtistDetailScreen extends ConsumerWidget {
     final songsAsync = ref.watch(songsByArtistProvider(name));
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
-      body: SafeArea(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: SafeArea(
         child: Column(
           children: [
             // Gradient-tinted header
@@ -298,6 +303,7 @@ class ArtistDetailScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

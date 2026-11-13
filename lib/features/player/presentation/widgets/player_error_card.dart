@@ -46,10 +46,8 @@ class PlayerErrorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final safe = MediaQuery.paddingOf(context);
-    final card = Material(
-      color: PlayerUi.surface,
-      shape: PlayerUi.dialogShape,
-      clipBehavior: Clip.antiAlias,
+    final card = PlayerGlass(
+      borderRadius: BorderRadius.circular(PlayerUi.radius),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 22, 14, 10),
         child: Column(

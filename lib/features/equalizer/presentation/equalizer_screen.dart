@@ -13,6 +13,7 @@ import 'audio_effect_sheet.dart' show effectLabel;
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 final equalizerServiceProvider = Provider<EqualizerService>((ref) {
   // Reuse the process-wide instance so the UI, the startup audio-session
   // hook, and the playback-start reapply all share one session id + state.
@@ -280,7 +281,11 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
             ),
         ],
       ),
-      body: _loading
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: _loading
           ? const Center(child: CircularProgressIndicator())
           : !_supported
               ? _buildUnsupported()
@@ -291,6 +296,7 @@ class _EqualizerScreenState extends ConsumerState<EqualizerScreen>
                     _buildEqualizerTab(),
                   ],
                 ),
+      ),
     );
   }
 

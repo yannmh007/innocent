@@ -61,7 +61,7 @@ on a valid report (`MEDIA_ENCRYPTION.md` §2).
 
 | # | Finding | Severity | Plan (§3) |
 |---|---|---|---|
-| S1 | **Supabase retires the legacy JWT keys by the end of 2026.** All 9 functions read `SB_SERVICE_KEY ?? SUPABASE_SERVICE_ROLE_KEY`, and 21 raw REST calls sent it as `apikey` *and* `Authorization: Bearer`. Supabase documents that a new `sb_secret_` key is not a JWT and must go in `apikey` only ("Invalid JWT" otherwise); supabase-js 2.117.2 itself puts it in Bearer by default (seen on the wire, 6 Nov). The legacy anon key is still enabled, though the app and console use the publishable key. Supabase no longer lets the legacy JWT secret be rotated, so a leaked service_role JWT could not be revoked except by migrating. **Done 6 Nov: every function runs on the new secret key** (`service_key.js`, P1); the legacy keys can be turned off once the logs stay quiet. | **High** (outage at a fixed date; no revocation) | P1 |
+| S1 | **Supabase retires the legacy JWT keys by the end of 2026.** All 9 functions read `SB_SERVICE_KEY ?? SUPABASE_SERVICE_ROLE_KEY`, and 21 raw REST calls sent it as `apikey` *and* `Authorization: Bearer`. Supabase documents that a new `sb_secret_` key is not a JWT and must go in `apikey` only ("Invalid JWT" otherwise); supabase-js 2.117.2 itself puts it in Bearer by default (seen on the wire, 6 Nov). The legacy anon key is still enabled, though the app and console use the publishable key. Supabase no longer lets the legacy JWT secret be rotated, so a leaked service_role JWT could not be revoked except by migrating. **Done 6 Nov: every function runs on the new secret key** (`service_key.js`, P1); the legacy keys can be turned off once the logs stay quiet. **Turned off 13 Nov** (the owner, after a quiet day in the gateway logs; ingest and the transport check green after). | **High** (outage at a fixed date; no revocation) | P1 |
 | S2 | **ENC is built but not switched on.** Plain copies still in R2: 10 streaming copies, 24 files, 36 thumbnail choices, 4 covers, 4 thumbnails. Sealed twins exist only for the open films. Until rollout C-E, a leaked R2 token or a Cloudflare account takeover exposes plain content. | **High** | P2 |
 | S3 | **No device attestation.** A script with a valid account can (a) send a device RSA key of its own making — the key is only pinned per install at first sight — and receive DEKs, and (b) pull films without the player's moving account code, which the app draws on screen and is not in the file. The account budget (500 titles/day) is far above any human. There is no automatic alert on bytes per account. | Medium-High | P3 |
 | S4 | **The console's origin is shared.** `yannmh007.github.io` is the origin of every GitHub Pages site of this account. The admin session (an aal2 refresh token) lives in that origin's localStorage, and the Worker's CORS trusts that origin. Today there is only one repo, so nothing else shares it, but a second Pages site would. The CSP's `connect-src … https:` and `img-src https:` would let an injected script send data to any host. | Medium | P4 |
@@ -245,7 +245,16 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   COOP, `nosniff` and no referrer, and `/edge/studio.ts`, a migration,
   `BACKLOG.md` and `console/wrangler.toml` answer 404.
 - **Next:** retire the Pages copy after a week of use (from 13 Nov), as
-  the README's "Afterwards" says.
+  the README's "Afterwards" says. **13 Nov: not yet.** Proven on the new
+  origin: sign-in with the authenticator code (6 Nov), the Dashboard and
+  Review (6 Nov approvals; 13 Nov 09:40 a session refresh and a full
+  Dashboard load, all 200), previews and the speed test (the stream Worker
+  answers the origin). NOT proven: an upload — it goes from the page to R2
+  directly, and the buckets' CORS policy as recorded names only the Pages
+  origin; the 6 Nov steps did not change it. The owner adds the console
+  origin to both buckets' policy and one upload works there; then the
+  retirement (code ready to write in a few lines; its deploy and ship on
+  the owner's word).
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

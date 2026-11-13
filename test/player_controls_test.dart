@@ -3,19 +3,29 @@
 // fake engine).
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
+import 'package:innocent/core/ui/device_profile.dart';
+import 'package:innocent/features/player/domain/engine_check.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/player_screen.dart';
 import 'package:innocent/features/player/presentation/video_adjust.dart';
 import 'package:innocent/features/player/presentation/widgets/display_settings_sheet.dart';
+import 'package:innocent/features/player/presentation/widgets/gestures_help_overlay.dart';
+import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
 import 'support/player_harness.dart';
 
 const _phone = Phone('360x800', 360, 800, 2.0);
+
+/// One look of the engine check (player_provider.dart).
+const _look = Duration(milliseconds: 750);
 
 PlayerState _state() => playerContainer!.read(playerControllerProvider);
 
@@ -129,7 +139,8 @@ void main() {
       await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
       await tester.longPress(find.byIcon(Icons.skip_next));
       await tester.pump(const Duration(milliseconds: 400));
-      expect(find.byType(BottomSheet), findsOneWidget,
+      // A bottom sheet upright, a side panel sideways: its rows either way.
+      expect(find.text('Loop one'), findsOneWidget,
           reason: 'no repeat menu after a long press on Next');
       await leavePlayer(tester);
     });
@@ -170,6 +181,335 @@ void main() {
       }
     });
   }
+
+  testWidgets('menus are frosted glass, and the picture stays where it is',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    final frame = find.byType(AspectRatio).first;
+    final before = tester.getRect(frame);
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    expect(
+        find.descendant(
+            of: find.byType(MoreMenuPanel), matching: find.byType(BackdropFilter)),
+        findsOneWidget,
+        reason: 'the menu is not glass (owner, 12 Nov)');
+    // The owner chose glass over moving the film (12 Nov).
+    expect(tester.getRect(frame), before);
+    // Upright, the sheet stops at 55 % of the screen.
+    final sheet = tester.getRect(find.byType(PlayerGlass).first);
+    expect(sheet.height, lessThanOrEqualTo(_phone.height * 0.55 + 0.5));
+    await leavePlayer(tester);
+  });
+
+  testWidgets('sideways, a player sheet is a glass panel from the right',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
+    await _settle(tester);
+    expect(find.text('Loop one'), findsOneWidget);
+    final glass = tester.getRect(find.byType(PlayerGlass).last);
+    // The whole height, at the right edge: not a bottom sheet that held two
+    // rows (12 Nov).
+    expect(glass.height, closeTo(_phone.width, 0.5));
+    expect(glass.right, closeTo(_phone.height, 0.5));
+    expect(glass.width, lessThan(_phone.height * 0.6));
+    await leavePlayer(tester);
+  });
+
+  testWidgets(
+      'a sheet open while the phone turns follows the turn, its content kept',
+      (tester) async {
+    // A phone with auto-rotate, or a tablet's window that Android 16 lets
+    // turn whatever the player asks (docs/devices_2026_11.md): the sheet
+    // chose its form once, on opening, and a bottom sheet turned sideways
+    // was some 300 dp tall.
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
+    await _settle(tester);
+    final content = tester.element(find.text('Loop one'));
+    var glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.bottom, closeTo(_phone.height, 0.5), reason: 'not at the foot');
+    expect(glass.width, closeTo(_phone.width, 0.5));
+
+    Future<void> turn(bool sideways) async {
+      tester.view.physicalSize = sideways
+          ? Size(_phone.height * _phone.dpr, _phone.width * _phone.dpr)
+          : Size(_phone.width * _phone.dpr, _phone.height * _phone.dpr);
+      await _settle(tester);
+    }
+
+    await turn(true);
+    glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.height, closeTo(_phone.width, 0.5),
+        reason: 'sideways, not the whole height');
+    expect(glass.right, closeTo(_phone.height, 0.5));
+    expect(glass.width, lessThan(_phone.height * 0.6));
+    expect(identical(tester.element(find.text('Loop one')), content), isTrue,
+        reason: 'the turn rebuilt the sheet\'s content from scratch');
+
+    await turn(false);
+    glass = tester.getRect(find.byType(PlayerGlass).last);
+    expect(glass.bottom, closeTo(_phone.height, 0.5));
+    expect(glass.width, closeTo(_phone.width, 0.5));
+    expect(identical(tester.element(find.text('Loop one')), content), isTrue);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets(
+      'the window turns and resizes mid-film: not reopened, its place and an '
+      'open menu kept', (tester) async {
+    // What Android 16 does to a tablet whatever the player asks (orientation
+    // requests ignored from 600 dp for an app that targets 36), and what a
+    // phone with auto-rotate and a resized desktop window do already.
+    final engine = FakePlayerService();
+    await pumpPlayer(tester,
+        phone: _phone, landscape: false, lang: 'en', engine: engine);
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
+    int opens() => engine.calls.where((c) => c == 'open').length;
+    final opened = opens();
+    final place = engine.position;
+    for (final size in <Size>[
+      Size(_phone.height, _phone.width), // turned
+      const Size(1280, 800), // a tablet's window, sideways
+      const Size(800, 1280), // and upright, the lock ignored
+      Size(_phone.width, _phone.height),
+    ]) {
+      tester.view.physicalSize = size * _phone.dpr;
+      await _settle(tester);
+      expect(_state().openPanel, SidePanel.more, reason: '$size closed ⋮');
+      expect(find.byType(MoreMenuPanel), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: '$size');
+    }
+    expect(opens(), opened, reason: 'a turn reopened the film');
+    expect(engine.position, place, reason: 'a turn moved the film');
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('upright, a sheet dragged down closes; a short drag does not',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tester.longPress(find.byIcon(Icons.skip_next));
+    await _settle(tester);
+    final handle = find.byType(PlayerDragHandle);
+    expect(handle, findsOneWidget);
+    final top = tester.getRect(find.byType(PlayerGlass).last).top;
+    await tester.drag(handle, const Offset(0, 30));
+    await _settle(tester);
+    expect(find.text('Loop one'), findsOneWidget);
+    expect(tester.getRect(find.byType(PlayerGlass).last).top,
+        closeTo(top, 0.5), reason: 'a short drag did not settle back');
+    await tester.drag(handle, const Offset(0, 400));
+    await _settle(tester);
+    expect(find.text('Loop one'), findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets(
+      'a film has a media session while the player is open, and a voice '
+      'command on it reaches the player', (tester) async {
+    // The TV's "pause" and "skip 30 seconds" go to the playing app's media
+    // session; the only one was background play's, so a film had none
+    // (PlayerMediaSession, 13 Nov).
+    DeviceProfile.kind = DeviceKind.tv;
+    addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
+    final calls = <MethodCall>[];
+    const channel = MethodChannel('mx_clone/playback');
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel,
+        (call) async {
+      calls.add(call);
+      return true;
+    });
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    List<MethodCall> updates() =>
+        calls.where((c) => c.method == 'sessionUpdate').toList();
+    expect(updates(), isNotEmpty, reason: 'no session for the film');
+    final first = updates().last.arguments as Map;
+    expect(first['title'], contains('The Long Road Home'));
+    expect(first['isPlaying'], isTrue);
+    expect(first['durationMs'], greaterThan(0));
+
+    // "Pause", from the TV: the session's command, as the notification's.
+    Future<void> command(String action, [int positionMs = -1]) async {
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          channel.name,
+          channel.codec.encodeMethodCall(MethodCall('onPlaybackAction',
+              {'action': action, 'positionMs': positionMs})),
+          (_) {});
+      await _settle(tester);
+    }
+
+    await command('pause');
+    expect(_state().isPlaying, isFalse);
+    expect((updates().last.arguments as Map)['isPlaying'], isFalse,
+        reason: 'the session was not told the film paused');
+
+    // "Skip 30 seconds" arrives as a seek to a place; the session hears the
+    // jump at once rather than at its next tick.
+    final before = updates().length;
+    await command('seek', 30 * 60 * 1000);
+    expect(_state().position.inMinutes, 30);
+    expect(updates().length, greaterThan(before));
+
+    await leavePlayer(tester);
+    expect(calls.any((c) => c.method == 'sessionStop'), isTrue,
+        reason: 'the session outlived the player');
+  });
+
+  // The session is a TV's, and only while someone can see the film (review
+  // of 13 Nov): on a phone it put the title on a car's screen and a watch;
+  // left behind by Home, a car's PLAY started the film unseen.
+  group('the media session', () {
+    List<MethodCall> mockPlayback(WidgetTester tester) {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('mx_clone/playback'), (call) async {
+        calls.add(call);
+        return true;
+      });
+      return calls;
+    }
+
+    Future<void> lifecycle(
+        WidgetTester tester, List<AppLifecycleState> states) async {
+      for (final st in states) {
+        tester.binding.handleAppLifecycleStateChanged(st);
+        await tester.pump();
+      }
+      await _settle(tester);
+    }
+
+    testWidgets('a phone has none', (tester) async {
+      final calls = mockPlayback(tester);
+      await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+      await _settle(tester);
+      expect(calls.where((c) => c.method == 'sessionUpdate'), isEmpty);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('a TV\'s ends when the film leaves the screen, and comes '
+        'back with it', (tester) async {
+      DeviceProfile.kind = DeviceKind.tv;
+      addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
+      final calls = mockPlayback(tester);
+      await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+      await _settle(tester);
+      int count(String m) => calls.where((c) => c.method == m).length;
+      expect(count('sessionUpdate'), greaterThan(0));
+      // Home, background play off: the film pauses and its session goes —
+      // and the pause's own "paused" a moment later does not bring it back.
+      await lifecycle(tester, [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]);
+      expect(_state().isPlaying, isFalse);
+      expect(count('sessionStop'), 1);
+      final away = count('sessionUpdate');
+      await tester.pump(const Duration(seconds: 2));
+      expect(count('sessionUpdate'), away, reason: 'restarted while away');
+      // In front again: the session, as the film stands (paused).
+      await lifecycle(tester, [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]);
+      expect(count('sessionUpdate'), greaterThan(away));
+      expect((calls.lastWhere((c) => c.method == 'sessionUpdate').arguments
+          as Map)['isPlaying'], isFalse);
+      await leavePlayer(tester);
+    });
+  });
+
+  testWidgets('a remote\'s and a keyboard\'s keys reach the player',
+      (tester) async {
+    final svc = FakePlayerService();
+    await pumpPlayer(
+        tester, phone: _phone, landscape: true, lang: 'en', engine: svc);
+    // The TV quality guideline's media keys, wherever focus is.
+    final playing = _state().isPlaying;
+    await tester.sendKeyEvent(LogicalKeyboardKey.mediaPlayPause);
+    await _settle(tester);
+    expect(_state().isPlaying, !playing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyK);
+    await _settle(tester);
+    expect(_state().isPlaying, playing);
+    final seeks = svc.calls.where((c) => c == 'seek').length;
+    await tester.sendKeyEvent(LogicalKeyboardKey.mediaFastForward);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
+    await _settle(tester);
+    expect(svc.calls.where((c) => c == 'seek').length, seeks + 2);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
+    await _settle(tester);
+    expect(_state().isMuted, isTrue);
+    // ☰ opens ⋮, Esc puts it away and leaves the film playing.
+    await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    // ? lists the keys.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.slash);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await _settle(tester);
+    expect(find.text('Keyboard and remote'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a mouse: moving shows the controls, a right-click opens ⋮',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    playerContainer!.read(playerControllerProvider.notifier).hideControls();
+    await _settle(tester);
+    expect(_state().controlsVisible, isFalse);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: const Offset(400, 180));
+    await mouse.moveTo(const Offset(420, 190));
+    await _settle(tester);
+    expect(_state().controlsVisible, isTrue);
+    await mouse.removePointer();
+    await tester.tapAt(const Offset(420, 200),
+        buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.more);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a mouse wheel over the film is the volume; not when locked',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    final mouse = TestPointer(1, PointerDeviceKind.mouse);
+    const at = Offset(400, 180);
+    await tester.sendEventToBinding(mouse.hover(at));
+    Future<double> notch(double dy) async {
+      await tester.sendEventToBinding(mouse.scroll(Offset(0, dy)));
+      await tester.pump();
+      return _state().volume;
+    }
+
+    // Two notches towards you, one away: 5 % a notch, the swipe's
+    // indicator on screen.
+    final start = _state().volume;
+    final down = await notch(128);
+    expect(down, closeTo((start - 0.10).clamp(0.0, 1.0), 1e-9));
+    expect(_state().activeIndicator, isNotNull);
+    final up = await notch(-64);
+    expect(up, closeTo(down + 0.05, 1e-9));
+    // Locked, the wheel does nothing, as a swipe does nothing.
+    playerContainer!.read(playerControllerProvider.notifier).toggleLock();
+    await tester.pump();
+    expect(_state().isLocked, isTrue);
+    expect(await notch(-64), closeTo(up, 1e-9));
+    await leavePlayer(tester);
+  });
 
   testWidgets("the audio menu lists the film's tracks, not the engine's "
       'auto and no', (tester) async {
@@ -242,6 +582,172 @@ void main() {
     await leavePlayer(tester);
   });
 
+  // ⋮ → Tutorial (Phase 2 item 5, 13 Nov): the gestures help was a page of
+  // its own look (87 % black, its own header, discs and type).
+  Future<void> tutorial(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.more_vert).first, warnIfMissed: false);
+    await _settle(tester);
+    final item = find.descendant(
+        of: find.byType(MoreMenuPanel),
+        matching: find.byIcon(Icons.help_outline));
+    await tester.ensureVisible(item.first);
+    await tester.pump();
+    await tester.tap(item.first, warnIfMissed: false);
+    await _settle(tester);
+  }
+
+  testWidgets('the gestures help is a player sheet a keyboard can walk',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
+    await tutorial(tester);
+    final help = find.byType(GesturesHelpOverlay);
+    expect(help, findsOneWidget);
+    // On the player's glass, as every menu of the player.
+    expect(find.ancestor(of: help, matching: find.byType(PlayerGlass)),
+        findsOneWidget);
+    expect(find.text('Player gestures'), findsOneWidget);
+    expect(find.text('Tap anywhere to dismiss'), findsNothing);
+    // A keyboard or a remote walks the twelve rows, and the list scrolls
+    // to the last.
+    final last = find.text('Headset button');
+    for (var i = 0; i < 12; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+    }
+    await _settle(tester);
+    final focused = FocusManager.instance.primaryFocus?.context;
+    expect(
+        focused?.findAncestorWidgetOfExactType<GesturesHelpOverlay>(),
+        isNotNull,
+        reason: 'focus stays in the help');
+    expect(tester.getRect(last).bottom,
+        lessThanOrEqualTo(_phone.height), reason: 'scrolled to the last row');
+    // Back closes it, and only it.
+    await _back(tester);
+    expect(help, findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("on a TV, the tutorial is the remote's keys", (tester) async {
+    DeviceProfile.kind = DeviceKind.tv;
+    addTearDown(() => DeviceProfile.kind = DeviceKind.phone);
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tutorial(tester);
+    expect(find.byType(GesturesHelpOverlay), findsNothing);
+    expect(find.text('Keyboard and remote'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  // THE ENGINE CHECK (engine_check.dart): while a call to the engine hangs,
+  // every 750 ms the film's own clock decides between "slow" and "stuck".
+  // The engine here hangs on purpose; time is the test's clock.
+  group('a call to the engine hangs', () {
+    Future<_HangingEngine> open(WidgetTester tester) async {
+      final svc = _HangingEngine();
+      await pumpPlayer(tester,
+          phone: _phone, landscape: true, lang: 'en', engine: svc);
+      expect(_state().isPlaying, isTrue);
+      return svc;
+    }
+
+    Future<void> looks(WidgetTester tester, int n,
+        {_HangingEngine? moving}) async {
+      for (var i = 0; i < n; i++) {
+        if (moving != null) {
+          await moving.seek(moving.position + _look);
+        }
+        await tester.pump(_look);
+      }
+    }
+
+    testWidgets(
+        'over a film that stands still: stuck at three seconds, '
+        'said plainly, and gone when the call answers', (tester) async {
+      final svc = await open(tester);
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 3);
+      expect(_state().errorMessage, isNull, reason: '2.25 s: too soon');
+      await looks(tester, 1);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await _settle(tester);
+      expect(find.text('Playback failed'), findsOneWidget);
+      expect(find.textContaining('stopped responding'), findsOneWidget);
+      expect(svc.relinks, 0);
+      // The call comes back by itself: slow, not dead.
+      svc.hang(false);
+      await _settle(tester);
+      expect(_state().errorMessage, isNull);
+      expect(find.text('Playback failed'), findsNothing);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('over a film that plays on: not a word, and one new link',
+        (tester) async {
+      final svc = await open(tester);
+      svc.hang(true);
+      await tester.pump();
+      // Fifteen seconds of a moving clock while the call hangs: alive.
+      // "May be damaged" over local videos playing perfectly was this
+      // check saying stuck at once (12 Nov).
+      for (var i = 1; i <= 20; i++) {
+        await looks(tester, 1, moving: svc);
+        expect(_state().errorMessage, isNull, reason: 'look $i');
+        expect(svc.relinks, i < 20 ? 0 : 1, reason: 'look $i');
+      }
+      expect(svc.engineWedged, isFalse);
+      // Hung again on the same film: watched again, never relinked again,
+      // and a film that stops now is caught.
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 4);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      expect(svc.relinks, 1);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('over a paused film: eight seconds, not three', (tester) async {
+      final svc = await open(tester);
+      await svc.pause();
+      await _settle(tester);
+      svc.hang(true);
+      await tester.pump();
+      await looks(tester, 10);
+      expect(_state().errorMessage, isNull, reason: '7.5 s: too soon');
+      await looks(tester, 1);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await leavePlayer(tester);
+    });
+
+    testWidgets(
+        'a stream whose data comes mid-hang gets its own three '
+        'seconds', (tester) async {
+      final svc = await open(tester);
+      svc.buffer(true);
+      await tester.pump();
+      svc.hang(true);
+      await tester.pump();
+      // Waiting for data is judged as paused.
+      await looks(tester, 7);
+      expect(_state().errorMessage, isNull, reason: '5.25 s, buffering');
+      // The data comes, and by the next look the film has moved 300 ms:
+      // it was playing for less than half a look.
+      svc.buffer(false);
+      await tester.pump(const Duration(milliseconds: 450));
+      await svc.seek(svc.position + const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(_state().errorMessage, isNull,
+          reason: 'resumed a moment ago, not stuck');
+      await looks(tester, 3, moving: svc);
+      expect(_state().errorMessage, isNull);
+      // A stream that resumes and then stands still is still caught.
+      await looks(tester, 4);
+      expect(_state().errorMessage, kPlayerEngineStuck);
+      await leavePlayer(tester);
+    });
+  });
+
   testWidgets('Display Settings changes the picture, and keeps its values',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
@@ -266,4 +772,43 @@ void main() {
     expect(adjust.state.contrast, 0.4);
     await leavePlayer(tester);
   });
+}
+
+/// An engine whose calls hang on purpose: what MpvLink reports when libmpv
+/// has not answered a call for four seconds (engine_check.dart).
+class _HangingEngine extends FakePlayerService implements SlowEngine {
+  final _changes = StreamController<bool>.broadcast();
+  bool _hung = false;
+
+  /// How many times the player asked for a fresh link.
+  int relinks = 0;
+
+  @override
+  Stream<bool> get engineWedgedChanges => _changes.stream;
+
+  @override
+  bool get engineWedged => _hung;
+
+  @override
+  String? get engineWedgedReason => _hung ? 'get time-pos' : null;
+
+  /// As MediaKitPlayerService's: a fresh link, the hang forgotten.
+  @override
+  void relink() {
+    relinks++;
+    hang(false);
+  }
+
+  /// A call stops answering (true), or answers at last (false).
+  void hang(bool on) {
+    if (_hung == on) return;
+    _hung = on;
+    _changes.add(on);
+  }
+
+  @override
+  Future<void> close() async {
+    await _changes.close();
+    await super.close();
+  }
 }

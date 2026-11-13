@@ -51,13 +51,14 @@ does it.
   "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: send the DNSSEC "Active" screenshot on
-  12 Nov; update a phone to 1.64.83 and say if the player's menus look
-  right now (⋮, CC, the error card), and if "stopped responding" ever shows
-  again on a file that plays. (The
-  five open films were approved: every `open-film-%` title reads
-  `approved`, checked 8 Nov.) Reminders: trig_01Q1Z21R5QVuAzPJQqjTfK7W (12 Nov),
-  trig_01G9fdiXXaVGHSbMgqiJc1bg (13 Nov).
+- **The owner still has to**: update a phone to 1.64.83 and say if the
+  player's menus look right now (⋮, CC, the error card), and if "stopped
+  responding" ever shows again on a file that plays; add
+  `https://console.innocentplayer.com` to the CORS policy of BOTH R2
+  buckets and try one upload on the new console — the Pages copy retires
+  only after that (security review P4, 13 Nov). Done 13 Nov: DNSSEC
+  Active; the legacy Supabase keys off. (The five open films were
+  approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
 - **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
   default; ships with the next release)**: `StreamCacheServer.keepSpare`.
   Measured first (device lab M1, 42951731347): on the weak line a jump's
@@ -154,11 +155,85 @@ beside MX Player. Done:
   Build 43186533253: arm64 95641124 bytes `1560c80f…d4a8`, arm32 87609628
   bytes `beb69528…7733`, GitHub's digests agree; app_releases moved at
   09:19 UTC after a rolled-back dry run.
-- Left: the info dialog (VideoInfoDialog, shared with the library) and the
-  gestures help still wear the old look; the rest of the app's screens
-  were not audited this round (the owner asked for every view: next
-  session, from the same skill and harness idea); a test that drives the
-  750 ms engine check with a fake wedged engine.
+- Every other view, the same day (owner's request; session branch
+  9a4f531a, on this branch, not yet released): the screens harness
+  (`test_screens/`, 107 screens) in Burmese and English on both phones and
+  in Burmese at 320 dp — no overflow anywhere; looked at one by one. Fixed:
+  the downloader's tabs dropped the theme's font (a bare `labelStyle`); the
+  information dialog (`MxDialog`) moved onto the player's tokens; the Up
+  next card on the player's surface. And (owner's screenshot): upright,
+  ⋮ rose over the whole picture. First the picture was lifted out of its
+  way; the owner then chose misted glass instead: every player menu is
+  frosted glass (`PlayerGlass`: the film blurred under a 72 % tint;
+  opaque on Android Go and 32-bit-only phones), the picture stays put,
+  the upright sheet stops at 55 %, and sideways every player sheet is a
+  full-height side panel (they were bottom sheets with ~300 dp that cut
+  their lists). Session branch a74047a6, on this branch; ships with the
+  next release — worth a look on the realme/OPPO for smoothness under
+  an open menu (the blur is redrawn every frame).
+- **Every screen size** (owner, 12 Nov): `docs/devices_2026_11.md` — the
+  study (large-screen tiers, TV quality, window size classes, Android
+  16/17 ignoring orientation locks at ≥600 dp) and the plan. Phase 1 done
+  (session branch 851dce81, on this branch, ships with the next release):
+  TV overscan margins as insets; the player's remote and keyboard keys
+  (media keys, K/J/L, M, Esc, ?), mouse hover and right-click; 25 list and
+  form screens capped at 840 dp; upright player panels at 640.
+  **Phase 2 item 1 done** (12 Nov, on this branch, ships with 1.64.84):
+  two panes from 840 dp (`core/ui/list_detail.dart`) — Settings as the
+  list beside the open page (a page opened from it opens in the pane, Back
+  closes it first), the Video tab as the folders beside the open folder's
+  videos (one search for both; a selection of the videos is the pane's);
+  a window narrowed to one pane keeps what the person opened (never over
+  the player); grids add columns with width (posters 3 on a phone, 7–8 on
+  a tablet sideways; Status Saver, Private Folder, the picker); the
+  downloader capped at 840. Found on the way, fixed: four settings dialogs
+  closed through the page's context (in a pane they would have closed the
+  page, the pane blank); Back closed the Video tab's search but left its
+  query (the folders stayed filtered, nothing on screen to say why); a
+  folder found by its name opened as "No video matches"; a folder's own
+  search filtered the folder list behind it; on a TV the Video tab's title
+  sat 48 dp in from its list; the Folders title cut on a 320 dp phone (the
+  view mode goes into ⋮ there); a search that took the open folder away
+  left its videos selected. Proof: 1723 tests (19 new), the screens
+  harness on tablet, foldable at 841, Chromebook, TV and three phones in
+  Burmese and English, 1.3 at the tightest — no overflow; sheets sent.
+  Then (13 Nov) the 20 list and form screens Phase 1 had left at full
+  width capped at 840 (History, Favourites, Watch later, Playlists and a
+  playlist, Recycle bin, Watch insights, music's album / artist /
+  playlist / folder, Stream cache, Delete account, Network stream, Cloud
+  drive, Pop-up play, Subtitle and Language settings, the player's
+  Customise, the equalizer, the age gate); a harness file for them with a
+  week's history (`test_screens/lists_screens_test.dart`). It found Watch
+  insights' week chart cut by 12 dp on every phone, its days in English
+  shorthand ('6d'…'Yd', 'To') and its total drawn without the app's font
+  (RichText): fixed (heights from the text size, dates and "Today" in
+  three languages, Text.rich). **Phase 2 item 2 (13 Nov)**: targetSdk 36
+  readiness written up (`docs/target_sdk_36.md`; not raised — the owner's
+  call): the player's sheets now follow the window while open (one route,
+  state kept; the old ones left a 300 dp bottom sheet sideways after a
+  turn), the film and an open menu tested through turns and an unlocked
+  tablet resize, the WebView screens keep their history Back at 36. Left
+  there: the rotate button where Android 16 ignores it, an API 36 lab job,
+  local network permission before targeting 37 (Transfer, Network).
+  **Phase 2 item 3, TV (13 Nov, first part)**: the D-pad can leave a text
+  field (Flutter 3.32's single-line fields kept every arrow — the search
+  field held a remote for good); Back by D-pad from a pane goes to the
+  list's open row before it leaves; a 190-photograph overscan audit fixed
+  a film's page, the poster and media grids, the picker and the shell's
+  right side. Item 4: right-click opens a video's menu and selects a
+  folder; the wheel already zooms a photo. **The owner's three choices
+  (13 Nov), done**: targetSdk raised to 36 (rotate shortcut and
+  orientation settings hidden where Android ignores them: TV, Android 16
+  tablets); a media session for every film on a TV (`PlayerMediaSession.kt`:
+  a TV's voice commands and Now Playing card reach the player; after the
+  release review, a TV's only, and ended while the film is off screen);
+  TV text at 1.2. The API 36 device-lab run: done (43420830536, all
+  flows passed on Android 16). Left: frame-rate matching.
+- **Item 5 done (13 Nov)**: the engine check has a test that drives it
+  (and found a resumed stream called stuck — fixed); the gestures help is a
+  player sheet (a TV's Tutorial is the remote's keys); the paste bar's hint
+  is centred (it sat high in every language: a dense field); the mouse
+  wheel over the film is the volume. docs/devices_2026_11.md.
 
 ### Player audit (11 Nov) — `docs/player_ux_audit_2026_11.md`
 The owner's request: every menu and button of the player, both ways round,
@@ -298,10 +373,15 @@ security). Found, most urgent first:
    a failure goes to the owner on Telegram and is retried daily. First
    drill 03:52: backup #47 (sealed), 50 tables, passed. Still by hand: a
    full restore into an empty database.
-5. **DNSSEC: enabled 7 Nov, pending** ("pending while we automatically add
-   the DS record"). Cloudflare Registrar publishes the DS in 1–2 days; the
-   12 Nov reminder asks for a screenshot showing Active. Never press Cancel
-   Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
+   **Checked 12 Nov (items 2–4):** event_daily runs to 11 Nov (the daily
+   rollup is alive); transport-check ran 12 times on its schedule since
+   7 Nov, all green (latest 43174698705, 12 Nov 07:21); the drill last
+   passed 7 Nov 03:52 on backup #47, no error since — within the week,
+   backups #48–#52 waiting for the next weekly drill.
+5. **DONE 13 Nov: DNSSEC Active.** The owner's screenshot (Cloudflare →
+   DNS → Settings): "Success! innocentplayer.com is protected with DNSSEC",
+   DS key tag 2371, algorithm 13, digest type 2. Enabled 7 Nov; the DS took
+   under six days. Never press Disable DNSSEC or Cancel Setup. CAA: none, and none wanted (`docs/architecture.md`, layer 1).
 6. When the catalogue reaches thousands of titles: `search_titles`' fuzzy
    half as `needle <% search_text` with `pg_trgm.word_similarity_threshold
    = 0.45` set on the function (EXPLAIN: Seq Scan today, Bitmap Index Scan
@@ -446,6 +526,28 @@ security). Found, most urgent first:
   gateway logs (edge_logs, `request.sb.jwt.apikey.payload.role`), no
   `service_role` or `anon` legacy JWT after 6 Nov 02:40 UTC, before the
   owner deactivates the legacy keys.
+  **12 Nov, quiet:** the gateway's 325 requests in 24 h all carried a new
+  key (94 publishable, 231 secret), none a legacy JWT as apikey; Bearer
+  tokens were users' sessions only (`authenticated`, signed ES256 — the
+  asymmetric signing key is in use); no 5xx. The two 401s were the
+  transport check asking `/rest/v1/` with the publishable key on purpose
+  ("Secret API key required": the schema stays unlisted). Every boot of
+  ingest, transcode and request-playback says
+  `SUPABASE_SECRET_KEYS.default`. Studio on the new key: five
+  `reviewApprove` in admin_audit on 6 Nov 16:22. Not yet seen in a log:
+  premium-request, delete-account, probe-media, backfill-dimensions,
+  self-test (no calls since). Every app version seen in 30 days is
+  1.64.69 or later, all on the publishable key (since 3 Oct). So the
+  owner can deactivate the legacy keys (dashboard → Settings → API Keys →
+  Legacy API keys; reversible).
+  **DONE 13 Nov: the owner disabled the JWT-based API keys (~09:50 UTC).**
+  Checked before: all nine functions pick the new key first
+  (`prefer: 'new'`), no workflow, Worker or console holds a legacy key, no
+  pg_cron / pg_net calls out of the database. After: ingest dispatched on
+  main green (43404807961), transport check green (43404811682), the
+  gateway since 09:50 all 200/204 but the transport check's deliberate
+  `/rest/v1/` 401, no request with a legacy key. Undo, if ever needed: the
+  same page, Re-enable.
 - **Sealed payment fields (migration 054, premium-request v15)**: the first
   sealed request (1ccbfbc5) is in, phone sealed and masked, no plain numbers
   anywhere. Still to see: the console's Requests page opening it (the number
@@ -590,7 +692,13 @@ Things that are live and believed right, but whose proof comes later. Each
 says when, exactly what to run, and what counts as right. Tick it with the
 evidence; if it is wrong, it becomes an open item below.
 
-- [ ] **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
+- [x] **DONE 12 Nov: all twelve purged at 17:17:45 UTC, no error; BBB still
+  2 rung keys and 10 still keys.** They were due 12:42-12:43, but the
+  ingest runner (which empties the bin on every run) had last run at 11:31
+  and schedules run hours late, so ingest was dispatched on main by hand
+  (run 43267844479, green). The "3 of 3 copies sealed" check waits for the
+  next sealed lab run on BBB.
+  **R1 — 12 Nov, after 12:43 UTC: the bin deletes the twelve replaced
   twins of Big Buck Bunny** (2 rungs, 10 stills, binned by run 42029250311).
   `select key, purged_at, purge_error from r2_trash where reason like
   'sealed copy replaced%'` → every row purged, no error. Then BBB still has
@@ -603,13 +711,18 @@ evidence; if it is wrong, it becomes an open item below.
   (the only one unused). Bin that one. `select count(*) from r2_inventory
   i where key like 's/%' and not exists (select 1 from r2_refs() r where
   r.key = i.key)` → 1 before, 0 after.
-- [ ] **R3 — daily until 12 Nov: the pipelines' function logs.** No
+- [x] **CLOSED 12 Nov: the last day was clean.** Over the logs' 24 h
+  (to 17:15 UTC): no "seal refused", "settle failed" or MEDIA_KEK message,
+  no error-level function log, every function call 200 (ingest 14,
+  request-playback 24, transcode 8); studio, probe-media and
+  backfill-dimensions were not called in that window.
+  **R3 — daily until 12 Nov: the pipelines' function logs.** No
   "seal refused", "settle failed", "MEDIA_KEK unreadable", and no 5xx from
   `transcode`, `ingest`, `studio`, `probe-media` or `backfill-dimensions`
   (`function_logs` / `function_edge_logs`). Live versions (5 Nov): transcode
   v25 (209f5e1), ingest v48 (1058fd5), studio v49 (6ecba09), probe-media v24
   and backfill-dimensions v27 (ac29482); migrations through 073.
-- [ ] **R4 — at the start of every session: the switch is `off`.**
+- [ ] **R4 — at the start of every session: the switch is `off`.** (12 Nov: off.)
   `select seal_new from admin_settings` → `off`, unless a canary is running
   that session. A switch left on hands open films to the branch runner
   only.

@@ -129,6 +129,30 @@ line_down() {
   sudo ip link set dev lo mtu 65536 2>/dev/null || true
   sleep 1
 }
+# THE LINE UP AND ITS CAP PROVED (flows weakline, weakjumps). 7 Nov 2026: the
+# first A/B ran on a line nothing shaped. 600 KB under the collapse step's
+# rate, timed, by this user — so through the relay, as the emulator's bytes
+# go; a line more than half again faster than its cap is not the line these
+# flows are for. Returns 1, the line down again, when it is not.
+line_proved() {
+  local flow=$1 probe_rate="900kbit" t0 t1 got kbps
+  adb emu network speed full >/dev/null 2>&1 || true
+  adb emu network delay none >/dev/null 2>&1 || true
+  if ! line_up; then
+    log "flow $flow: the lab line could not be set up — skipped, not run unshaped"
+    line_down; return 1
+  fi
+  line_rate "$probe_rate"
+  t0=$(date +%s%N)
+  got=$(curl -s -o /dev/null -w '%{size_download}' --max-time 30 'https://speed.cloudflare.com/__down?bytes=600000' || echo 0)
+  t1=$(date +%s%N)
+  kbps=$(( got * 8 * 1000000 / ( (t1 - t0) / 1000 + 1 ) / 1000 ))
+  log "$flow: the line under a $probe_rate cap measured $kbps kbps ($got bytes)"
+  if [ "$got" -lt 100000 ] || [ "$kbps" -gt 1400 ]; then
+    log "flow $flow: the cap did not hold ($kbps kbps, $got bytes, under $probe_rate) — skipped, not run unshaped"
+    line_down; return 1
+  fi
+}
 
 # Bytes received by the whole device, every two seconds, alongside the app's
 # CPU and memory — the ground truth to hold the app's own speed figure to.
@@ -450,24 +474,8 @@ for flow in $FLOWS; do
   # runs (line_down; the workflow takes it down too if the run dies).
   case "$flow" in weakline)
     if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakline: no CLIMB_TITLE in config.env — skipped"; continue; fi
-    adb emu network speed full >/dev/null 2>&1 || true
-    adb emu network delay none >/dev/null 2>&1 || true
-    if ! line_up; then log "flow weakline: the lab line could not be set up — skipped, not run unshaped"; line_down; continue; fi
-    # PROVE THE CAP FIRST (7 Nov 2026: the first A/B ran on a line nothing
-    # shaped). 600 KB under the collapse step's rate, timed, by this user —
-    # so through the relay, as the emulator's bytes go; a line more than
-    # half again faster than its cap is not the line this flow is for.
-    probe_rate="900kbit"
-    line_rate "$probe_rate"
-    t0=$(date +%s%N)
-    got=$(curl -s -o /dev/null -w '%{size_download}' --max-time 30 'https://speed.cloudflare.com/__down?bytes=600000' || echo 0)
-    t1=$(date +%s%N)
-    kbps=$(( got * 8 * 1000000 / ( (t1 - t0) / 1000 + 1 ) / 1000 ))
-    log "weakline: the line under a $probe_rate cap measured $kbps kbps ($got bytes)"
-    if [ "$got" -lt 100000 ] || [ "$kbps" -gt 1400 ]; then
-      log "flow weakline: the cap did not hold ($kbps kbps, $got bytes, under 900kbit) — skipped, not run unshaped"
-      line_down; continue
-    fi
+    # PROVE THE CAP FIRST (line_proved).
+    line_proved weakline || continue
     # PASSES (8 Nov 2026, BACKLOG 5b). One play of the film says little about
     # its picture: runs F and G, one build on one line, spent 97 % at 360p
     # and 100 % at 480p — the first few readings decide it. So the film is
@@ -575,6 +583,89 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # JUMPS IN AUTO ON THE WEAK LINE (9 Nov 2026, BACKLOG 5c): the film far
+  # from what is in hand each time, so the player waits for the Worker and
+  # a segment before it plays. The film is played once per word of
+  # JUMP_PASSES, from a cleared app each time, the word written to
+  # lab_jump for a build's jump switch: since 11 Nov `on` / `off` for
+  # StreamCacheServer.keepSpare (a second pool, so a jump finds a
+  # connection open); other words leave the build's own, so `a b` is an
+  # A/A. (5c's switch, a first segment from a lower rung, was A/B'd in runs
+  # 42616754742 and 42628158249 and taken out.) The app (lib/app.dart,
+  # _labAutoJumps) warms up for 40 s of film, then jumps to each share of
+  # JUMP_AT in turn and writes one line a jump: the longest the picture
+  # stood still, and the rungs and stops for 20 s after.
+  # test_device/weakjumps_summary.py sums them per variant and pairs each
+  # jump with the same jump in the neighbouring pass. The trail has each
+  # jump's wait in parts: `hls jump: answer … first byte … segment …;
+  # conn new|kept …` and `exo picture after seek`; the jump's own first
+  # read is on its `LAB autojump` line too (conn=, wait_ms=, answer_ms=).
+  case "$flow" in weakjumps)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow weakjumps: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    line_proved weakjumps || continue
+    passes="${JUMP_PASSES:-on off}"
+    jline="${JUMP_LINE:-4mbit}"
+    jat="${JUMP_AT:-0.40 0.70 0.20 0.85 0.55 0.31 0.95}"
+    d="/sdcard/Android/data/$PKG/files"
+    line_rate "$jline"
+    : > "$OUT/weakjumps.txt"
+    : > "$OUT/weakjumps.tsv"
+    p=0
+    for variant in $passes; do
+      p=$((p + 1))
+      adb shell am force-stop "$PKG"
+      adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+      adb shell mkdir -p "$d" >/dev/null 2>&1
+      adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+      adb shell "echo $variant > $d/lab_jump"
+      adb shell "echo $jat > $d/lab_autojumps"
+      log "weakjumps pass $p ($variant): the test film, jumps to $jat on a $jline line (delay $LINE_DELAY each way, loss $LINE_LOSS)"
+      adb shell log -p i -t flutter "LAB weakjumps begin pass=$p jump=$variant" >/dev/null 2>&1 || true
+      adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+      # Until the app says it is done, at most JUMP_PASS_S.
+      waited=0
+      while [ "$waited" -lt "${JUMP_PASS_S:-360}" ]; do
+        sleep 5; waited=$((waited + 5))
+        if awk -v b="LAB weakjumps begin pass=$p " 'index($0,b){on=1} on && /LAB autojump (done|: )/{f=1} END{exit !f}' "$OUT/logcat_raw.txt"; then
+          break
+        fi
+      done
+      adb exec-out screencap -p > "$OUT/shots/9_weakjumps_end_$p.png"
+      adb shell log -p i -t flutter "LAB weakjumps end pass=$p jump=$variant" >/dev/null 2>&1 || true
+      sleep 2
+      adb shell am force-stop "$PKG"
+      wj="$OUT/weakjumps_$p.txt"
+      awk -v b="LAB weakjumps begin pass=$p " -v e="LAB weakjumps end pass=$p " \
+        'index($0,b){on=1} on{print} index($0,e){on=0}' "$OUT/logcat_raw.txt" \
+        | grep -o 'LAB .*' | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' > "$wj" || true
+      cat "$wj" >> "$OUT/weakjumps.txt"
+      # One row a jump: pass, variant, then the app's key=value fields.
+      grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | awk -v p="$p" -v v="$variant" '
+        { split($3, ij, "/"); split("", kv)
+          for (k=4; k<=NF; k++) { n=index($k, "="); if (n>0) kv[substr($k,1,n-1)]=substr($k,n+1) }
+          printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", p, v, ij[1], kv["at"], kv["frozen_ms"],
+            kv["ready_ms"], kv["before"], kv["first"], kv["low_ms"], kv["back_ms"], kv["stall_ms"], kv["mean"], kv["rule"],
+            kv["want"]
+          # The first read of the jump, from the proxy (since 11 Nov): its
+          # connection and the answer of the Worker, in parts.
+          printf "\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", kv["conn"], kv["conn_ms"], kv["wait_ms"],
+            kv["tcp_ms"], kv["tls_ms"], kv["answer_ms"], kv["seg_ms"], kv["cut"], kv["idle_ms"] }' >> "$OUT/weakjumps.tsv" || true
+      n=$(grep -c 'LAB autojump [0-9]' "$wj" || true)
+      log "weakjumps pass $p ($variant): $n jumps"
+      grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | sed "s/^LAB /weakjumps pass $p ($variant): /" | while read -r line; do log "$line"; done
+    done
+    log "weakjumps: the line passed $(tc -s qdisc show dev lo | grep -A1 'netem 40:' | grep -oE 'Sent [0-9]+ bytes [0-9]+ pkt \(dropped [0-9]+' | head -1)"
+    line_down
+    adb emu network speed "$NET_SPEED" >/dev/null 2>&1 || true
+    adb emu network delay "$NET_DELAY" >/dev/null 2>&1 || true
+    log "weakjumps: $(cat "$OUT/relay.txt" 2>/dev/null || echo 'relay: no counts')"
+    python3 test_device/weakjumps_summary.py "$OUT/weakjumps.tsv" | while read -r line; do log "$line"; done
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_jump" "$d/lab_autojumps" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # AUTO CLIMBS BACK UP — a catalogue title (the free test film) played the
   # way a viewer's tap plays it: the real request-playback, Worker and R2,
   # the rung Auto picks, the proxy. It opens on a small copy (a low starting
@@ -621,7 +712,11 @@ for flow in $FLOWS; do
     adb shell mkdir -p "$d" >/dev/null 2>&1
     adb shell "echo title:$jt > $d/lab_stream_url"
     adb shell "echo 1 > $d/lab_jumps"
-    log "jumps: $jt, the viewer's jumps, ${JUMPS_S:-200} s, home after ${JUMPS_AWAY_AFTER:-100} s"
+    # JUMPS_JUMP: a word for the build's jump switch (lab_jump, as the
+    # weakjumps flow writes it; `on` = StreamCacheServer.keepSpare), so the
+    # release gate can run with a switch on before the build's default is.
+    if [ -n "${JUMPS_JUMP:-}" ]; then adb shell "echo $JUMPS_JUMP > $d/lab_jump"; fi
+    log "jumps: $jt, the viewer's jumps, ${JUMPS_S:-200} s, home after ${JUMPS_AWAY_AFTER:-100} s${JUMPS_JUMP:+, lab_jump=$JUMPS_JUMP}"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     # The checks are over by about 75 s. Then away to the home screen and
     # back, as a viewer answering a message does: the app's own check
@@ -638,12 +733,17 @@ for flow in $FLOWS; do
     adb exec-out screencap -p > "$OUT/shots/9_jumps_back.png"
     sleep $(( ${JUMPS_S:-200} - ${JUMPS_AWAY_AFTER:-100} - 18 ))
     adb exec-out screencap -p > "$OUT/shots/9_jumps_end.png"
-    grep -o 'LAB check.*' "$OUT/logcat_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
-    grep -o 'exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/logcat_raw.txt" 2>/dev/null | head -160 \
+    # This flow's own lines only: from its `LAB phase jumps start` on, so a
+    # run that plays another flow first (weakjumps, 11 Nov) does not fill
+    # the trail below with that flow's lines.
+    awk '/LAB phase jumps start/{on=1} on' "$OUT/logcat_raw.txt" 2>/dev/null > "$OUT/jumps_raw.txt" || true
+    grep -o 'LAB check.*' "$OUT/jumps_raw.txt" 2>/dev/null | sed 's/^/  /' | tee -a "$OUT/jumps.txt" || true
+    grep -o 'LAB jump rule.*\|exo [a-z].*\|hls[: ].*\|open ladder.*\|ladder on ExoPlayer.*\|LAB away.*\|lifecycle .*\|quality .*\|renewal.*\|play through.*\|warm switch.*' "$OUT/jumps_raw.txt" 2>/dev/null | head -160 \
       | sed -E 's#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' >> "$OUT/jumps.txt" || true
+    rm -f "$OUT/jumps_raw.txt"
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
-    adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_jumps" "$d/lab_jump" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;

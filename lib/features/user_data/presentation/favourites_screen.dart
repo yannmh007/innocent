@@ -15,6 +15,7 @@ import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/transient_prompt.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class FavouritesScreen extends ConsumerWidget {
   const FavouritesScreen({super.key});
 
@@ -25,7 +26,11 @@ class FavouritesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).favourites)),
-      body: favs.isEmpty
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: favs.isEmpty
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -100,6 +105,7 @@ class FavouritesScreen extends ConsumerWidget {
               },
             ),
             ),
+      ),
     );
   }
 

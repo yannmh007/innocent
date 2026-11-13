@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/nav_bar_space.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 /// Cloud Drive screen — MX Player parity.
 /// Lists supported cloud providers; user taps to connect.
 class CloudDriveScreen extends StatefulWidget {
@@ -84,7 +85,11 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
           ),
         ],
       ),
-      body: Column(
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -174,6 +179,7 @@ class _CloudDriveScreenState extends State<CloudDriveScreen> {
               ),
             ),
         ],
+      ),
       ),
     );
   }

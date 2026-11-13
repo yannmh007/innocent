@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/features/video_hub/data/cache/stream_cache_server.dart';
+import 'package:innocent/features/video_hub/data/cache/stream_cache_store.dart';
 import 'package:innocent/features/video_hub/data/rate_limited.dart';
 import 'package:innocent/features/video_hub/domain/cmaf_index.dart';
 import 'package:innocent/features/video_hub/domain/hls_ladder.dart';
@@ -252,6 +253,127 @@ void main() {
     expect(got, r720.bytes.sublist(a20, a20 + s20));
     expect(clock.elapsed, lessThan(const Duration(seconds: 4)),
         reason: 'its own read, not the 1.4 MB in front of it');
+  });
+
+  test("a jump's first read says what its answer was made of, as the Worker saw it: "
+      'a connection new or kept open, and whether a read was cut for it', () async {
+    final master = await register('film12');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    // Whether the Worker had seen the connection [a]'s read came on before.
+    bool seenBefore(int a) {
+      final i = worker.conns.lastIndexWhere((c) => c.$1 == 'a720' && c.$2 == a);
+      return worker.conns.take(i).any((c) => c.$4 == worker.conns[i].$4);
+    }
+
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (s10, a10, u10) = segs[10];
+    await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}');
+    // Two minutes on, while that read ahead is still coming: it is cut.
+    worker.paceMs = 0;
+    var seq = StreamCacheServer.jumpCount;
+    final (s60, a60, u60) = segs[60];
+    expect((await _get(u60, range: 'bytes=$a60-${a60 + s60 - 1}')).$2,
+        r720.bytes.sublist(a60, a60 + s60));
+    final first = StreamCacheServer.jumpCostAfter(seq)!;
+    expect(first, contains('cut=1'));
+    expect(first, contains(seenBefore(a60) ? 'conn=kept' : 'conn=new'));
+    // Its read ahead comes in whole and leaves its connection open; the
+    // next jump, far from it, cuts nothing and finds a connection open.
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    seq = StreamCacheServer.jumpCount;
+    final (s85, a85, u85) = segs[85];
+    expect((await _get(u85, range: 'bytes=$a85-${a85 + s85 - 1}')).$2,
+        r720.bytes.sublist(a85, a85 + s85));
+    final second = StreamCacheServer.jumpCostAfter(seq)!;
+    expect(second, contains('cut=0'));
+    expect(seenBefore(a85), isTrue);
+    expect(second, contains('conn=kept'));
+    expect(RegExp(r'idle_ms=(\d+)').firstMatch(second), isNotNull,
+        reason: 'a read came in whole before it');
+  });
+
+  test('kept spare: a jump that cuts the read in flight is answered on a connection the '
+      'other pool kept open, with no request more', () async {
+    expect(StreamCacheServer.keepSpare, isTrue, reason: 'on by default since 11 Nov');
+    final master = await register('film13');
+    final (_, mbody) = await _get(master);
+    final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+    final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+    int portOf(int a) => worker.conns.lastWhere((c) => c.$1 == 'a720' && c.$2 == a).$4;
+    // The first read, in whole, and on the phone to its last byte.
+    final (s10, a10, u10) = segs[10];
+    await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}');
+    final firstEnd = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a10).$3;
+    final entry = await StreamCacheStore.instance.entryFor('film13-720');
+    for (var i = 0; i < 300 && entry.partAt(firstEnd) == null; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(entry.partAt(firstEnd), isNotNull);
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final first = portOf(a10);
+    // The segment the read ended in: its tail is the read that carries on,
+    // slow, and on the other connection.
+    final cross = segs.indexWhere((g) => g.$2 <= firstEnd && g.$2 + g.$1 - 1 > firstEnd);
+    expect(cross, greaterThan(10));
+    worker.paceMs = 300;
+    addTearDown(() => worker.paceMs = 0);
+    final (sc, ac, uc) = segs[cross];
+    final requestsBefore = worker.asked.length;
+    expect((await _get(uc, range: 'bytes=$ac-${ac + sc - 1}')).$2, r720.bytes.sublist(ac, ac + sc));
+    // The read that carries on: on the pool used less recently (the start
+    // rung's first read and the next rung's head took one each).
+    final second = portOf(firstEnd + 1);
+    // Far on, while it is coming: it is cut, and the jump is answered on
+    // the first read's connection, still open.
+    worker.paceMs = 0;
+    final seq = StreamCacheServer.jumpCount;
+    final (s70, a70, u70) = segs[70];
+    expect((await _get(u70, range: 'bytes=$a70-${a70 + s70 - 1}')).$2,
+        r720.bytes.sublist(a70, a70 + s70));
+    final words = StreamCacheServer.jumpCostAfter(seq)!;
+    expect(words, contains('cut=1'));
+    expect(words, contains('conn=kept'));
+    // On a connection the Worker had seen, not the one the cut took.
+    expect(portOf(a70), isNot(second));
+    expect(worker.conns.where((c) => c.$4 == portOf(a70)).length, greaterThan(1));
+    expect(first, isPositive);
+    // One request a read, as with one pool: the carry-on and the jump.
+    expect(worker.asked.length - requestsBefore, 2);
+  });
+
+  test("kept spare: the pool rule — a jump takes the free pool, or the one most "
+      'recently in whole; a read that carries on takes the one used less recently; '
+      "the lab's off jumps take the busy one", () {
+    bool first({
+      bool aFree = true,
+      bool bFree = true,
+      int? a,
+      int? b,
+      required bool jump,
+      bool spare = true,
+    }) =>
+        StreamCacheServer.firstPool(
+            aFree: aFree, bFree: bFree, aWholeMs: a, bWholeMs: b, jump: jump, spareForJumps: spare);
+    // A read in flight on one pool: anything new goes to the other...
+    expect(first(aFree: false, jump: true), isFalse);
+    expect(first(bFree: false, jump: true), isTrue);
+    expect(first(aFree: false, jump: false), isFalse);
+    // ...except the lab's "off" jump, which goes where one pool would.
+    expect(first(aFree: false, jump: true, spare: false), isTrue);
+    expect(first(bFree: false, jump: true, spare: false), isFalse);
+    // Both free: a jump takes the connection used most recently...
+    expect(first(a: 1000, b: 5000, jump: true), isTrue);
+    expect(first(a: 5000, b: 1000, jump: true), isFalse);
+    expect(first(a: null, b: 5000, jump: true), isFalse);
+    expect(first(a: 5000, b: null, jump: true), isTrue);
+    // ...and a read that carries on the one used less recently (or never).
+    expect(first(a: 1000, b: 5000, jump: false), isFalse);
+    expect(first(a: 5000, b: 1000, jump: false), isTrue);
+    expect(first(a: 1000, b: null, jump: false), isFalse);
+    expect(first(a: null, b: null, jump: false), isTrue);
   });
 
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',

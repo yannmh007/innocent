@@ -86,7 +86,7 @@ class PagedPosterGrid {
         ),
         sliver: SliverGrid(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: PosterMetrics.gridColumns,
+            crossAxisCount: PosterMetrics.gridColumnsFor(maxWidth),
             crossAxisSpacing: PosterMetrics.gridSpacing,
             mainAxisSpacing: 14,
             // Absolute height, derived from the poster aspect — see

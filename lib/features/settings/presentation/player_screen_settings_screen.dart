@@ -8,6 +8,8 @@ import 'settings_dialogs.dart';
 import 'settings_widgets.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
+import '../../../core/ui/device_profile.dart';
 /// Settings > Player > Screen
 /// Orientation, Full Screen, Brightness, etc.
 ///
@@ -36,8 +38,12 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       appBar: AppBar(title: Text(AppStrings.of(context).screenTitle)),
-      body: ListView(
+      body: TabletConstrainedWidth(maxWidth: 840, child: ListView(
         children: [
+          // Where the screen turns as the device does whatever the player
+          // asks (a TV; a tablet on Android 16), the orientation settings
+          // would do nothing: not offered (DeviceProfile.orientationFixed).
+          if (!DeviceProfile.orientationFixed) ...[
           SettingsSectionHeader(AppStrings.of(context).pssOrientation),
           // Audit fix (standard high-quality): wire default orientation
           // to StringSetting.defaultPlayerOrientation. 'system' lets
@@ -84,6 +90,7 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
               subtitle:
                   AppStrings.of(context).pssAutoRotationSub,
               setting: PlayerSetting.screenAutoRotation),
+          ],
           SettingsSectionHeader(AppStrings.of(context).pssDisplay),
           _toggle(ref,
               title: AppStrings.of(context).pssFullScreen,
@@ -132,7 +139,7 @@ class PlayerScreenSettingsScreen extends ConsumerWidget {
           }),
           const SizedBox(height: 24),
         ],
-      ),
+      )),
     );
   }
 }

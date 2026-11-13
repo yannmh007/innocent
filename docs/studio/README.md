@@ -168,7 +168,7 @@ R2 → bucket → **Settings** → **CORS Policy**, for `innocent-media` **and**
 ```json
 [
   {
-    "AllowedOrigins": ["https://yannmh007.github.io"],
+    "AllowedOrigins": ["https://console.innocentplayer.com", "https://yannmh007.github.io"],
     "AllowedMethods": ["PUT"],
     "AllowedHeaders": ["Content-Type"],
     "ExposeHeaders": ["ETag"],
@@ -178,7 +178,11 @@ R2 → bucket → **Settings** → **CORS Policy**, for `innocent-media` **and**
 ```
 
 The origin is where the PAGE is served from, not where the file is going.
-It changed once already, when the page moved off supabase.co.
+It changed once already, when the page moved off supabase.co, and again
+on 6 Nov 2026 when the console got its own origin
+(`console.innocentplayer.com`) — and the move's steps left this policy out
+(found 13 Nov, before any upload was tried there). Both origins until the
+Pages copy retires; then the console's alone.
 
 ---
 

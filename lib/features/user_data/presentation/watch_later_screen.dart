@@ -14,6 +14,7 @@ import '../user_data_providers.dart';
 import '../../../core/ui/safe_thumbnail.dart';
 
 import '../../../core/localization/app_strings.dart';
+import '../../../core/ui/tablet_constrained_width.dart';
 class WatchLaterScreen extends ConsumerWidget {
   const WatchLaterScreen({super.key});
 
@@ -77,7 +78,11 @@ class WatchLaterScreen extends ConsumerWidget {
             ),
         ],
       ),
-      body: queue.isEmpty
+      // A readable width on a tablet or a TV; a phone is narrower than
+      // the cap and unchanged (docs/devices_2026_11.md).
+      body: TabletConstrainedWidth(
+        maxWidth: 840,
+        child: queue.isEmpty
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
@@ -192,6 +197,7 @@ class WatchLaterScreen extends ConsumerWidget {
                 ),
               ],
             ),
+      ),
     );
   }
 }
