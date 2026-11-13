@@ -1,0 +1,62 @@
+Running on test
+ > Flow player_audit_land
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+Tap on point (50%,50%)... COMPLETED
+Take screenshot 80_audit_controls_landscape... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Assert that "(Subtitle|စာတန်းထိုး)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Tap on "(More|နောက်ထပ်)"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 81_audit_more_landscape... COMPLETED
+Assert that "(Video Display|ဗီဒီယိုပြသမှု).*" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 82_audit_more_closed_by_back... COMPLETED
+Assert that "(Video Display|ဗီဒီယိုပြသမှု).*" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Long press on "(Next video|နောက် ဗီဒီယို).*"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 83_audit_repeat_menu... COMPLETED
+Assert that "(Loop one|တစ်ခု ထပ်ဖွင့်)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1000 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Tap on "(Subtitle|စာတန်းထိုး)"... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 84_audit_subtitle_panel... COMPLETED
+Assert that "(Online.*|.*Online.*)" is visible... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 85_audit_subtitle_panel_closed... COMPLETED
+Assert that "(Online.*|.*Online.*)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible...
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
+Tap on point (50%,50%)... COMPLETED
+Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED

@@ -1,19 +1,28 @@
-[02:41:01] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[02:41:01] install
-[02:41:19] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[02:41:19] network: eth0 has qdisc clsact
-[02:41:19] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[02:41:47] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[02:41:48] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[02:41:48] library: pushing 24 files
-[02:42:21] library: MediaStore lists 24 videos
-[02:42:21] cold start
+[12:12:07] device: sdk_gphone64_x86_64 / Android 16 / ABIs x86_64,arm64-v8a
+[12:12:07] install
+[12:12:44] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[12:12:44] network: eth0 has qdisc clsact
+[12:12:45] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[12:13:07] library: pushing 52 files
+[12:14:06] library: MediaStore lists 52 videos
+[12:14:06] cold start
 Status: ok
-TotalTime: 4100
-WaitTime: 4104
-[02:42:35] flow genres
-[02:43:54] flow genres exit 0
-[02:44:04] flow jumps
-[02:44:05] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[02:48:13] flow jumps done
-[02:48:18] done
+TotalTime: 4680
+WaitTime: 4715
+[12:14:21] flow screens_large
+[12:14:23] rotation asked 0, now 0
+[12:15:04] flow screens_large exit 0
+[12:15:15] flow screens_large_land
+[12:15:18] rotation asked 1, now 90
+[12:15:56] flow screens_large_land exit 0
+[12:16:08] flow layout_portrait
+[12:16:11] rotation asked 0, now 0
+[12:17:05] flow layout_portrait exit 0
+[12:17:16] flow player_audit
+[12:18:51] flow player_audit exit 0
+[12:19:03] flow layout_landscape
+[12:19:06] rotation asked 1, now 90
+[12:19:29] flow layout_landscape exit 0
+[12:19:41] flow player_audit_land
+[12:20:38] flow player_audit_land exit 0
+[12:20:55] done
