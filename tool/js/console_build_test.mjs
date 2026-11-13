@@ -82,13 +82,16 @@ check('the Pages copy keeps its <meta> policy', readFileSync(join(ROOT, 'docs/st
   .includes('http-equiv="Content-Security-Policy"'));
 
 // ── who may call ────────────────────────────────────────────────────────
-check('the functions answer both console origins', co.CONSOLE_ORIGINS.includes('https://console.innocentplayer.com') &&
-  co.CONSOLE_ORIGINS.includes('https://yannmh007.github.io'));
+check('the functions answer the console origin, and the retired Pages copy no more',
+  co.CONSOLE_ORIGINS.includes('https://console.innocentplayer.com') &&
+  !co.CONSOLE_ORIGINS.includes('https://yannmh007.github.io'));
 check('STUDIO_ORIGINS can add, not replace, and junk is dropped',
   co.consoleOrigins('https://test.example, javascript:alert(1), http://evil.example, http://localhost:8080').join() ===
   [...co.CONSOLE_ORIGINS, 'https://test.example', 'http://localhost:8080'].join());
 const worker = readFileSync(join(ROOT, 'docs/worker/src/index.js'), 'utf8');
-check('the stream Worker answers the new console origin', /STUDIO_ORIGINS = \[[^\]]*'https:\/\/console\.innocentplayer\.com'/.test(worker));
+check('the stream Worker answers the console origin, not the Pages copy',
+  /STUDIO_ORIGINS = \[[^\]]*'https:\/\/console\.innocentplayer\.com'/.test(worker) &&
+  !/STUDIO_ORIGINS = \[[^\]]*github\.io/.test(worker));
 const toml = readFileSync(join(ROOT, 'docs/console/wrangler.toml'), 'utf8');
 check('the console Worker is on the domain only (no workers.dev)', /console\.innocentplayer\.com/.test(toml) &&
   /workers_dev = false/.test(toml) && /directory = "\.\/dist"/.test(toml));

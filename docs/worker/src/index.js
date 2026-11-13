@@ -111,7 +111,7 @@ const MODERN_TLS = new Set(['TLSv1.2', 'TLSv1.3']);
 /// there is exactly one page that has any business reading from here.
 // Two while the console moves to its own origin (docs/console/README.md;
 // docs/edge/console_origins.js keeps the functions' copy of this list).
-const STUDIO_ORIGINS = ['https://yannmh007.github.io', 'https://console.innocentplayer.com'];
+const STUDIO_ORIGINS = ['https://console.innocentplayer.com']; // the Pages copy retired 13 Nov 2026
 
 function corsFor(request) {
   const origin = request.headers.get('Origin') || '';

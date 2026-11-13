@@ -108,7 +108,7 @@ const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
 const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
 
 /// Where the console links to from a Telegram notice.
-const CONSOLE_URL = 'https://yannmh007.github.io/innocent/studio/';
+const CONSOLE_URL = 'https://console.innocentplayer.com/studio/';
 
 // --- AWS SigV4 query signing ------------------------------------------------
 // Identical to request-playback.ts. See that file for why each piece is the
@@ -1092,7 +1092,7 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true,
       service: 'studio',
-      page: 'https://yannmh007.github.io/innocent/studio/',
+      page: CONSOLE_URL,
     }, 200, req);
   }
 
