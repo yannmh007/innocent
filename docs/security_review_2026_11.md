@@ -268,6 +268,16 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   `console_origins.js`), the stream Worker with the next main push; the
   owner signs out of the old Pages console, removes its Supabase redirect
   URL and unpublishes GitHub Pages.
+  **Retired, 13 Nov evening.** The owner signed out there (no session is
+  left in auth.sessions: the sign-out ended all of them), set the Site URL
+  to the console and removed the Pages redirect URL, unpublished GitHub
+  Pages, and cut both buckets' CORS to the console alone. Studio v55
+  (24a3365) asks R2 for the retired origin too: console allowed, Pages
+  and a control refused (403), on both buckets, 18:48. Transport check
+  43486028468 green, with the old Pages console page a 404. Left: the
+  stream Worker's list (next main push) and ingest, transcode and
+  probe-media (next deploy); a stale redirect URL to the studio function,
+  the console's first home, is the owner's to remove.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

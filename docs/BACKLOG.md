@@ -76,13 +76,12 @@ does it.
 - **The owner still has to**: update a phone to 1.64.84 and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
   cost has no lab number), and if "stopped responding" ever shows again
-  on a file that plays; on a tablet or a TV if one is at hand; finish
-  retiring the Pages console (security review P4, 13 Nov): sign out of
-  the old Pages console, remove its Supabase redirect URL, unpublish
-  GitHub Pages, and drop the Pages origin from both buckets' CORS. (Done
-  13 Nov: the console origin added to both buckets' CORS, seen allowed by
-  studio's `r2_cors` check with a control refused; studio v54 answers only
-  the new origin.) Done 13 Nov: DNSSEC
+  on a file that plays; on a tablet or a TV if one is at hand; sign in
+  again on https://console.innocentplayer.com/studio/ (the Pages sign-out
+  ended every session, 13 Nov). Optional: remove the stale Supabase
+  redirect URL `…supabase.co/functions/v1/studio` (the console's first
+  home), and set GitHub Pages' branch to None so no push can republish it.
+  (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
 - **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
