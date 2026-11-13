@@ -141,6 +141,16 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+- runFlow:
+    # Down after all (their own 4 s timer, between a check and its tap):
+    # one more tap, apart from the last (runs 43447577014, 43451712785).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - tapOn: "(Subtitle|စာတန်းထိုး)"
 - waitForAnimationToEnd:
     timeout: 1500
@@ -165,4 +175,14 @@ appId: com.innocent.media
           timeout: 800
 - tapOn:
     point: "50%,50%"
+- runFlow:
+    # Down after all (their own 4 s timer, between a check and its tap):
+    # one more tap, apart from the last (runs 43447577014, 43451712785).
+    when:
+      notVisible: "(Audio track|အသံ လိုင်း)"
+    commands:
+      - waitForAnimationToEnd:
+          timeout: 800
+      - tapOn:
+          point: "50%,50%"
 - assertVisible: "(Audio track|အသံ လိုင်း)"
