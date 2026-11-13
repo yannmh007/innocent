@@ -738,10 +738,13 @@ const ALLOWED_ORIGINS = consoleOrigins(Deno.env.get('STUDIO_ORIGINS'));
 /// is asked too, and must come back refused, or the "allowed" beside it
 /// means only that R2 answers everyone.
 const CORS_CONTROL = 'https://cors-control.invalid';
+/// Origins the console has LEFT, asked so that a policy still naming one
+/// shows (the GitHub Pages copy, retired 13 Nov 2026): "refused" is right.
+const CORS_RETIRED = ['https://yannmh007.github.io'];
 async function r2CorsFor(bucket: string): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${bucket}/_selftest/cors-probe`;
-  for (const origin of [...ALLOWED_ORIGINS, CORS_CONTROL]) {
+  for (const origin of [...ALLOWED_ORIGINS, ...CORS_RETIRED, CORS_CONTROL]) {
     try {
       const res = await fetch(url, {
         method: 'OPTIONS',

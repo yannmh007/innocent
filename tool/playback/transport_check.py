@@ -369,6 +369,10 @@ for name, url, method in (('studio', f'{sb}/functions/v1/studio', 'POST'),
     st, h, _ = http(url, 'OPTIONS', {'Origin': 'https://evil.example', 'Access-Control-Request-Method': method})
     acao = {k.lower(): v for k, v in h.items()}.get('access-control-allow-origin', '')
     verdict(not acao, f"{name} does not answer another origin's (allow-origin {acao or 'none'})")
+# The GitHub Pages copy of the console, retired 13 Nov 2026: unpublished,
+# and it must stay so (a push to main's docs/ must not bring it back).
+st, _, _ = http('https://yannmh007.github.io/innocent/studio/')
+verdict(st == 404, f'the retired Pages console is not served (HTTP {st})')
 
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
