@@ -63,13 +63,15 @@ appId: com.innocent.media
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 71_audit_more_portrait
-# The menu holds the controls up while it is open.
-- assertVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+# The menu holds the controls up while it is open. Its first tile, not
+# "Video Display": since 1.64.83 that switch sits under eighteen tiles, out
+# of sight on a phone either way round (run 43425944894; on a tablet it fits).
+- assertVisible: "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*"
 - back
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: 72_audit_more_closed_by_back
-- assertNotVisible: "(Video Display|ဗီဒီယိုပြသမှု).*"
+- assertNotVisible: "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*"
 # Still in the player: a tap brings its controls back.
 - runFlow:
     # Fresh controls: hidden first if they are up, then shown, so the next
