@@ -35,39 +35,16 @@ does it.
   `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
   `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
   TLS apart in the trail)).
-- **1.64.84 (397) BUILT AND PUBLISHED, 13 Nov — `app_releases` NOT YET
-  MOVED**: the Supabase connector failed to connect (502) all afternoon,
-  so users stay on 1.64.83 until a session moves id 1 (skill
-  `live-db-change`: a rolled-back dry run first). Main 333c7071, Build
-  43456848305 (every step green, CDN and GitHub release included; Static
-  analysis, Dependency scan and CodeQL green), Playback check dispatched
-  after it. GitHub release v1.64.84-397: arm64 95671464 bytes
-  `13658a77…d7a6`,
-  arm32 87646148 bytes
-  `d46052e2…413c`
-  (the release body and GitHub's asset digests agree; the whole digests are
-  on the release page). The move:
-  version_name 1.64.84, version_code 397; both APKs' url on
-  cdn.innocentplayer.com as 1.64.83's row with the new file names
-  (`innocent-1.64.84-397.apk`, `innocent-1.64.84-397-arm32.apk`), their
-  sha256 and bytes above; mirrors the two GitHub release URLs; released_at
-  now(); notes (short, user-facing):
-  en: "- Tablets, foldables and Chromebooks: Settings and the Video tab
-  side by side in two panes; grids add columns as the window grows.
-  - Android TV: the app inside the screen's safe margins, larger text,
-  voice commands (pause, skip 30 seconds) reach the film. - The player:
-  frosted-glass menus that follow the screen when it turns; keyboard and
-  mouse (the wheel is the volume). - Ready for Android 16. - Jumps in a
-  stream about 0.3 s faster; no false "stopped responding" when a stream
-  resumes."
-  my: "- Tablet၊ foldable နဲ့ Chromebook တွေမှာ Settings နဲ့ Video tab ကို
-  ဘေးချင်းယှဉ် နှစ်ခြမ်း ပြပါပြီ၊ window ကျယ်လာရင် grid ကော်လံ တိုးပါတယ်။
-  - Android TV မှာ စခရင်အစွန်း မဖြတ်တော့ဘဲ စာလုံး ပိုကြီးပါပြီ၊ "pause"၊
-  "skip 30 seconds" လို အသံ command တွေ ရုပ်ရှင်ဆီ ရောက်ပါပြီ။ - Player
-  menu တွေ glass ပုံစံ ဖြစ်ပြီး စခရင် လှည့်ရင် လိုက်ပြောင်းပါတယ်၊ keyboard
-  နဲ့ mouse သုံးလို့ရပါပြီ (wheel နဲ့ အသံ)။ - Android 16 အတွက် အဆင်သင့်
-  ဖြစ်ပါပြီ။ - Stream ထဲ ခုန်ကျော်တာ ~0.3 စက္ကန့် ပိုမြန်ပါပြီ၊ stream ပြန်ဆက်ရင်
-  "Player တုံ့ပြန်မှု ရပ်သွားပါတယ်" အမှား မပြတော့ပါ။"
+- **1.64.84 (397) is out, 13 Nov**: main 333c7071, Build 43456848305
+  (every step green, CDN and GitHub release included; Static analysis,
+  Dependency scan and CodeQL green), Playback check 43462010173 passed on
+  main. GitHub release v1.64.84-397: arm64 95671464 bytes
+  `13658a77…d7a6`, arm32 87646148 bytes `d46052e2…413c` (the release
+  body and GitHub's asset digests agree). `app_releases` id 1 moved at
+  18:49 UTC after a rolled-back dry run read it back as anon; it waited
+  three hours for the Supabase connector, which answered 502 in this
+  session after a worker restart (connectors are read when a session's
+  worker starts; the next restart brought it back).
   WHAT IT CARRIES: Phase 1–2 of every screen size (docs/devices_2026_11.md),
   targetSdk 36 (docs/target_sdk_36.md), a TV's media session (ended off
   screen), the glass menus, 5d's kept connection and the play_summary
@@ -96,9 +73,10 @@ does it.
   "Next app release"; what the audit left open under "Player audit".
 - **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
   transport-check every 6 h, the backup drill.
-- **The owner still has to**: update a phone to 1.64.83 and say if the
-  player's menus look right now (⋮, CC, the error card), and if "stopped
-  responding" ever shows again on a file that plays; finish
+- **The owner still has to**: update a phone to 1.64.84 and say if the
+  player's glass menus are smooth over a playing film (⋮, CC — the blur's
+  cost has no lab number), and if "stopped responding" ever shows again
+  on a file that plays; on a tablet or a TV if one is at hand; finish
   retiring the Pages console (security review P4, 13 Nov): sign out of
   the old Pages console, remove its Supabase redirect URL, unpublish
   GitHub Pages, and drop the Pages origin from both buckets' CORS. (Done
