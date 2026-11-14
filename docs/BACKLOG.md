@@ -168,6 +168,35 @@ does it.
   Analyze, Test, both APKs; it publishes nothing off main) — the first
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
+- **1.64.85's first look on the owner's phone (14 Nov, 13:51-13:54 UTC; a
+  diagnostics report and the events)**: the fix works — four drags of
+  1.4-5.8 s, each `exo held N ms (scrubbing)` ending in a jump or a Back,
+  the film moving after; no double player. WEAK, for the next sessions:
+  (1) THE LAST PLAYBACK'S SUMMARY IS LOST: the session's last film
+  (ladder, opened 13:53:53, closed ~13:54:22) sent no `play_summary` and
+  no progress (13:57 still none) — as on 1.64.84 (08:18:57). The summary
+  waits in memory (`EventSender`, 30 s or the pause flush) and its kept
+  copy is dropped as it is queued; leaving the app soon after loses it.
+  The longest playback is often the last. (2) LIBMPV'S OPEN IS COUNTED AS
+  A STALL: on the local-proxy path `first frame` fires at 32-35 ms, before
+  a byte ("stream index 0.0 MB"), then the real start wait is a
+  "rebuffer" of 881 / 986 ms — the summaries say open_ms 32 / 35 and
+  stalls 1, frozen 881 / 986 ms; ExoPlayer's opens read 1393-2078 ms
+  honestly. Frozen seconds a minute, the number to lower, is wrong for
+  every libmpv playback. (3) A STALE START: a libmpv open after ExoPlayer
+  films read "open began at 650s, not 491s - jumping there" — likely
+  `_position` left by the ExoPlayer film (`_confirmStart` breaks on any
+  position > 0); its needless seek sat inside that 881 ms. (4) A scrub's
+  end on ExoPlayer re-buffers 25-106 ms with 61 s in hand and is counted
+  a blip, not a jump. (5) A far ladder start took 2078 ms to a picture:
+  the 480p, 360p and 720p indexes read one after another (141.8, 142.3,
+  142.8) and Auto went to 720p at once on a line measured 2592 kbps
+  (warmed: 480p). (6) Seek-bar pictures of parts not yet seen took
+  478-1010 ms (seen ones 24-45 ms): the picture lags the finger. (7) App
+  start: 60-74 % CPU for the first ~20 s (pool-thread 23 %, DartWorker
+  13-19 %), before any playback. Also open from earlier: the ExoPlayer
+  open that answered false after the double open; transport check
+  43567299617 (06:38) cancelled mid-step after 7.5 min (13:16's passed).
 - **1.64.84's viewer bug, fixed in 1.64.85 (14 Nov)**: after a jump by
   the seek bar the film could stay still while it "played", the pause
   button dead, until another drag — the owner met it on Sintel. Cause,
