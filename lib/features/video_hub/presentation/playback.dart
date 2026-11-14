@@ -71,7 +71,8 @@ Future<void> playMedia(
   // card_clicks 1.4 s apart, two play_starts, two player screens; the second
   // found ExoPlayer going and fell back to libmpv, and the playback's
   // summary went out twice).
-  if (!PlayTapGuard.instance.begin(DateTime.now())) {
+  final play = PlayTapGuard.instance.begin();
+  if (play == null) {
     PlaybackLog.add('play: a second tap while the first is on its way, ignored');
     return;
   }
@@ -82,13 +83,13 @@ Future<void> playMedia(
         titleOverride: titleOverride,
         fromStart: fromStart);
   } finally {
-    PlayTapGuard.instance.end();
+    PlayTapGuard.instance.end(play);
   }
 }
 
 /// [playMedia]'s window between a tap and the player on screen.
 class PlayTapGuard {
-  PlayTapGuard();
+  PlayTapGuard() : _clock = Stopwatch()..start();
 
   static final PlayTapGuard instance = PlayTapGuard();
 
@@ -96,17 +97,28 @@ class PlayTapGuard {
   /// this is let through: a stuck play must never stop the next.
   static const Duration window = Duration(seconds: 10);
 
-  DateTime? _since;
+  /// Monotonic: a phone clock set back cannot hold the window shut.
+  final Stopwatch _clock;
+  Duration? _since;
+  int _plays = 0;
 
-  /// Whether a play may start now; it holds the window until [end].
-  bool begin(DateTime now) {
+  /// A play may start now: its token, which holds the window until [end]
+  /// is called with it. Null while another is on its way. [now] is for
+  /// tests; the guard's own clock otherwise.
+  int? begin([Duration? now]) {
+    final t = now ?? _clock.elapsed;
     final since = _since;
-    if (since != null && now.difference(since) < window) return false;
-    _since = now;
-    return true;
+    if (since != null && t - since < window) return null;
+    _since = t;
+    return ++_plays;
   }
 
-  void end() => _since = null;
+  /// Ends the window [play] opened. A play let through after the window ran
+  /// out holds its own, which an older play's end leaves alone (review of
+  /// 14 Nov: a grant slower than 10 s, then a third tap).
+  void end(int play) {
+    if (play == _plays) _since = null;
+  }
 }
 
 Future<void> _playMedia(
