@@ -1,26 +1,85 @@
-  LAB check: the film never started
-  LAB check summary pass=0 fail=0
+  LAB check seek PASS want=238 got=239 ready=2476 ms playing=yes, moving by 2499 ms frozen=954 ms engine=exo rung=360p
+  LAB check quality->240 PASS want=240 got=240 ready=641 ms playing=yes, moving by 694 ms frozen=212 ms engine=exo rung=360p
+  LAB check shown 240p after 3098 ms
+  LAB check skip+30 PASS want=273 got=274 ready=533 ms playing=yes, moving by 986 ms frozen=491 ms engine=exo rung=240p
+  LAB check swipe-120 PASS want=155 got=156 ready=266 ms playing=yes, moving by 1474 ms frozen=1060 ms engine=exo rung=240p
+  LAB check quality->auto PASS want=157 got=157 ready=564 ms playing=yes, moving by 614 ms frozen=212 ms engine=exo rung=240p
+  LAB check tour->360 PASS want=158 got=159 ready=589 ms playing=yes, moving by 628 ms frozen=263 ms engine=exo rung=240p
+  LAB check tour->240 PASS want=160 got=160 ready=401 ms playing=yes, moving by 840 ms frozen=328 ms engine=exo rung=360p
+  LAB check tour->original PASS want=161 got=169 ready=12123 ms playing=yes, moving by 12268 ms frozen=3083 ms engine=exo rung=360p
+  LAB check tour->auto PASS want=170 got=171 ready=1911 ms playing=yes, moving by 2204 ms frozen=1153 ms engine=exo rung=360p
+  LAB check preview-far PASS at=447 bytes=16204 ms=797
+  LAB check preview-again PASS at=447 bytes=16204 ms=0
+  LAB check preview-next PASS at=453 bytes=14397 ms=785
+  LAB check far-jump PASS want=447 got=448 ready=508 ms playing=yes, moving by 2544 ms frozen=1801 ms engine=exo rung=360p
+  LAB check landing PASS held 1489 ms, first frame
+  LAB check back PASS frames=+72 moved=3102 ms at=531s left=526s
+  LAB check summary pass=15 fail=0
 LAB jump rule spare on (the build's own)
 play through the ladder on ExoPlayer
 open ladder (exo) start=0s autoplay=true rung=auto first=360
-exo load error 360.m3u8 type=4 HttpDataSourceException
-hls: a segment read stalled 8 s, ended
 hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
 hls: 360p playlist, 299 segments
-exo tracks 360,240 selected=2 adaptive=true peaks=682,366 kbps
-hls: a segment read stalled 8 s, ended
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+hls jump: answer 246 ms, first byte 258 ms, segment 519 ms (65536 B); conn kept 0 ms, wait 246 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
 exo rung 360p 600 kbps
-hls: a segment read stalled 8 s, ended
-hls: a segment read stalled 8 s, ended
+hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+hls jump: answer 1002 ms, first byte 1097 ms, segment 1581 ms (65536 B); conn new 590 ms (dns 75, tcp 215, tls 300), wait 412 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+exo picture after seek 758 ms
+hls jump: answer 295 ms, first byte 394 ms, segment 699 ms (82646 B); conn kept 0 ms, wait 295 ms, before 25 ms, tries 1; a read cut, pool 2, open, the other reading, last whole on it 3.7 s ago
+exo rung=360p
+exo steer quality target=240 made=1 rungs=[360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
+hls: 240p playlist, 299 segments
+hls jump: answer 327 ms, first byte 336 ms, segment 700 ms (100582 B); conn kept 0 ms, wait 327 ms, before 0 ms, tries 1; no read cut, pool 1, lost (cut, 3.7 s ago), the other reading, last whole on it 10.1 s ago
+exo rung=360p
+exo rung 240p 300 kbps
+exo picture after seek 470 ms
+exo rung=240p
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+hls jump: answer 384 ms, first byte 399 ms, segment 674 ms (45656 B); conn new 92 ms (dns 11, tcp 16, tls 65), wait 292 ms, before 12 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.4 s ago
+exo picture after seek 1315 ms
+exo rung=240p
+exo steer quality target=auto made=3 rungs=[360, 240] picks=360
+quality -> auto on the ladder (no reopen)
+exo rung=240p
+exo steer quality target=360 made=3 rungs=[360, 240] picks=360
+hls jump: answer 935 ms, first byte 951 ms, segment 1346 ms (93084 B); conn new 654 ms (dns 72, tcp 26, tls 556), wait 281 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 2.5 s ago), the other reading, last whole on it 15.9 s ago
+quality -> 360 on the ladder (no reopen)
+hls jump: answer 354 ms, first byte 407 ms, segment 615 ms (161701 B); conn kept 0 ms, wait 354 ms, before 47 ms, tries 1; a read cut, pool 1, lost (cut, 1.5 s ago), the other reading, last whole on it 3.9 s ago
+hls jump: answer 276 ms, first byte 286 ms, segment 409 ms (92892 B); conn kept 0 ms, wait 276 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other lost (cut, 1.0 s ago), last whole on it 0.1 s ago
+exo rung=240p
+exo steer quality target=240 made=3 rungs=[360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
+exo rung 360p 600 kbps
+exo rung=360p
+renewal: copies from the grant held 25 s
+hls jump: answer 869 ms, first byte 1133 ms, segment 1133 ms (7742 B); conn new 308 ms (dns 71, tcp 218, tls 19), wait 385 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 2.2 s ago), the other reading, last whole on it 19.6 s ago
+exo rung 240p 300 kbps
+quality -> original at 167s
+exo tracks 360 selected=1 adaptive=false peaks=697 kbps
+exo rung 360p 697 kbps
+exo rung=360p
+quality -> auto at 170s
+open ladder (exo) start=170s autoplay=true rung=auto first=360
+hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+hls: 360p playlist, 299 segments
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+exo rung 360p 600 kbps
+hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+hls jump: answer 1040 ms, first byte 1048 ms, segment 1284 ms (38001 B); conn new 578 ms (dns 25, tcp 39, tls 513), wait 462 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+exo rung=360p
+exo picture after seek 1610 ms
+exo landing picture held 1489 ms, first frame
+hls jump: answer 902 ms, first byte 907 ms, segment 1437 ms (88179 B); conn new 546 ms (dns 17, tcp 19, tls 510), wait 356 ms, before 13 ms, tries 1; a read cut, pool 2, never, the other reading, last whole on it never
+exo rung=360p
 LAB away: home
 lifecycle hidden mounted=true
 lifecycle paused mounted=true
-hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
-hls: a segment read stalled 8 s, ended
 LAB away: back
 lifecycle detached mounted=true
 lifecycle resumed mounted=true
 lifecycle inactive mounted=true
 lifecycle resumed mounted=true
-hls: a segment read stalled 8 s, ended
-hls: a segment read stalled 8 s, ended
+lifecycle inactive mounted=true
