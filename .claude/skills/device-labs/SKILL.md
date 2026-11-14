@@ -95,4 +95,13 @@ Both run only on non-main branches, started by pushing their config file.
   quality check failing with "measured" line speeds far below earlier runs
   is the line: say so with the numbers, and run that phone once more.
 
+## Both labs write to the live `events` table
+A lab build is a phone to the database: its plays land in `events` with
+`app_version` `1.64.78+391` (the branch's version; main alone is bumped)
+and a fresh `viewer_key` each run — 1,594 of 1,798 events in the week to
+14 Nov. Leave that version out when reading viewer data (`play_summary` has
+none: a lab's play ends in a force-stop), and out of any number shown as
+the viewers' (the console's start-up latency and Trending read the lab
+until BACKLOG §0's fix).
+
 main never carries `test_device/results/`.

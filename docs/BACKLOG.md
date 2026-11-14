@@ -129,6 +129,41 @@ does it.
   (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
+- **Streaming, 14 Nov afternoon: the morning's W1 / L1 checked again, nothing
+  re-run** (a second session given the same task). `weakline_climbs.py` on
+  W1's results: 8 climbs, 0 followed by a stop (passes 2-8 no stop; pass 1's
+  14 stops at 240p with no climb before, the runner's line); W1's tombstone
+  is `com.google.android.googlequicksearchbox` (the emulator's), not the
+  app. `weakjumps_summary.py` on L1's table gives the review's numbers
+  (paired stop p 0.19, answer 13 / 13 / 30 alike). Viewer data unchanged:
+  still no event of any kind from 1.64.84 (the last viewer event 12 Nov,
+  1.64.83); `play_summary` 4 rows in all (1.64.81: 2, 212 s, no stop, 20
+  jumps 135 ms each; 1.64.82: 2, 50 s, one 2.2 s stop = 2.65 s frozen a
+  minute, 5 jumps 49 ms each), all open films, one viewer — too few to
+  judge. Branch Build 43572316738 on 4d4f9c38 green (structural checks,
+  Analyze, Test, both APKs; it publishes nothing off main) — the first
+  since 13 Nov, for the 14 Nov Dart change that ships with the next
+  release (`_PoolUse`'s state in a jump's trail).
+- **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
+  lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
+  `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
+  and send their events to production like any phone. 7 days to 14 Nov:
+  1,594 of 1,798 events, 170 fresh `viewer_key`s, 170 of 179 `play_open`;
+  all on open films, no `play_summary` (a lab's play ends in a force-stop,
+  so the per-playback numbers are clean). What it moves: the console's
+  start-up latency (`startup_latency`: lab p50 3257 / p95 4625 ms on its
+  weak line, viewers' 9 opens p50 1727 / p95 3008), its event counts, and
+  Trending (`trending_titles` 7 of 7 open films; the home's Trending reads
+  the same heat, 052). Harmless to viewers today — the published catalogue
+  is the 9 open films — but the labs' ~25 plays a day will lead Trending
+  (and feed co-watch) once other titles are published, and drown the
+  first viewers' start-up numbers. Fix, the owner's choice: (a) lab builds
+  mark their events (`device_kind = 'lab'`, lab-only) and a migration
+  leaves `lab` and `1.64.78+391` out of the heat, co-watch, rollups and
+  start-up functions (a live database change: skill `live-db-change`); or
+  (b) lab builds send no events (app only; loses the labs' end-to-end look
+  at the event path). Until then, leave `1.64.78+391` out when reading
+  viewer data.
 - **Streaming, 14 Nov: item 2 not seen, and 5d's follow-up decided — no
   rule from either** (review §5 "Runs W1 and L1"). Viewer data first:
   no `play_summary` from 1.64.84 yet (no event of any kind from it — the
