@@ -421,6 +421,18 @@ void main() {
       final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
       final segs = _segments(String.fromCharCodes((await _get(url)).$2));
       final entry = await StreamCacheStore.instance.entryFor('$id-720');
+      // The other rung's index and head go out on the first pool too, at
+      // their own pace: wait for the Worker to go quiet, or one of them
+      // comes in whole between two steps and reorders the pools.
+      Future<void> settle() async {
+        var n = -1;
+        for (var i = 0; i < 50 && n != worker.asked.length; i++) {
+          n = worker.asked.length;
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+        }
+      }
+
+      await settle();
       Future<void> inWhole(int a) async {
         final end = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a).$3;
         for (var i = 0; i < 300 && entry.partAt(end) == null; i++) {
@@ -440,6 +452,7 @@ void main() {
       final (sc, ac, uc) = segs[cross];
       await _get(uc, range: 'bytes=$ac-${ac + sc - 1}');
       await inWhole(firstEnd + 1);
+      await settle();
       // A jump, slow, which takes that pool; the player hangs up on it
       // after its first bytes (a viewer's next jump, or Back).
       worker.paceMs = 300;
@@ -461,10 +474,13 @@ void main() {
     }
 
     // As built: by the last whole read alone, the pool the hang-up took.
+    // (Its connection, often its only one: a pool can also hold one the
+    // rung reads opened beside it, so lost is "its last read's connection
+    // gone", and the lab counts lost-and-kept apart — under load here that
+    // second connection was there in 2 of 5.)
     final off = await play('film14');
     expect(off, contains('state=lost-hungup'));
     expect(off, contains('other=open'));
-    expect(off, contains('conn=new'));
     // poolLost: the pool left open, its connection kept.
     StreamCacheServer.poolLost = true;
     final on = await play('film15');
