@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (14 Nov 2026, morning)
+### WHERE THINGS STAND — read first in a new session (14 Nov 2026, afternoon)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
   branch only: the lab hooks, the Google nonce, test_device/results).
@@ -37,6 +37,28 @@ does it.
   `_labAutoJumps(alternate:)` / `StreamCacheServer.spareForJumps`, and
   `_Ladder.pool`'s lab `connectionFactory` (`_labTimedConnect`, DNS / TCP /
   TLS apart in the trail)).
+- **1.64.85 (398) is out, 14 Nov**: main c70f4e94, Build 43593640548
+  (every step green: Test, both APKs, CDN, GitHub release, mirrors, the
+  provenance attestation; Static analysis 43593640610, Dependency scan
+  43593640530 and CodeQL green; no Pages deployment). GitHub release
+  v1.64.85-398: arm64 95673736 bytes `d027101d…469f`, arm32 87650004
+  bytes `51ee5652…2a1b` (the release body and GitHub's asset digests
+  agree). `app_releases` id 1 moved at 13:15:53 UTC after a rolled-back dry
+  run read it back as anon (as anon after: 1.64.85 398). Playback check
+  43598774695 (Big Buck Bunny) passed on main; transport check 43598920099
+  on main: every check passed, the CDN's APK against the row included.
+  WHAT IT CARRIES: the scrub fix (a film no longer stays still after a
+  seek-bar jump), one play at a time (`PlayTapGuard`), ExoPlayer's hold
+  and each pool's state in the trail. PROVED before: device lab
+  43589024808 (genres 37/37, jumps 15/15, gestures 27/27 and 19/19) and
+  43591776802 (the player audit 58 steps upright, 52 sideways), Test Lab
+  43589024823 (realme 16/16, OPPO 16/16, no crash), branch Builds
+  43585867675 / 43577691274, the release tree's 1758 tests and check.py,
+  a release review (ship; its two low findings on PlayTapGuard fixed
+  first, 39fa7449). Left out by design: the lab hooks, the Google sign-in
+  nonce, test_device's run.sh / config / cloud settings and results (the
+  two lab readers weakline_climbs.py and weakjumps_summary.py went, as
+  the device-labs skill names them).
 - **1.64.84 (397) is out, 13 Nov**: main 333c7071, Build 43456848305
   (every step green, CDN and GitHub release included; Static analysis,
   Dependency scan and CodeQL green), Playback check 43462010173 passed on
@@ -115,7 +137,9 @@ does it.
   Supabase keys off, the GitHub Pages console retired (security review
   P4), R2 CORS of both buckets = the console alone (seen: console allowed,
   Pages and a control refused).
-- **The owner still has to**: update a phone to 1.64.84 and say if the
+- **The owner still has to**: update a phone to 1.64.85 (and with it: a
+  drag on the seek bar held still for 5 s, then let go — the film moves
+  on) and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
   cost has no lab number), and if "stopped responding" ever shows again
   on a file that plays; on a tablet or a TV if one is at hand; sign in
@@ -144,12 +168,12 @@ does it.
   Analyze, Test, both APKs; it publishes nothing off main) — the first
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
-- **1.64.84 has a viewer bug, fixed on the branch (14 Nov)**: after a
-  jump by the seek bar the film could stay still while it "played", the
-  pause button dead, until another drag — the owner met it on Sintel.
-  Cause, proof and fix under "Next app release", with a second one found
-  in the same reports (a double tap on a card opened two players). Both
-  need a release (the owner's call). Gate 43580674281: 15 of 15.
+- **1.64.84's viewer bug, fixed in 1.64.85 (14 Nov)**: after a jump by
+  the seek bar the film could stay still while it "played", the pause
+  button dead, until another drag — the owner met it on Sintel. Cause,
+  proof and fix under "Next app release", with a second one found in the
+  same reports (a double tap on a card opened two players). Both shipped
+  in 1.64.85 the same afternoon.
 - **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
   lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
   `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
@@ -545,8 +569,7 @@ security). Found, most urgent first:
 
 ### Next app release (after 1.64.82)
 - **A film that "plays" and does not move after a jump (found 14 Nov from
-  the owner's report on 1.64.84; fixed on the branch, SHIPS NEXT — a viewer
-  bug)**: a seek-bar drag opens a scrub (`beginScrub`), and on the ladder
+  the owner's report on 1.64.84; SHIPPED in 1.64.85, 14 Nov)**: a seek-bar drag opens a scrub (`beginScrub`), and on the ladder
   that puts ExoPlayer in scrubbing mode (playWhenReady true, playback
   suppressed). The bar is in the tree only while the controls are up
   (`_chromeUp`), and the auto-hide (4 s) did not wait for a finger: a thumb
@@ -572,8 +595,8 @@ security). Found, most urgent first:
   Its first run 43577875824 never began — "the film never started", seven
   segment reads stalled 8 s, the lab's own engine check timed out: the
   runner's line, as W1's pass 1 (the morning gate's same setup: 15 of 15).
-- **One play at a time (found 14 Nov in the same reports; fixed on the
-  branch, ships next)**: two taps on a Continue watching card 1.4 s apart
+- **One play at a time (found 14 Nov in the same reports; SHIPPED in
+  1.64.85, 14 Nov)**: two taps on a Continue watching card 1.4 s apart
   (the grant took 1.85 s, nothing on screen yet) opened two players over
   each other: two `card_click`, two `play_start`, the second player's
   ExoPlayer open failed and it fell back to libmpv ("ladder on ExoPlayer
