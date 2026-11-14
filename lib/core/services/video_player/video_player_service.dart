@@ -23,6 +23,15 @@ abstract class VideoPlayerService {
   Stream<String?> get errorStream;
   Stream<bool> get completedStream;
 
+  /// Once per file opened: its first decoded picture. libmpv's
+  /// `video-params`, which it sets only when the decoder has a frame; on the
+  /// ladder, ExoPlayer's first rendered frame. NOT buffering going false and
+  /// not a position: media_kit's open() stops the file before it and says
+  /// "not buffering" as it resets, 30 ms in, before a byte of the new one
+  /// has arrived (14 Nov 2026: every libmpv open read 32-43 ms, then the
+  /// real wait was counted as a stall).
+  Stream<void> get firstPictureStream;
+
   // === Synchronous getters ===
   Duration get position;
   Duration get duration;

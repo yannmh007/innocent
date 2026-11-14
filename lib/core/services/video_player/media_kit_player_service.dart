@@ -323,7 +323,30 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   /// A finger is on the seek bar: frames as fast as the decoder shows them.
   Future<void> setScrubbing(bool on) async {
+    _scrubSession(on);
     if (_exoActive) await _exo?.scrubbing(on);
+  }
+
+  /// A drag on the seek bar or a swipe is open ([setScrubbing],
+  /// [setPreciseSeek]).
+  bool _scrubbing = false;
+
+  /// What a ladder film leaves behind it, for tests: ExoPlayer's position and
+  /// length as its streams wrote them (see [open]'s first lines).
+  @visibleForTesting
+  void debugLadderPlayed({required Duration position, required Duration duration}) {
+    _position = position;
+    _duration = duration;
+  }
+
+  /// A SCRUB'S END IS THE VIEWER'S JUMP (14 Nov 2026). Leaving ExoPlayer's
+  /// scrubbing mode refills for 25-106 ms with a minute in hand; a drag held
+  /// still for seconds left its last seek outside the player's jump window,
+  /// and the refill was counted a blip of a film playing on. Now the end
+  /// starts the jump clock ([sinceLastSeek]) as a seek does.
+  void _scrubSession(bool on) {
+    if (_scrubbing && !on) _lastUserSeekAt = DateTime.now();
+    _scrubbing = on;
   }
 
   /// Bumped by every [open]; a start check that finds it changed belongs to a
@@ -353,6 +376,17 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   StreamSubscription? _positionSub;
   StreamSubscription? _durationSub;
   StreamSubscription? _playingSub;
+  StreamSubscription? _paramsSub;
+
+  /// [firstPictureStream]'s source, and the open it last spoke for.
+  final StreamController<void> _pictureCtl = StreamController<void>.broadcast();
+  int _picturedGen = -1;
+
+  void _picture() {
+    if (_picturedGen == _openGen) return;
+    _picturedGen = _openGen;
+    if (!_pictureCtl.isClosed) _pictureCtl.add(null);
+  }
 
   // Track which decoder strategy is currently active so we can avoid
   // re-applying the same chain on every open() call.
@@ -427,6 +461,12 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     });
     _playingSub = _player.stream.playing.listen((p) {
       if (!_exoActive) _isPlaying = p;
+    });
+    // libmpv's first picture of a file: video-params, set when the decoder
+    // has a frame. media_kit's open() writes an empty one as it resets.
+    _paramsSub = _player.stream.videoParams.listen((v) {
+      final w = v.w ?? v.dw ?? 0;
+      if (!_exoActive && w > 0) _picture();
     });
 
     // Phase 45: apply a sensible decoder + subtitle baseline so even
@@ -976,6 +1016,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       });
 
   @override
+  Stream<void> get firstPictureStream => _pictureCtl.stream;
+
+  @override
   Stream<bool> get completedStream =>
       _live((p) => p.stream.completed, exo: (e) => e.completedStream);
 
@@ -1124,6 +1167,15 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       return;
     }
     if (_exoActive) await _leaveLadder();
+    // NOTHING OF THE FILE BEFORE (14 Nov 2026). The position and length are
+    // the engine's that played last — after a ladder film, ExoPlayer's, which
+    // libmpv's idle player never writes over until the new file reports its
+    // own. The start check below then read the old film's 650 s as where
+    // this one began ("open began at 650s, not 491s - jumping there": a
+    // needless seek inside the open), and the five-second resume save could
+    // have written that 650 s against the new film.
+    _position = Duration.zero;
+    _duration = Duration.zero;
     // v1.61 — the single most valuable breadcrumb there is. The process has
     // been dying during playback, and the scheme of what is being opened
     // (file / adb / content / http) is the first thing that separates the
@@ -1175,6 +1227,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     // never leak into the next one on a path media_kit leaves alone.
     _openGen++;
     _lastUserSeekAt = null;
+    _scrubbing = false;
     final begin = (startAt != null && startAt > Duration.zero) ? startAt : null;
     await _setMpvProperty(
       'start',
@@ -1315,7 +1368,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       ..add(e.positionStream.listen((p) => _position = p))
       ..add(e.durationStream.listen((d) => _duration = d))
       ..add(e.playingStream.listen((p) => _isPlaying = p))
-      ..add(e.firstFrameStream.listen((_) => _ladderShown = true))
+      ..add(e.firstFrameStream.listen((_) {
+        _ladderShown = true;
+        _picture();
+      }))
       ..add(e.errorStream.listen((_) {
         final uri = _ladderUri;
         if (_ladderShown || uri == null) return;
@@ -1407,9 +1463,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _positionSub?.cancel();
     await _durationSub?.cancel();
     await _playingSub?.cancel();
+    await _paramsSub?.cancel();
     _positionSub = null;
     _durationSub = null;
     _playingSub = null;
+    _paramsSub = null;
     // AUDIT FIX (v1.55) — the detach watchdog added in v1.54 was never
     // cancelled here, so a service torn down while backgrounded left a
     // periodic timer writing properties to a disposed player.
@@ -1743,6 +1801,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// the 'absolute' baseline and then performs one exact seek to the
   /// final position. Cheap single-property writes; always non-throwing.
   Future<void> setPreciseSeek(bool precise) async {
+    _scrubSession(!precise);
     // On the ladder engine a drag is ExoPlayer's scrubbing mode: frames as
     // fast as the decoder shows them, no buffering spinner per step.
     if (_exoActive) await _exo?.scrubbing(!precise);

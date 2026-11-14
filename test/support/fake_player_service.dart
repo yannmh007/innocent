@@ -18,7 +18,13 @@ class FakePlayerService implements VideoPlayerService {
     this.audioTracks = const <AudioTrackInfo>[],
     this.subtitleTracks = const <SubtitleTrackInfo>[],
     this.videoSize = const Size(1920, 1080),
+    this.pictureOnOpen = true,
   }) : _position = startPosition;
+
+  /// Whether open() shows the first picture at once, as a file on the phone
+  /// does. False plays a stream as libmpv opens one: "not buffering" and the
+  /// start at once, the picture when [showPicture] says.
+  final bool pictureOnOpen;
 
   final Duration filmLength;
   final Duration startPosition;
@@ -48,6 +54,7 @@ class FakePlayerService implements VideoPlayerService {
   final _rateC = StreamController<double>.broadcast();
   final _errorC = StreamController<String?>.broadcast();
   final _completedC = StreamController<bool>.broadcast();
+  final _pictureC = StreamController<void>.broadcast();
 
   @override
   Stream<Duration> get positionStream => _positionC.stream;
@@ -75,6 +82,18 @@ class FakePlayerService implements VideoPlayerService {
   Stream<bool> get completedStream => _completedC.stream;
 
   @override
+  Stream<void> get firstPictureStream => _pictureC.stream;
+
+  /// The decoder's first picture of the file open.
+  void showPicture() => _pictureC.add(null);
+
+  /// The film has played to [p], as the engine reports it.
+  void playTo(Duration p) {
+    _position = p;
+    _positionC.add(p);
+  }
+
+  @override
   Duration get position => _position;
   @override
   Duration get duration => _duration;
@@ -97,7 +116,8 @@ class FakePlayerService implements VideoPlayerService {
   }
 
   @override
-  Future<void> open(String uri, {Duration? startAt, bool autoplay = true}) async {
+  Future<void> open(String uri,
+      {Duration? startAt, bool autoplay = true}) async {
     calls.add('open');
     _initialized = true;
     _duration = filmLength;
@@ -107,6 +127,7 @@ class FakePlayerService implements VideoPlayerService {
     _positionC.add(_position);
     _bufferingC.add(false);
     _playingC.add(_playing);
+    if (pictureOnOpen) _pictureC.add(null);
     // As media_kit sends them: its two pseudo-tracks first.
     _audioC.add(<AudioTrackInfo>[
       const AudioTrackInfo(id: 'auto'),
@@ -146,6 +167,7 @@ class FakePlayerService implements VideoPlayerService {
     await _rateC.close();
     await _errorC.close();
     await _completedC.close();
+    await _pictureC.close();
   }
 
   @override
