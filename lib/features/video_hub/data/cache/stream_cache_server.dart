@@ -345,16 +345,6 @@ class StreamCacheServer {
   /// so on and off are compared on one phone's line in one playback.
   static bool spareForJumps = true;
 
-  /// LAB ONLY UNTIL THE LAB DECIDES (14 Nov 2026, 5d's follow-up; the lab
-  /// switch `lab_jump` = `lost`): a pool whose last read ended any way but
-  /// whole is LOST ([_PoolUse.lost]) — the read took its connection with
-  /// it — though its last whole read may be the more recent of the two. Of
-  /// two free pools, a jump then takes the open one, and a read that
-  /// carries on takes the lost one, which mends it while film is in hand.
-  /// Off (the build's own), [firstPool] goes by the last whole read alone.
-  /// The trail says each pool's state at a jump either way.
-  static bool poolLost = false;
-
   /// The pool a ladder's segment read goes to ([keepSpare]). A jump: the
   /// one with no read in flight whose last read came in whole most recently
   /// — its connection is open. A read that carries on from the one before:
@@ -382,8 +372,6 @@ class StreamCacheServer {
             bFree: ub.reading == 0,
             aWholeMs: ua.sinceWhole,
             bWholeMs: ub.sinceWhole,
-            aLost: poolLost && ua.lostWhy != null,
-            bLost: poolLost && ub.lostWhy != null,
             jump: jump,
             spareForJumps: spareForJumps)
         ? a
@@ -397,9 +385,13 @@ class StreamCacheServer {
   /// came in whole most recently (its connection is open) — or, with
   /// [spareForJumps] off (the lab's "off" jumps), the busy one, as one pool
   /// would. A read that carries on: the free pool, else the one used less
-  /// recently, so both stay open. [aLost] / [bLost] ([poolLost]): its last
-  /// read ended not whole; of two free pools, one lost and one not, a jump
-  /// takes the other and a read that carries on the lost one.
+  /// recently, so both stay open.
+  ///
+  /// NOT BY A POOL KNOWN LOST (tried 14 Nov, device lab L1 43560088068): a
+  /// jump taking the open pool of two free ones, one lost to a cut, found
+  /// nothing to act on — in 56 jumps, whenever the pool it took was lost the
+  /// other was reading or lost too; 50 of 56 found a connection open either
+  /// way. The trail keeps each pool's state ([_PoolUse.state]).
   @visibleForTesting
   static bool firstPool({
     required bool aFree,
@@ -408,12 +400,9 @@ class StreamCacheServer {
     required int? bWholeMs,
     required bool jump,
     bool spareForJumps = true,
-    bool aLost = false,
-    bool bLost = false,
   }) {
     if (jump && !spareForJumps && aFree != bFree) return !aFree;
     if (aFree != bFree) return aFree;
-    if (aFree && aLost != bLost) return jump ? !aLost : aLost;
     // Both free, or both reading: by when each last came in whole.
     final wa = aWholeMs;
     final wb = bWholeMs;
@@ -2102,7 +2091,7 @@ class StreamCacheServer {
         ', wait ${c?.waitMs ?? -1} ms, before $beforeMs ms, tries ${c?.tries ?? 0}; '
         '${cut ? 'a read cut' : 'no read cut'}, '
         '${keepSpare ? 'pool ${spare ? 2 : 1}, ' : ''}'
-        '${states == null ? '' : '${states.$1}, the other ${states.$3}${poolLost ? ' (rule lost)' : ''}, '}'
+        '${states == null ? '' : '${states.$1}, the other ${states.$3}, '}'
         'last whole on it ${idle == null ? 'never' : '${(idle / 1000).toStringAsFixed(1)} s ago'}');
     if (pos == 0) return;
     jumpCount++;

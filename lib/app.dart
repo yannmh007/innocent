@@ -481,7 +481,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///   stall_ms   the longest stop in those twenty seconds
   ///   mean       the mean rung over them
   ///   rule       the pass's word (`lab_jump`), or - when none was written;
-  ///              with [alternate], `lost-on` / `lost-off` for the jump
+  ///              with [alternate], `spare-on` / `spare-off` for the jump
   ///   conn …     the jump's first read from the proxy
   ///              ([StreamCacheServer.jumpCostAfter]): conn new / kept,
   ///              conn_ms (getting it), wait_ms (request out to the
@@ -492,10 +492,11 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   ///              lost-cut…, reading, never)
   ///
   /// [alternate] (Test Lab, where no word is written): with the build's
-  /// [StreamCacheServer.keepSpare] on, the odd jumps and the reads after
-  /// them go by [StreamCacheServer.poolLost] (a lost pool known), the even
-  /// ones by the last whole read alone, on one phone's line. (Until 14 Nov
-  /// it alternated [StreamCacheServer.spareForJumps], for 5d's A/B.)
+  /// [StreamCacheServer.keepSpare] on, the odd jumps take the spare pool and
+  /// the even ones the pool whose read they cut
+  /// ([StreamCacheServer.spareForJumps]), on one phone's line. (On 14 Nov
+  /// it alternated a pool known lost instead, for Test Lab 43560350582;
+  /// taken out with that rule.)
   Future<void> _labAutoJumps(List<double> shares, {bool alternate = false}) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);
@@ -521,8 +522,8 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       for (final share in shares) {
         i++;
         if (!mounted) return;
-        if (turns) StreamCacheServer.poolLost = i.isOdd;
-        final variant = turns ? 'lost-${i.isOdd ? 'on' : 'off'}' : word;
+        if (turns) StreamCacheServer.spareForJumps = i.isOdd;
+        final variant = turns ? 'spare-${i.isOdd ? 'on' : 'off'}' : word;
         final want = Duration(milliseconds: (length.inMilliseconds * share).round());
         final before = rungNow();
         final jumped = DateTime.now();
@@ -599,7 +600,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             '${StreamCacheServer.jumpCostAfter(readsBefore) ?? 'conn=- answer_ms=-1'}');
       }
     } finally {
-      if (turns) StreamCacheServer.poolLost = false;
+      StreamCacheServer.spareForJumps = true;
     }
     PlaybackLog.add('LAB autojump done');
   }
@@ -658,7 +659,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           // it in turn (_labAutoJumps, alternate).
           if (built.isNotEmpty && autoJumps.isNotEmpty) {
             StreamCacheServer.keepSpare = true;
-            PlaybackLog.add('LAB jump rule spare on (Test Lab: the jumps in Auto alternate pool lost on / off)');
+            PlaybackLog.add('LAB jump rule spare on (Test Lab: the jumps in Auto alternate)');
           }
           await _labTitle(id);
           // Test Lab only (the title compiled in): the jumps a viewer

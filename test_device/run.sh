@@ -593,9 +593,9 @@ for flow in $FLOWS; do
   # JUMP_PASSES, from a cleared app each time, the word written to
   # lab_jump for a build's jump switch: since 11 Nov `on` / `off` for
   # StreamCacheServer.keepSpare (a second pool, so a jump finds a
-  # connection open), since 14 Nov `lost` for keepSpare with poolLost (a
-  # pool whose read ended cut is known lost; a jump takes the open one);
-  # other words leave the build's own, so `a b` is an
+  # connection open) (`lost`, a pool known lost to a cut, was A/B'd 14 Nov
+  # in run L1 43560088068 and taken out; each jump's trail keeps the pools'
+  # state); other words leave the build's own, so `a b` is an
   # A/A. (5c's switch, a first segment from a lower rung, was A/B'd in runs
   # 42616754742 and 42628158249 and taken out.) The app (lib/app.dart,
   # _labAutoJumps) warms up for 40 s of film, then jumps to each share of

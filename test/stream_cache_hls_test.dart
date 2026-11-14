@@ -376,45 +376,9 @@ void main() {
     expect(first(a: null, b: null, jump: false), isTrue);
   });
 
-  test("a lost pool known (poolLost, 14 Nov): of two free pools a jump takes the open "
-      'one though the lost one came in whole more recently; a read that carries on '
-      'mends the lost one; nothing else changes', () {
-    bool first({
-      bool aFree = true,
-      bool bFree = true,
-      int? a,
-      int? b,
-      bool aLost = false,
-      bool bLost = false,
-      required bool jump,
-    }) =>
-        StreamCacheServer.firstPool(
-            aFree: aFree, bFree: bFree, aWholeMs: a, bWholeMs: b, aLost: aLost, bLost: bLost,
-            jump: jump);
-    // The jump: the open pool, whichever came in whole last.
-    expect(first(a: 1000, b: 5000, aLost: true, jump: true), isFalse);
-    expect(first(a: 5000, b: 1000, bLost: true, jump: true), isTrue);
-    expect(first(a: 1000, b: null, aLost: true, jump: true), isFalse);
-    // The read that carries on: the lost pool, so its connection is made
-    // again while film is in hand, and the open one waits for a jump.
-    expect(first(a: 1000, b: 5000, aLost: true, jump: false), isTrue);
-    expect(first(a: 5000, b: 1000, bLost: true, jump: false), isFalse);
-    // Both lost, or neither: by the last whole read, as before.
-    expect(first(a: 1000, b: 5000, aLost: true, bLost: true, jump: true), isTrue);
-    expect(first(a: 5000, b: 1000, aLost: true, bLost: true, jump: false), isTrue);
-    // A read in flight decides first: the free pool, lost or not.
-    expect(first(aFree: false, bLost: true, jump: true), isFalse);
-    expect(first(bFree: false, aLost: true, jump: true), isTrue);
-    expect(first(aFree: false, bFree: false, a: 1000, b: 5000, aLost: true, jump: true), isTrue);
-  });
-
-  test('a pool whose read the player hung up on is lost: the next jump says so, and with '
-      'poolLost takes the pool left open', () async {
-    expect(StreamCacheServer.poolLost, isFalse, reason: "off: the build's own until the lab decides");
-    addTearDown(() {
-      StreamCacheServer.poolLost = false;
-      worker.paceMs = 0;
-    });
+  test("a pool whose read the player hung up on is lost, and the next jump's trail says "
+      'so: the state of the pool it took and of the other', () async {
+    addTearDown(() => worker.paceMs = 0);
     Future<String> play(String id) async {
       final master = await register(id);
       final (_, mbody) = await _get(master);
@@ -473,20 +437,15 @@ void main() {
       return StreamCacheServer.jumpCostAfter(seq)!;
     }
 
-    // As built: by the last whole read alone, the pool the hang-up took.
-    // (Its connection, often its only one: a pool can also hold one the
-    // rung reads opened beside it, so lost is "its last read's connection
-    // gone", and the lab counts lost-and-kept apart — under load here that
-    // second connection was there in 2 of 5.)
-    final off = await play('film14');
-    expect(off, contains('state=lost-hungup'));
-    expect(off, contains('other=open'));
-    // poolLost: the pool left open, its connection kept.
-    StreamCacheServer.poolLost = true;
-    final on = await play('film15');
-    expect(on, contains('state=open'));
-    expect(on, contains('other=lost-hungup'));
-    expect(on, contains('conn=kept'));
+    // By the last whole read, the pool the hang-up took. (Its connection,
+    // often its only one: a pool can also hold one the rung reads opened
+    // beside it, so lost is "its last read's connection gone", and the lab
+    // counts lost-and-kept apart — under load here that second connection
+    // was there in 2 of 5.) A pool known lost was tried as a rule on 14 Nov
+    // (run L1) and taken out; the state stays in the trail.
+    final words = await play('film14');
+    expect(words, contains('state=lost-hungup'));
+    expect(words, contains('other=open'));
   });
 
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
