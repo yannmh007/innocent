@@ -553,6 +553,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _positionSub?.cancel();
     await _durationSub?.cancel();
     await _playingSub?.cancel();
+    await _paramsSub?.cancel();
+    _paramsSub = null;
     await _limitSub?.cancel();
     _limitSub = null;
     _bgReassertTimer?.cancel();
@@ -1401,6 +1403,13 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   }
 
   Future<void> _leaveLadder() async {
+    // A LADDER OPENED WHILE THIS ONE LETS GO IS NOT THIS ONE'S (14 Nov 2026).
+    // The cancels below are awaited; a screen's stop that met the next
+    // screen's open there iterated the listener list the new film was being
+    // bound to (a concurrent modification), cleared the new film's listeners
+    // after it, and stopped the new film. Now the list is taken whole before
+    // the first await, and a newer open ([_openGen]) keeps its engine going.
+    final gen = _openGen;
     _exoActive = false;
     _unbindRung();
     _ladderView.value = false;
@@ -1408,10 +1417,15 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     final l = _kbpsListener;
     if (l != null) networkKbps?.removeListener(l);
     _kbpsListener = null;
-    for (final s in _exoSubs) {
+    final subs = List<StreamSubscription<Object?>>.of(_exoSubs);
+    _exoSubs.clear();
+    for (final s in subs) {
       await s.cancel();
     }
-    _exoSubs.clear();
+    if (gen != _openGen) {
+      PlaybackLog.add('ladder let go: a newer open has the engine - not stopped');
+      return;
+    }
     await _exo?.stop();
     if (!_engineGenCtl.isClosed) _engineGenCtl.add(_engineGen);
   }

@@ -759,8 +759,10 @@ class ExoStreamEngine private constructor(
                     result.success(true)
                 } catch (t: Throwable) {
                     // A player that cannot do what it was asked says so; it
-                    // never takes the app down with it.
-                    result.error("exo", t.message, null)
+                    // never takes the app down with it. The class too: a
+                    // message alone is often null, and the trail then said
+                    // nothing (ExoEngine._refused, 14 Nov 2026).
+                    result.error("exo", "${t.javaClass.simpleName}: ${t.message ?: ""}", null)
                 }
             }
         }

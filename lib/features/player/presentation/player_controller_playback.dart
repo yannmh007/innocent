@@ -982,10 +982,20 @@ extension PlayerPlayback on PlayerController {
   /// lingers after the player screen is gone. Used when leaving the player
   /// without background-play/PiP. Best-effort and never throws.
   Future<void> stopPlayback() async {
+    final gen = openGeneration;
     final svc = _ref.read(videoPlayerServiceProvider);
     try {
       await svc.pause();
     } catch (_) {}
+    // A NEWER VIDEO BEGAN WHILE THE PAUSE WAS ON ITS WAY (14 Nov 2026): the
+    // engine is its now. The screen checks the open generation before it
+    // calls this, but the pause is awaited, and the next screen's open (an
+    // Up next whose answer was asked ahead, a quick second play) can start
+    // inside it; the stop then ended the new film.
+    if (gen != openGeneration) {
+      PlaybackLog.add('stop: a newer video took over during the pause - not stopped');
+      return;
+    }
     try {
       await svc.stop();
     } catch (_) {}
