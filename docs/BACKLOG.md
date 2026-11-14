@@ -144,6 +144,11 @@ does it.
   Analyze, Test, both APKs; it publishes nothing off main) — the first
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
+- **1.64.84 has a viewer bug, fixed on the branch (14 Nov)**: after a
+  jump by the seek bar the film could stay still while it "played", the
+  pause button dead, until another drag — the owner met it on Sintel.
+  Cause, proof and fix under "Next app release". It needs a release (the
+  owner's call).
 - **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
   lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
   `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
@@ -538,6 +543,28 @@ security). Found, most urgent first:
    load the database. Not before.
 
 ### Next app release (after 1.64.82)
+- **A film that "plays" and does not move after a jump (found 14 Nov from
+  the owner's report on 1.64.84; fixed on the branch, SHIPS NEXT — a viewer
+  bug)**: a seek-bar drag opens a scrub (`beginScrub`), and on the ladder
+  that puts ExoPlayer in scrubbing mode (playWhenReady true, playback
+  suppressed). The bar is in the tree only while the controls are up
+  (`_chromeUp`), and the auto-hide (4 s) did not wait for a finger: a thumb
+  held still on the bar's picture lost its bar, onChangeEnd never came, the
+  jump was not made and scrubbing mode stayed on — the film still, the
+  pause button dead, until another drag closed it. Seen in the owner's two
+  diagnostics reports (14 Nov 08:26 and 08:30 UTC): after a jump to the
+  middle, every seek drew its frame in 89-189 ms and buffered ~200 ms,
+  `wakelock playing=true`, yet the decoder thread (MediaCodec_loop) was
+  idle for ~80 s while ExoPlayer's playback thread ran; no network
+  error, no stall. Fixed four ways (test/player_scrub_test.dart: 4 tests,
+  all four fail on 1.64.84's code): the auto-hide waits while a scrub is
+  open; the seek bar ends its scrub in `dispose`; play / pause closes a
+  scrub left open (on ExoPlayer the press then lets the film move, without
+  toggling); a swipe-seek's end always closes its scrub (it refused any
+  lock while its start let the rotation lock through). And the trail now
+  says a hold: ExoPlayer sends `held` (its suppression, put down to
+  scrubbing when that is on) and the app writes `exo held N ms (why) at
+  Ns` for a hold of 1 s or more (ladder_landing_test).
 - **Added on the branch 14 Nov, for the next release (no change in what
   the app does)**: each pool's state in a jump's trail — `_PoolUse.lost`
   (how its last read ended: cut, hung up, short, stalled, failed), `hls

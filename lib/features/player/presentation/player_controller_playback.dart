@@ -942,6 +942,25 @@ extension PlayerPlayback on PlayerController {
   }
 
   Future<void> playOrPause() async {
+    // A press of play or pause is never part of a drag. A scrub session
+    // still open (its bar left the screen mid-drag, or a swipe's end was
+    // refused) holds ExoPlayer in scrubbing mode, where playWhenReady is
+    // true and nothing moves: the button looked dead (14 Nov 2026). Then
+    // the press closes it and the film moves on — what the viewer pressed
+    // for, under a pause button over a still picture (libmpv has no such
+    // mode: there the press does what it says). Otherwise ExoPlayer is told
+    // too, in case only this side had closed it.
+    final engine = _ref.read(videoPlayerServiceProvider);
+    final onExo = engine is MediaKitPlayerService && engine.playingLadder;
+    if (_isScrubbing) {
+      await endScrub();
+      if (onExo) {
+        _scheduleHideControls();
+        return;
+      }
+    } else if (onExo) {
+      await engine.setScrubbing(false);
+    }
     // Settings → Player → "Toggle playback with play button". Off, the button
     // only ever starts playback and never pauses — for people who hand the
     // phone to a child, or who keep catching the button mid-film. The switch

@@ -219,7 +219,11 @@ extension PlayerGestures on PlayerController {
   // unqualified from here.
 
   void onSeekUpdate(int seconds) {
-    if (state.isLocked || _seekStartPosition == null) return;
+    // The same lock test as onSeekStart: the rotation lock keeps gestures.
+    if ((state.isLocked && state.lockScope != 'rotation') ||
+        _seekStartPosition == null) {
+      return;
+    }
     final delta = Duration(seconds: seconds);
     final target = clampSeekTarget(
       current: _seekStartPosition!,
@@ -257,11 +261,17 @@ extension PlayerGestures on PlayerController {
   }
 
   Future<void> onSeekEnd() async {
-    if (state.isLocked || _seekStartPosition == null) return;
     final indicator = state.activeIndicator;
     // Restore precise (absolute) seeking before the final landing so the
-    // scrub bar drops the user exactly where they released it.
+    // scrub bar drops the user exactly where they released it. Closed
+    // whatever else happens: onSeekStart opened it under the rotation lock,
+    // which this used to refuse (any lock), leaving ExoPlayer in scrubbing
+    // mode (14 Nov 2026).
     await endScrub();
+    if ((state.isLocked && state.lockScope != 'rotation') ||
+        _seekStartPosition == null) {
+      return;
+    }
     if (indicator != null && indicator.target != null) {
       // Final precise seek to ensure target alignment
       await seek(indicator.target!);

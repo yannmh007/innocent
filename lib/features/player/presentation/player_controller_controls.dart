@@ -361,6 +361,15 @@ extension PlayerControls on PlayerController {
     final extra = _ref.read(extraSettingsProvider);
     final secs = extra.getInt(IntSetting.controlsHideDelay);
     _hideControlsTimer = Timer(Duration(seconds: secs), () {
+      // NOT UNDER A FINGER ON THE SEEK BAR. Hiding takes the bar out of the
+      // tree mid-drag: its end never comes, the jump is not made, and on the
+      // ladder ExoPlayer stays in scrubbing mode — playing, and not a frame
+      // moves, until another drag (the owner, Sintel, 14 Nov 2026: a thumb
+      // held still on the bar's picture for the 4 s delay). Asked again later.
+      if (mounted && _isScrubbing) {
+        _scheduleHideControls();
+        return;
+      }
       // Phase 42: MX Player parity — controls stay visible while paused, so
       // the user can see exactly where they stopped (timestamp, seek bar,
       // play button). Only auto-hide when playback is actually progressing.

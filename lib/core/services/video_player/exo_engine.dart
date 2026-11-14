@@ -60,6 +60,28 @@ class ExoEngine {
   Timer? _landingCap;
   Stopwatch? _landingClock;
 
+  /// Why the player is ready, asked to play, and not playing ('scrubbing',
+  /// 'audio focus'…), and since when; null while it is not held.
+  String? _heldWhy;
+  Stopwatch? _heldClock;
+
+  /// A hold this long is said in the trail as it ends (or as the film
+  /// leaves): a drag's own is a few seconds; one nobody ended is the
+  /// "playing and not moving" film of 14 Nov 2026.
+  static const Duration heldWorthSaying = Duration(seconds: 1);
+
+  void _noteHeld(String why) {
+    final was = _heldWhy;
+    if (why == (was ?? '')) return;
+    final clock = _heldClock;
+    if (was != null && clock != null && clock.elapsed >= heldWorthSaying) {
+      PlaybackLog.add('exo held ${clock.elapsedMilliseconds} ms ($was) '
+          'at ${position.inSeconds}s');
+    }
+    _heldWhy = why.isEmpty ? null : why;
+    _heldClock = why.isEmpty ? null : (Stopwatch()..start());
+  }
+
   /// A jump answered from memory draws its frame in a few tens of ms:
   /// holding the picture that briefly would only flash a softer copy.
   static const Duration landingAfter = Duration(milliseconds: 120);
@@ -170,6 +192,7 @@ class ExoEngine {
         if (p != playing) _playing.add(playing = p);
         if (b != buffering) _buffering.add(buffering = b);
         if (end != ended) _completed.add(ended = end);
+        _noteHeld(e['held'] as String? ?? '');
       case 'size':
         final w = (e['w'] as num?)?.toDouble() ?? 0;
         final h = (e['h'] as num?)?.toDouble() ?? 0;
@@ -326,6 +349,9 @@ class ExoEngine {
 
   Future<void> release() async {
     _letGo('released');
+    // A hold still on as the film leaves is said too: the stuck film of
+    // 14 Nov ended in Back, not in a drag.
+    _noteHeld('');
     await _call('release');
     await _sub?.cancel();
     for (final c in [_position, _duration, _buffered, _playing, _buffering, _completed, _error, _size, _first]) {
