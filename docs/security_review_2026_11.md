@@ -289,6 +289,7 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   unpublished it again and set Pages' Source to "GitHub Actions" (the
   branch menu offered no None once unpublished); no workflow here deploys
   Pages, and `tool/workflow_yaml.py` now fails on one that would.
+  Transport check 43546232032 (14 Nov, 02:36) reads the page a 404 again.
   Lesson: after "Unpublish", any push to main's docs/ republishes while
   the source is a branch; the release skill's watch list reads any Pages
   deployment as a republish.

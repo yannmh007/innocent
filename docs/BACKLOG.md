@@ -71,26 +71,16 @@ does it.
   the play_summary stash, the lab hooks). The audit is on this branch too
   (822a7e8f) and the next release from here carries it. Details under
   "Next app release"; what the audit left open under "Player audit".
-- **THE SYNC TO MAIN IS READY AND WAITS ON ONE OWNER STEP (13 Nov,
-  20:10 UTC)**: GitHub Pages is serving the retired console again — the
-  1.64.84 record push (4b005001) redeployed it at 19:00 (pages run
-  43487949804), "Unpublish" having left the source branch set. Transport
-  check 43496849155 on this branch: every console check green (studio and
-  the stream Worker answer the console's preflight and refuse a
-  stranger's), and `BAD the retired Pages console is not served (HTTP
-  200)`. Any docs/ push to main would redeploy it again, so nothing went
-  to main. Owner: Settings → Pages → Branch: None → Save (and Unpublish
-  if the button is still there). Then the next session: re-dispatch
-  transport-check here and see that line `ok` (404), then push the sync.
-  Prepared and proven: the release tree = origin/main plus this
-  branch's copies of the files listed below (and `docs/studio/README.md`,
-  `docs/worker/src/index.js`'s comment, the console rule, from 0ca6997e)
-  — `git diff --cached --stat <branch>` showed only lib/ (lab hooks, the
-  nonce, the version), the two lab/nonce tests and test_device/results;
-  check.py and both tool/js tests passed in it; the reviewer agent found
-  no code fault (its one HIGH was this Pages republish; its LOW, the stale
-  Pages text in the Worker comment and studio README, fixed in 0ca6997e).
-  The libmpv jar downloaded whole three times (Build fetches it).
+- **GitHub Pages came back and is off again (13–14 Nov)**: the 1.64.84
+  record push (4b005001) redeployed the retired Pages console at 19:00
+  UTC, 13 Nov (pages run 43487949804) — "Unpublish" had left the source
+  branch set; transport check 43496849155 read it `HTTP 200`. 14 Nov the
+  owner unpublished it again and set Pages' Source to "GitHub Actions" (no
+  None was offered once unpublished); no workflow deploys Pages and
+  `tool/workflow_yaml.py` fails on one that would. Transport check
+  43546232032 (14 Nov, 02:36) green, the Pages page a 404 again. Proof
+  that a push no longer redeploys it: the next main push shows no "pages
+  build and deployment" run.
 - **On the branch, not on main since 1.64.84 — and NO APP CODE among it**
   (13 Nov evening): `lib/` differs from main only by the lab hooks and the
   Google nonce (never shipped) and the version, so the next main push is a
