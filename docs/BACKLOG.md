@@ -15,9 +15,11 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (13 Nov 2026, evening)
+### WHERE THINGS STAND — read first in a new session (14 Nov 2026, early)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 1.64.84, 333c7071). A new session starts on main:
+  not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
+  branch only: the lab hooks, the Google nonce, test_device/results).
+  A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
@@ -78,23 +80,33 @@ does it.
   owner unpublished it again and set Pages' Source to "GitHub Actions" (no
   None was offered once unpublished); no workflow deploys Pages and
   `tool/workflow_yaml.py` fails on one that would. Transport check
-  43546232032 (14 Nov, 02:36) green, the Pages page a 404 again. Proof
-  that a push no longer redeploys it: the next main push shows no "pages
-  build and deployment" run.
-- **On the branch, not on main since 1.64.84 — and NO APP CODE among it**
-  (13 Nov evening): `lib/` differs from main only by the lab hooks and the
-  Google nonce (never shipped) and the version, so the next main push is a
-  sync of docs, tool and notes, not an app release. It carries: the stream
-  Worker's `STUDIO_ORIGINS` without the retired Pages origin (rebuilds the
-  Worker); `tool/playback/transport_check.py`'s new checks (the console's
-  cross-origin answers from studio and the Worker, the retired Pages page a
-  404) so the scheduled alarm on main has them; `docs/edge/studio.ts` and
-  `console_origins.js` (already live, main's copy is older);
-  `docs/console/README.md`, `tool/js/console_build_test.mjs`,
-  `tool/js/edge_blocks_test.mjs`, CLAUDE.md, the release skill and the
-  console rule. A tool/ change on main starts Build, which uploads nothing
-  for a published version; never push while a release build runs.
-- **Live already**: migrations 077–080; studio v55 (24a3365: answers only
+  43546232032 (14 Nov, 02:36) green, the Pages page a 404 again. And a
+  push no longer redeploys it: main's push 52088a48 (docs/ among it)
+  started no "pages build and deployment" run, and transport check
+  43550729017 on main read the page a 404 after it.
+- **Synced to main 14 Nov, 02:49 UTC (52088a48) — docs, tool and notes, no
+  app code** (main stays app 1.64.84): the stream Worker's `STUDIO_ORIGINS`
+  = the console alone; transport_check.py's console checks and the
+  retired-Pages 404; `tool/workflow_yaml.py` refusing a workflow that would
+  publish Pages; studio.ts and console_origins.js caught up with what is
+  live; CLAUDE.md, the release skill, the console rule, the console and
+  studio READMEs, the security review, this file. Release tree = origin/main
+  + the branch's copies of those 14 files (`git diff --cached --stat
+  <branch>`: only lib/, the lab/nonce tests, test_device/results); check.py
+  and the tool/js tests in it; reviewer twice (no fault; its findings —
+  Pages republished, stale Pages text, `write-all`, a timestamp — fixed
+  first). PROVED LIVE: the stream Worker rebuilt from it (its deployed code
+  has the console alone, no github.io); Build 43548366901 green (Static
+  analysis 43548366897 and CodeQL green), and it uploaded nothing — the
+  GitHub release v1.64.84-397's assets unchanged since 13 Nov 16:14,
+  digests as recorded; Playback check 43550726555 passed (Big Buck Bunny,
+  given by id; with no id it takes the first free published title, and
+  every free published title is an open film — 9 of 9, 14 Nov);
+  transport check 43550729017 on main: every check passed, the console's
+  preflights from studio and the Worker, a stranger's refused, the retired
+  Pages console a 404; no Pages deployment.
+- **Live already**: the stream Worker answering the console alone (14 Nov,
+  52088a48); migrations 077–080; studio v55 (24a3365: answers only
   `console.innocentplayer.com`, and asks R2 for each bucket's CORS —
   `r2_cors` in its log and in "Check bucket access"); ingest v56,
   transcode v28, probe-media v27 (ea45f9b: console origin only; ingest and
