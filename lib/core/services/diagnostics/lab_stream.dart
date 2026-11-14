@@ -77,15 +77,24 @@ class LabStream {
   /// weakjumps flow before each pass, so the passes alternate on one line.
   /// Read before the film opens. Any other word, or none: the build's own
   /// (on since 11 Nov).
+  /// Since 14 Nov (5d's follow-up) `lost` is the spare on with
+  /// [StreamCacheServer.poolLost]: a pool whose last read ended cut is
+  /// lost, a jump takes the open one and a read that carries on mends the
+  /// lost one; `on` and `off` leave poolLost off.
   /// Said in the trail either way. (5c's switch, a jump's first segment
   /// from a quick rung, read the same file; tried and taken out 9 Nov.)
   static Future<void> jumpRule() async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
     try {
       final v = await _read('lab_jump');
-      if (v == 'on' || v == 'off') StreamCacheServer.keepSpare = v == 'on';
+      final known = v == 'on' || v == 'off' || v == 'lost';
+      if (known) {
+        StreamCacheServer.keepSpare = v != 'off';
+        StreamCacheServer.poolLost = v == 'lost';
+      }
       PlaybackLog.add('LAB jump rule spare ${StreamCacheServer.keepSpare ? 'on' : 'off'}'
-          '${v == 'on' || v == 'off' ? '' : " (the build's own)"}');
+          '${StreamCacheServer.poolLost ? ', pool lost on' : ''}'
+          '${known ? '' : " (the build's own)"}');
     } catch (_) {}
   }
 

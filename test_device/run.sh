@@ -593,7 +593,9 @@ for flow in $FLOWS; do
   # JUMP_PASSES, from a cleared app each time, the word written to
   # lab_jump for a build's jump switch: since 11 Nov `on` / `off` for
   # StreamCacheServer.keepSpare (a second pool, so a jump finds a
-  # connection open); other words leave the build's own, so `a b` is an
+  # connection open), since 14 Nov `lost` for keepSpare with poolLost (a
+  # pool whose read ended cut is known lost; a jump takes the open one);
+  # other words leave the build's own, so `a b` is an
   # A/A. (5c's switch, a first segment from a lower rung, was A/B'd in runs
   # 42616754742 and 42628158249 and taken out.) The app (lib/app.dart,
   # _labAutoJumps) warms up for 40 s of film, then jumps to each share of
@@ -652,8 +654,10 @@ for flow in $FLOWS; do
             kv["want"]
           # The first read of the jump, from the proxy (since 11 Nov): its
           # connection and the answer of the Worker, in parts.
-          printf "\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", kv["conn"], kv["conn_ms"], kv["wait_ms"],
-            kv["tcp_ms"], kv["tls_ms"], kv["answer_ms"], kv["seg_ms"], kv["cut"], kv["idle_ms"] }' >> "$OUT/weakjumps.tsv" || true
+          printf "\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s", kv["conn"], kv["conn_ms"], kv["wait_ms"],
+            kv["tcp_ms"], kv["tls_ms"], kv["answer_ms"], kv["seg_ms"], kv["cut"], kv["idle_ms"]
+          # And each pool at the choice (since 14 Nov): open, lost-cut…
+          printf "\t%s\t%s\n", kv["state"], kv["other"] }' >> "$OUT/weakjumps.tsv" || true
       n=$(grep -c 'LAB autojump [0-9]' "$wj" || true)
       log "weakjumps pass $p ($variant): $n jumps"
       grep -oE 'LAB autojump [0-9]+/[0-9]+ .*' "$wj" | sed "s/^LAB /weakjumps pass $p ($variant): /" | while read -r line; do log "$line"; done

@@ -364,8 +364,18 @@ packets): it now runs through `tool/netlab/line_relay.py` on loopback and
 proves its cap first. Next, each proved by an emulator A/B on that line:
 1. ~~resume after a stall on 5 s~~ tried, undone: it made blips a visible
    1.26 s stop;
-2. climb back only when the slow average clears the higher rung (720 →
-   240 → 720 → stall);
+2. ~~climb back only when the slow average clears the higher rung (720 →
+   240 → 720 → stall)~~ not seen on the live build, so no rule (14 Nov):
+   `test_device/weakline_climbs.py` counts a climb (`exo rung` up) then a
+   stop >= 250 ms within 30 s. Device lab 43555903291 (1.64.84 + the lab
+   hooks, an A/A of 8 weakline passes): 8 climbs, none followed by a stop;
+   H/H2/H3 (32 passes): 61 climbs, one stop after one — 564 ms with 30 s
+   in hand, the decoder at a rung change, not the line. Covered by the
+   ProxyMeter's min(fast, slow) (a recovery believed once the slow average
+   holds) and 5b. That run's pass 1 stopped 14 times (49.6 s), every stop
+   with the buffer dry and no climb before it: the runner's line, which
+   read 520 kbps under the 4 Mbit/s cap (passes 2-3: 2023-2596) and TCP
+   handshakes of 0.5-5.2 s (the cap probe 495 kbps, against ~786);
 3. ~~a jump on a slow line takes its first segment from the rung below~~
    (OPPO seek 5.9 s): see 5c, tried and taken out;
 4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no

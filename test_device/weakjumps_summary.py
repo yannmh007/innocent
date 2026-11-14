@@ -33,7 +33,13 @@ NUMERIC = {"pass", "jump", "frozen_ms", "ready_ms", "before", "first", "low_ms",
 # whether a read was cut for the jump, and how long since a read last came in
 # whole. Older rows lack them; -1 or empty is "not said".
 READ_COLUMNS = ["conn", "conn_ms", "wait_ms", "tcp_ms", "tls_ms", "answer_ms",
-                "seg_ms", "cut", "idle_ms"]
+                "seg_ms", "cut", "idle_ms", "state", "other"]
+# Since 14 Nov (5d's follow-up), the pool's state at the jump's choice and
+# the other pool's (StreamCacheServer, _PoolUse.word): open (its last read
+# came in whole), lost-cut / lost-hungup / lost-short / lost-stalled /
+# lost-failed (its last read ended so, taking the connection), reading,
+# never. Open and a new connection: the server or the path closed it idle.
+WORD_COLUMNS = {"conn", "state", "other"}
 ALIKE_MS = 100  # closer than this is the position's own tick, not a win
 # A STOP AFTER THE JUMP: stall_ms is the longest the position stood still,
 # and the position moves in ticks of 250 ms, which the emulator stretches:
@@ -65,7 +71,7 @@ def read(path):
             extra = cells[len(COLUMNS):]
             for i, name in enumerate(READ_COLUMNS):
                 cell = extra[i] if i < len(extra) else ""
-                if name == "conn":
+                if name in WORD_COLUMNS:
                     row[name] = cell or "-"
                 else:
                     try:
@@ -136,6 +142,26 @@ def per_variant(v, rows):
                f"{ms(said, 'seg_ms')} ms; a read cut for the jump in "
                f"{sum(1 for r in said if r['cut'] == 1)}; last whole read median "
                f"{ms(said, 'idle_ms')} ms before")
+    known = [r for r in said if r.get("state", "-") != "-"]
+    if known:
+        def kind(r):
+            s = r["state"]
+            return "lost" if s.startswith("lost") else s
+        parts = []
+        for k in ("open", "lost", "never", "reading"):
+            rs = [r for r in known if kind(r) == k]
+            if not rs:
+                continue
+            new = [r for r in rs if r["conn"] == "new"]
+            idle = [r["idle_ms"] for r in new if r["idle_ms"] >= 0]
+            why = Counter(r["state"][5:] for r in rs if k == "lost")
+            parts.append(f"{k} {len(rs)} (kept {sum(1 for r in rs if r['conn'] == 'kept')}, new "
+                         f"{len(new)}" + (f", idle median {median(idle) / 1000:.1f} s" if idle else "")
+                         + (f"; {', '.join(f'{w} x{n}' for w, n in why.most_common())}" if why else "")
+                         + ")")
+        yield (f"weakjumps {v}, the pool the jump took: " + "; ".join(parts)
+               + " — open and new: the server or the path closed it idle; lost: a read since"
+               " its last whole one took it")
     by_pass = defaultdict(list)
     for r in rows:
         by_pass[r["pass"]].append(r["frozen_ms"])

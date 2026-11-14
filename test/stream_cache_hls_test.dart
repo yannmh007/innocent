@@ -376,6 +376,103 @@ void main() {
     expect(first(a: null, b: null, jump: false), isTrue);
   });
 
+  test("a lost pool known (poolLost, 14 Nov): of two free pools a jump takes the open "
+      'one though the lost one came in whole more recently; a read that carries on '
+      'mends the lost one; nothing else changes', () {
+    bool first({
+      bool aFree = true,
+      bool bFree = true,
+      int? a,
+      int? b,
+      bool aLost = false,
+      bool bLost = false,
+      required bool jump,
+    }) =>
+        StreamCacheServer.firstPool(
+            aFree: aFree, bFree: bFree, aWholeMs: a, bWholeMs: b, aLost: aLost, bLost: bLost,
+            jump: jump);
+    // The jump: the open pool, whichever came in whole last.
+    expect(first(a: 1000, b: 5000, aLost: true, jump: true), isFalse);
+    expect(first(a: 5000, b: 1000, bLost: true, jump: true), isTrue);
+    expect(first(a: 1000, b: null, aLost: true, jump: true), isFalse);
+    // The read that carries on: the lost pool, so its connection is made
+    // again while film is in hand, and the open one waits for a jump.
+    expect(first(a: 1000, b: 5000, aLost: true, jump: false), isTrue);
+    expect(first(a: 5000, b: 1000, bLost: true, jump: false), isFalse);
+    // Both lost, or neither: by the last whole read, as before.
+    expect(first(a: 1000, b: 5000, aLost: true, bLost: true, jump: true), isTrue);
+    expect(first(a: 5000, b: 1000, aLost: true, bLost: true, jump: false), isTrue);
+    // A read in flight decides first: the free pool, lost or not.
+    expect(first(aFree: false, bLost: true, jump: true), isFalse);
+    expect(first(bFree: false, aLost: true, jump: true), isTrue);
+    expect(first(aFree: false, bFree: false, a: 1000, b: 5000, aLost: true, jump: true), isTrue);
+  });
+
+  test('a pool whose read the player hung up on is lost: the next jump says so, and with '
+      'poolLost takes the pool left open', () async {
+    expect(StreamCacheServer.poolLost, isFalse, reason: "off: the build's own until the lab decides");
+    addTearDown(() {
+      StreamCacheServer.poolLost = false;
+      worker.paceMs = 0;
+    });
+    Future<String> play(String id) async {
+      final master = await register(id);
+      final (_, mbody) = await _get(master);
+      final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+      final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+      final entry = await StreamCacheStore.instance.entryFor('$id-720');
+      Future<void> inWhole(int a) async {
+        final end = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a).$3;
+        for (var i = 0; i < 300 && entry.partAt(end) == null; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        expect(entry.partAt(end), isNotNull);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+
+      // The first read, in whole, then the read that carries on, in whole
+      // on the other pool: that one is the pool most recently in whole.
+      final (s10, a10, u10) = segs[10];
+      await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}');
+      await inWhole(a10);
+      final firstEnd = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a10).$3;
+      final cross = segs.indexWhere((g) => g.$2 <= firstEnd && g.$2 + g.$1 - 1 > firstEnd);
+      final (sc, ac, uc) = segs[cross];
+      await _get(uc, range: 'bytes=$ac-${ac + sc - 1}');
+      await inWhole(firstEnd + 1);
+      // A jump, slow, which takes that pool; the player hangs up on it
+      // after its first bytes (a viewer's next jump, or Back).
+      worker.paceMs = 300;
+      final (s60, a60, u60) = segs[60];
+      final c = HttpClient();
+      final req = await c.getUrl(Uri.parse(u60));
+      req.headers.set('range', 'bytes=$a60-${a60 + s60 - 1}');
+      final resp = await req.close();
+      await resp.first;
+      c.close(force: true);
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      // The next jump: what did its pool have?
+      worker.paceMs = 0;
+      final seq = StreamCacheServer.jumpCount;
+      final (s85, a85, u85) = segs[85];
+      expect((await _get(u85, range: 'bytes=$a85-${a85 + s85 - 1}')).$2,
+          r720.bytes.sublist(a85, a85 + s85));
+      return StreamCacheServer.jumpCostAfter(seq)!;
+    }
+
+    // As built: by the last whole read alone, the pool the hang-up took.
+    final off = await play('film14');
+    expect(off, contains('state=lost-hungup'));
+    expect(off, contains('other=open'));
+    expect(off, contains('conn=new'));
+    // poolLost: the pool left open, its connection kept.
+    StreamCacheServer.poolLost = true;
+    final on = await play('film15');
+    expect(on, contains('state=open'));
+    expect(on, contains('other=lost-hungup'));
+    expect(on, contains('conn=kept'));
+  });
+
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
       () async {
     final master = await register('film9');
