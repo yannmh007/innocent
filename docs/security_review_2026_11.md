@@ -281,7 +281,7 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   **Republished by the next push, 19:00 the same evening.** Unpublishing
   left Pages' source branch set, so the push of 4b005001 (the 1.64.84
   record, docs/ only) ran "pages build and deployment" (43487949804,
-  deploy success 19:00:27 UTC): the old console page was served again.
+  deploy job done 19:00:29 UTC): the old console page was served again.
   Harm small — studio, the stream Worker and both buckets refuse that
   origin and its redirect URL is gone, so it cannot sign in or call
   anything — but P4 is closed only when no push can deploy it and the

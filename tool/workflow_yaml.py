@@ -29,7 +29,7 @@ files = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.y*ml')))
 for path in files:
     text = open(path, encoding='utf-8').read()
     for word in ('actions/deploy-pages', 'actions/upload-pages-artifact',
-                 'actions/configure-pages', 'pages: write'):
+                 'actions/configure-pages', 'pages: write', 'write-all'):
         if word in text:
             fails += 1
             print('FAIL', os.path.relpath(path, ROOT), f'publishes GitHub Pages ({word});'
