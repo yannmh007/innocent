@@ -1,30 +1,24 @@
-[11:30:45] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[11:30:45] install
-[11:31:04] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[11:31:04] network: eth0 has qdisc clsact
-[11:31:04] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[11:31:31] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[11:31:31] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[11:31:31] library: pushing 24 files
-[11:32:02] library: MediaStore lists 24 videos
-[11:32:02] cold start
+[12:03:14] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[12:03:14] install
+[12:03:31] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[12:03:31] network: enp39s0 has qdisc clsact
+[12:03:31] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[12:03:57] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[12:03:58] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[12:03:58] library: pushing 24 files
+[12:04:29] library: MediaStore lists 24 videos
+[12:04:29] cold start
 Status: ok
-TotalTime: 3336
-WaitTime: 3352
-[11:32:16] flow genres
-[11:33:28] flow genres exit 0
-[11:33:38] flow jumps
-[11:33:39] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[11:37:46] flow jumps done
-[11:37:46] flow player_audit
-[11:38:26] flow player_audit exit 1
-[11:38:37] flow player_audit_land
-[11:39:13] flow player_audit_land exit 1
-[11:39:23] flow gestures
-[11:39:26] rotation asked 0, now 0
-[11:40:38] flow gestures exit 0
-[11:40:44] stacked taps at 918,1200: 4 taps in 506 ms
-[11:40:56] flow gestures_land
-[11:40:59] rotation asked 1, now 90
-[11:41:42] flow gestures_land exit 0
-[11:41:57] done
+TotalTime: 2984
+WaitTime: 3016
+[12:04:42] flow layout_portrait
+[12:04:44] rotation asked 0, now 0
+[12:05:23] flow layout_portrait exit 0
+[12:05:34] flow player_audit
+[12:06:55] flow player_audit exit 0
+[12:07:06] flow layout_landscape
+[12:07:08] rotation asked 1, now 90
+[12:07:26] flow layout_landscape exit 0
+[12:07:36] flow player_audit_land
+[12:08:34] flow player_audit_land exit 0
+[12:08:47] done
