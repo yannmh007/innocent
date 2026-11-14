@@ -83,6 +83,15 @@ class EventSender {
   final Map<Map<String, dynamic>, void Function(bool sent)> _watchers =
       Map<Map<String, dynamic>, void Function(bool sent)>.identity();
 
+  /// 'lab' from a device-lab or Test Lab build (INNOCENT_LAB), 'phone'
+  /// from every other. THE LABS' PLAYS ARE NOT VIEWERS' (14 Nov 2026): they
+  /// reach production like any phone's — on 14 Nov 1,594 of the week's
+  /// 1,798 events — and led Trending, fed co-watch and the daily rollups and
+  /// set the start-up percentiles. The server leaves 'lab' out of all of
+  /// them (migration 081); a release build sends 'phone' as before.
+  static const String deviceKind =
+      bool.fromEnvironment('INNOCENT_LAB') ? 'lab' : 'phone';
+
   /// One app run.
   ///
   /// This is what makes a journey legible: which row a card was clicked from,
@@ -166,7 +175,7 @@ class EventSender {
       // makes the same call for the same reason. The column exists server-side
       // for the day that changes; sending a guess would be worse than sending
       // nothing, because a guess cannot be told from a measurement later.
-      'device_kind': 'phone',
+      'device_kind': deviceKind,
       if (titleId != null && titleId.isNotEmpty) 'title_id': titleId,
       if (assetId != null && assetId.isNotEmpty) 'asset_id': assetId,
       if (positionS != null) 'position_s': positionS,
