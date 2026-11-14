@@ -1,0 +1,49 @@
+Running on test
+ > Flow gestures_land
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (30%,50%) to (70%,50%) in 900 ms... COMPLETED
+Take screenshot 90_seek_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (80%,62%) to (80%,38%) in 900 ms... COMPLETED
+Take screenshot 91_volume_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (20%,62%) to (20%,38%) in 900 ms... COMPLETED
+Take screenshot 92_brightness_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Double tap on point (85%,50%)... COMPLETED
+Tap on point (85%,50%)... COMPLETED
+Tap on point (85%,50%)... COMPLETED
+Take screenshot 93_double_tap_right_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Double tap on point (15%,50%)... COMPLETED
+Take screenshot 94_double_tap_left_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Long press on point (50%,45%)... COMPLETED
+Take screenshot 95_long_press_land... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Tap on point (50%,45%)... COMPLETED
+Wait for animation to end within 1500 ms... COMPLETED
+Take screenshot 96_tap_controls_land... COMPLETED
+Press back... COMPLETED
+Press back... COMPLETED
