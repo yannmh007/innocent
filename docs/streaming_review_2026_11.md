@@ -586,6 +586,9 @@ flow's trail now holds its own lines only).
   it with it) as well as a server closing idle connections early; the
   trail cannot tell them apart yet. Marking a pool's connection lost when
   a read on it ends cut would settle the first; a follow-up, untried.
+  **Settled 14 Nov (run L1 below): the first.** An open pool found its
+  connection in 101 of 102 jumps, idle up to 11 s; a lost one in none of
+  10. The server does not close them; a read cut since does.
 - The phone's restart after the bytes (0.4-0.7 s on the realme) and half
   a segment's bytes, as before.
 
@@ -600,3 +603,98 @@ only on a line that holds one connection under a rung. The spare costs
 none of that: the same reads, one more connection held while a ladder
 plays, and a handshake (~5 KB) off the jump's path when a pool's
 connection has closed (at 240p, reads ~55 s apart, most of them).
+
+**Runs W1 and L1 (14 Nov): item 2 looked for, and a pool known lost.**
+
+*W1 (43555903291), BACKLOG item 2 ("climb back only once the slow average
+clears the higher rung"), looked for before writing a rule.* The live build
+(1.64.84 with the lab hooks; the lab APK was the one already built from
+that source), eight weakline passes of an A/A (the words `a` / `b` are no
+`PeakRule`, so every pass plays the build's own `window`), the usual line
+(4 Mbit/s 40 s, 0.9 Mbit/s 120 s, 3 Mbit/s 60 s, none 8 s, 3 Mbit/s 60 s;
+60 ms each way, 0.5 % loss). `test_device/weakline_climbs.py` (now logged by
+the flow) counts a climb (`exo rung` up) followed within 30 s by a stop of
+250 ms or more, with what was in hand at the stop.
+
+| | passes | climbs | a climb then a stop | stops >= 250 ms |
+|---|---|---|---|---|
+| W1, 14 Nov | 8 | 8 | 0 | 14, all in pass 1 |
+| H, H2, H3, 8 Nov | 32 | 61 | 1 (564 ms, 30 s in hand) | 1 |
+
+- No climb ended in a stop. The one in H3 had 30 s in hand: the decoder at
+  a change of rung, not the line. The ProxyMeter believes a recovery only
+  once its slow average holds (min of the fast and slow averages), and 5b
+  weighs a rung by its fastest 20 s: item 2's failure (720 -> 240 -> 720 ->
+  stall, 7 Nov) does not happen on this build. No rule written.
+- Pass 1's 14 stops (49.6 s frozen, longest 16 s) were the runner's line,
+  not the app: every one with the buffer dry and no climb before it, while
+  the line read 520 kbps on average under the 4 Mbit/s cap (passes 2 and
+  3: 2023 and 2596), 261 kbps under the 0.9 Mbit/s cap (852, 914), and its
+  TCP handshakes took 0.5-5.2 s (0.15-0.24 s after). The cap probe before
+  it had warned: 495 kbps under 900 kbit, against ~786 in every run before.
+  Passes 2-8: no stop; at 480p or better 96 % (`b`) and 100 % (`a`, three
+  passes).
+
+*L1 (43560088068): a pool known lost when a read on it ends cut.* Each
+pool now remembers how its last read ended (`_PoolUse.lost`: cut, hung up,
+short, stalled, failed; whole clears it), and every jump's trail names the
+state of the pool it took and of the other (open, lost-why, reading,
+never). The rule tried (`lab_jump` = `lost`): of two free pools, a jump
+takes the open one though the lost one came in whole more recently, and a
+read that carries on takes the lost one to mend it. Sixteen weakjumps
+passes on the weak line, on (the live rule) and lost alternating, 112
+jumps; the cap probe 786 kbps.
+
+| | on | lost |
+|---|---|---|
+| On a kept connection | 50 of 56 | 51 of 56 |
+| The Worker's answer (median / p90) | 500 / 734 ms | 478 / 744 ms |
+| The jump's own stop (median / mean) | 1530 / 1615 ms | 1758 / 1783 ms |
+| First picture after the seek (median / p90) | 1165 / 1724 ms | 1292 / 1965 ms |
+| Stops >= 0.6 s within 20 s after | 1 (1522 ms) | 3 (longest 807 ms) |
+| Mean rung over the 20 s after | 464p | 459p |
+
+- Paired, the same jump of neighbouring passes: the answer sooner 13
+  against 13, alike 30 (median +10 ms); the jump's stop shorter under on
+  in 27, under lost in 20 (sign p 0.19 for on); with any stop after it 28
+  against 19 (median -102 ms, p 0.12). Inside the A/A's 0.31-0.35 s: no
+  gain, if anything the other way.
+- Why: the rule had nothing to choose. Whenever the pool a jump took was
+  lost (6 under on, 4 under lost), the other pool was reading (7) or lost
+  too (3); the case it was written for — two free pools, the lost one in
+  whole more recently — did not come up.
+- What the state showed, which S1/S2 could not: open pools found their
+  connection in 101 of 102 jumps (idle up to 11 s: 29 under 2 s, 44 at
+  2-6, 24 at 6-10, 4 at 10-30; the one new at 5.3 s), lost pools in none of
+  10 (idle 5-40 s). So the falling share with idle time (S2: 91 of 100
+  under 10 s, 8 of 48 at 10-30) was reads cut since the last whole one,
+  not the server or the path closing idle connections.
+- What is left is a jump whose free pool a previous cut took: 10 of 112
+  on this line (~9 %; the other pool reading in 7, lost in 3). Only a third
+  connection would cover it — made after every cut (one Worker request
+  more each: a jump or a change of rung) for ~0.4 s off one jump in ten.
+  Not proposed.
+- Test Lab 43560350582 (the build with the rule, six jumps in Auto,
+  odd ones lost-on): realme 15 of 15 (its line 1.06-2.06 Mbit/s, median
+  1.39; first frame 3.7 s), OPPO 15 of 15 (2.05-8.3 Mbit/s, median 3.97;
+  3.4 s), the Original skipped on both lines and Back by design; no crash,
+  no ANR. Of their twelve jumps, 7 took a lost pool with the other reading
+  or lost (2 of them still kept — a second connection in the pool) and 5
+  an open one, all kept: the same shape as L1, the rule again with nothing
+  to choose. Slow lines that day (realme ~1.4 Mbit/s against 10-68 before).
+
+**The decision (14 Nov): no rule from either.** Item 2's failure is not on
+the live build. A pool known lost is taken out (as 5c and `deep` were):
+`poolLost`, its branch in `firstPool`, the lab word `lost` and Test Lab's
+alternation of it. What stays: `_PoolUse`'s record of how a pool's last
+read ended and the pools' state in a jump's trail (`state=` / `other=` on
+the lab's line, summed per variant by `weakjumps_summary.py`), and
+`weakline_climbs.py` — measurements, not rules. The gate on that build
+(93ef4e5e): device lab 43567588467, the jumps on Big Buck Bunny 15 of 15
+with the build's own spare. On the emulator's own line its jumps and
+changes of rung (14 first reads) found a connection open in 6 and paid a
+handshake in 8: 5 on a pool a cut had taken (7 such, 2 still kept — a
+second connection in the pool), 2 on one never yet read in whole, 1 on an
+open one. There a handshake is ~30-60 ms: the weak line, not this flow, is
+where a pool rule is judged.
+

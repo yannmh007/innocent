@@ -28,6 +28,11 @@ paths:
   count the event with a temporary print. That found the lost read-ahead
   of 6 Nov (stream_cache_hls_test: a read starting while the last one's
   writer was closing got no writer).
+  Do it BEFORE the first push for a new test that waits on sockets or
+  timers: the lost-pool test (14 Nov) passed here idle, failed Stream
+  bench 43560088035, and failed 2 of 5 here under that load (the other
+  rung's index read reordered the pools; it now waits for the Worker to
+  go quiet).
 - **A box sized for Latin text cuts Burmese.** Android draws Burmese in the
   tall Noto Sans Myanmar: a line is nearly twice a Latin one. No fixed
   height (or `height:` under 1.5) around text that can be Burmese or Thai;

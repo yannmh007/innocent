@@ -27,12 +27,21 @@ Both run only on non-main branches, started by pushing their config file.
   netem on lo, the emulator's own cap set to full. Read steps.txt for
   "the line under a 900kbit cap measured N kbps" before trusting a verdict;
   a flow that needs a shaped line refuses to run without that proof.
+  **A probe well under the usual (~786 kbps) warns of a bad runner line,
+  and a pass on it is the line's, not the app's**: W1 (14 Nov) probed 495,
+  and its first pass stopped 14 times while the line read 520 kbps under
+  the 4 Mbit/s cap (the next passes: 2000-2600) with TCP handshakes of
+  0.5-5 s. Before reading a pass's stops, compare its line readings
+  (`line N kbps`, `measured`) per step with the other passes'.
 - **A weak line limits one connection more than its cap**: 0.5 % loss at
   120 ms round trip is ~1.5–2 Mbit/s per TCP connection. Compare runs on
   the same line (WEAK_STEPS, WEAK_DELAY, NET_LOSS), never across lines.
 - weakline's verdict is per step: stops >= 250 ms (a viewer sees them)
   apart from blips, with the rungs; `rebuffer start (ahead N ms)` says
   whether the buffer was empty (the line) or full (the phone).
+  `test_device/weakline_climbs.py` (logged by the flow since 14 Nov) counts
+  climbs (`exo rung` up) and a stop within 30 s of one — BACKLOG item 2's
+  failure, not seen on the live build (W1 43555903291: 8 climbs, 0).
 - **An A/B is passes in ONE run, never one run per variant.** One play of
   the film says little about its picture (runs F and G, one build: 3 % and
   100 % at 480p). `WEAK_PASSES` plays the film once per word from a cleared
@@ -59,7 +68,16 @@ Both run only on non-main branches, started by pushing their config file.
   ahead pays a handshake: M1 (42951731347), 33 of 34 such jumps on a new
   connection, answer 885 ms (DNS 25 + TCP 147 + TLS 189 + the Worker's
   wait 441) against 466 on a kept one. A/A spread: 0.35 s over 28 pairs
-  (J3), 0.31 s over 21 (M1). `JUMPS_JUMP` writes a `lab_jump` word for the
+  (J3), 0.31 s over 21 (M1). **And the pools' state** (since 14 Nov):
+  `…, pool N, open|lost (cut, 3.1 s ago)|reading|never, the other …` in
+  the trail, `state=` / `other=` on the autojump line, summed per variant
+  ("the pool the jump took"). Open and new is the server or the path; lost
+  is a read cut since its last whole one; lost and kept is a second
+  connection in that pool. L1 (43560088068): open kept 101 of 102, lost
+  0 of 10. **Before an A/B of a rule, count from the trail how often its
+  case comes up**: L1's `lost` rule (take the open pool of two free ones)
+  had none in 112 jumps — the other pool was always busy or lost too.
+  `JUMPS_JUMP` writes a `lab_jump` word for the
   jumps flow, so the release gate can run with a switch on before the
   build's default is.
 

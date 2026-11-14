@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (14 Nov 2026, early)
+### WHERE THINGS STAND — read first in a new session (14 Nov 2026, morning)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
   branch only: the lab hooks, the Google nonce, test_device/results).
@@ -129,6 +129,24 @@ does it.
   (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
+- **Streaming, 14 Nov: item 2 not seen, and 5d's follow-up decided — no
+  rule from either** (review §5 "Runs W1 and L1"). Viewer data first:
+  no `play_summary` from 1.64.84 yet (no event of any kind from it — the
+  owner's phone has not updated); 1.64.81: 2 rows, 212 s played, no stop,
+  20 jumps 2.7 s in all; 1.64.82: 2 rows (one session), 50 s played, one
+  stop of 2.2 s (2.65 s frozen a minute played), 5 jumps 243 ms; all on
+  open films, one viewer. Too few to judge anything. Item 2 (device lab
+  W1 43555903291, 8 weakline passes of an A/A on the live build): 8
+  climbs, none followed by a stop (`test_device/weakline_climbs.py`). 5d's
+  follow-up, a pool known lost when a read on it ends cut (L1 43560088068,
+  16 weakjumps passes, on / lost): nothing for it to choose, the answer
+  and the stop no better; taken out. Kept: each pool's state in a jump's
+  trail, which showed open pools keep their connection (101 of 102, idle
+  up to 11 s) and lost ones never (0 of 10) — the server does not close
+  idle ones. Test Lab 43560350582 on the build with the rule: realme and
+  OPPO 15 of 15 each, lines 1.4 and 4 Mbit/s that day. Gate on the build
+  with the rule taken out: device lab 43567588467, the jumps on Big Buck
+  Bunny 15 of 15 (the build's own spare).
 - **5d, a connection kept open for a jump (11 Nov; LIVE in 1.64.84, 13 Nov,
   on by default)**: `StreamCacheServer.keepSpare` (the release left the
   lab's `_labTimedConnect` out).
@@ -147,9 +165,11 @@ does it.
   Lab with it on: OPPO 16 of 16 (42982587122), realme 16 of 16 on its rerun
   (42985879375; its first run's line read 64-303 kbps and the checks never
   began). On the phones' fast lines every jump found a connection open
-  either way. Review §5 "Runs M1, S1, S2". Follow-ups: mark a pool lost
-  when a read on it ends cut; the Worker's own wait (~0.3 s, R2 most
-  likely) needs a `Server-Timing` header to split (a Worker change).
+  either way. Review §5 "Runs M1, S1, S2". Follow-ups: marking a pool lost
+  when a read on it ends cut — tried 14 Nov (L1), nothing to act on, taken
+  out (the pools' state stays in the trail); the Worker's own wait (~0.3 s,
+  R2 most likely) needs a `Server-Timing` header to split (a Worker change,
+  the owner's call).
 - **play_summary was lost for a playback the app never came back to
   (found 11 Nov; the fix LIVE in 1.64.84, the kept summary also dropped on
   sign-out since the 13 Nov review)**: it was sent only as the player
@@ -184,21 +204,24 @@ does it.
   `deep` (a deep buffer weighed against the whole line) tried, dropped.
   The weakline flow now plays `WEAK_PASSES` passes per run, alternating
   `lab_peak` variants: use it for every A/B (one pass says little).
-- **Next streaming work**: 5d's follow-ups (a pool marked lost when a
-  read on it ends cut; the Worker's wait split by `Server-Timing`, the
-  owner's call), or 2 (climb back only when the slow average clears the
-  higher rung). Not 5 as written: it doubles the Worker requests and would
-  take 5d's spare away (review §5). Method in
-  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
-  weakjumps flows; read the cap probe first; passes alternating per
-  variant, then the other order; read a jump's answer in parts first; an
-  A/A of 21-28 pairs spreads 0.31-0.35 s). With 5d on by default the gate
-  passed 15 of 15 in G1 42995970597, G2 42999722877, the 1.64.83-era
-  candidate 43142688683 (+ Test Lab OPPO 43142688768 16/16) and 1.64.84's
-  43425944894. First look for item 2's failure (a climb then a stop) in
-  weakline passes on the live build before writing a rule: the ProxyMeter
-  already believes a recovery only once its slow average holds
-  (min(fast, slow)), and 5b's 32 passes had no stop.
+- **Next streaming work**: what a jump still waits for on a weak line is
+  the Worker's own answer (~0.45 s on a kept connection; its split from
+  R2's needs `Server-Timing`, a Worker change — the owner's call) and the
+  phone's restart; the spare is as good as two pools get (a jump finds its
+  connection open in 9 of 10; the rest were taken by a cut just before,
+  which only a third connection made after each cut would cover — a
+  Worker request more per jump, not proposed). Item 2 is not seen on the
+  live build; 5b's leftover (a fall to 240p where 360p fits) is a softer
+  picture, not a stop. Not 5 as written: it doubles the Worker requests
+  and would take 5d's spare away (review §5). The number to lower is still
+  frozen seconds per minute played from `play_summary`, which needs
+  viewers on 1.64.84 first. Method: `docs/streaming_review_2026_11.md` §5
+  and skill `device-labs` (read the cap probe and each pass's line
+  readings first; passes alternating per variant; read a jump's answer
+  and the pools' state first; an A/A of 21-28 pairs spreads 0.31-0.35 s).
+  With 5d on by default the gate passed 15 of 15 in G1 42995970597, G2
+  42999722877, the 1.64.83-era candidate 43142688683 (+ Test Lab OPPO
+  43142688768 16/16) and 1.64.84's 43425944894.
 
 ### Player redesign (12 Nov, 1.64.83) — skill `ui-design`
 The owner's screenshots of 1.64.82: "Playback failed / The player stopped
@@ -421,7 +444,14 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    review §5): a ladder's segment reads take turns on two pools, so a jump
    that cuts the read in flight finds the other's connection open — the
    answer, the jump's stop and the first picture 0.30 s sooner over 112
-   pairs, no Worker request more;
+   pairs, no Worker request more. Its follow-up, a pool known lost when a
+   read on it ends cut (a jump takes the open one), tried 14 Nov (run L1
+   43560088068, 112 jumps, on / lost) and taken out: whenever a jump's
+   pool was lost the other was busy or lost too, so the rule had nothing
+   to choose (kept 50 against 51 of 56, the answer alike, the stop shorter
+   under on in 27 pairs against 20). The pools' state stays in the trail:
+   open pools kept their connection in 101 of 102 jumps, lost ones in 0 of
+   10 — a read cut since, not the server, closes them;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
@@ -473,6 +503,20 @@ security). Found, most urgent first:
    load the database. Not before.
 
 ### Next app release (after 1.64.82)
+- **Added on the branch 14 Nov, for the next release (no change in what
+  the app does)**: each pool's state in a jump's trail — `_PoolUse.lost`
+  (how its last read ended: cut, hung up, short, stalled, failed), `hls
+  jump: … pool N, <state>, the other <state>, …`, and `state=` / `other=`
+  in `jumpCostAfter`'s words. Ships as it is. No new lab hook: the
+  `lost` rule (`poolLost`, the lab word, Test Lab's alternation of it) was
+  taken out on the branch before anything else was built on it.
+  `test_device/weakline_climbs.py` and the weakjumps summary's state
+  columns are the lab's. Proof: stream_cache_hls_test 19 of 19 (the new
+  hang-up test 6 of 6 under a loaded CPU and disk; its first form failed
+  Stream bench 43560088035 and 2 of 5 here, fixed in ca13b326), the
+  branch's 1753 Flutter tests here on the final code, Stream bench
+  43567588464's Analyze and Unit tests green on it, the gate 43567588467
+  (jumps 15 of 15).
 - **1.64.82 is out** (11 Nov, main 72b20dd, build 42996818415; arm64
   95628676 bytes `dee484cc…de28`, arm32 87598952 bytes `907e8350…3929`;
   GitHub's asset digests agree; app_releases moved at 10:23 UTC after a
