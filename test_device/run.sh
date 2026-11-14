@@ -576,6 +576,10 @@ for flow in $FLOWS; do
               for (a=1;a<=n;a++) line=line sprintf("; %dp %d%%", hh[a], sh[v,hh[a]]/np[v]+0.5)
               print line } }
     ' "$OUT/weakline_passes.tsv" | while read -r line; do log "$line"; done
+    # A CLIMB, THEN A STOP (BACKLOG item 2, 14 Nov 2026): each pass's climbs
+    # (`exo rung` up), its stops >= 250 ms with what was in hand, and the
+    # stops within 30 s of a climb — the failure item 2 was written for.
+    python3 test_device/weakline_climbs.py "$OUT" | while read -r line; do log "$line"; done || true
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell rm -f "$d/lab_stream_url" "$d/lab_peak" >/dev/null 2>&1 || true
     rm -f "$OUT"/weakline_ms_*.txt
