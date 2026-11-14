@@ -28,6 +28,11 @@ paths:
   count the event with a temporary print. That found the lost read-ahead
   of 6 Nov (stream_cache_hls_test: a read starting while the last one's
   writer was closing got no writer).
+  Do it BEFORE the first push for a new test that waits on sockets or
+  timers: the lost-pool test (14 Nov) passed here idle, failed Stream
+  bench 43560088035, and failed 2 of 5 here under that load (the other
+  rung's index read reordered the pools; it now waits for the Worker to
+  go quiet).
 - **A box sized for Latin text cuts Burmese.** Android draws Burmese in the
   tall Noto Sans Myanmar: a line is nearly twice a Latin one. No fixed
   height (or `height:` under 1.5) around text that can be Burmese or Thai;
@@ -47,6 +52,15 @@ paths:
   (Settings on a wide window, list_detail.dart) it closed the page and the
   pane went blank (`_history.isNotEmpty`, 12 Nov). Name the builder's
   context (`dialogContext`) and pop with it.
+- **Whatever opens a session must close it on every path.** A seek-bar
+  drag or a swipe opens a scrub (`beginScrub`), which on the ladder puts
+  ExoPlayer in scrubbing mode — playWhenReady true, playback suppressed.
+  The bar sits in `if (_chromeUp(state))`, so the auto-hide took it out of
+  the tree under a still thumb, its onChangeEnd never came, and the owner's
+  Sintel "played" without moving, play/pause dead (14 Nov,
+  test/player_scrub_test.dart). A widget that opens one ends it in
+  `dispose`; a timer that removes UI checks it first; a guard on the end
+  (a lock) never refuses what the start let through.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.

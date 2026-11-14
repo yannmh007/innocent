@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (14 Nov 2026, early)
+### WHERE THINGS STAND — read first in a new session (14 Nov 2026, morning)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
   branch only: the lab hooks, the Google nonce, test_device/results).
@@ -129,6 +129,65 @@ does it.
   (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
+- **Streaming, 14 Nov afternoon: the morning's W1 / L1 checked again, nothing
+  re-run** (a second session given the same task). `weakline_climbs.py` on
+  W1's results: 8 climbs, 0 followed by a stop (passes 2-8 no stop; pass 1's
+  14 stops at 240p with no climb before, the runner's line); W1's tombstone
+  is `com.google.android.googlequicksearchbox` (the emulator's), not the
+  app. `weakjumps_summary.py` on L1's table gives the review's numbers
+  (paired stop p 0.19, answer 13 / 13 / 30 alike). Viewer data unchanged:
+  still no event of any kind from 1.64.84 (the last viewer event 12 Nov,
+  1.64.83); `play_summary` 4 rows in all (1.64.81: 2, 212 s, no stop, 20
+  jumps 135 ms each; 1.64.82: 2, 50 s, one 2.2 s stop = 2.65 s frozen a
+  minute, 5 jumps 49 ms each), all open films, one viewer — too few to
+  judge. Branch Build 43572316738 on 4d4f9c38 green (structural checks,
+  Analyze, Test, both APKs; it publishes nothing off main) — the first
+  since 13 Nov, for the 14 Nov Dart change that ships with the next
+  release (`_PoolUse`'s state in a jump's trail).
+- **1.64.84 has a viewer bug, fixed on the branch (14 Nov)**: after a
+  jump by the seek bar the film could stay still while it "played", the
+  pause button dead, until another drag — the owner met it on Sintel.
+  Cause, proof and fix under "Next app release", with a second one found
+  in the same reports (a double tap on a card opened two players). Both
+  need a release (the owner's call). Gate 43580674281: 15 of 15.
+- **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
+  lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
+  `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
+  and send their events to production like any phone. 7 days to 14 Nov:
+  1,594 of 1,798 events, 170 fresh `viewer_key`s, 170 of 179 `play_open`;
+  all on open films, no `play_summary` (a lab's play ends in a force-stop,
+  so the per-playback numbers are clean). What it moves: the console's
+  start-up latency (`startup_latency`: lab p50 3257 / p95 4625 ms on its
+  weak line, viewers' 9 opens p50 1727 / p95 3008), its event counts, and
+  Trending (`trending_titles` 7 of 7 open films; the home's Trending reads
+  the same heat, 052). Harmless to viewers today — the published catalogue
+  is the 9 open films — but the labs' ~25 plays a day will lead Trending
+  (and feed co-watch) once other titles are published, and drown the
+  first viewers' start-up numbers. Fix, the owner's choice: (a) lab builds
+  mark their events (`device_kind = 'lab'`, lab-only) and a migration
+  leaves `lab` and `1.64.78+391` out of the heat, co-watch, rollups and
+  start-up functions (a live database change: skill `live-db-change`); or
+  (b) lab builds send no events (app only; loses the labs' end-to-end look
+  at the event path). Until then, leave `1.64.78+391` out when reading
+  viewer data.
+- **Streaming, 14 Nov: item 2 not seen, and 5d's follow-up decided — no
+  rule from either** (review §5 "Runs W1 and L1"). Viewer data first:
+  no `play_summary` from 1.64.84 yet (no event of any kind from it — the
+  owner's phone has not updated); 1.64.81: 2 rows, 212 s played, no stop,
+  20 jumps 2.7 s in all; 1.64.82: 2 rows (one session), 50 s played, one
+  stop of 2.2 s (2.65 s frozen a minute played), 5 jumps 243 ms; all on
+  open films, one viewer. Too few to judge anything. Item 2 (device lab
+  W1 43555903291, 8 weakline passes of an A/A on the live build): 8
+  climbs, none followed by a stop (`test_device/weakline_climbs.py`). 5d's
+  follow-up, a pool known lost when a read on it ends cut (L1 43560088068,
+  16 weakjumps passes, on / lost): nothing for it to choose, the answer
+  and the stop no better; taken out. Kept: each pool's state in a jump's
+  trail, which showed open pools keep their connection (101 of 102, idle
+  up to 11 s) and lost ones never (0 of 10) — the server does not close
+  idle ones. Test Lab 43560350582 on the build with the rule: realme and
+  OPPO 15 of 15 each, lines 1.4 and 4 Mbit/s that day. Gate on the build
+  with the rule taken out: device lab 43567588467, the jumps on Big Buck
+  Bunny 15 of 15 (the build's own spare).
 - **5d, a connection kept open for a jump (11 Nov; LIVE in 1.64.84, 13 Nov,
   on by default)**: `StreamCacheServer.keepSpare` (the release left the
   lab's `_labTimedConnect` out).
@@ -147,9 +206,11 @@ does it.
   Lab with it on: OPPO 16 of 16 (42982587122), realme 16 of 16 on its rerun
   (42985879375; its first run's line read 64-303 kbps and the checks never
   began). On the phones' fast lines every jump found a connection open
-  either way. Review §5 "Runs M1, S1, S2". Follow-ups: mark a pool lost
-  when a read on it ends cut; the Worker's own wait (~0.3 s, R2 most
-  likely) needs a `Server-Timing` header to split (a Worker change).
+  either way. Review §5 "Runs M1, S1, S2". Follow-ups: marking a pool lost
+  when a read on it ends cut — tried 14 Nov (L1), nothing to act on, taken
+  out (the pools' state stays in the trail); the Worker's own wait (~0.3 s,
+  R2 most likely) needs a `Server-Timing` header to split (a Worker change,
+  the owner's call).
 - **play_summary was lost for a playback the app never came back to
   (found 11 Nov; the fix LIVE in 1.64.84, the kept summary also dropped on
   sign-out since the 13 Nov review)**: it was sent only as the player
@@ -184,21 +245,24 @@ does it.
   `deep` (a deep buffer weighed against the whole line) tried, dropped.
   The weakline flow now plays `WEAK_PASSES` passes per run, alternating
   `lab_peak` variants: use it for every A/B (one pass says little).
-- **Next streaming work**: 5d's follow-ups (a pool marked lost when a
-  read on it ends cut; the Worker's wait split by `Server-Timing`, the
-  owner's call), or 2 (climb back only when the slow average clears the
-  higher rung). Not 5 as written: it doubles the Worker requests and would
-  take 5d's spare away (review §5). Method in
-  `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
-  weakjumps flows; read the cap probe first; passes alternating per
-  variant, then the other order; read a jump's answer in parts first; an
-  A/A of 21-28 pairs spreads 0.31-0.35 s). With 5d on by default the gate
-  passed 15 of 15 in G1 42995970597, G2 42999722877, the 1.64.83-era
-  candidate 43142688683 (+ Test Lab OPPO 43142688768 16/16) and 1.64.84's
-  43425944894. First look for item 2's failure (a climb then a stop) in
-  weakline passes on the live build before writing a rule: the ProxyMeter
-  already believes a recovery only once its slow average holds
-  (min(fast, slow)), and 5b's 32 passes had no stop.
+- **Next streaming work**: what a jump still waits for on a weak line is
+  the Worker's own answer (~0.45 s on a kept connection; its split from
+  R2's needs `Server-Timing`, a Worker change — the owner's call) and the
+  phone's restart; the spare is as good as two pools get (a jump finds its
+  connection open in 9 of 10; the rest were taken by a cut just before,
+  which only a third connection made after each cut would cover — a
+  Worker request more per jump, not proposed). Item 2 is not seen on the
+  live build; 5b's leftover (a fall to 240p where 360p fits) is a softer
+  picture, not a stop. Not 5 as written: it doubles the Worker requests
+  and would take 5d's spare away (review §5). The number to lower is still
+  frozen seconds per minute played from `play_summary`, which needs
+  viewers on 1.64.84 first. Method: `docs/streaming_review_2026_11.md` §5
+  and skill `device-labs` (read the cap probe and each pass's line
+  readings first; passes alternating per variant; read a jump's answer
+  and the pools' state first; an A/A of 21-28 pairs spreads 0.31-0.35 s).
+  With 5d on by default the gate passed 15 of 15 in G1 42995970597, G2
+  42999722877, the 1.64.83-era candidate 43142688683 (+ Test Lab OPPO
+  43142688768 16/16) and 1.64.84's 43425944894.
 
 ### Player redesign (12 Nov, 1.64.83) — skill `ui-design`
 The owner's screenshots of 1.64.82: "Playback failed / The player stopped
@@ -364,8 +428,18 @@ packets): it now runs through `tool/netlab/line_relay.py` on loopback and
 proves its cap first. Next, each proved by an emulator A/B on that line:
 1. ~~resume after a stall on 5 s~~ tried, undone: it made blips a visible
    1.26 s stop;
-2. climb back only when the slow average clears the higher rung (720 →
-   240 → 720 → stall);
+2. ~~climb back only when the slow average clears the higher rung (720 →
+   240 → 720 → stall)~~ not seen on the live build, so no rule (14 Nov):
+   `test_device/weakline_climbs.py` counts a climb (`exo rung` up) then a
+   stop >= 250 ms within 30 s. Device lab 43555903291 (1.64.84 + the lab
+   hooks, an A/A of 8 weakline passes): 8 climbs, none followed by a stop;
+   H/H2/H3 (32 passes): 61 climbs, one stop after one — 564 ms with 30 s
+   in hand, the decoder at a rung change, not the line. Covered by the
+   ProxyMeter's min(fast, slow) (a recovery believed once the slow average
+   holds) and 5b. That run's pass 1 stopped 14 times (49.6 s), every stop
+   with the buffer dry and no climb before it: the runner's line, which
+   read 520 kbps under the 4 Mbit/s cap (passes 2-3: 2023-2596) and TCP
+   handshakes of 0.5-5.2 s (the cap probe 495 kbps, against ~786);
 3. ~~a jump on a slow line takes its first segment from the rung below~~
    (OPPO seek 5.9 s): see 5c, tried and taken out;
 4. ~~a dead segment read noticed in 3–4 s~~ dropped down: 8 s with no
@@ -411,7 +485,14 @@ proves its cap first. Next, each proved by an emulator A/B on that line:
    review §5): a ladder's segment reads take turns on two pools, so a jump
    that cuts the read in flight finds the other's connection open — the
    answer, the jump's stop and the first picture 0.30 s sooner over 112
-   pairs, no Worker request more;
+   pairs, no Worker request more. Its follow-up, a pool known lost when a
+   read on it ends cut (a jump takes the open one), tried 14 Nov (run L1
+   43560088068, 112 jumps, on / lost) and taken out: whenever a jump's
+   pool was lost the other was busy or lost too, so the rule had nothing
+   to choose (kept 50 against 51 of 56, the answer alike, the stop shorter
+   under on in 27 pairs against 20). The pools' state stays in the trail:
+   open pools kept their connection in 101 of 102 jumps, lost ones in 0 of
+   10 — a read cut since, not the server, closes them;
 6. labs to add: ten minutes on a weak line, a link expiring mid-film, a
    low-end and a 32-bit Test Lab phone, two runs per build.
 After the release: frozen seconds per minute played, from `play_summary`,
@@ -463,6 +544,69 @@ security). Found, most urgent first:
    load the database. Not before.
 
 ### Next app release (after 1.64.82)
+- **A film that "plays" and does not move after a jump (found 14 Nov from
+  the owner's report on 1.64.84; fixed on the branch, SHIPS NEXT — a viewer
+  bug)**: a seek-bar drag opens a scrub (`beginScrub`), and on the ladder
+  that puts ExoPlayer in scrubbing mode (playWhenReady true, playback
+  suppressed). The bar is in the tree only while the controls are up
+  (`_chromeUp`), and the auto-hide (4 s) did not wait for a finger: a thumb
+  held still on the bar's picture lost its bar, onChangeEnd never came, the
+  jump was not made and scrubbing mode stayed on — the film still, the
+  pause button dead, until another drag closed it. Seen in the owner's two
+  diagnostics reports (14 Nov 08:26 and 08:30 UTC): after a jump to the
+  middle, every seek drew its frame in 89-189 ms and buffered ~200 ms,
+  `wakelock playing=true`, yet the decoder thread (MediaCodec_loop) was
+  idle for ~80 s while ExoPlayer's playback thread ran; no network
+  error, no stall. Fixed four ways (test/player_scrub_test.dart: 4 tests,
+  all four fail on 1.64.84's code): the auto-hide waits while a scrub is
+  open; the seek bar ends its scrub in `dispose`; play / pause closes a
+  scrub left open (on ExoPlayer the press then lets the film move, without
+  toggling); a swipe-seek's end always closes its scrub (it refused any
+  lock while its start let the rotation lock through). And the trail now
+  says a hold: ExoPlayer sends `held` (its suppression, put down to
+  scrubbing when that is on) and the app writes `exo held N ms (why) at
+  Ns` for a hold of 1 s or more (ladder_landing_test). PROVED: Build
+  43577691274 on 655956b1 green (Kotlin, Analyze, Test, both APKs);
+  device lab gate 43580674281 jumps on Big Buck Bunny 15 of 15 (seek,
+  swipe-120, far-jump, landing; no `exo held`, as no drag is in the flow).
+  Its first run 43577875824 never began — "the film never started", seven
+  segment reads stalled 8 s, the lab's own engine check timed out: the
+  runner's line, as W1's pass 1 (the morning gate's same setup: 15 of 15).
+- **One play at a time (found 14 Nov in the same reports; fixed on the
+  branch, ships next)**: two taps on a Continue watching card 1.4 s apart
+  (the grant took 1.85 s, nothing on screen yet) opened two players over
+  each other: two `card_click`, two `play_start`, the second player's
+  ExoPlayer open failed and it fell back to libmpv ("ladder on ExoPlayer
+  failed: the start rung on libmpv"), and the playback's `play_summary`
+  went out twice (both screens read the one controller). `playMedia` now
+  refuses a second tap while the first is on its way (`PlayTapGuard`, at
+  most 10 s, so a stuck play never blocks the next; a paywall's own retry
+  goes past it). test/play_tap_guard_test.dart. Build 43585867675 on
+  1ff7566e (both fixes, the whole branch) green: Analyze, Test, both APKs.
+- **Open from the same reports, not fixed (next session)**: (1) the next
+  film after the double open (a different one, one tap) also fell back to
+  libmpv at once — ExoPlayer's open answered false within the same tenth
+  of a second; the trail cannot say why (logcat holds the engine's side):
+  read it on a phone, or make the engine's refusal say its reason in the
+  trail. (2) The stuck playback's own `play_summary` never arrived (closed
+  08:18:57 UTC; 1 of the session's 4 playbacks reported, twice): the
+  summary is queued in memory and its kept copy dropped at once
+  (`reportSummary` → `dropStash`); a batch whose send fails is dropped by
+  design. Keep the copy until a send is known to have gone.
+- **Added on the branch 14 Nov, for the next release (no change in what
+  the app does)**: each pool's state in a jump's trail — `_PoolUse.lost`
+  (how its last read ended: cut, hung up, short, stalled, failed), `hls
+  jump: … pool N, <state>, the other <state>, …`, and `state=` / `other=`
+  in `jumpCostAfter`'s words. Ships as it is. No new lab hook: the
+  `lost` rule (`poolLost`, the lab word, Test Lab's alternation of it) was
+  taken out on the branch before anything else was built on it.
+  `test_device/weakline_climbs.py` and the weakjumps summary's state
+  columns are the lab's. Proof: stream_cache_hls_test 19 of 19 (the new
+  hang-up test 6 of 6 under a loaded CPU and disk; its first form failed
+  Stream bench 43560088035 and 2 of 5 here, fixed in ca13b326), the
+  branch's 1753 Flutter tests here on the final code, Stream bench
+  43567588464's Analyze and Unit tests green on it, the gate 43567588467
+  (jumps 15 of 15).
 - **1.64.82 is out** (11 Nov, main 72b20dd, build 42996818415; arm64
   95628676 bytes `dee484cc…de28`, arm32 87598952 bytes `907e8350…3929`;
   GitHub's asset digests agree; app_releases moved at 10:23 UTC after a

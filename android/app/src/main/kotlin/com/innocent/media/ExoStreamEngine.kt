@@ -79,6 +79,9 @@ class ExoStreamEngine private constructor(
     private val factory = SteeredFactory(steer)
     private val selector = DefaultTrackSelector(context, factory)
     private var player: ExoPlayer? = null
+
+    /** Scrubbing mode as last asked ([scrubbing]): what a suppressed playback is put down to. */
+    private var scrubOn = false
     private var lastRung = -1
 
     private val ticker = object : Runnable {
@@ -171,6 +174,7 @@ class ExoStreamEngine private constructor(
         p.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) = sendState()
             override fun onIsPlayingChanged(isPlaying: Boolean) = sendState()
+            override fun onPlaybackSuppressionReasonChanged(reason: Int) = sendState()
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
@@ -249,6 +253,8 @@ class ExoStreamEngine private constructor(
             }
         })
         player = p
+        // A new player starts out of scrubbing mode.
+        scrubOn = false
         p.volume = gainWanted.coerceAtMost(1.0).toFloat()
         if (gainWanted > 1.0) applyBoost(p)
         // A single file (a film's Original, through the proxy) is read by
@@ -289,6 +295,9 @@ class ExoStreamEngine private constructor(
             "id" to id, "e" to "state",
             "playing" to p.isPlaying,
             "ready" to p.playWhenReady,
+            // Ready and asked to play, and not playing: why (14 Nov 2026, a
+            // film left in scrubbing mode said it played and did not move).
+            "held" to held(p.playbackSuppressionReason),
             "buffering" to (p.playbackState == Player.STATE_BUFFERING),
             "ended" to (p.playbackState == Player.STATE_ENDED),
             // At the moment it changes, not up to 250 ms late as the ticker's:
@@ -317,7 +326,16 @@ class ExoStreamEngine private constructor(
 
     /** While a finger drags the bar: frames as fast as the decoder can show them. */
     fun scrubbing(on: Boolean) {
+        scrubOn = on
         player?.setScrubbingModeEnabled(on)
+    }
+
+    /** A playback suppression in a word for the trail; empty for none. */
+    private fun held(reason: Int): String = when {
+        reason == Player.PLAYBACK_SUPPRESSION_REASON_NONE -> ""
+        scrubOn -> "scrubbing"
+        reason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS -> "audio focus"
+        else -> "reason $reason"
     }
 
     fun rate(r: Double) { player?.playbackParameters = PlaybackParameters(r.toFloat()) }

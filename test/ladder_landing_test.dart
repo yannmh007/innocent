@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/services/diagnostics/playback_log.dart';
 import 'package:innocent/core/services/video_player/exo_engine.dart';
 import 'package:innocent/features/player/presentation/ladder_preview_loader.dart';
 
@@ -190,6 +191,29 @@ void main() {
       expect(seen.last, (false, 0));
       expect(e.position, const Duration(milliseconds: 12400));
       await sub.cancel();
+    });
+
+    // 14 Nov 2026: a film left in scrubbing mode said it played and did
+    // not move; nothing in the trail said why. A hold of a second or more
+    // is said as it ends, or as the engine goes; a blink is not.
+    test('a hold of a second or more is said, with why; a blink is not', () async {
+      final e = ExoEngine.forTest();
+      Map<Object?, Object?> state(String held) => <Object?, Object?>{
+            'e': 'state', 'ready': true, 'buffering': false, 'ended': false,
+            'pos': 444000, 'held': held,
+          };
+      e.debugEvent(state('scrubbing'));
+      e.debugEvent(state(''));
+      expect(PlaybackLog.text, isNot(contains('exo held')));
+      e.debugEvent(state('scrubbing'));
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      e.debugEvent(state(''));
+      expect(PlaybackLog.text, matches(RegExp(r'exo held \d{4,} ms \(scrubbing\) at 444s')));
+      // Still held as the film leaves: said then.
+      e.debugEvent(state('audio focus'));
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      await e.release();
+      expect(PlaybackLog.text, contains('(audio focus)'));
     });
   });
 }

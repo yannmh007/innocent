@@ -1690,6 +1690,13 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// the drag stays instant.
   bool _isScrubbing = false;
 
+  /// A scrub session is open ([beginScrub] without its [endScrub] yet). On
+  /// the ladder it holds ExoPlayer in scrubbing mode, where playback is
+  /// suppressed: one left open is a film that says it plays and does not
+  /// move (14 Nov 2026).
+  @visibleForTesting
+  bool get scrubbing => _isScrubbing;
+
   /// Debounce for the A-B repeat jump. libmpv keeps emitting positions past
   /// point B for a beat after a seek is requested, and the old code issued a
   /// fresh seek on every one of them — a small seek storm each time the loop

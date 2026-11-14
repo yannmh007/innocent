@@ -342,6 +342,12 @@ class StreamCacheServer {
   /// [spareForJumps] off (the lab's "off" jumps), the busy one, as one pool
   /// would. A read that carries on: the free pool, else the one used less
   /// recently, so both stay open.
+  ///
+  /// NOT BY A POOL KNOWN LOST (tried 14 Nov, device lab L1 43560088068): a
+  /// jump taking the open pool of two free ones, one lost to a cut, found
+  /// nothing to act on — in 56 jumps, whenever the pool it took was lost the
+  /// other was reading or lost too; 50 of 56 found a connection open either
+  /// way. The trail keeps each pool's state ([_PoolUse.state]).
   @visibleForTesting
   static bool firstPool({
     required bool aFree,
@@ -1824,6 +1830,13 @@ class StreamCacheServer {
     final pool = _poolFor(src, jump: jump, after: before);
     final use = _useOf(pool);
     final idle = use.sinceWhole;
+    // Both pools' state at the choice, for a jump's trail: whether a read
+    // since the last whole one took the connection (lost) or it was left
+    // open — then a new one at the jump is the server's or the path's.
+    final other = identical(pool, src.io) ? src.second : src.io;
+    final states = jump && keepSpare && other != null && !identical(other, pool)
+        ? (use.state, use.word, _useOf(other).state, _useOf(other).word)
+        : null;
     // Counted from the choice on, so a jump that comes while this read waits
     // for its answer goes to the other pool.
     use.reading++;
@@ -1838,6 +1851,7 @@ class StreamCacheServer {
     final up = await opening;
     if (up == null) {
       use.reading--;
+      use.lost('failed');
       return pos;
     }
     // A jump's cost, in the trail: the Worker's answer, then the segment
@@ -1855,6 +1869,7 @@ class StreamCacheServer {
       }
     } catch (_) {
       use.reading--;
+      use.lost('failed');
       rethrow;
     }
     final fill = src.fill = _Fill(pos, aheadEnd)..pool = pool;
@@ -1869,6 +1884,9 @@ class StreamCacheServer {
     final clock = Stopwatch()..start();
     Timer? stallWatch;
     Timer? waitFlush;
+    // How the read ended, for its pool ([_PoolUse.lost]): null once it came
+    // in whole; until then, an error.
+    String? ended = 'failed';
     unawaited(() async {
       try {
         final pieces = StreamIterator<List<int>>(up);
@@ -1906,6 +1924,7 @@ class StreamCacheServer {
           if (quiet.elapsed < segmentStall) return;
           stallWatch?.cancel();
           PlaybackLog.add('hls: a segment read stalled ${segmentStall.inSeconds} s, ended');
+          ended = 'stalled';
           unawaited(pieces.cancel());
         });
         while (!fill.cancelled) {
@@ -1914,7 +1933,12 @@ class StreamCacheServer {
           waiting.stop();
           if (!more) {
             // In whole: its connection is back in the pool.
-            if (!fill.cancelled && at >= aheadEnd) use.whole();
+            if (!fill.cancelled && at >= aheadEnd) {
+              use.whole();
+              ended = null;
+            } else if (ended != 'stalled') {
+              ended = fill.cancelled ? 'cut' : 'short';
+            }
             break;
           }
           quiet.reset();
@@ -1966,6 +1990,7 @@ class StreamCacheServer {
               // not wanted ahead of it either.
               gone.hangUp();
               answered.complete(sent);
+              ended = 'hung up';
               break;
             }
             if (sent >= clientEnd) {
@@ -1974,18 +1999,22 @@ class StreamCacheServer {
               if (jump) {
                 _noteJump(cost, headers, firstByte, asked.elapsedMilliseconds,
                     clientEnd - pos, beforeMs, cut, idle, pos,
-                    spare: identical(pool, src.second));
+                    spare: identical(pool, src.second), states: states);
               }
             }
           }
           fill.at = at;
           fill.ping();
         }
+        // Out of the loop with nothing said: it was cut between two pieces.
+        if (ended == 'failed' && fill.cancelled) ended = 'cut';
         await pieces.cancel();
       } catch (e) {
         if (kDebugMode) debugPrint('StreamCacheServer._segmentFromUpstream: $e');
       } finally {
         use.reading--;
+        final why = ended;
+        if (why != null) use.lost(why);
         stallWatch?.cancel();
         waitFlush?.cancel();
         await writer?.close();
@@ -2005,9 +2034,11 @@ class StreamCacheServer {
   /// a lab build a new one's DNS / TCP / TLS), the wait from the request
   /// going out to the Worker's answer, the wait for the read before to put
   /// its pen down — and what the pool had: a read cut for the jump, and how
-  /// long since a read last came in whole.
+  /// long since a read last came in whole; with two pools, each one's state
+  /// at the choice ([_PoolUse.state]: open, lost and why, reading, never).
   void _noteJump(_Opened? c, int answer, int firstByte, int segment, int bytes,
-      int beforeMs, bool cut, int? idle, int pos, {bool spare = false}) {
+      int beforeMs, bool cut, int? idle, int pos,
+      {bool spare = false, (String, String, String, String)? states}) {
     final conn = switch (c?.fresh) { true => 'new', false => 'kept', null => '-' };
     final hs = c?.handshake;
     PlaybackLog.add('hls jump: answer $answer ms, first byte $firstByte ms, '
@@ -2016,6 +2047,7 @@ class StreamCacheServer {
         ', wait ${c?.waitMs ?? -1} ms, before $beforeMs ms, tries ${c?.tries ?? 0}; '
         '${cut ? 'a read cut' : 'no read cut'}, '
         '${keepSpare ? 'pool ${spare ? 2 : 1}, ' : ''}'
+        '${states == null ? '' : '${states.$1}, the other ${states.$3}, '}'
         'last whole on it ${idle == null ? 'never' : '${(idle / 1000).toStringAsFixed(1)} s ago'}');
     if (pos == 0) return;
     jumpCount++;
@@ -2023,7 +2055,8 @@ class StreamCacheServer {
       jumpCount,
       'conn=$conn conn_ms=${c?.connMs ?? -1} wait_ms=${c?.waitMs ?? -1} '
           'tcp_ms=${hs?.$2 ?? -1} tls_ms=${hs?.$3 ?? -1} answer_ms=$answer seg_ms=$segment '
-          'cut=${cut ? 1 : 0} idle_ms=${idle ?? -1} pool=${spare ? 2 : 1}'
+          'cut=${cut ? 1 : 0} idle_ms=${idle ?? -1} pool=${spare ? 2 : 1} '
+          'state=${states?.$2 ?? '-'} other=${states?.$4 ?? '-'}'
     ));
     if (_jumpCosts.length > 32) _jumpCosts.removeAt(0);
   }
@@ -2720,14 +2753,56 @@ class _PoolUse {
   /// Segment reads in flight on it.
   int reading = 0;
   Stopwatch? _whole;
+  Stopwatch? _lost;
+
+  /// How its last read to end ended, when not whole ([lost]); null when it
+  /// came in whole, or none has ended yet.
+  String? lostWhy;
 
   /// A read on it came in whole: its connection is back in the pool.
-  void whole() => (_whole ??= Stopwatch())
-    ..reset()
-    ..start();
+  void whole() {
+    lostWhy = null;
+    (_whole ??= Stopwatch())
+      ..reset()
+      ..start();
+  }
+
+  /// A read on it ended any other way — `cut` (a jump or a change of rung
+  /// ended it), `hung up` (the player did), `short` (the Worker's answer
+  /// ended before its last byte), `stalled` (nothing came for
+  /// [StreamCacheServer.segmentStall]), `failed` (no answer, or an error):
+  /// a response not read to its end takes its connection with it (Dart's
+  /// HttpClient), so the pool has none open now (BACKLOG 5d's follow-up,
+  /// 14 Nov 2026).
+  void lost(String why) {
+    lostWhy = why;
+    (_lost ??= Stopwatch())
+      ..reset()
+      ..start();
+  }
 
   /// Ms since a read on it last came in whole; null: none yet.
   int? get sinceWhole => _whole?.elapsedMilliseconds;
+
+  /// What the trail says of it at a jump's choice: `reading`, `lost (why,
+  /// N s ago)`, `open` (its last read came in whole), `never` (none ended).
+  /// Open but a new connection at the jump: the server or the path closed
+  /// an idle one; lost: a read since its last whole took it.
+  String get state {
+    if (reading > 0) return 'reading';
+    final why = lostWhy;
+    if (why != null) {
+      return 'lost ($why, ${((_lost?.elapsedMilliseconds ?? 0) / 1000).toStringAsFixed(1)} s ago)';
+    }
+    return _whole == null ? 'never' : 'open';
+  }
+
+  /// The same in one word for the lab's columns: reading, lost-cut, open….
+  String get word {
+    final s = state;
+    if (s.startsWith('lost')) return 'lost-${lostWhy!.replaceAll(' ', '')}';
+    return s;
+  }
 }
 
 /// What an answer from the Worker cost ([StreamCacheServer._openPooled]):

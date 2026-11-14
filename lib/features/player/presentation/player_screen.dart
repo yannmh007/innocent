@@ -4623,6 +4623,12 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
 
   @override
   void dispose() {
+    // Taken out of the tree mid-drag (the controls hid, a menu or a route
+    // came over them): the Slider's onChangeEnd never comes, so the scrub
+    // session it opened is closed here — left open, ExoPlayer stays in
+    // scrubbing mode and the film does not move (14 Nov 2026). No jump: the
+    // finger never let go on a place.
+    if (_dragValue != null) widget.onScrubEnd?.call();
     _ladderPreviews?.dispose();
     super.dispose();
   }

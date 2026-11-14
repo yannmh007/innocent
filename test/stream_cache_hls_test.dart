@@ -376,6 +376,78 @@ void main() {
     expect(first(a: null, b: null, jump: false), isTrue);
   });
 
+  test("a pool whose read the player hung up on is lost, and the next jump's trail says "
+      'so: the state of the pool it took and of the other', () async {
+    addTearDown(() => worker.paceMs = 0);
+    Future<String> play(String id) async {
+      final master = await register(id);
+      final (_, mbody) = await _get(master);
+      final url = RegExp(r'^http://.+/720\.m3u8$', multiLine: true).firstMatch(String.fromCharCodes(mbody))!.group(0)!;
+      final segs = _segments(String.fromCharCodes((await _get(url)).$2));
+      final entry = await StreamCacheStore.instance.entryFor('$id-720');
+      // The other rung's index and head go out on the first pool too, at
+      // their own pace: wait for the Worker to go quiet, or one of them
+      // comes in whole between two steps and reorders the pools.
+      Future<void> settle() async {
+        var n = -1;
+        for (var i = 0; i < 50 && n != worker.asked.length; i++) {
+          n = worker.asked.length;
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+        }
+      }
+
+      await settle();
+      Future<void> inWhole(int a) async {
+        final end = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a).$3;
+        for (var i = 0; i < 300 && entry.partAt(end) == null; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        expect(entry.partAt(end), isNotNull);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+
+      // The first read, in whole, then the read that carries on, in whole
+      // on the other pool: that one is the pool most recently in whole.
+      final (s10, a10, u10) = segs[10];
+      await _get(u10, range: 'bytes=$a10-${a10 + s10 - 1}');
+      await inWhole(a10);
+      final firstEnd = worker.asked.lastWhere((c) => c.$1 == 'a720' && c.$2 == a10).$3;
+      final cross = segs.indexWhere((g) => g.$2 <= firstEnd && g.$2 + g.$1 - 1 > firstEnd);
+      final (sc, ac, uc) = segs[cross];
+      await _get(uc, range: 'bytes=$ac-${ac + sc - 1}');
+      await inWhole(firstEnd + 1);
+      await settle();
+      // A jump, slow, which takes that pool; the player hangs up on it
+      // after its first bytes (a viewer's next jump, or Back).
+      worker.paceMs = 300;
+      final (s60, a60, u60) = segs[60];
+      final c = HttpClient();
+      final req = await c.getUrl(Uri.parse(u60));
+      req.headers.set('range', 'bytes=$a60-${a60 + s60 - 1}');
+      final resp = await req.close();
+      await resp.first;
+      c.close(force: true);
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+      // The next jump: what did its pool have?
+      worker.paceMs = 0;
+      final seq = StreamCacheServer.jumpCount;
+      final (s85, a85, u85) = segs[85];
+      expect((await _get(u85, range: 'bytes=$a85-${a85 + s85 - 1}')).$2,
+          r720.bytes.sublist(a85, a85 + s85));
+      return StreamCacheServer.jumpCostAfter(seq)!;
+    }
+
+    // By the last whole read, the pool the hang-up took. (Its connection,
+    // often its only one: a pool can also hold one the rung reads opened
+    // beside it, so lost is "its last read's connection gone", and the lab
+    // counts lost-and-kept apart — under load here that second connection
+    // was there in 2 of 5.) A pool known lost was tried as a rule on 14 Nov
+    // (run L1) and taken out; the state stays in the trail.
+    final words = await play('film14');
+    expect(words, contains('state=lost-hungup'));
+    expect(words, contains('other=open'));
+  });
+
   test('a read-ahead that stalls is replaced after a quiet spell, not waited out',
       () async {
     final master = await register('film9');
