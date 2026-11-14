@@ -147,8 +147,9 @@ does it.
 - **1.64.84 has a viewer bug, fixed on the branch (14 Nov)**: after a
   jump by the seek bar the film could stay still while it "played", the
   pause button dead, until another drag — the owner met it on Sintel.
-  Cause, proof and fix under "Next app release". It needs a release (the
-  owner's call).
+  Cause, proof and fix under "Next app release", with a second one found
+  in the same reports (a double tap on a card opened two players). Both
+  need a release (the owner's call). Gate 43580674281: 15 of 15.
 - **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
   lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
   `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
@@ -564,7 +565,33 @@ security). Found, most urgent first:
   lock while its start let the rotation lock through). And the trail now
   says a hold: ExoPlayer sends `held` (its suppression, put down to
   scrubbing when that is on) and the app writes `exo held N ms (why) at
-  Ns` for a hold of 1 s or more (ladder_landing_test).
+  Ns` for a hold of 1 s or more (ladder_landing_test). PROVED: Build
+  43577691274 on 655956b1 green (Kotlin, Analyze, Test, both APKs);
+  device lab gate 43580674281 jumps on Big Buck Bunny 15 of 15 (seek,
+  swipe-120, far-jump, landing; no `exo held`, as no drag is in the flow).
+  Its first run 43577875824 never began — "the film never started", seven
+  segment reads stalled 8 s, the lab's own engine check timed out: the
+  runner's line, as W1's pass 1 (the morning gate's same setup: 15 of 15).
+- **One play at a time (found 14 Nov in the same reports; fixed on the
+  branch, ships next)**: two taps on a Continue watching card 1.4 s apart
+  (the grant took 1.85 s, nothing on screen yet) opened two players over
+  each other: two `card_click`, two `play_start`, the second player's
+  ExoPlayer open failed and it fell back to libmpv ("ladder on ExoPlayer
+  failed: the start rung on libmpv"), and the playback's `play_summary`
+  went out twice (both screens read the one controller). `playMedia` now
+  refuses a second tap while the first is on its way (`PlayTapGuard`, at
+  most 10 s, so a stuck play never blocks the next; a paywall's own retry
+  goes past it). test/play_tap_guard_test.dart.
+- **Open from the same reports, not fixed (next session)**: (1) the next
+  film after the double open (a different one, one tap) also fell back to
+  libmpv at once — ExoPlayer's open answered false within the same tenth
+  of a second; the trail cannot say why (logcat holds the engine's side):
+  read it on a phone, or make the engine's refusal say its reason in the
+  trail. (2) The stuck playback's own `play_summary` never arrived (closed
+  08:18:57 UTC; 1 of the session's 4 playbacks reported, twice): the
+  summary is queued in memory and its kept copy dropped at once
+  (`reportSummary` → `dropStash`); a batch whose send fails is dropped by
+  design. Keep the copy until a send is known to have gone.
 - **Added on the branch 14 Nov, for the next release (no change in what
   the app does)**: each pool's state in a jump's trail — `_PoolUse.lost`
   (how its last read ended: cut, hung up, short, stalled, failed), `hls

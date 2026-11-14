@@ -65,6 +65,58 @@ Future<void> playMedia(
   String? titleOverride,
   bool fromStart = false,
 }) async {
+  // ONE PLAY AT A TIME. The grant takes up to two seconds with nothing on
+  // screen yet, and a second tap in that window opened a second player
+  // over the first (14 Nov 2026, the owner on Continue watching: two
+  // card_clicks 1.4 s apart, two play_starts, two player screens; the second
+  // found ExoPlayer going and fell back to libmpv, and the playback's
+  // summary went out twice).
+  if (!PlayTapGuard.instance.begin(DateTime.now())) {
+    PlaybackLog.add('play: a second tap while the first is on its way, ignored');
+    return;
+  }
+  try {
+    await _playMedia(context, ref,
+        content: content,
+        source: source,
+        titleOverride: titleOverride,
+        fromStart: fromStart);
+  } finally {
+    PlayTapGuard.instance.end();
+  }
+}
+
+/// [playMedia]'s window between a tap and the player on screen.
+class PlayTapGuard {
+  PlayTapGuard();
+
+  static final PlayTapGuard instance = PlayTapGuard();
+
+  /// However long the first takes (a paywall, a slow grant), a tap after
+  /// this is let through: a stuck play must never stop the next.
+  static const Duration window = Duration(seconds: 10);
+
+  DateTime? _since;
+
+  /// Whether a play may start now; it holds the window until [end].
+  bool begin(DateTime now) {
+    final since = _since;
+    if (since != null && now.difference(since) < window) return false;
+    _since = now;
+    return true;
+  }
+
+  void end() => _since = null;
+}
+
+Future<void> _playMedia(
+  BuildContext context,
+  WidgetRef ref, {
+  required VideoContent content,
+  required MediaRef source,
+  String? titleOverride,
+  bool fromStart = false,
+}) async {
   final s = AppStrings.of(context);
   // Where this viewer stopped in this video, on any of their phones — a
   // stream opens there (Netflix, YouTube), unless they asked to start over.
@@ -786,7 +838,8 @@ Future<void> playMedia(
     // Straight through on success: making someone who has just paid hunt for
     // the play button again is the worst possible moment to add a step.
     if (unlocked && context.mounted) {
-      await playMedia(
+      // Inside the first play's window: past the guard, not through it.
+      await _playMedia(
         context,
         ref,
         content: content,
