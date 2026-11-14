@@ -1,151 +1,177 @@
-[04:20:45] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[04:20:45] install
-[04:21:02] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[04:21:02] network: eth0 has qdisc clsact
-[04:21:03] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[04:21:28] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[04:21:28] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[04:21:28] library: pushing 24 files
-[04:21:57] library: MediaStore lists 24 videos
-[04:21:57] cold start
+[05:26:39] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[05:26:39] install
+[05:26:59] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[05:27:00] network: eth0 has qdisc clsact
+[05:27:00] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[05:27:39] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[05:27:39] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[05:27:39] library: pushing 24 files
+[05:28:08] library: MediaStore lists 24 videos
+[05:28:08] cold start
 Status: ok
-TotalTime: 2308
-WaitTime: 2313
-[04:22:10] flow weakline
-[04:22:10] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[04:22:20] weakline: the line under a 900kbit cap measured 495 kbps (600000 bytes)
-[04:22:21] weakline pass 1 (a): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:22:25] weakline: line 4mbit for 40 s
-[04:23:05] weakline: line 900kbit for 120 s
-[04:25:05] weakline: line 3mbit for 60 s
-[04:26:05] weakline: line off for 8 s
-[04:26:13] weakline: line 3mbit for 60 s
-[04:27:17] weakline pass 1 (a): first frame 5044 ms, stalls 14 (>=250 ms), blips 105, frozen 49649 ms, longest 16010 ms, time 480p:25% 360p:5% 240p:70%
-[04:27:17] weakline pass 1 (a): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:27:17] weakline pass 1 step 1 (4mbit): stalls 4, frozen 6551 ms, longest 1969 ms, blips 1, rungs 480p 360p 240p
-[04:27:17] weakline pass 1 step 2 (900kbit): stalls 8, frozen 25080 ms, longest 13396 ms, blips 101, rungs -
-[04:27:17] weakline pass 1 step 3 (3mbit): stalls 2, frozen 16730 ms, longest 16010 ms, blips 0, rungs 360p
-[04:27:17] weakline pass 1 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
-[04:27:17] weakline pass 1 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:27:18] weakline pass 2 (b): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:27:21] weakline: line 4mbit for 40 s
-[04:28:01] weakline: line 900kbit for 120 s
-[04:30:01] weakline: line 3mbit for 60 s
-[04:31:01] weakline: line off for 8 s
-[04:31:10] weakline: line 3mbit for 60 s
-[04:32:13] weakline pass 2 (b): first frame 3028 ms, stalls 0 (>=250 ms), blips 6, frozen 150 ms, longest 70 ms, time 480p:100%
-[04:32:13] weakline pass 2 (b): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:32:13] weakline pass 2 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs 480p
-[04:32:13] weakline pass 2 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:32:13] weakline pass 2 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs -
-[04:32:13] weakline pass 2 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:32:13] weakline pass 2 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:32:14] weakline pass 3 (a): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:32:17] weakline: line 4mbit for 40 s
-[04:32:57] weakline: line 900kbit for 120 s
-[04:34:57] weakline: line 3mbit for 60 s
-[04:35:57] weakline: line off for 8 s
-[04:36:06] weakline: line 3mbit for 60 s
-[04:37:09] weakline pass 3 (a): first frame 2515 ms, stalls 0 (>=250 ms), blips 5, frozen 65 ms, longest 51 ms, time 480p:100%
-[04:37:09] weakline pass 3 (a): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:37:09] weakline pass 3 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs 480p
-[04:37:09] weakline pass 3 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:37:09] weakline pass 3 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:37:09] weakline pass 3 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:37:09] weakline pass 3 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:37:11] weakline pass 4 (b): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:37:13] weakline: line 4mbit for 40 s
-[04:37:53] weakline: line 900kbit for 120 s
-[04:39:53] weakline: line 3mbit for 60 s
-[04:40:53] weakline: line off for 8 s
-[04:41:01] weakline: line 3mbit for 60 s
-[04:42:05] weakline pass 4 (b): first frame 2859 ms, stalls 0 (>=250 ms), blips 8, frozen 176 ms, longest 78 ms, time 480p:92% 360p:6% 240p:2%
-[04:42:05] weakline pass 4 (b): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:42:05] weakline pass 4 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs 480p
-[04:42:05] weakline pass 4 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 360p 480p
-[04:42:05] weakline pass 4 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:42:05] weakline pass 4 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:42:05] weakline pass 4 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 240p 360p 480p
-[04:42:06] weakline pass 5 (a): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:42:09] weakline: line 4mbit for 40 s
-[04:42:49] weakline: line 900kbit for 120 s
-[04:44:49] weakline: line 3mbit for 60 s
-[04:45:49] weakline: line off for 8 s
-[04:45:57] weakline: line 3mbit for 60 s
-[04:47:01] weakline pass 5 (a): first frame 2841 ms, stalls 0 (>=250 ms), blips 2, frozen 31 ms, longest 26 ms, time 480p:100%
-[04:47:01] weakline pass 5 (a): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:47:01] weakline pass 5 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs 480p
-[04:47:01] weakline pass 5 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:47:01] weakline pass 5 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:47:01] weakline pass 5 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:47:01] weakline pass 5 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:47:02] weakline pass 6 (b): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:47:05] weakline: line 4mbit for 40 s
-[04:47:45] weakline: line 900kbit for 120 s
-[04:49:45] weakline: line 3mbit for 60 s
-[04:50:45] weakline: line off for 8 s
-[04:50:53] weakline: line 3mbit for 60 s
-[04:51:57] weakline pass 6 (b): first frame 3179 ms, stalls 0 (>=250 ms), blips 6, frozen 184 ms, longest 83 ms, time 480p:96% 360p:2% 240p:2%
-[04:51:57] weakline pass 6 (b): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:51:57] weakline pass 6 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs 480p
-[04:51:57] weakline pass 6 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[04:51:57] weakline pass 6 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 240p 360p 480p
-[04:51:57] weakline pass 6 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:51:57] weakline pass 6 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:51:58] weakline pass 7 (a): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:52:01] weakline: line 4mbit for 40 s
-[04:52:41] weakline: line 900kbit for 120 s
-[04:54:41] weakline: line 3mbit for 60 s
-[04:55:41] weakline: line off for 8 s
-[04:55:49] weakline: line 3mbit for 60 s
-[04:56:53] weakline pass 7 (a): first frame 2839 ms, stalls 0 (>=250 ms), blips 4, frozen 24 ms, longest 11 ms, time 480p:100%
-[04:56:53] weakline pass 7 (a): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[04:56:53] weakline pass 7 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs 480p
-[04:56:53] weakline pass 7 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:56:53] weakline pass 7 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:56:53] weakline pass 7 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 0, rungs -
-[04:56:53] weakline pass 7 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[04:56:54] weakline pass 8 (b): the test film from its start; the line in steps: 4mbit:40 900kbit:120 3mbit:60 off:8 3mbit:60 (delay 60ms each way, loss 0.5%)
-[04:56:57] weakline: line 4mbit for 40 s
-[04:57:37] weakline: line 900kbit for 120 s
-[04:59:37] weakline: line 3mbit for 60 s
-[05:00:37] weakline: line off for 8 s
-[05:00:45] weakline: line 3mbit for 60 s
-[05:01:49] weakline pass 8 (b): first frame 2935 ms, stalls 0 (>=250 ms), blips 12, frozen 248 ms, longest 64 ms, time 480p:97% 360p:3%
-[05:01:50] weakline pass 8 (b): exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394
-[05:01:50] weakline pass 8 step 1 (4mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 3, rungs 480p
-[05:01:50] weakline pass 8 step 2 (900kbit): stalls 0, frozen 0 ms, longest 0 ms, blips 5, rungs 360p 480p
-[05:01:50] weakline pass 8 step 3 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[05:01:50] weakline pass 8 step 4 (off): stalls 0, frozen 0 ms, longest 0 ms, blips 1, rungs -
-[05:01:50] weakline pass 8 step 5 (3mbit): stalls 0, frozen 0 ms, longest 0 ms, blips 2, rungs -
-[05:01:50] weakline: the line passed Sent 371197638 bytes 247786 pkt (dropped 1021
-[05:01:51] weakline: relay: 338 connections (0 refused), 376.8 MB to the emulator, 808.4 KB from it
-[05:01:51] weakline a, 4 passes: stalls 14, frozen 49769 ms, longest 16010 ms, blips 116; at 480p or better 81% (25,100,100,100); 480p 81%; 360p 1%; 240p 18%
-[05:01:51] weakline b, 4 passes: stalls 0, frozen 758 ms, longest 83 ms, blips 32; at 480p or better 96% (100,92,96,97); 480p 96%; 360p 3%; 240p 1%
-[05:01:51] weakline climbs pass 1 (a): climbs 2 (240->360p at 221.1 (step 3:3mbit), 360->480p at 229.6 (step 4:off)); stops >= 250 ms 14; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 1 (a): stop 1473 ms at 23.0 (step 1:4mbit, rung 360p, ahead 506 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1960 ms at 24.9 (step 1:4mbit, rung 360p, ahead 1984 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1969 ms at 28.8 (step 1:4mbit, rung 240p, ahead 876 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1149 ms at 31.1 (step 1:4mbit, rung 240p, ahead 1937 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 3603 ms at 89.7 (step 2:900kbit, rung 240p, ahead 252 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 2188 ms at 107.7 (step 2:900kbit, rung 240p, ahead 143 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1585 ms at 111.5 (step 2:900kbit, rung 240p, ahead 694 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1179 ms at 115.7 (step 2:900kbit, rung 240p, ahead 128 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 13396 ms at 126.9 (step 2:900kbit, rung 240p, ahead 419 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1573 ms at 141.4 (step 2:900kbit, rung 240p, ahead 1276 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 1000 ms at 144.3 (step 2:900kbit, rung 240p, ahead 1102 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 556 ms at 147.6 (step 2:900kbit, rung 240p, ahead 1512 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 16010 ms at 150.3 (step 2:900kbit, rung 240p, ahead 150 ms), no climb before it
-[05:01:51] weakline climbs pass 1 (a): stop 720 ms at 166.4 (step 3:3mbit, rung 240p, ahead 1966 ms), no climb before it
-[05:01:51] weakline climbs pass 2 (b): climbs 0 (none); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 3 (a): climbs 0 (none); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 4 (b): climbs 3 (360->480p at 56.8 (step 2:900kbit), 240->360p at 261.8 (step 5:3mbit), 360->480p at 264.2 (step 5:3mbit)); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 5 (a): climbs 0 (none); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 6 (b): climbs 2 (240->360p at 199.5 (step 3:3mbit), 360->480p at 203.8 (step 3:3mbit)); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 7 (a): climbs 0 (none); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs pass 8 (b): climbs 1 (360->480p at 51.9 (step 2:900kbit)); stops >= 250 ms 0; a climb then a stop within 30 s: 0, the line dry (ahead < 4000 ms): 0
-[05:01:51] weakline climbs a, 4 passes: a climb then a stop in 0, the line dry in 0; stops >= 250 ms 14, frozen 48361 ms
-[05:01:51] weakline climbs b, 4 passes: a climb then a stop in 0, the line dry in 0; stops >= 250 ms 0, frozen 0 ms
-[05:01:51] weakline climbs, all 8 passes: climbs 8, a climb then a stop within 30 s 0 (in 0 passes), the line dry 0; stops >= 250 ms 14
-[05:01:51] flow weakline done
-[05:01:55] done
+TotalTime: 3038
+WaitTime: 3048
+[05:28:22] flow weakjumps
+[05:28:22] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[05:28:28] weakjumps: the line under a 900kbit cap measured 786 kbps (600000 bytes)
+[05:28:30] weakjumps pass 1 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:40:20] weakjumps pass 1 (on): 7 jumps
+[05:40:20] weakjumps pass 1 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1453 ready_ms=124 before=480 first=480 low_ms=0 back_ms=0 stall_ms=345 mean=480 rule=on conn=kept conn_ms=0 wait_ms=521 tcp_ms=-1 tls_ms=-1 answer_ms=521 seg_ms=1547 cut=0 idle_ms=6888 pool=1 state=open other=open
+[05:40:20] weakjumps pass 1 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2122 ready_ms=2471 before=480 first=480 low_ms=600 back_ms=0 stall_ms=448 mean=476 rule=on conn=kept conn_ms=0 wait_ms=444 tcp_ms=-1 tls_ms=-1 answer_ms=444 seg_ms=1968 cut=1 idle_ms=4657 pool=2 state=open other=reading
+[05:40:20] weakjumps pass 1 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3087 ready_ms=3936 before=360 first=480 low_ms=0 back_ms=0 stall_ms=278 mean=400 rule=on conn=kept conn_ms=0 wait_ms=501 tcp_ms=-1 tls_ms=-1 answer_ms=501 seg_ms=3371 cut=0 idle_ms=1157 pool=1 state=open other=lost-hungup
+[05:40:20] weakjumps pass 1 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=768 ready_ms=2638 before=480 first=480 low_ms=0 back_ms=0 stall_ms=275 mean=480 rule=on conn=kept conn_ms=0 wait_ms=507 tcp_ms=-1 tls_ms=-1 answer_ms=507 seg_ms=1002 cut=1 idle_ms=1788 pool=2 state=open other=reading
+[05:40:20] weakjumps pass 1 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2014 ready_ms=3294 before=480 first=480 low_ms=0 back_ms=0 stall_ms=279 mean=480 rule=on conn=new conn_ms=830 wait_ms=402 tcp_ms=187 tls_ms=627 answer_ms=1232 seg_ms=1785 cut=1 idle_ms=9946 pool=1 state=lost-cut other=reading
+[05:40:20] weakjumps pass 1 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2619 ready_ms=333 before=480 first=480 low_ms=0 back_ms=0 stall_ms=414 mean=480 rule=on conn=kept conn_ms=0 wait_ms=382 tcp_ms=-1 tls_ms=-1 answer_ms=382 seg_ms=2162 cut=0 idle_ms=1581 pool=2 state=open other=lost-hungup
+[05:40:20] weakjumps pass 1 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1474 ready_ms=2139 before=480 first=480 low_ms=0 back_ms=0 stall_ms=339 mean=480 rule=on conn=kept conn_ms=0 wait_ms=592 tcp_ms=-1 tls_ms=-1 answer_ms=592 seg_ms=1380 cut=1 idle_ms=3178 pool=1 state=open other=reading
+[05:40:22] weakjumps pass 2 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:44:02] weakjumps pass 2 (lost): 7 jumps
+[05:44:02] weakjumps pass 2 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1780 ready_ms=106 before=480 first=480 low_ms=0 back_ms=0 stall_ms=412 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=406 tcp_ms=-1 tls_ms=-1 answer_ms=406 seg_ms=1388 cut=0 idle_ms=3631 pool=2 state=open other=open
+[05:44:02] weakjumps pass 2 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1995 ready_ms=3057 before=480 first=360 low_ms=9300 back_ms=11180 stall_ms=411 mean=412 rule=lost conn=new conn_ms=436 wait_ms=455 tcp_ms=132 tls_ms=293 answer_ms=891 seg_ms=1595 cut=0 idle_ms=5270 pool=1 state=open other=reading
+[05:44:02] weakjumps pass 2 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1759 ready_ms=2221 before=480 first=480 low_ms=0 back_ms=0 stall_ms=314 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=510 tcp_ms=-1 tls_ms=-1 answer_ms=510 seg_ms=1766 cut=1 idle_ms=1527 pool=2 state=open other=reading
+[05:44:02] weakjumps pass 2 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=959 ready_ms=2897 before=480 first=480 low_ms=0 back_ms=0 stall_ms=274 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=462 tcp_ms=-1 tls_ms=-1 answer_ms=462 seg_ms=1091 cut=1 idle_ms=6510 pool=1 state=open other=reading
+[05:44:02] weakjumps pass 2 (lost): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1504 ready_ms=2615 before=480 first=480 low_ms=1400 back_ms=0 stall_ms=314 mean=470 rule=lost conn=kept conn_ms=2 wait_ms=476 tcp_ms=-1 tls_ms=-1 answer_ms=478 seg_ms=1231 cut=1 idle_ms=2200 pool=1 state=open other=reading
+[05:44:02] weakjumps pass 2 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1865 ready_ms=324 before=360 first=480 low_ms=0 back_ms=0 stall_ms=307 mean=429 rule=lost conn=kept conn_ms=0 wait_ms=501 tcp_ms=-1 tls_ms=-1 answer_ms=501 seg_ms=1807 cut=1 idle_ms=1927 pool=1 state=open other=lost-hungup
+[05:44:02] weakjumps pass 2 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1908 ready_ms=2869 before=360 first=480 low_ms=0 back_ms=0 stall_ms=459 mean=497 rule=lost conn=kept conn_ms=0 wait_ms=585 tcp_ms=-1 tls_ms=-1 answer_ms=585 seg_ms=1350 cut=1 idle_ms=3109 pool=1 state=open other=reading
+[05:44:04] weakjumps pass 3 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:47:43] weakjumps pass 3 (on): 7 jumps
+[05:47:43] weakjumps pass 3 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1223 ready_ms=363 before=480 first=480 low_ms=0 back_ms=0 stall_ms=351 mean=480 rule=on conn=kept conn_ms=0 wait_ms=384 tcp_ms=-1 tls_ms=-1 answer_ms=384 seg_ms=1260 cut=0 idle_ms=7841 pool=2 state=open other=open
+[05:47:43] weakjumps pass 3 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1214 ready_ms=1916 before=480 first=480 low_ms=0 back_ms=0 stall_ms=248 mean=480 rule=on conn=kept conn_ms=0 wait_ms=428 tcp_ms=-1 tls_ms=-1 answer_ms=428 seg_ms=1221 cut=1 idle_ms=2512 pool=1 state=open other=reading
+[05:47:43] weakjumps pass 3 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1577 ready_ms=2168 before=480 first=480 low_ms=0 back_ms=0 stall_ms=289 mean=480 rule=on conn=kept conn_ms=0 wait_ms=433 tcp_ms=-1 tls_ms=-1 answer_ms=433 seg_ms=1388 cut=1 idle_ms=9346 pool=2 state=open other=reading
+[05:47:43] weakjumps pass 3 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=616 ready_ms=2728 before=480 first=360 low_ms=15300 back_ms=18633 stall_ms=421 mean=368 rule=on conn=kept conn_ms=0 wait_ms=528 tcp_ms=-1 tls_ms=-1 answer_ms=532 seg_ms=869 cut=1 idle_ms=8170 pool=1 state=open other=reading
+[05:47:43] weakjumps pass 3 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1489 ready_ms=2712 before=480 first=360 low_ms=8600 back_ms=10052 stall_ms=405 mean=419 rule=on conn=kept conn_ms=0 wait_ms=390 tcp_ms=-1 tls_ms=-1 answer_ms=390 seg_ms=789 cut=0 idle_ms=11781 pool=1 state=open other=reading
+[05:47:43] weakjumps pass 3 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=937 ready_ms=449 before=480 first=480 low_ms=0 back_ms=0 stall_ms=294 mean=480 rule=on conn=kept conn_ms=0 wait_ms=361 tcp_ms=-1 tls_ms=-1 answer_ms=361 seg_ms=1182 cut=1 idle_ms=8468 pool=1 state=open other=reading
+[05:47:43] weakjumps pass 3 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1279 ready_ms=1906 before=480 first=480 low_ms=10700 back_ms=0 stall_ms=329 mean=403 rule=on conn=kept conn_ms=0 wait_ms=519 tcp_ms=-1 tls_ms=-1 answer_ms=519 seg_ms=1482 cut=1 idle_ms=5613 pool=2 state=open other=reading
+[05:47:45] weakjumps pass 4 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:51:25] weakjumps pass 4 (lost): 7 jumps
+[05:51:25] weakjumps pass 4 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1652 ready_ms=572 before=480 first=480 low_ms=12700 back_ms=0 stall_ms=440 mean=389 rule=lost conn=kept conn_ms=0 wait_ms=439 tcp_ms=-1 tls_ms=-1 answer_ms=439 seg_ms=2038 cut=0 idle_ms=6472 pool=1 state=open other=open
+[05:51:25] weakjumps pass 4 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1681 ready_ms=1960 before=360 first=360 low_ms=0 back_ms=0 stall_ms=284 mean=360 rule=lost conn=kept conn_ms=0 wait_ms=665 tcp_ms=-1 tls_ms=-1 answer_ms=665 seg_ms=1584 cut=1 idle_ms=4910 pool=2 state=open other=reading
+[05:51:25] weakjumps pass 4 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3486 ready_ms=4336 before=360 first=480 low_ms=0 back_ms=0 stall_ms=807 mean=400 rule=lost conn=new conn_ms=793 wait_ms=367 tcp_ms=143 tls_ms=637 answer_ms=1160 seg_ms=3556 cut=1 idle_ms=37994 pool=1 state=lost-cut other=reading
+[05:51:25] weakjumps pass 4 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=676 ready_ms=2552 before=480 first=480 low_ms=0 back_ms=0 stall_ms=306 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=478 tcp_ms=-1 tls_ms=-1 answer_ms=478 seg_ms=788 cut=1 idle_ms=3777 pool=2 state=open other=reading
+[05:51:25] weakjumps pass 4 (lost): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1474 ready_ms=2718 before=480 first=480 low_ms=0 back_ms=0 stall_ms=291 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=428 tcp_ms=-1 tls_ms=-1 answer_ms=431 seg_ms=994 cut=1 idle_ms=7492 pool=1 state=open other=reading
+[05:51:25] weakjumps pass 4 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2199 ready_ms=252 before=480 first=480 low_ms=10900 back_ms=0 stall_ms=723 mean=400 rule=lost conn=kept conn_ms=0 wait_ms=416 tcp_ms=-1 tls_ms=-1 answer_ms=416 seg_ms=2053 cut=1 idle_ms=622 pool=1 state=open other=reading
+[05:51:25] weakjumps pass 4 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=896 ready_ms=2115 before=480 first=480 low_ms=0 back_ms=0 stall_ms=319 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=389 tcp_ms=-1 tls_ms=-1 answer_ms=389 seg_ms=1155 cut=1 idle_ms=4969 pool=1 state=open other=reading
+[05:51:26] weakjumps pass 5 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:55:07] weakjumps pass 5 (on): 7 jumps
+[05:55:07] weakjumps pass 5 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1943 ready_ms=144 before=480 first=480 low_ms=10800 back_ms=0 stall_ms=479 mean=398 rule=on conn=kept conn_ms=0 wait_ms=498 tcp_ms=-1 tls_ms=-1 answer_ms=498 seg_ms=1429 cut=0 idle_ms=627 pool=1 state=open other=open
+[05:55:07] weakjumps pass 5 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2296 ready_ms=2892 before=480 first=480 low_ms=9400 back_ms=0 stall_ms=283 mean=412 rule=on conn=kept conn_ms=0 wait_ms=714 tcp_ms=-1 tls_ms=-1 answer_ms=714 seg_ms=2431 cut=0 idle_ms=1105 pool=1 state=open other=lost-hungup
+[05:55:07] weakjumps pass 5 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=3015 ready_ms=3870 before=360 first=720 low_ms=0 back_ms=0 stall_ms=299 mean=489 rule=on conn=kept conn_ms=0 wait_ms=540 tcp_ms=-1 tls_ms=-1 answer_ms=540 seg_ms=2810 cut=0 idle_ms=1002 pool=2 state=open other=reading
+[05:55:07] weakjumps pass 5 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=628 ready_ms=3104 before=480 first=480 low_ms=0 back_ms=0 stall_ms=288 mean=480 rule=on conn=kept conn_ms=0 wait_ms=545 tcp_ms=-1 tls_ms=-1 answer_ms=546 seg_ms=804 cut=1 idle_ms=3990 pool=2 state=open other=reading
+[05:55:07] weakjumps pass 5 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1032 ready_ms=2126 before=480 first=480 low_ms=0 back_ms=0 stall_ms=311 mean=480 rule=on conn=kept conn_ms=0 wait_ms=477 tcp_ms=-1 tls_ms=-1 answer_ms=477 seg_ms=931 cut=1 idle_ms=5191 pool=1 state=open other=reading
+[05:55:07] weakjumps pass 5 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1221 ready_ms=422 before=480 first=480 low_ms=0 back_ms=0 stall_ms=283 mean=480 rule=on conn=kept conn_ms=0 wait_ms=498 tcp_ms=-1 tls_ms=-1 answer_ms=498 seg_ms=1294 cut=1 idle_ms=3817 pool=1 state=open other=reading
+[05:55:07] weakjumps pass 5 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1557 ready_ms=1999 before=480 first=480 low_ms=0 back_ms=0 stall_ms=294 mean=480 rule=on conn=new conn_ms=271 wait_ms=486 tcp_ms=125 tls_ms=142 answer_ms=757 seg_ms=1434 cut=1 idle_ms=14442 pool=1 state=lost-cut other=reading
+[05:55:09] weakjumps pass 6 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[05:58:48] weakjumps pass 6 (lost): 7 jumps
+[05:58:48] weakjumps pass 6 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1235 ready_ms=241 before=480 first=480 low_ms=0 back_ms=0 stall_ms=333 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=630 tcp_ms=-1 tls_ms=-1 answer_ms=630 seg_ms=1429 cut=0 idle_ms=7975 pool=1 state=open other=open
+[05:58:48] weakjumps pass 6 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1856 ready_ms=2660 before=480 first=360 low_ms=10800 back_ms=13040 stall_ms=416 mean=402 rule=lost conn=kept conn_ms=1 wait_ms=742 tcp_ms=-1 tls_ms=-1 answer_ms=744 seg_ms=1665 cut=0 idle_ms=3623 pool=2 state=open other=reading
+[05:58:48] weakjumps pass 6 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1410 ready_ms=2354 before=480 first=360 low_ms=9500 back_ms=11249 stall_ms=496 mean=411 rule=lost conn=kept conn_ms=0 wait_ms=452 tcp_ms=-1 tls_ms=-1 answer_ms=453 seg_ms=1110 cut=0 idle_ms=10522 pool=1 state=open other=reading
+[05:58:48] weakjumps pass 6 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1335 ready_ms=2876 before=480 first=480 low_ms=0 back_ms=0 stall_ms=319 mean=480 rule=lost conn=kept conn_ms=2 wait_ms=615 tcp_ms=-1 tls_ms=-1 answer_ms=617 seg_ms=850 cut=1 idle_ms=5996 pool=1 state=open other=reading
+[05:58:48] weakjumps pass 6 (lost): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=2006 ready_ms=2775 before=480 first=360 low_ms=8500 back_ms=10297 stall_ms=347 mean=419 rule=lost conn=kept conn_ms=0 wait_ms=385 tcp_ms=-1 tls_ms=-1 answer_ms=385 seg_ms=1061 cut=0 idle_ms=9293 pool=2 state=open other=reading
+[05:58:48] weakjumps pass 6 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1944 ready_ms=329 before=480 first=360 low_ms=12900 back_ms=15633 stall_ms=408 mean=386 rule=lost conn=kept conn_ms=0 wait_ms=444 tcp_ms=-1 tls_ms=-1 answer_ms=444 seg_ms=1850 cut=0 idle_ms=8655 pool=2 state=open other=reading
+[05:58:48] weakjumps pass 6 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1500 ready_ms=2050 before=480 first=480 low_ms=0 back_ms=0 stall_ms=413 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=386 tcp_ms=-1 tls_ms=-1 answer_ms=386 seg_ms=1299 cut=1 idle_ms=8996 pool=1 state=open other=reading
+[05:58:50] weakjumps pass 7 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:02:26] weakjumps pass 7 (on): 7 jumps
+[06:02:26] weakjumps pass 7 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1661 ready_ms=241 before=480 first=480 low_ms=10800 back_ms=0 stall_ms=378 mean=400 rule=on conn=kept conn_ms=0 wait_ms=546 tcp_ms=-1 tls_ms=-1 answer_ms=546 seg_ms=1454 cut=1 idle_ms=3857 pool=2 state=open other=reading
+[06:02:26] weakjumps pass 7 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1182 ready_ms=1627 before=480 first=480 low_ms=0 back_ms=0 stall_ms=275 mean=480 rule=on conn=kept conn_ms=0 wait_ms=399 tcp_ms=-1 tls_ms=-1 answer_ms=399 seg_ms=1067 cut=1 idle_ms=9368 pool=2 state=open other=reading
+[06:02:26] weakjumps pass 7 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1457 ready_ms=2184 before=480 first=480 low_ms=0 back_ms=0 stall_ms=300 mean=480 rule=on conn=kept conn_ms=0 wait_ms=386 tcp_ms=-1 tls_ms=-1 answer_ms=386 seg_ms=1220 cut=1 idle_ms=9633 pool=1 state=open other=reading
+[06:02:26] weakjumps pass 7 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1192 ready_ms=2953 before=480 first=480 low_ms=0 back_ms=0 stall_ms=319 mean=480 rule=on conn=kept conn_ms=0 wait_ms=544 tcp_ms=-1 tls_ms=-1 answer_ms=545 seg_ms=796 cut=1 idle_ms=2576 pool=1 state=open other=reading
+[06:02:26] weakjumps pass 7 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=888 ready_ms=2099 before=480 first=480 low_ms=0 back_ms=0 stall_ms=293 mean=480 rule=on conn=kept conn_ms=0 wait_ms=613 tcp_ms=-1 tls_ms=-1 answer_ms=613 seg_ms=909 cut=0 idle_ms=60 pool=1 state=open other=open
+[06:02:26] weakjumps pass 7 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1676 ready_ms=434 before=480 first=480 low_ms=0 back_ms=0 stall_ms=308 mean=480 rule=on conn=kept conn_ms=0 wait_ms=545 tcp_ms=-1 tls_ms=-1 answer_ms=545 seg_ms=1887 cut=1 idle_ms=7289 pool=2 state=open other=reading
+[06:02:26] weakjumps pass 7 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1650 ready_ms=2163 before=480 first=480 low_ms=0 back_ms=0 stall_ms=266 mean=480 rule=on conn=kept conn_ms=0 wait_ms=469 tcp_ms=-1 tls_ms=-1 answer_ms=469 seg_ms=1455 cut=1 idle_ms=4052 pool=1 state=open other=reading
+[06:02:28] weakjumps pass 8 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:06:09] weakjumps pass 8 (lost): 7 jumps
+[06:06:09] weakjumps pass 8 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=2303 ready_ms=129 before=480 first=480 low_ms=0 back_ms=0 stall_ms=292 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=412 tcp_ms=-1 tls_ms=-1 answer_ms=412 seg_ms=1381 cut=1 idle_ms=7180 pool=2 state=open other=reading
+[06:06:09] weakjumps pass 8 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2413 ready_ms=3053 before=480 first=480 low_ms=0 back_ms=0 stall_ms=323 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=523 tcp_ms=-1 tls_ms=-1 answer_ms=523 seg_ms=1520 cut=0 idle_ms=2674 pool=2 state=open other=lost-hungup
+[06:06:09] weakjumps pass 8 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2276 ready_ms=3054 before=480 first=480 low_ms=0 back_ms=0 stall_ms=443 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=424 tcp_ms=-1 tls_ms=-1 answer_ms=425 seg_ms=1825 cut=0 idle_ms=656 pool=2 state=open other=open
+[06:06:09] weakjumps pass 8 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1854 ready_ms=3564 before=480 first=480 low_ms=0 back_ms=0 stall_ms=412 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=439 tcp_ms=-1 tls_ms=-1 answer_ms=439 seg_ms=860 cut=0 idle_ms=2138 pool=2 state=open other=lost-hungup
+[06:06:09] weakjumps pass 8 (lost): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1603 ready_ms=3037 before=480 first=480 low_ms=0 back_ms=0 stall_ms=346 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=560 tcp_ms=-1 tls_ms=-1 answer_ms=560 seg_ms=1060 cut=0 idle_ms=610 pool=2 state=open other=open
+[06:06:09] weakjumps pass 8 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2340 ready_ms=475 before=480 first=360 low_ms=17000 back_ms=-1 stall_ms=434 mean=360 rule=lost conn=kept conn_ms=1 wait_ms=721 tcp_ms=-1 tls_ms=-1 answer_ms=723 seg_ms=2125 cut=0 idle_ms=10024 pool=1 state=open other=reading
+[06:06:09] weakjumps pass 8 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2671 ready_ms=3400 before=360 first=480 low_ms=0 back_ms=0 stall_ms=411 mean=480 rule=lost conn=kept conn_ms=12 wait_ms=416 tcp_ms=-1 tls_ms=-1 answer_ms=429 seg_ms=2020 cut=1 idle_ms=5435 pool=2 state=open other=reading
+[06:06:10] weakjumps pass 9 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:09:51] weakjumps pass 9 (on): 7 jumps
+[06:09:51] weakjumps pass 9 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1389 ready_ms=225 before=480 first=480 low_ms=0 back_ms=0 stall_ms=407 mean=480 rule=on conn=kept conn_ms=0 wait_ms=356 tcp_ms=-1 tls_ms=-1 answer_ms=356 seg_ms=1290 cut=0 idle_ms=875 pool=1 state=open other=open
+[06:09:51] weakjumps pass 9 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1396 ready_ms=2128 before=480 first=480 low_ms=0 back_ms=0 stall_ms=257 mean=480 rule=on conn=kept conn_ms=0 wait_ms=401 tcp_ms=-1 tls_ms=-1 answer_ms=401 seg_ms=1325 cut=1 idle_ms=2981 pool=2 state=open other=reading
+[06:09:51] weakjumps pass 9 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1519 ready_ms=1975 before=480 first=480 low_ms=0 back_ms=0 stall_ms=335 mean=480 rule=on conn=kept conn_ms=0 wait_ms=405 tcp_ms=-1 tls_ms=-1 answer_ms=405 seg_ms=1191 cut=1 idle_ms=8541 pool=1 state=open other=reading
+[06:09:51] weakjumps pass 9 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1228 ready_ms=3145 before=480 first=480 low_ms=0 back_ms=0 stall_ms=258 mean=480 rule=on conn=new conn_ms=297 wait_ms=412 tcp_ms=135 tls_ms=150 answer_ms=709 seg_ms=1049 cut=0 idle_ms=16094 pool=1 state=lost-cut other=reading
+[06:09:51] weakjumps pass 9 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1736 ready_ms=2966 before=480 first=480 low_ms=8700 back_ms=0 stall_ms=410 mean=414 rule=on conn=kept conn_ms=0 wait_ms=553 tcp_ms=-1 tls_ms=-1 answer_ms=553 seg_ms=1389 cut=0 idle_ms=3628 pool=2 state=open other=reading
+[06:09:51] weakjumps pass 9 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1368 ready_ms=220 before=480 first=480 low_ms=3700 back_ms=0 stall_ms=418 mean=453 rule=on conn=kept conn_ms=0 wait_ms=445 tcp_ms=-1 tls_ms=-1 answer_ms=446 seg_ms=1289 cut=0 idle_ms=1034 pool=1 state=open other=lost-hungup
+[06:09:51] weakjumps pass 9 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1893 ready_ms=3067 before=360 first=480 low_ms=0 back_ms=0 stall_ms=425 mean=480 rule=on conn=kept conn_ms=0 wait_ms=734 tcp_ms=-1 tls_ms=-1 answer_ms=734 seg_ms=1501 cut=1 idle_ms=2667 pool=1 state=open other=reading
+[06:09:53] weakjumps pass 10 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:13:34] weakjumps pass 10 (lost): 7 jumps
+[06:13:34] weakjumps pass 10 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1283 ready_ms=133 before=480 first=480 low_ms=0 back_ms=0 stall_ms=290 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=475 tcp_ms=-1 tls_ms=-1 answer_ms=476 seg_ms=1192 cut=0 idle_ms=6974 pool=1 state=open other=open
+[06:13:34] weakjumps pass 10 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1564 ready_ms=1986 before=480 first=480 low_ms=0 back_ms=0 stall_ms=294 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=371 tcp_ms=-1 tls_ms=-1 answer_ms=371 seg_ms=1327 cut=1 idle_ms=1808 pool=1 state=open other=reading
+[06:13:34] weakjumps pass 10 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1437 ready_ms=2020 before=480 first=480 low_ms=0 back_ms=0 stall_ms=282 mean=480 rule=lost conn=kept conn_ms=6 wait_ms=402 tcp_ms=-1 tls_ms=-1 answer_ms=408 seg_ms=1371 cut=1 idle_ms=6752 pool=2 state=open other=reading
+[06:13:34] weakjumps pass 10 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1468 ready_ms=3443 before=480 first=480 low_ms=0 back_ms=0 stall_ms=408 mean=480 rule=lost conn=kept conn_ms=48 wait_ms=434 tcp_ms=-1 tls_ms=-1 answer_ms=482 seg_ms=771 cut=1 idle_ms=6954 pool=1 state=open other=reading
+[06:13:34] weakjumps pass 10 (lost): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1756 ready_ms=2983 before=480 first=480 low_ms=0 back_ms=0 stall_ms=301 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=516 tcp_ms=-1 tls_ms=-1 answer_ms=516 seg_ms=1049 cut=0 idle_ms=608 pool=1 state=open other=open
+[06:13:34] weakjumps pass 10 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2445 ready_ms=325 before=480 first=480 low_ms=0 back_ms=0 stall_ms=250 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=347 tcp_ms=-1 tls_ms=-1 answer_ms=347 seg_ms=1807 cut=1 idle_ms=1315 pool=1 state=open other=reading
+[06:13:34] weakjumps pass 10 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2280 ready_ms=3101 before=480 first=480 low_ms=8800 back_ms=0 stall_ms=358 mean=415 rule=lost conn=kept conn_ms=0 wait_ms=497 tcp_ms=-1 tls_ms=-1 answer_ms=497 seg_ms=1376 cut=1 idle_ms=5646 pool=2 state=open other=reading
+[06:13:35] weakjumps pass 11 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:17:12] weakjumps pass 11 (on): 7 jumps
+[06:17:12] weakjumps pass 11 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1708 ready_ms=245 before=480 first=480 low_ms=0 back_ms=0 stall_ms=318 mean=480 rule=on conn=kept conn_ms=0 wait_ms=403 tcp_ms=-1 tls_ms=-1 answer_ms=403 seg_ms=1552 cut=0 idle_ms=2764 pool=1 state=open other=open
+[06:17:12] weakjumps pass 11 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1409 ready_ms=2099 before=480 first=480 low_ms=0 back_ms=0 stall_ms=293 mean=480 rule=on conn=kept conn_ms=0 wait_ms=506 tcp_ms=-1 tls_ms=-1 answer_ms=506 seg_ms=1533 cut=1 idle_ms=2694 pool=2 state=open other=reading
+[06:17:12] weakjumps pass 11 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1523 ready_ms=2277 before=480 first=480 low_ms=5400 back_ms=0 stall_ms=524 mean=440 rule=on conn=kept conn_ms=0 wait_ms=406 tcp_ms=-1 tls_ms=-1 answer_ms=407 seg_ms=1340 cut=1 idle_ms=4 pool=2 state=open other=open
+[06:17:12] weakjumps pass 11 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1867 ready_ms=3715 before=360 first=480 low_ms=0 back_ms=0 stall_ms=410 mean=480 rule=on conn=kept conn_ms=0 wait_ms=680 tcp_ms=-1 tls_ms=-1 answer_ms=680 seg_ms=1297 cut=1 idle_ms=2335 pool=2 state=open other=reading
+[06:17:12] weakjumps pass 11 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1529 ready_ms=2650 before=480 first=480 low_ms=0 back_ms=0 stall_ms=298 mean=480 rule=on conn=kept conn_ms=0 wait_ms=452 tcp_ms=-1 tls_ms=-1 answer_ms=452 seg_ms=969 cut=1 idle_ms=1832 pool=2 state=open other=reading
+[06:17:12] weakjumps pass 11 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1762 ready_ms=238 before=480 first=480 low_ms=0 back_ms=0 stall_ms=410 mean=480 rule=on conn=kept conn_ms=4 wait_ms=368 tcp_ms=-1 tls_ms=-1 answer_ms=372 seg_ms=1769 cut=1 idle_ms=2200 pool=2 state=open other=reading
+[06:17:12] weakjumps pass 11 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1530 ready_ms=1878 before=480 first=480 low_ms=0 back_ms=0 stall_ms=429 mean=480 rule=on conn=kept conn_ms=0 wait_ms=373 tcp_ms=-1 tls_ms=-1 answer_ms=377 seg_ms=1317 cut=1 idle_ms=4958 pool=1 state=open other=reading
+[06:17:13] weakjumps pass 12 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:20:50] weakjumps pass 12 (lost): 7 jumps
+[06:20:50] weakjumps pass 12 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1383 ready_ms=340 before=480 first=480 low_ms=4000 back_ms=0 stall_ms=336 mean=451 rule=lost conn=kept conn_ms=0 wait_ms=389 tcp_ms=-1 tls_ms=-1 answer_ms=389 seg_ms=1526 cut=0 idle_ms=5768 pool=2 state=open other=open
+[06:20:50] weakjumps pass 12 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=2797 ready_ms=3390 before=360 first=480 low_ms=0 back_ms=0 stall_ms=491 mean=412 rule=lost conn=kept conn_ms=1 wait_ms=558 tcp_ms=-1 tls_ms=-1 answer_ms=559 seg_ms=2149 cut=1 idle_ms=630 pool=2 state=open other=lost-hungup
+[06:20:50] weakjumps pass 12 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1839 ready_ms=2182 before=480 first=480 low_ms=0 back_ms=0 stall_ms=428 mean=480 rule=lost conn=kept conn_ms=4 wait_ms=467 tcp_ms=-1 tls_ms=-1 answer_ms=471 seg_ms=1400 cut=1 idle_ms=4884 pool=1 state=open other=reading
+[06:20:50] weakjumps pass 12 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1571 ready_ms=3806 before=480 first=720 low_ms=0 back_ms=0 stall_ms=288 mean=624 rule=lost conn=kept conn_ms=0 wait_ms=402 tcp_ms=-1 tls_ms=-1 answer_ms=402 seg_ms=744 cut=1 idle_ms=680 pool=1 state=open other=lost-hungup
+[06:20:50] weakjumps pass 12 (lost): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1156 ready_ms=2558 before=480 first=480 low_ms=0 back_ms=0 stall_ms=301 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=393 tcp_ms=-1 tls_ms=-1 answer_ms=393 seg_ms=783 cut=1 idle_ms=1356 pool=2 state=open other=lost-hungup
+[06:20:50] weakjumps pass 12 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2060 ready_ms=320 before=480 first=480 low_ms=10600 back_ms=0 stall_ms=452 mean=403 rule=lost conn=kept conn_ms=1 wait_ms=559 tcp_ms=-1 tls_ms=-1 answer_ms=560 seg_ms=1992 cut=1 idle_ms=8245 pool=1 state=open other=reading
+[06:20:50] weakjumps pass 12 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=3086 ready_ms=3381 before=360 first=480 low_ms=0 back_ms=0 stall_ms=443 mean=404 rule=lost conn=kept conn_ms=0 wait_ms=524 tcp_ms=-1 tls_ms=-1 answer_ms=525 seg_ms=2028 cut=1 idle_ms=1157 pool=1 state=open other=lost-hungup
+[06:20:51] weakjumps pass 13 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:24:33] weakjumps pass 13 (on): 7 jumps
+[06:24:33] weakjumps pass 13 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1357 ready_ms=280 before=480 first=480 low_ms=0 back_ms=0 stall_ms=349 mean=480 rule=on conn=kept conn_ms=0 wait_ms=415 tcp_ms=-1 tls_ms=-1 answer_ms=415 seg_ms=1450 cut=0 idle_ms=4012 pool=1 state=open other=open
+[06:24:33] weakjumps pass 13 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1534 ready_ms=2343 before=480 first=480 low_ms=0 back_ms=0 stall_ms=340 mean=480 rule=on conn=kept conn_ms=0 wait_ms=537 tcp_ms=-1 tls_ms=-1 answer_ms=537 seg_ms=1331 cut=1 idle_ms=5491 pool=2 state=open other=reading
+[06:24:33] weakjumps pass 13 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1108 ready_ms=1894 before=480 first=480 low_ms=0 back_ms=0 stall_ms=300 mean=480 rule=on conn=kept conn_ms=0 wait_ms=364 tcp_ms=-1 tls_ms=-1 answer_ms=365 seg_ms=1173 cut=1 idle_ms=8848 pool=1 state=open other=reading
+[06:24:33] weakjumps pass 13 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2497 ready_ms=4228 before=480 first=480 low_ms=0 back_ms=0 stall_ms=249 mean=480 rule=on conn=new conn_ms=936 wait_ms=524 tcp_ms=340 tls_ms=536 answer_ms=1460 seg_ms=2005 cut=1 idle_ms=5467 pool=1 state=lost-cut other=lost-hungup
+[06:24:33] weakjumps pass 13 (on): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1348 ready_ms=2383 before=480 first=480 low_ms=8300 back_ms=0 stall_ms=406 mean=420 rule=on conn=kept conn_ms=0 wait_ms=373 tcp_ms=-1 tls_ms=-1 answer_ms=373 seg_ms=885 cut=1 idle_ms=5467 pool=2 state=open other=reading
+[06:24:33] weakjumps pass 13 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1564 ready_ms=109 before=360 first=480 low_ms=0 back_ms=0 stall_ms=427 mean=480 rule=on conn=kept conn_ms=0 wait_ms=503 tcp_ms=-1 tls_ms=-1 answer_ms=503 seg_ms=1102 cut=1 idle_ms=1057 pool=1 state=open other=lost-hungup
+[06:24:33] weakjumps pass 13 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2444 ready_ms=3037 before=480 first=480 low_ms=0 back_ms=0 stall_ms=278 mean=480 rule=on conn=new conn_ms=805 wait_ms=378 tcp_ms=159 tls_ms=580 answer_ms=1183 seg_ms=2237 cut=1 idle_ms=14607 pool=1 state=lost-cut other=reading
+[06:24:35] weakjumps pass 14 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:28:17] weakjumps pass 14 (lost): 7 jumps
+[06:28:17] weakjumps pass 14 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1402 ready_ms=334 before=480 first=480 low_ms=0 back_ms=0 stall_ms=301 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=385 tcp_ms=-1 tls_ms=-1 answer_ms=385 seg_ms=1138 cut=0 idle_ms=4896 pool=2 state=open other=open
+[06:28:17] weakjumps pass 14 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1519 ready_ms=2153 before=480 first=480 low_ms=0 back_ms=0 stall_ms=320 mean=480 rule=lost conn=kept conn_ms=1 wait_ms=477 tcp_ms=-1 tls_ms=-1 answer_ms=478 seg_ms=1356 cut=1 idle_ms=3965 pool=1 state=open other=reading
+[06:28:17] weakjumps pass 14 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=2507 ready_ms=3426 before=480 first=720 low_ms=0 back_ms=0 stall_ms=262 mean=710 rule=lost conn=kept conn_ms=0 wait_ms=531 tcp_ms=-1 tls_ms=-1 answer_ms=531 seg_ms=2072 cut=1 idle_ms=10339 pool=2 state=open other=reading
+[06:28:17] weakjumps pass 14 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=2451 ready_ms=4450 before=480 first=480 low_ms=0 back_ms=0 stall_ms=408 mean=480 rule=lost conn=new conn_ms=1069 wait_ms=408 tcp_ms=436 tls_ms=628 answer_ms=1477 seg_ms=2250 cut=0 idle_ms=12152 pool=1 state=lost-hungup other=lost-cut
+[06:28:17] weakjumps pass 14 (lost): autojump 5/7 at=0.55 want=488 got=489 frozen_ms=1162 ready_ms=2529 before=480 first=480 low_ms=0 back_ms=0 stall_ms=416 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=401 tcp_ms=-1 tls_ms=-1 answer_ms=401 seg_ms=891 cut=0 idle_ms=7382 pool=2 state=open other=reading
+[06:28:17] weakjumps pass 14 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=1946 ready_ms=298 before=480 first=720 low_ms=10400 back_ms=0 stall_ms=412 mean=407 rule=lost conn=kept conn_ms=0 wait_ms=545 tcp_ms=-1 tls_ms=-1 answer_ms=545 seg_ms=2043 cut=0 idle_ms=4132 pool=2 state=open other=reading
+[06:28:17] weakjumps pass 14 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1976 ready_ms=2707 before=360 first=360 low_ms=0 back_ms=0 stall_ms=430 mean=412 rule=lost conn=new conn_ms=565 wait_ms=388 tcp_ms=160 tls_ms=400 answer_ms=953 seg_ms=1759 cut=1 idle_ms=24455 pool=2 state=lost-cut other=lost-hungup
+[06:28:18] weakjumps pass 15 (on): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:31:56] weakjumps pass 15 (on): 7 jumps
+[06:31:56] weakjumps pass 15 (on): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=1772 ready_ms=313 before=480 first=360 low_ms=16600 back_ms=-1 stall_ms=413 mean=360 rule=on conn=kept conn_ms=0 wait_ms=441 tcp_ms=-1 tls_ms=-1 answer_ms=441 seg_ms=1691 cut=0 idle_ms=1473 pool=2 state=open other=open
+[06:31:56] weakjumps pass 15 (on): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1914 ready_ms=2255 before=360 first=360 low_ms=0 back_ms=0 stall_ms=472 mean=414 rule=on conn=new conn_ms=423 wait_ms=495 tcp_ms=135 tls_ms=169 answer_ms=918 seg_ms=1549 cut=0 idle_ms=18523 pool=1 state=lost-cut other=reading
+[06:31:56] weakjumps pass 15 (on): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1625 ready_ms=2310 before=480 first=480 low_ms=0 back_ms=0 stall_ms=283 mean=480 rule=on conn=kept conn_ms=2 wait_ms=500 tcp_ms=-1 tls_ms=-1 answer_ms=502 seg_ms=1487 cut=1 idle_ms=2461 pool=1 state=open other=reading
+[06:31:56] weakjumps pass 15 (on): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1070 ready_ms=3086 before=480 first=480 low_ms=0 back_ms=0 stall_ms=420 mean=480 rule=on conn=kept conn_ms=0 wait_ms=544 tcp_ms=-1 tls_ms=-1 answer_ms=544 seg_ms=786 cut=0 idle_ms=636 pool=1 state=open other=lost-hungup
+[06:31:56] weakjumps pass 15 (on): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1779 ready_ms=2801 before=480 first=480 low_ms=7500 back_ms=0 stall_ms=574 mean=425 rule=on conn=kept conn_ms=2 wait_ms=379 tcp_ms=-1 tls_ms=-1 answer_ms=381 seg_ms=904 cut=1 idle_ms=3431 pool=1 state=open other=reading
+[06:31:56] weakjumps pass 15 (on): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=3063 ready_ms=262 before=480 first=480 low_ms=0 back_ms=0 stall_ms=1522 mean=525 rule=on conn=kept conn_ms=0 wait_ms=481 tcp_ms=-1 tls_ms=-1 answer_ms=481 seg_ms=2387 cut=1 idle_ms=1598 pool=1 state=open other=lost-hungup
+[06:31:56] weakjumps pass 15 (on): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=2244 ready_ms=2809 before=480 first=480 low_ms=0 back_ms=0 stall_ms=444 mean=554 rule=on conn=kept conn_ms=0 wait_ms=588 tcp_ms=-1 tls_ms=-1 answer_ms=588 seg_ms=1535 cut=1 idle_ms=3582 pool=1 state=open other=reading
+[06:31:57] weakjumps pass 16 (lost): the test film, jumps to 0.40 0.70 0.20 0.85 0.55 0.31 0.95 on a 4mbit line (delay 60ms each way, loss 0.5%)
+[06:35:35] weakjumps pass 16 (lost): 7 jumps
+[06:35:35] weakjumps pass 16 (lost): autojump 1/7 at=0.40 want=355 got=356 frozen_ms=858 ready_ms=312 before=480 first=480 low_ms=0 back_ms=0 stall_ms=281 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=517 tcp_ms=-1 tls_ms=-1 answer_ms=517 seg_ms=1320 cut=0 idle_ms=4981 pool=1 state=open other=open
+[06:35:35] weakjumps pass 16 (lost): autojump 2/7 at=0.70 want=621 got=622 frozen_ms=1414 ready_ms=2328 before=480 first=480 low_ms=0 back_ms=0 stall_ms=292 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=576 tcp_ms=-1 tls_ms=-1 answer_ms=576 seg_ms=1658 cut=1 idle_ms=1322 pool=1 state=open other=reading
+[06:35:35] weakjumps pass 16 (lost): autojump 3/7 at=0.20 want=177 got=178 frozen_ms=1228 ready_ms=2236 before=480 first=480 low_ms=0 back_ms=0 stall_ms=302 mean=480 rule=lost conn=kept conn_ms=1 wait_ms=433 tcp_ms=-1 tls_ms=-1 answer_ms=434 seg_ms=1313 cut=1 idle_ms=6546 pool=2 state=open other=reading
+[06:35:35] weakjumps pass 16 (lost): autojump 4/7 at=0.85 want=754 got=755 frozen_ms=1105 ready_ms=3093 before=480 first=480 low_ms=0 back_ms=0 stall_ms=437 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=444 tcp_ms=-1 tls_ms=-1 answer_ms=444 seg_ms=972 cut=1 idle_ms=3105 pool=2 state=open other=reading
+[06:35:35] weakjumps pass 16 (lost): autojump 5/7 at=0.55 want=488 got=488 frozen_ms=1268 ready_ms=2639 before=480 first=480 low_ms=9000 back_ms=0 stall_ms=655 mean=413 rule=lost conn=kept conn_ms=0 wait_ms=532 tcp_ms=-1 tls_ms=-1 answer_ms=532 seg_ms=970 cut=1 idle_ms=5071 pool=1 state=open other=reading
+[06:35:35] weakjumps pass 16 (lost): autojump 6/7 at=0.31 want=275 got=276 frozen_ms=2491 ready_ms=235 before=480 first=360 low_ms=13900 back_ms=14699 stall_ms=403 mean=375 rule=lost conn=new conn_ms=801 wait_ms=418 tcp_ms=230 tls_ms=552 answer_ms=1220 seg_ms=2096 cut=1 idle_ms=39933 pool=2 state=lost-cut other=reading
+[06:35:35] weakjumps pass 16 (lost): autojump 7/7 at=0.95 want=843 got=844 frozen_ms=1802 ready_ms=2918 before=360 first=480 low_ms=0 back_ms=0 stall_ms=304 mean=480 rule=lost conn=kept conn_ms=0 wait_ms=379 tcp_ms=-1 tls_ms=-1 answer_ms=380 seg_ms=1499 cut=1 idle_ms=1516 pool=1 state=open other=lost-hungup
+[06:35:35] weakjumps: the line passed Sent 957189681 bytes 636808 pkt (dropped 2021
+[06:35:37] weakjumps: relay: 805 connections (0 refused), 1029.8 MB to the emulator, 783.7 KB from it
+[06:35:37] weakjumps on, 56 jumps in 8 passes (the app saw: on): frozen median 1530 ms, mean 1615, p90 2444, longest 3087; moving again after median 2151 ms (0 never)
+[06:35:37] weakjumps on, the picture after: first segment under the rung before in 3 of 56 (480->480 x47, 360->480 x4, 480->360 x3, 360->720 x1, 360->360 x1); under it 2.1 s of 20 on average, back after median 14342 ms (1 not within 20 s); mean rung 464p; stops >= 600 ms after the jump: 1 (longest 1522 ms)
+[06:35:37] weakjumps on, the jump's first read (56 said): answer median 500 ms (p90 734); on a new connection 6 (answer 1050, getting it 614: tcp 147, tls 352; wait 449), on one kept open 50 (answer 479, wait 479); segment median 1360 ms; a read cut for the jump in 38; last whole read median 3722 ms before
+[06:35:37] weakjumps on, the pool the jump took: open 50 (kept 50, new 0); lost 6 (kept 0, new 6, idle median 14.5 s; cut x6) — open and new: the server or the path closed it idle; lost: a read since its last whole one took it
+[06:35:37] weakjumps on, frozen median per pass: 1:2014, 3:1223, 5:1557, 7:1457, 9:1396, 11:1530, 13:1534, 15:1779
+[06:35:37] weakjumps lost, 56 jumps in 8 passes (the app saw: lost): frozen median 1758 ms, mean 1783, p90 2491, longest 3486; moving again after median 2540 ms (0 never)
+[06:35:37] weakjumps lost, the picture after: first segment under the rung before in 7 of 56 (480->480 x37, 480->360 x7, 360->480 x7, 480->720 x3, 360->360 x2); under it 2.7 s of 20 on average, back after median 12144 ms (1 not within 20 s); mean rung 459p; stops >= 600 ms after the jump: 3 (longest 807 ms)
+[06:35:37] weakjumps lost, the jump's first read (56 said): answer median 478 ms (p90 744); on a new connection 5 (answer 1160, getting it 793: tcp 160, tls 552; wait 408), on one kept open 51 (answer 471, wait 462); segment median 1384 ms; a read cut for the jump in 35; last whole read median 4975 ms before
+[06:35:37] weakjumps lost, the pool the jump took: open 52 (kept 51, new 1, idle median 5.3 s); lost 4 (kept 0, new 4, idle median 31.2 s; cut x3, hungup x1) — open and new: the server or the path closed it idle; lost: a read since its last whole one took it
+[06:35:37] weakjumps lost, frozen median per pass: 2:1780, 4:1652, 6:1500, 8:2303, 10:1564, 12:1839, 14:1946, 16:1268
+[06:35:37] weakjumps paired, 56 jumps (on against lost, same pair of passes, same moment): on stood still shorter in 27, lost in 20, alike (within 100 ms) 9; median on - lost = -52 ms; sign test p=0.1908 for on, p=0.8785 for lost; stops after the jump 1 against 3
+[06:35:37] weakjumps paired, the Worker's answer to the jump's first read (56 jumps): on sooner in 13, lost in 13, alike 30; median on - lost = 10 ms; sign test p=0.5775 for on, p=0.5775 for lost
+[06:35:37] weakjumps paired, the jump's stop and any stop after it: on shorter in 28, lost in 19, alike 9; median on - lost = -102 ms; sign test p=0.1215 for on, p=0.9281 for lost
+[06:35:37] flow weakjumps done
+[06:35:42] done
