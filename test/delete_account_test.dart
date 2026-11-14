@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/localization/app_strings.dart';
 import 'package:innocent/features/video_hub/data/api/offline_library.dart';
-import 'package:innocent/features/video_hub/data/api/playback_reporter.dart';
+import 'package:innocent/features/video_hub/data/api/summary_outbox.dart';
 import 'package:innocent/features/video_hub/domain/access.dart';
 import 'package:innocent/features/video_hub/domain/account.dart';
 import 'package:innocent/features/video_hub/domain/account_repository.dart';
@@ -21,8 +21,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// the person chose it again at Google's prompt; any other answer at that
 /// prompt deletes nothing; a refusal leaves them signed in and says why; and
 /// a deletion ends with this phone signed out, exactly as signing out does.
-const _me = AuthUser(id: 'user-a', method: AuthMethod.google, email: 'a@example.com');
-const _other = AuthUser(id: 'user-b', method: AuthMethod.google, email: 'b@example.com');
+const _me =
+    AuthUser(id: 'user-a', method: AuthMethod.google, email: 'a@example.com');
+const _other =
+    AuthUser(id: 'user-b', method: AuthMethod.google, email: 'b@example.com');
 
 class _Repo implements AccountRepository {
   _Repo({this.user = _me});
@@ -70,17 +72,20 @@ class _Repo implements AccountRepository {
   Future<List<PremiumRequest>> myRequests() async => const <PremiumRequest>[];
 
   @override
-  Future<void> recordAgeConsent({required int version, required DateTime acceptedAt}) async {}
+  Future<void> recordAgeConsent(
+      {required int version, required DateTime acceptedAt}) async {}
 
   @override
   Future<void> startPhoneSignIn(String phoneE164) async {}
 
   @override
-  Future<AuthUser> verifyPhoneCode({required String phoneE164, required String code}) =>
+  Future<AuthUser> verifyPhoneCode(
+          {required String phoneE164, required String code}) =>
       throw UnimplementedError();
 
   @override
-  Future<PaymentInstructions> paymentInstructions() => throw UnimplementedError();
+  Future<PaymentInstructions> paymentInstructions() =>
+      throw UnimplementedError();
 
   @override
   Future<PremiumRequest> submitPremiumRequest({
@@ -102,7 +107,8 @@ class _NoShelf extends OfflineLibrary {
   Future<void> dropEntitled({void Function(String key)? stop}) async => drops++;
 }
 
-Future<(AccountNotifier, _Repo, _NoShelf)> _signedIn({AuthUser user = _me}) async {
+Future<(AccountNotifier, _Repo, _NoShelf)> _signedIn(
+    {AuthUser user = _me}) async {
   final repo = _Repo(user: user);
   final shelf = _NoShelf();
   final n = AccountNotifier(repo, offline: shelf);
@@ -114,7 +120,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues(<String, Object>{}));
 
-  test('deletes the account the screen showed, after choosing it again, and signs out', () async {
+  test(
+      'deletes the account the screen showed, after choosing it again, and signs out',
+      () async {
     final (n, repo, shelf) = await _signedIn();
     expect(n.state.user?.id, 'user-a');
     await n.deleteAccount();
@@ -127,8 +135,11 @@ void main() {
     // Sent at the next start, it would have gone out under whoever was
     // signed in then (review of 13 Nov).
     for (final leave in <String>['sign out', 'delete']) {
-      SharedPreferences.setMockInitialValues(
-          <String, Object>{PlaybackReporter.stashKey: '{"kind":"play_summary"}'});
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        SummaryOutbox.legacyKey: '{"kind":"play_summary"}',
+        SummaryOutbox.key:
+            '[{"kind":"play_summary","meta":{"summary_id":"a"}}]',
+      });
       final (n, _, _) = await _signedIn();
       if (leave == 'sign out') {
         await n.signOut();
@@ -136,17 +147,21 @@ void main() {
         await n.deleteAccount();
       }
       final sp = await SharedPreferences.getInstance();
-      expect(sp.getString(PlaybackReporter.stashKey), isNull, reason: leave);
+      expect(sp.getString(SummaryOutbox.legacyKey), isNull, reason: leave);
+      expect(sp.getString(SummaryOutbox.key), isNull, reason: leave);
     }
   });
 
   test('a different account chosen at the prompt deletes nothing', () async {
     final (n, repo, _) = await _signedIn();
     repo.reauth = _other;
-    await expectLater(n.deleteAccount(),
-        throwsA(isA<AccountDeletionRefused>().having((e) => e.reason, 'reason', 'other_account')));
+    await expectLater(
+        n.deleteAccount(),
+        throwsA(isA<AccountDeletionRefused>()
+            .having((e) => e.reason, 'reason', 'other_account')));
     expect(repo.deleted, isEmpty);
-    expect(n.state.user?.id, 'user-b', reason: 'signed in to the one they picked');
+    expect(n.state.user?.id, 'user-b',
+        reason: 'signed in to the one they picked');
   });
 
   test('backing out of the prompt deletes nothing', () async {
@@ -160,14 +175,16 @@ void main() {
   test('a refusal leaves the person signed in', () async {
     final (n, repo, shelf) = await _signedIn();
     repo.refuse = const AccountDeletionRefused('admin');
-    await expectLater(n.deleteAccount(), throwsA(isA<AccountDeletionRefused>()));
+    await expectLater(
+        n.deleteAccount(), throwsA(isA<AccountDeletionRefused>()));
     expect(n.state.user?.id, 'user-a');
     expect(repo.signOuts, 0);
     expect(shelf.drops, 0);
   });
 
   test('a phone account is not asked for Google', () async {
-    const phone = AuthUser(id: 'user-p', method: AuthMethod.phone, phone: '+959000000');
+    const phone =
+        AuthUser(id: 'user-p', method: AuthMethod.phone, phone: '+959000000');
     final (n, repo, _) = await _signedIn(user: phone);
     repo.reauth = StateError('Google must not be asked');
     await n.deleteAccount();
@@ -195,7 +212,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
       final nav = tester.state<NavigatorState>(find.byType(Navigator));
-      unawaited(nav.push(MaterialPageRoute<void>(builder: (_) => const DeleteAccountScreen())));
+      unawaited(nav.push(MaterialPageRoute<void>(
+          builder: (_) => const DeleteAccountScreen())));
       await tester.pumpAndSettle();
       return repo;
     }
@@ -203,7 +221,8 @@ void main() {
     FilledButton button(WidgetTester tester) =>
         tester.widget<FilledButton>(find.byType(FilledButton));
 
-    testWidgets('says what goes and what stays, and waits for "I understand"', (tester) async {
+    testWidgets('says what goes and what stays, and waits for "I understand"',
+        (tester) async {
       await open(tester);
       final s = AppStrings(const Locale('en'));
       expect(find.text(s.vhDeleteAccountGone), findsOneWidget);
@@ -216,19 +235,22 @@ void main() {
     });
 
     testWidgets('an admin account is told why, and stays', (tester) async {
-      final repo = await open(tester, refuse: const AccountDeletionRefused('admin'));
+      final repo =
+          await open(tester, refuse: const AccountDeletionRefused('admin'));
       final s = AppStrings(const Locale('en'));
       await tester.tap(find.byType(Checkbox));
       await tester.pump();
       await tester.tap(find.byType(FilledButton));
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)));
       await tester.pumpAndSettle();
       expect(find.text(s.vhDeleteAccountAdmin), findsOneWidget);
       expect(repo.deleted, isEmpty);
       expect(find.byType(DeleteAccountScreen), findsOneWidget);
     });
 
-    testWidgets('a deletion closes the screen and says it is done', (tester) async {
+    testWidgets('a deletion closes the screen and says it is done',
+        (tester) async {
       final repo = await open(tester);
       final s = AppStrings(const Locale('en'));
       await tester.tap(find.byType(Checkbox));
@@ -236,8 +258,11 @@ void main() {
       await tester.tap(find.byType(FilledButton));
       // Signing out after the deletion empties stores that answer outside
       // the fake clock; the spinner turns until it is done.
-      for (var i = 0; i < 40 && find.byType(DeleteAccountScreen).evaluate().isNotEmpty; i++) {
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      for (var i = 0;
+          i < 40 && find.byType(DeleteAccountScreen).evaluate().isNotEmpty;
+          i++) {
+        await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 50)));
         await tester.pump(const Duration(milliseconds: 50));
       }
       await tester.pump(const Duration(milliseconds: 500));
