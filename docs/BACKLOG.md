@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (12 Nov 2026)
+### WHERE THINGS STAND — read first in a new session (13 Nov 2026, evening)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 1.64.84, 333c7071). A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
@@ -71,22 +71,55 @@ does it.
   the play_summary stash, the lab hooks). The audit is on this branch too
   (822a7e8f) and the next release from here carries it. Details under
   "Next app release"; what the audit left open under "Player audit".
-- **Live already**: migrations 077–080, ingest v55 (0dfe2a5),
-  transport-check every 6 h, the backup drill.
+- **GitHub Pages came back and is off again (13–14 Nov)**: the 1.64.84
+  record push (4b005001) redeployed the retired Pages console at 19:00
+  UTC, 13 Nov (pages run 43487949804) — "Unpublish" had left the source
+  branch set; transport check 43496849155 read it `HTTP 200`. 14 Nov the
+  owner unpublished it again and set Pages' Source to "GitHub Actions" (no
+  None was offered once unpublished); no workflow deploys Pages and
+  `tool/workflow_yaml.py` fails on one that would. Transport check
+  43546232032 (14 Nov, 02:36) green, the Pages page a 404 again. Proof
+  that a push no longer redeploys it: the next main push shows no "pages
+  build and deployment" run.
+- **On the branch, not on main since 1.64.84 — and NO APP CODE among it**
+  (13 Nov evening): `lib/` differs from main only by the lab hooks and the
+  Google nonce (never shipped) and the version, so the next main push is a
+  sync of docs, tool and notes, not an app release. It carries: the stream
+  Worker's `STUDIO_ORIGINS` without the retired Pages origin (rebuilds the
+  Worker); `tool/playback/transport_check.py`'s new checks (the console's
+  cross-origin answers from studio and the Worker, the retired Pages page a
+  404) so the scheduled alarm on main has them; `docs/edge/studio.ts` and
+  `console_origins.js` (already live, main's copy is older);
+  `docs/console/README.md`, `tool/js/console_build_test.mjs`,
+  `tool/js/edge_blocks_test.mjs`, CLAUDE.md, the release skill and the
+  console rule. A tool/ change on main starts Build, which uploads nothing
+  for a published version; never push while a release build runs.
+- **Live already**: migrations 077–080; studio v55 (24a3365: answers only
+  `console.innocentplayer.com`, and asks R2 for each bucket's CORS —
+  `r2_cors` in its log and in "Check bucket access"); ingest v56,
+  transcode v28, probe-media v27 (ea45f9b: console origin only; ingest and
+  transcode answered 200 after); transport-check every 6 h; the backup
+  drill (last 7 Nov, next ~14 Nov). 13 Nov: DNSSEC Active, the legacy
+  Supabase keys off, the GitHub Pages console retired (security review
+  P4), R2 CORS of both buckets = the console alone (seen: console allowed,
+  Pages and a control refused).
 - **The owner still has to**: update a phone to 1.64.84 and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
   cost has no lab number), and if "stopped responding" ever shows again
-  on a file that plays; on a tablet or a TV if one is at hand; finish
-  retiring the Pages console (security review P4, 13 Nov): sign out of
-  the old Pages console, remove its Supabase redirect URL, unpublish
-  GitHub Pages, and drop the Pages origin from both buckets' CORS. (Done
-  13 Nov: the console origin added to both buckets' CORS, seen allowed by
-  studio's `r2_cors` check with a control refused; studio v54 answers only
-  the new origin.) Done 13 Nov: DNSSEC
+  on a file that plays; on a tablet or a TV if one is at hand; sign in
+  again on https://console.innocentplayer.com/studio/ (the Pages sign-out
+  ended every session, 13 Nov). (Done 14 Nov: Pages unpublished again
+  and its Source set to "GitHub Actions" — "Unpublish" alone had not held,
+  the 1.64.84 record push redeployed it at 19:00 UTC, 13 Nov, run
+  43487949804.) Optional: remove the
+  stale Supabase redirect URL `…supabase.co/functions/v1/studio` (the
+  console's first home).
+  (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC
   Active; the legacy Supabase keys off. (The five open films were
   approved, checked 8 Nov.) The 12 and 13 Nov reminders have fired.
-- **5d, a connection kept open for a jump (11 Nov, on the branch, ON by
-  default; ships with the next release)**: `StreamCacheServer.keepSpare`.
+- **5d, a connection kept open for a jump (11 Nov; LIVE in 1.64.84, 13 Nov,
+  on by default)**: `StreamCacheServer.keepSpare` (the release left the
+  lab's `_labTimedConnect` out).
   Measured first (device lab M1, 42951731347): on the weak line a jump's
   answer was 885 ms on a new connection (DNS 25 + TCP 147 + TLS 189 + the
   Worker's wait 441) against 466 on a kept one, and 33 of 34 jumps that cut
@@ -106,7 +139,8 @@ does it.
   when a read on it ends cut; the Worker's own wait (~0.3 s, R2 most
   likely) needs a `Server-Timing` header to split (a Worker change).
 - **play_summary was lost for a playback the app never came back to
-  (found 11 Nov, fixed on the branch)**: it was sent only as the player
+  (found 11 Nov; the fix LIVE in 1.64.84, the kept summary also dropped on
+  sign-out since the 13 Nov review)**: it was sent only as the player
   screen closed; an app sent to the background and closed from Recents
   never closed it (1.64.81's first viewer: 4 playbacks, 2 summaries; the
   labs' 79 force-stopped plays: none). Now kept on the phone when the app
@@ -146,11 +180,13 @@ does it.
   `docs/streaming_review_2026_11.md` §5 and skill `device-labs` (weakline /
   weakjumps flows; read the cap probe first; passes alternating per
   variant, then the other order; read a jump's answer in parts first; an
-  A/A of 21-28 pairs spreads 0.31-0.35 s). Lab config now: G2's
-  `FLOWS="weakjumps jumps"`, two passes (on, off) then the gate — with 5d on
-  by default the gate passed 15 of 15 twice (G1 42995970597, G2
-  42999722877); Test Lab `cloud.env`: the realme alone (its rerun) — name
-  both phones again for the next run.
+  A/A of 21-28 pairs spreads 0.31-0.35 s). With 5d on by default the gate
+  passed 15 of 15 in G1 42995970597, G2 42999722877, the 1.64.83-era
+  candidate 43142688683 (+ Test Lab OPPO 43142688768 16/16) and 1.64.84's
+  43425944894. First look for item 2's failure (a climb then a stop) in
+  weakline passes on the live build before writing a rule: the ProxyMeter
+  already believes a recovery only once its slow average holds
+  (min(fast, slow)), and 5b's 32 passes had no stop.
 
 ### Player redesign (12 Nov, 1.64.83) — skill `ui-design`
 The owner's screenshots of 1.64.82: "Playback failed / The player stopped

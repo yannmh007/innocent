@@ -84,6 +84,13 @@ about it (13 Nov).
 * Retire the Pages copy. Remove `https://yannmh007.github.io` from
   `console_origins.js` and from the stream Worker's `STUDIO_ORIGINS`, from
   Supabase's Redirect URLs, and from both buckets' CORS policy.
+  **Done 13 Nov 2026**: studio v55 answers only the console; Pages
+  unpublished, its redirect URL and CORS entries gone, its page a 404 in
+  the transport check. The other functions and the Worker drop the origin
+  as they next deploy. Unpublishing did not hold: the next push to main
+  (19:00 UTC) redeployed Pages, because its source branch was still set.
+  Since 14 Nov Pages' Source is **GitHub Actions** with no workflow that
+  deploys (`tool/workflow_yaml.py` fails on one), which is what stops it.
 * Point studio's `CONSOLE_URL` (the link in review notices) at the new
   origin.
 * Settings → Pages: publish nothing, or only what must be public.

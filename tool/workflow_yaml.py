@@ -8,6 +8,13 @@ does not have 'workflow_dispatch' trigger": the schedule and the manual run
 both silently gone. On main that would have stopped every ingest, every bin
 purge and every storage check, with nothing failing anywhere to say so.
 
+AND NO WORKFLOW PUBLISHES GITHUB PAGES (14 Nov 2026). The Pages copy of the
+console was retired on 13 Nov; "Unpublish" alone did not hold (the next push
+to main's docs/ redeployed it), so Pages' source is now "GitHub Actions" with
+no workflow that deploys. A workflow that uploads or deploys a Pages artifact
+would publish all of docs/ again — migrations, function source, the old
+console — so it fails here. The console lives at console.innocentplayer.com.
+
 RUN:  python3 tool/workflow_yaml.py
 """
 
@@ -17,14 +24,23 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+fails = 0
+files = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.y*ml')))
+for path in files:
+    text = open(path, encoding='utf-8').read()
+    for word in ('actions/deploy-pages', 'actions/upload-pages-artifact',
+                 'actions/configure-pages', 'pages: write', 'write-all'):
+        if word in text:
+            fails += 1
+            print('FAIL', os.path.relpath(path, ROOT), f'publishes GitHub Pages ({word});'
+                  ' Pages stays off since 13 Nov 2026')
+
 try:
     import yaml
 except ImportError:
-    print('PASS  (PyYAML not installed; workflow files not parsed)')
-    sys.exit(0)
-
-fails = 0
-files = sorted(glob.glob(os.path.join(ROOT, '.github', 'workflows', '*.yml')))
+    print(('FAIL' if fails else 'PASS'), '=== no workflow publishes Pages; '
+          'PyYAML not installed, workflow files not parsed ===')
+    sys.exit(1 if fails else 0)
 for path in files:
     name = os.path.relpath(path, ROOT)
     try:
@@ -42,5 +58,5 @@ for path in files:
         fails += 1
         print('FAIL', name, 'has no jobs')
 
-print(('FAIL' if fails else 'PASS'), f'=== {len(files)} workflow file(s) parse ===')
+print(('FAIL' if fails else 'PASS'), f'=== {len(files)} workflow file(s) parse, none publishes Pages ===')
 sys.exit(1 if fails else 0)

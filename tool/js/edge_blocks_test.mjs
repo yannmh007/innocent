@@ -380,10 +380,10 @@ for (const [name, s, e] of cases) {
 {
   const env = { MEDIA: makeMedia(film) };
   const edge = makeEdge(env);
-  const cors = { 'Access-Control-Allow-Origin': 'https://yannmh007.github.io' };
+  const cors = { 'Access-Control-Allow-Origin': 'https://console.innocentplayer.com' };
   const r = await serveFromBlocks(get('bytes=0-1000'), env, edge.ctx, KEY, BLOCK, cors);
   check('CORS is carried onto the edge answer',
-    r.headers.get('Access-Control-Allow-Origin') === 'https://yannmh007.github.io');
+    r.headers.get('Access-Control-Allow-Origin') === 'https://console.innocentplayer.com');
   check('Accept-Ranges: bytes', r.headers.get('Accept-Ranges') === 'bytes');
   await bodyOf(r);
 }

@@ -352,6 +352,28 @@ for path in ('/edge/studio.ts', '/migrations/074_device_attestation.sql', '/BACK
     st, _, _ = http(f'https://{CONSOLE}{path}')
     verdict(st == 404, f'{path} is not published there (HTTP {st})')
 
+# ITS CALLS ACROSS ORIGINS (13 Nov 2026). The page calls the studio function
+# (everything it reads and writes) and the stream Worker (previews, the
+# speed test) from its own origin, so both must answer its preflight, and
+# only its. Asking studio also wakes it, and a fresh studio logs whether
+# each R2 bucket lets the console PUT (`r2_cors` in its function log):
+# uploads go from the page straight to R2, which no check here can reach.
+console_origin = f'https://{CONSOLE}'
+for name, url, method in (('studio', f'{sb}/functions/v1/studio', 'POST'),
+                          ('the stream Worker', f'https://{worker}/v/preflight-check', 'GET')):
+    st, h, _ = http(url, 'OPTIONS', {'Origin': console_origin, 'Access-Control-Request-Method': method,
+                                     'Access-Control-Request-Headers': 'authorization, content-type'
+                                     if method == 'POST' else 'range'})
+    acao = {k.lower(): v for k, v in h.items()}.get('access-control-allow-origin', '')
+    verdict(acao == console_origin, f"{name} answers the console's preflight (HTTP {st}, allow-origin {acao or 'none'})")
+    st, h, _ = http(url, 'OPTIONS', {'Origin': 'https://evil.example', 'Access-Control-Request-Method': method})
+    acao = {k.lower(): v for k, v in h.items()}.get('access-control-allow-origin', '')
+    verdict(not acao, f"{name} does not answer another origin's (allow-origin {acao or 'none'})")
+# The GitHub Pages copy of the console, retired 13 Nov 2026: unpublished,
+# and it must stay so (a push to main's docs/ must not bring it back).
+st, _, _ = http('https://yannmh007.github.io/innocent/studio/')
+verdict(st == 404, f'the retired Pages console is not served (HTTP {st})')
+
 # ── 6. Expiry ─────────────────────────────────────────────────────────────
 print('\n== 6. The same token after its 10 minutes')
 time.sleep(610)

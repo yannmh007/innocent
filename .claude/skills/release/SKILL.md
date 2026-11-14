@@ -51,7 +51,7 @@ files, minus what must not ship. Nothing is merged.
   until it succeeds three times in a row.
 - Push: `git push origin HEAD:main`. Do NOT push anything else to main
   until the Build finishes: build.yml cancels an in-progress run on a new push.
-- Watch: Build (Analyze, Test, APKs, CDN, Release), Pages, both Workers.
+- Watch: Build (Analyze, Test, APKs, CDN, Release), both Workers. (GitHub Pages is unpublished since 13 Nov 2026: no Pages deployment should appear; one means it was republished.)
   Run the Playback check on main after the Workers rebuild.
 - Build summary gives sizes and SHA-256; compare with the GitHub release
   asset digests. Then update `app_releases` id 1 (both APKs: url on

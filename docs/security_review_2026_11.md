@@ -255,6 +255,44 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   origin to both buckets' policy and one upload works there; then the
   retirement (code ready to write in a few lines; its deploy and ship on
   the owner's word).
+  **Same day, later: proven, and the functions let the Pages copy go.**
+  The owner added the console origin to both buckets' CORS policy. Studio
+  v52–v53 asks R2 itself (an OPTIONS preflight per bucket per origin, in
+  "Check bucket access" and once per isolate as `r2_cors` in its log): both
+  buckets allow `console.innocentplayer.com` and refuse a control origin
+  (403), 13 Nov 18:08. The transport check now asks studio and the stream
+  Worker for the console's preflight and a stranger's (43456871904, green).
+  Studio v54 (5381656) answers only `console.innocentplayer.com`, and its
+  review notices link there. Still to follow: ingest, transcode and
+  probe-media drop the Pages origin with their next deploy (the shared
+  `console_origins.js`), the stream Worker with the next main push; the
+  owner signs out of the old Pages console, removes its Supabase redirect
+  URL and unpublishes GitHub Pages.
+  **Retired, 13 Nov evening.** The owner signed out there (no session is
+  left in auth.sessions: the sign-out ended all of them), set the Site URL
+  to the console and removed the Pages redirect URL, unpublished GitHub
+  Pages, and cut both buckets' CORS to the console alone. Studio v55
+  (24a3365) asks R2 for the retired origin too: console allowed, Pages
+  and a control refused (403), on both buckets, 18:48. Transport check
+  43486028468 green, with the old Pages console page a 404. Left: the
+  stream Worker's list (next main push) and ingest, transcode and
+  probe-media (next deploy); a stale redirect URL to the studio function,
+  the console's first home, is the owner's to remove.
+  **Republished by the next push, 19:00 the same evening.** Unpublishing
+  left Pages' source branch set, so the push of 4b005001 (the 1.64.84
+  record, docs/ only) ran "pages build and deployment" (43487949804,
+  deploy job done 19:00:29 UTC): the old console page was served again.
+  Harm small — studio, the stream Worker and both buckets refuse that
+  origin and its redirect URL is gone, so it cannot sign in or call
+  anything — but P4 is closed only when no push can deploy it and the
+  transport check reads the page a 404 again. 14 Nov: the owner
+  unpublished it again and set Pages' Source to "GitHub Actions" (the
+  branch menu offered no None once unpublished); no workflow here deploys
+  Pages, and `tool/workflow_yaml.py` now fails on one that would.
+  Transport check 43546232032 (14 Nov, 02:36) reads the page a 404 again.
+  Lesson: after "Unpublish", any push to main's docs/ republishes while
+  the source is a branch; the release skill's watch list reads any Pages
+  deployment as a republish.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on

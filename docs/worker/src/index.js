@@ -109,9 +109,10 @@ const MODERN_TLS = new Set(['TLSv1.2', 'TLSv1.3']);
 /// not hand anyone the bucket — but it would let any page on the internet
 /// spend this Worker's request budget on a URL it had somehow obtained, and
 /// there is exactly one page that has any business reading from here.
-// Two while the console moves to its own origin (docs/console/README.md;
-// docs/edge/console_origins.js keeps the functions' copy of this list).
-const STUDIO_ORIGINS = ['https://yannmh007.github.io', 'https://console.innocentplayer.com'];
+// The console's own origin alone: the GitHub Pages copy retired 13 Nov 2026
+// (docs/console/README.md; docs/edge/console_origins.js keeps the functions'
+// copy of this list).
+const STUDIO_ORIGINS = ['https://console.innocentplayer.com'];
 
 function corsFor(request) {
   const origin = request.headers.get('Origin') || '';

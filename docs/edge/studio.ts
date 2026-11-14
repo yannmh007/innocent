@@ -108,7 +108,7 @@ const STREAM_BASE = (Deno.env.get('STREAM_BASE') ?? '').replace(/\/+$/, '');
 const STREAM_TOKEN_SECRET = Deno.env.get('STREAM_TOKEN_SECRET') ?? '';
 
 /// Where the console links to from a Telegram notice.
-const CONSOLE_URL = 'https://yannmh007.github.io/innocent/studio/';
+const CONSOLE_URL = 'https://console.innocentplayer.com/studio/';
 
 // --- AWS SigV4 query signing ------------------------------------------------
 // Identical to request-playback.ts. See that file for why each piece is the
@@ -725,6 +725,62 @@ async function uniqueFolder(
 // The console's pages, which may call this with CORS (console_origins.js).
 const ALLOWED_ORIGINS = consoleOrigins(Deno.env.get('STUDIO_ORIGINS'));
 
+/// THE CORS HALF OF "CAN THE PAGE WRITE?" (13 Nov 2026). An upload goes
+/// from the console's page straight to R2, so each bucket's CORS policy must
+/// name the page's origin. The console moved to console.innocentplayer.com on
+/// 6 Nov and the move's steps left that policy out; a week of sign-ins,
+/// reviews and previews could not show it, because none of them write to R2.
+/// The browser cannot tell a missing policy from a refused token (R2 sends no
+/// CORS headers with its errors), but a preflight asked from here can: R2
+/// answers an OPTIONS with an Origin by its policy alone, no signature
+/// needed. Origins and buckets only in what it returns, never the endpoint.
+/// A CHECK THAT CANNOT SAY NO PROVES NOTHING: an origin that is in no policy
+/// is asked too, and must come back refused, or the "allowed" beside it
+/// means only that R2 answers everyone.
+const CORS_CONTROL = 'https://cors-control.invalid';
+/// Origins the console has LEFT, asked so that a policy still naming one
+/// shows (the GitHub Pages copy, retired 13 Nov 2026): "refused" is right.
+const CORS_RETIRED = ['https://yannmh007.github.io'];
+async function r2CorsFor(bucket: string): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const url = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${bucket}/_selftest/cors-probe`;
+  for (const origin of [...ALLOWED_ORIGINS, ...CORS_RETIRED, CORS_CONTROL]) {
+    try {
+      const res = await fetch(url, {
+        method: 'OPTIONS',
+        headers: {
+          Origin: origin,
+          'Access-Control-Request-Method': 'PUT',
+          'Access-Control-Request-Headers': 'content-type',
+        },
+      });
+      const allow = res.headers.get('access-control-allow-origin');
+      await res.body?.cancel();
+      out[origin] = allow === origin || allow === '*' ? 'allowed' : `refused (HTTP ${res.status})`;
+    } catch (e) {
+      out[origin] = 'error: ' + String(e).slice(0, 80);
+    }
+  }
+  return out;
+}
+
+/// Once per isolate, in the log: whether each bucket lets each console
+/// origin PUT. Read with the function logs (no admin session needed to see
+/// it), and asked again with "Check bucket access" in the console.
+let corsLogged = false;
+function logR2CorsOnce(): void {
+  if (corsLogged) return;
+  corsLogged = true;
+  const task = (async () => {
+    const report: Record<string, Record<string, string>> = {};
+    for (const bucket of [MEDIA_BUCKET, PUBLIC_BUCKET]) report[bucket] = await r2CorsFor(bucket);
+    console.log(JSON.stringify({ r2_cors: report }));
+  })().catch((e) => console.log(JSON.stringify({ r2_cors_error: String(e).slice(0, 120) })));
+  // deno-lint-ignore no-explicit-any
+  const rt = (globalThis as any).EdgeRuntime;
+  if (rt?.waitUntil) rt.waitUntil(task);
+}
+
 function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin') ?? '';
   if (!ALLOWED_ORIGINS.includes(origin)) return {};
@@ -1026,6 +1082,7 @@ async function botMayPost(chat: string | number): Promise<{
 }
 
 Deno.serve(async (req: Request) => {
+  logR2CorsOnce();
   // The preflight the browser sends before any POST carrying an
   // Authorization header. Answering it is not optional.
   if (req.method === 'OPTIONS') {
@@ -1038,7 +1095,7 @@ Deno.serve(async (req: Request) => {
     return json({
       ok: true,
       service: 'studio',
-      page: 'https://yannmh007.github.io/innocent/studio/',
+      page: CONSOLE_URL,
     }, 200, req);
   }
 
@@ -1592,6 +1649,11 @@ async function handleOp(
       } catch (e) {
         out[bucket] = { error: String(e) };
       }
+      // And whether the PAGE may send that PUT: the bucket's CORS policy,
+      // per console origin. "allowed" here with a failure in the page means
+      // neither CORS nor the token (look at the network); "refused" means
+      // the policy (docs/studio/README.md, "CORS, on both buckets").
+      (out[bucket] as Record<string, unknown>).cors = await r2CorsFor(bucket);
     }
     return json(out, 200, req);
   }
