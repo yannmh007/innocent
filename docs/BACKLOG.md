@@ -118,10 +118,10 @@ does it.
   cost has no lab number), and if "stopped responding" ever shows again
   on a file that plays; on a tablet or a TV if one is at hand; sign in
   again on https://console.innocentplayer.com/studio/ (the Pages sign-out
-  ended every session, 13 Nov). REQUIRED before the next push to main:
-  Settings → Pages → Source branch None, Save — "Unpublish" alone does not
-  hold: the 1.64.84 record push (4b005001) redeployed Pages at 19:00 UTC,
-  13 Nov (run 43487949804), after the retirement. Optional: remove the
+  ended every session, 13 Nov). (Done 14 Nov: Pages unpublished again
+  and its Source set to "GitHub Actions" — "Unpublish" alone had not held,
+  the 1.64.84 record push redeployed it at 19:00 UTC, 13 Nov, run
+  43487949804.) Optional: remove the
   stale Supabase redirect URL `…supabase.co/functions/v1/studio` (the
   console's first home).
   (Done 13 Nov: the Pages console retired — security review P4.) Done 13 Nov: DNSSEC

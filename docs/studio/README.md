@@ -189,9 +189,10 @@ Pages copy retired (13 Nov 2026); since then the console's alone.
 
 ## The rest
 
-- **GitHub Pages**: OFF (Settings → Pages → Branch: None) since the console
-  moved to its own origin; `docs/` is public source, not a site. Never
-  point Pages at `/docs` again (docs/console/README.md).
+- **GitHub Pages**: OFF since the console moved to its own origin — Source
+  "GitHub Actions" with no workflow that deploys (14 Nov 2026); `docs/` is
+  public source, not a site. Never point Pages at `/docs` again
+  (docs/console/README.md).
 - **Supabase redirect allow-list**: Authentication → URL Configuration must
   contain `https://console.innocentplayer.com/studio/`, or Google sends
   the round trip somewhere else.

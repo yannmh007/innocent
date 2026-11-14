@@ -34,7 +34,8 @@ in English. Why this file is shaped as it is: `docs/ai_workflow.md`.
   exit code (`python3 tool/check.py > log && git push …`): a grep of its
   output in a `;` chain let a push through a FAIL (13 Nov).
 - A push to `main` is a production deploy: `docs/**` rebuilds both Workers
-  (GitHub Pages is unpublished since 13 Nov; the console is
+  (GitHub Pages is off since 13 Nov — Source "GitHub Actions", no workflow
+  deploys it; a Pages run after a push means it is back; the console is
   `console.innocentplayer.com`); most other paths start the app Build. Releases:
   skill `release`. Database changes: skill `live-db-change`. Labs: skill
   `device-labs`. Edge function deploys: skill `edge-deploy`.

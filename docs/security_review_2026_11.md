@@ -284,10 +284,14 @@ are BACKLOG O19, O20 and O24, and R1-R6.
   deploy success 19:00:27 UTC): the old console page was served again.
   Harm small — studio, the stream Worker and both buckets refuse that
   origin and its redirect URL is gone, so it cannot sign in or call
-  anything — but P4 is closed only when the source is None (Settings →
-  Pages → Branch: None) and the transport check reads the page a 404
-  again. Lesson: after "Unpublish", any push to main's docs/ republishes;
-  the release skill's watch list reads any Pages deployment as a republish.
+  anything — but P4 is closed only when no push can deploy it and the
+  transport check reads the page a 404 again. 14 Nov: the owner
+  unpublished it again and set Pages' Source to "GitHub Actions" (the
+  branch menu offered no None once unpublished); no workflow here deploys
+  Pages, and `tool/workflow_yaml.py` now fails on one that would.
+  Lesson: after "Unpublish", any push to main's docs/ republishes while
+  the source is a branch; the release skill's watch list reads any Pages
+  deployment as a republish.
 
 **P5 — the accounts (owner; no code).** Use passkeys or security keys on
 GitHub, Cloudflare, Supabase and Google, with no SMS fallback. Turn on
