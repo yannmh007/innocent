@@ -581,7 +581,8 @@ security). Found, most urgent first:
   went out twice (both screens read the one controller). `playMedia` now
   refuses a second tap while the first is on its way (`PlayTapGuard`, at
   most 10 s, so a stuck play never blocks the next; a paywall's own retry
-  goes past it). test/play_tap_guard_test.dart.
+  goes past it). test/play_tap_guard_test.dart. Build 43585867675 on
+  1ff7566e (both fixes, the whole branch) green: Analyze, Test, both APKs.
 - **Open from the same reports, not fixed (next session)**: (1) the next
   film after the double open (a different one, one tap) also fell back to
   libmpv at once — ExoPlayer's open answered false within the same tenth
