@@ -54,4 +54,8 @@ jobs:
           SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
           # Through the environment, never pasted into the script.
           STREAM_HOST: ${{ inputs.stream_host }}
+          # Each line as it is printed: run 43567299617 (14 Nov 06:38) was
+          # cancelled from outside 7.5 min in and its log held no line of the
+          # check, Python's buffer lost with the process.
+          PYTHONUNBUFFERED: '1'
         run: python3 tool/playback/transport_check.py
