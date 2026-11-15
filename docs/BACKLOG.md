@@ -15,15 +15,79 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (14 Nov 2026, afternoon)
+### WHERE THINGS STAND — read first in a new session (15 Nov 2026, morning)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
-  branch only: the lab hooks, the Google nonce, test_device/results).
+  not yet live (main is 6ad09f63, app 1.64.85 from c70f4e94; on the
+  branch only: the lab hooks, the Google nonce, test_device/results, and
+  the 15 Nov fixes below).
   A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
   would need a force-push.
+- **15 Nov, on the branch for the next release: the 14 Nov weak points
+  1-4 and the double open's refusal** (69374520, 7e1bbbfc, 63499b3c,
+  e4212f13, 091d4278). LIVE ALREADY: migrations 081 and 082 (below).
+  (1) THE LAST SUMMARY: kept on the phone until its batch is taken
+  (`SummaryOutbox`: SharedPreferences, at most 8, none older than 7 days —
+  record_events takes an event's time back 7 days at most), tried twice
+  more in the run, then sent at the next start with `stashed: 1`; every
+  copy carries the playback's `meta.summary_id`; 1.64.81-1.64.85's single
+  kept summary is adopted with an id made from its own time and session.
+  `EventSender.flush` says whether the server took the batch and is never
+  skipped: one that met a post on its way used to return and leave the rest
+  to a 30 s timer a frozen app never runs. Viewer data behind it (1.64.84 /
+  1.64.85, labs left out): 3 / 5 opens, 2 / 4 summaries — 1.64.84's two are
+  one playback twice (the double open's two screens), so 2 of 3 and 1 of 5
+  playbacks lost theirs; 1.64.84's 08:18:57 summary was lost although the
+  app lived on (same session: the batch's post failed — dropped by design).
+  Privacy text, three languages: "a record not yet sent is kept on this
+  phone until it can be sent, 7 days at most", and "network type" out (never
+  sent). (2) LIBMPV'S OPEN: media_kit's open() stops the file before it and
+  says "not buffering" as it resets; real libmpv here, through a server
+  answering in 700 ms: "not buffering" 10 ms, first byte 735 ms,
+  video-params 766 ms (test/libmpv_first_picture_test.dart, Stream bench).
+  `VideoPlayerService.firstPictureStream` (video-params; ExoPlayer's first
+  rendered frame) or a moving position is the first frame on libmpv; READY
+  stays the ladder's. (3) THE STALE START: a libmpv open forgets the
+  position and length of the engine before it (the start check read the
+  ladder film's 650 s; the 5 s resume save could have written it against
+  the new film). (4) A scrub's end starts the jump clock (`sinceLastSeek`).
+  THE REFUSAL: `ExoEngine` says in the trail why an engine call was refused
+  (`exo open refused: no engine N` / `…: <Class>: <message>`, addresses left
+  out; Kotlin's error carries the class); and two races closed —
+  `stopPlayback` stopped a next film that began inside its awaited pause,
+  and `_leaveLadder` iterated `_exoSubs` across awaits (a ladder bound
+  meanwhile lost its listeners and its ExoPlayer was stopped). No other
+  release of the engine exists (one service for the app; released only in
+  its dispose), so the 14 Nov "answered false" is not explained by code
+  alone: the `reopen` lab flow and the next phone trail will say. Tests: the
+  branch's 1787 Flutter tests here (analyze: no error or warning), each
+  fix's own test failing on the code without it (summary_outbox_test 3 of
+  3, first_picture_test 2 of 3, player_service_state_test 3 of 4,
+  exo_refusal_test 2 of 3, stop_race_test), the summary tests five times
+  under CPU and disk load (29/29 each). Labs: device lab run A 43675629684
+  (the gate, then `summarykill` and `reopen`), Test Lab 43675629659, branch
+  Build 43675638790 (the Kotlin change) — results below when read.
+- **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
+  `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
+  the 1,954 lab events before it were marked (every install that only ever
+  reported 1.64.78+391 — not every 1.64.78+391 event: one install that
+  reports every version ran the 1.64.78 release on 30-31 Oct, 26 events,
+  kept a viewer's); heat, Trending, co-watch and reach, the daily rollups
+  (re-rolled: event_daily 476 -> 394 rows) and startup_latency /
+  startup_by_title / stall_reasons leave `lab` out; event_geo's audience
+  `lab`; `_refresh_cowatch` zeroes the reach of a title no viewer engages
+  with any more (it only upserted). 082: a unique index on a
+  play_summary's `meta.summary_id` — a copy sent again after a lost answer
+  is skipped inside record_events. Reproduced first (a lab play moved the
+  heat 7.6449 -> 8.6449, a lab open the day's start-up samples 39 -> 40; a
+  second copy was kept), dry runs rolled back, then on live
+  tool/sql/lab_events_test.sql, play_summary_once_test.sql and
+  events_housekeeping_test.sql passed. Still counting the labs: the
+  console's raw `kinds` tally (studio.ts `stats` reads `events` itself — an
+  edge change, the owner's call). Reading viewer data by hand now:
+  `device_kind is distinct from 'lab'`.
 - **1.64.81 (394) is out, 8 Nov**: the Privacy text, the HLS read-ahead
   fix, the playback telemetry (`play_summary`, ladder `play_stall` with
   `ahead_ms`, `error` codes, `grant_ms`), the 7 Nov streaming fixes and
@@ -137,7 +201,11 @@ does it.
   Supabase keys off, the GitHub Pages console retired (security review
   P4), R2 CORS of both buckets = the console alone (seen: console allowed,
   Pages and a control refused).
-- **The owner still has to**: update a phone to 1.64.85 (and with it: a
+- **The owner still has to** (15 Nov): say when the next release may go
+  (it carries the 15 Nov entry above; skill `release`); choose whether the
+  console's event-kind tally should leave the labs out (studio.ts, an edge
+  change) and whether the stream Worker gets `Server-Timing` (deferred 14
+  Nov). Earlier: update a phone to 1.64.85 (and with it: a
   drag on the seek bar held still for 5 s, then let go — the film moves
   on) and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
@@ -169,7 +237,8 @@ does it.
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
 - **1.64.85's first look on the owner's phone (14 Nov, 13:51-13:54 UTC; a
-  diagnostics report and the events)**: the fix works — four drags of
+  diagnostics report and the events)** — (1)-(4) FIXED ON THE BRANCH 15 Nov
+  (the entry above); (5)-(7) open: the fix works — four drags of
   1.4-5.8 s, each `exo held N ms (scrubbing)` ending in a jump or a Back,
   the film moving after; no double player. WEAK, for the next sessions:
   (1) THE LAST PLAYBACK'S SUMMARY IS LOST: the session's last film
@@ -203,7 +272,9 @@ does it.
   proof and fix under "Next app release", with a second one found in the
   same reports (a double tap on a card opened two players). Both shipped
   in 1.64.85 the same afternoon.
-- **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
+- **The labs' plays are in the live `events` as viewers' (found 14 Nov;
+  FIXED 14-15 Nov: the owner chose (a), migration 081 live and the app's
+  `device_kind` `lab` on the branch — the entry above)**:
   lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
   `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
   and send their events to production like any phone. 7 days to 14 Nov:
@@ -635,7 +706,8 @@ security). Found, most urgent first:
   most 10 s, so a stuck play never blocks the next; a paywall's own retry
   goes past it). test/play_tap_guard_test.dart. Build 43585867675 on
   1ff7566e (both fixes, the whole branch) green: Analyze, Test, both APKs.
-- **Open from the same reports, not fixed (next session)**: (1) the next
+- **Open from the same reports — both addressed 15 Nov on the branch
+  (refusals now say why; the summary kept until it has gone)**: (1) the next
   film after the double open (a different one, one tap) also fell back to
   libmpv at once — ExoPlayer's open answered false within the same tenth
   of a second; the trail cannot say why (logcat holds the engine's side):
