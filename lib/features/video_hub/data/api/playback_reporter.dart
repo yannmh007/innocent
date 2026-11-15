@@ -140,9 +140,20 @@ class PlaybackReporter {
   /// went in was taken. Until 1.64.85 the kept copy was deleted as the
   /// summary was queued, and an app left soon after lost it (the last
   /// playback of both 14 Nov sessions on the owner's phone).
-  void reportSummary(Map<String, dynamic> meta) {
+  ///
+  /// [position] and [duration] where the playback stands as it closes: the
+  /// row says where it ended, not where the last 30 s sample was (a
+  /// playback under 30 s said 0).
+  void reportSummary(Map<String, dynamic> meta,
+      {Duration? position, Duration? duration}) {
     if (_finished || _summarySent) return;
     _summarySent = true;
+    if (position != null && position.inSeconds > _furthestS) {
+      _furthestS = position.inSeconds;
+    }
+    if (duration != null && duration.inSeconds > 0) {
+      _durationS = duration.inSeconds;
+    }
     final event = _summary(meta);
     unawaited(SummaryOutbox.put(event));
     SummaryOutbox.send(_events, event);
