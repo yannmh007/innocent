@@ -66,9 +66,38 @@ does it.
   fix's own test failing on the code without it (summary_outbox_test 3 of
   3, first_picture_test 2 of 3, player_service_state_test 3 of 4,
   exo_refusal_test 2 of 3, stop_race_test), the summary tests five times
-  under CPU and disk load (29/29 each). Labs: device lab run A 43675629684
-  (the gate, then `summarykill` and `reopen`), Test Lab 43675629659, branch
-  Build 43675638790 (the Kotlin change) — results below when read.
+  under CPU and disk load (29/29 each). PROVED SO FAR: device lab run A
+  43675629684 (on 091d4278): genres, the jumps on Big Buck Bunny (15
+  checks, as before), gestures both ways — all passed; `reopen` 7 plays, 7
+  first frames, 4 ExoPlayer opens, no refusal and no fall back; the labs'
+  first summaries ever reached `events` (device_kind lab): libmpv open_ms
+  886 / 441 / 1275 with stalls 0 and frozen 0 (it read 32-43 and a stall),
+  ladder 1252 / 1712, stalls 0. Test Lab 43675629659: realme and OPPO 16
+  PASS and the one SKIP each as 43589024823 (the Test Lab path's home trip),
+  no crash of the app (the OPPO's one FATAL is Google's Files app). Branch
+  Build 43675638790 green (the Kotlin change), Stream bench 43673989316
+  green (the whole suite with libmpv and ffmpeg installed: the real-libmpv
+  test runs there), Static analysis green. NOT PROVED by run A:
+  `summarykill` — a fresh app's permission dialog took the first Back (the
+  launch waited 12 minutes) and a plain start stops at the introduction,
+  logs no event and so sends nothing; mended (lab_grants, every start the
+  lab's launch) and run again in run B. FOUND BY run A, fixed (abc60f3d):
+  a player screen pushed over an open one — the first Back went to that
+  dialog, the next play opened over it — left the one below mounted: every
+  30 s it reported the new film's position against its own title (Big Buck
+  Bunny "at 8 s of 653 s", in the live events), wrote it into its own
+  resume point, never sent its summary, and closed later would have
+  cleared the callbacks, PiP callbacks, wakelock, volume keys and full-screen
+  UI of the one on top. Any play reaching the player over an open one does
+  this ("open with"). Now `PlayerScreen._onTop`: the newcomer supersedes the
+  screen below, which says its last with its own position and then touches
+  nothing shared. The last watch point is written just after the tree
+  change (Riverpod refuses a provider change during it in a debug build —
+  found by the new test on the existing deactivate path), and a summary
+  says where its playback ended (a playback under 30 s said 0). Tests:
+  stacked_players_test (fails without: the first summary []), the branch's
+  1788 here. Run B (layout + player audit both ways, then the mended flows)
+  started on 10d54e03.
 - **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
   `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
   the 1,954 lab events before it were marked (every install that only ever
