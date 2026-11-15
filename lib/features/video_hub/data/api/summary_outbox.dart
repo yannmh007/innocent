@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/diagnostics/playback_log.dart';
 import 'event_sender.dart';
 
 /// Playback summaries kept on the phone until the server is known to have
@@ -157,11 +158,19 @@ class SummaryOutbox {
   static void send(EventSender events, Map<String, dynamic> event,
       {int attempt = 1}) {
     final id = idOf(event);
+    final tag =
+        id == null ? '?' : id.substring(0, id.length < 6 ? id.length : 6);
     events.enqueue(event, onDone: (sent) {
       if (sent) {
+        PlaybackLog.add('summary $tag sent'
+            '${attempt > 1 ? ' on post $attempt' : ''}'
+            '${event['meta'] is Map && (event['meta'] as Map)['stashed'] == 1 ? ' (kept from an earlier run)' : ''}');
         if (id != null) unawaited(remove(id));
       } else if (attempt < triesPerRun) {
         send(events, event, attempt: attempt + 1);
+      } else {
+        PlaybackLog.add('summary $tag kept for the next start '
+            '($triesPerRun posts failed)');
       }
     });
   }
@@ -209,6 +218,10 @@ class SummaryOutbox {
         return <Map<String, dynamic>>[];
       }
     });
+    if (earlier.isNotEmpty) {
+      PlaybackLog.add(
+          'summaries kept by an earlier run: ${earlier.length} queued');
+    }
     for (final e in earlier) {
       final meta = e['meta'];
       send(events, <String, dynamic>{

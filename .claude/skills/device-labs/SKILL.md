@@ -98,10 +98,14 @@ Both run only on non-main branches, started by pushing their config file.
 ## Both labs write to the live `events` table
 A lab build is a phone to the database: its plays land in `events` with
 `app_version` `1.64.78+391` (the branch's version; main alone is bumped)
-and a fresh `viewer_key` each run — 1,594 of 1,798 events in the week to
-14 Nov. Leave that version out when reading viewer data (`play_summary` has
-none: a lab's play ends in a force-stop), and out of any number shown as
-the viewers' (the console's start-up latency and Trending read the lab
-until BACKLOG §0's fix).
+and a fresh `viewer_key` each run. Since 15 Nov (7e1bbbfc) a lab build
+sends `device_kind` `lab`, and migration 081 (live) marked the 1,954 lab
+events before it (every install that only ever reported 1.64.78+391) and
+leaves `lab` out of heat, Trending, co-watch, the daily rollups and the
+start-up and stall readings. Reading viewer data by hand: `device_kind is
+distinct from 'lab'`. A lab play that ends in a force-stop now sends its
+`play_summary` at the app's next start (SummaryOutbox) — only if the next
+start keeps the app's data (no `pm clear`): flow `summarykill` does that,
+the other flows clear it.
 
 main never carries `test_device/results/`.
