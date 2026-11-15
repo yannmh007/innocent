@@ -328,6 +328,21 @@ case " $FLOWS " in *" streamlong_"*)
 esac
 
 export PATH="$HOME/.maestro/bin:$PATH"
+# A cleared app asks for nothing the lab's flows cannot answer: run A
+# (43675629684) lost a Back, and twelve minutes, to the media permission
+# dialog of a fresh install.
+lab_grants() {
+  for perm in READ_MEDIA_VIDEO READ_MEDIA_AUDIO READ_MEDIA_IMAGES POST_NOTIFICATIONS; do
+    adb shell pm grant "$PKG" "android.permission.$perm" >/dev/null 2>&1 || true
+  done
+}
+# The lab's launch (Test Lab's game loop, scenario 3): the catalogue title
+# named in lab_loop_title, through playMedia, the introduction skipped.
+lab_loop_start() {
+  adb shell am start -W -a com.google.intent.action.TEST_LOOP -t application/javascript \
+    -d "file:///sdcard/Download/lab_loop.js" --ei scenario 3 -n "$PKG/.MainActivity" >/dev/null 2>&1
+}
+
 for flow in $FLOWS; do
   log "flow $flow"
   # The Maestro file a flow runs: its own name, unless a case below says
@@ -865,43 +880,49 @@ for flow in $FLOWS; do
   # memory as the player closed, its kept copy deleted at once, and the app
   # left soon after. A 1-rung open film (SUMMARY_TITLE: libmpv through the
   # proxy) is played from a cleared app through the catalogue path, closed
-  # with Back, and the app force-stopped 2 s later — before any post. Then
-  # the same film again (its bytes held from the first play), closed and
-  # stopped the same way; then a plain start. Each summary must reach
-  # `events` once, `stashed: 1` (sent at a later start), device_kind 'lab';
-  # libmpv's summaries open_ms ~0.9 s on the first, stalls 0 (it read 32-43
-  # ms and a stall before 63499b3c). Read the trail's `summary … sent` lines
-  # here, and the rows in the database (BACKLOG §0).
+  # with Back, and the app force-stopped 2 s after — before any post. The
+  # next start plays it again (its bytes held from the first play) and must
+  # send the first summary from the phone's copy; closed and stopped the same
+  # way, the third start sends the second. Each must reach `events` once,
+  # `stashed: 1`, device_kind 'lab'; libmpv's open_ms the real wait, stalls 0
+  # (32-43 ms and a stall before 63499b3c). The trail's `summary … sent`
+  # lines are counted here; read the rows in the database (BACKLOG §0).
+  # Run A (43675629684) showed what a fresh app needs: its permission dialog
+  # took the first Back, and a plain start stops at the introduction (no
+  # event, so nothing is sent) — every start here is the lab's launch.
   case "$flow" in summarykill)
     st="${SUMMARY_TITLE:-}"
     if [ -z "$st" ]; then log "flow summarykill: no SUMMARY_TITLE — skipped"; continue; fi
     adb shell am force-stop "$PKG"
     adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    lab_grants
     d="/sdcard/Android/data/$PKG/files"
     adb shell mkdir -p "$d" >/dev/null 2>&1
-    lab_play() {
-      adb shell "echo title:$st > $d/lab_loop_title"
-      adb shell am start -W -a com.google.intent.action.TEST_LOOP -t application/javascript \
-        -d "file:///sdcard/Download/lab_loop.js" --ei scenario 3 -n "$PKG/.MainActivity" >/dev/null 2>&1
-    }
-    for pass in 1 2; do
-      lab_play
-      sleep $(( pass == 1 ? 40 : 30 ))
+    adb shell "echo title:$st > $d/lab_loop_title"
+    for pass in 1 2 3; do
+      adb shell log -p i -t flutter "LAB summarykill pass $pass" >/dev/null 2>&1 || true
+      lab_loop_start
+      sleep 40
       adb exec-out screencap -p > "$OUT/shots/9_summarykill_${pass}.png"
       adb shell input keyevent 4
-      sleep 2
+      if [ "$pass" = 3 ]; then
+        # The last pass leaves as a viewer does: Home, the pause's flush.
+        sleep 2
+        adb shell input keyevent 3
+        sleep 8
+      else
+        sleep 2
+      fi
       adb shell am force-stop "$PKG"
-      adb shell rm -f "$d/lab_loop_title" >/dev/null 2>&1 || true
-      log "summarykill: pass $pass closed, the app stopped 2 s after"
+      log "summarykill: pass $pass closed, the app stopped $([ "$pass" = 3 ] && echo "10 s after (Home)" || echo "2 s after")"
       sleep 3
     done
-    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
-    sleep 40
-    adb shell input keyevent 3
-    sleep 6
-    adb shell am force-stop "$PKG"
-    grep -aoE "first frame [0-9]+ ms|rebuffer end [0-9]+ ms|jump fill end [0-9]+ ms|summar(y|ies) [^\r]*" \
-      "$OUT/logcat_raw.txt" 2>/dev/null | tail -16 | while read -r l; do log "summarykill: $l"; done
+    adb shell rm -f "$d/lab_loop_title" >/dev/null 2>&1 || true
+    span="$OUT/summarykill_trail.txt"
+    awk '/LAB phase summarykill start/{on=1} on' "$OUT/logcat_raw.txt" > "$span" 2>/dev/null
+    log "summarykill: $(grep -c 'LAB title: opening' "$span") play(s), $(grep -c 'first frame' "$span") first frame(s), $(grep -cE 'summary [0-9a-f]+ sent' "$span") summary send(s), $(grep -c 'kept from an earlier run' "$span") of them kept from an earlier run"
+    grep -aoE "LAB summarykill pass [0-9]|first frame [0-9]+ ms|rebuffer end [0-9]+ ms|summar(y|ies) [^\r]*" "$span" \
+      | while read -r l; do log "summarykill: $l"; done
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
@@ -913,21 +934,23 @@ for flow in $FLOWS; do
   # (REOPEN_LADDER) and a 1-rung one (SUMMARY_TITLE) are opened in turn
   # through the catalogue path, each closed with Back and the next opened
   # 0.3-2 s after, so a closing screen's stop meets the next screen's open.
-  # Counted in steps.txt: every "exo … refused" (now with its reason), every
-  # fall back to libmpv, and the guards' "newer video" lines.
+  # Counted in steps.txt, in this flow's own span: every "exo … refused"
+  # (now with its reason), every fall back to libmpv, the guards' "newer
+  # video" lines, and players stacked (a newer screen took one over: run A's
+  # first Back went to a permission dialog, the next play opened over it).
   case "$flow" in reopen)
     lt="${REOPEN_LADDER:-}"; st="${SUMMARY_TITLE:-}"
     if [ -z "$lt" ] || [ -z "$st" ]; then log "flow reopen: needs REOPEN_LADDER and SUMMARY_TITLE — skipped"; continue; fi
     adb shell am force-stop "$PKG"
     adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    lab_grants
     d="/sdcard/Android/data/$PKG/files"
     adb shell mkdir -p "$d" >/dev/null 2>&1
     i=0
     for t in "$lt" "$lt" "$st" "$lt" "$st" "$st" "$lt" "$lt"; do
       i=$((i + 1))
       adb shell "echo title:$t > $d/lab_loop_title"
-      adb shell am start -W -a com.google.intent.action.TEST_LOOP -t application/javascript \
-        -d "file:///sdcard/Download/lab_loop.js" --ei scenario 3 -n "$PKG/.MainActivity" >/dev/null 2>&1
+      lab_loop_start
       sleep $(( 9 + i % 3 * 3 ))
       adb shell input keyevent 4
       case $((i % 3)) in 0) sleep 0.3 ;; 1) sleep 1 ;; *) sleep 2 ;; esac
@@ -936,10 +959,11 @@ for flow in $FLOWS; do
     adb exec-out screencap -p > "$OUT/shots/9_reopen_end.png"
     adb shell am force-stop "$PKG"
     adb shell rm -f "$d/lab_loop_title" >/dev/null 2>&1 || true
-    raw="$OUT/logcat_raw.txt"
-    log "reopen: $(grep -c 'opening the player' "$raw" 2>/dev/null) player open(s), $(grep -c 'open ladder (exo)' "$raw" 2>/dev/null) ladder open(s), $(grep -c 'first frame' "$raw" 2>/dev/null) first frame(s) in the run"
-    log "reopen: $(grep -c 'ladder on ExoPlayer failed' "$raw" 2>/dev/null) fall back(s) to libmpv, $(grep -c 'exo [a-z]* refused' "$raw" 2>/dev/null) refusal(s), $(grep -cE 'newer video took over|a newer open has the engine' "$raw" 2>/dev/null) newer-video guard(s)"
-    grep -aoE "exo [a-z]+ refused: [^\r]*|ladder on ExoPlayer failed[^\r]*|TEARDOWN: [^\r]*|stop: a newer[^\r]*|ladder let go[^\r]*" "$raw" 2>/dev/null \
+    span="$OUT/reopen_trail.txt"
+    awk '/LAB phase reopen start/{on=1} on' "$OUT/logcat_raw.txt" > "$span" 2>/dev/null
+    log "reopen: $(grep -c 'LAB title: opening' "$span") play(s), $(grep -c 'open ladder (exo)' "$span") ladder open(s), $(grep -c 'first frame' "$span") first frame(s), $(grep -cE 'summary [0-9a-f]+ sent' "$span") summary send(s)"
+    log "reopen: $(grep -c 'ladder on ExoPlayer failed' "$span") fall back(s) to libmpv, $(grep -cE 'exo [a-z]+ refused' "$span") refusal(s), $(grep -cE 'newer video took over|a newer open has the engine' "$span") newer-video guard(s), $(grep -c 'a newer player screen took over' "$span") stacked player(s)"
+    grep -aoE "exo [a-z]+ refused: [^\r]*|ladder on ExoPlayer failed[^\r]*|TEARDOWN: [^\r]*|stop: a newer[^\r]*|ladder let go[^\r]*|a newer player screen took over[^\r]*" "$span" \
       | sort | uniq -c | sort -rn | head -12 | while read -r l; do log "reopen: $l"; done
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     log "flow $flow done"
