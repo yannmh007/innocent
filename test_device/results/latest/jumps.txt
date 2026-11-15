@@ -1,0 +1,87 @@
+  LAB check seek PASS want=238 got=239 ready=3222 ms playing=yes, moving by 3270 ms frozen=1491 ms engine=exo rung=360p
+  LAB check quality->240 PASS want=240 got=240 ready=595 ms playing=yes, moving by 699 ms frozen=249 ms engine=exo rung=360p
+  LAB check shown 240p after 2751 ms
+  LAB check skip+30 PASS want=273 got=274 ready=279 ms playing=yes, moving by 2445 ms frozen=1771 ms engine=exo rung=240p
+  LAB check swipe-120 PASS want=155 got=156 ready=553 ms playing=yes, moving by 2422 ms frozen=979 ms engine=exo rung=240p
+  LAB check quality->auto PASS want=157 got=157 ready=271 ms playing=yes, moving by 302 ms frozen=171 ms engine=exo rung=240p
+  LAB check tour->360 PASS want=158 got=159 ready=673 ms playing=yes, moving by 732 ms frozen=265 ms engine=exo rung=240p
+  LAB check tour->240 PASS want=160 got=160 ready=553 ms playing=yes, moving by 620 ms frozen=246 ms engine=exo rung=360p
+  LAB check tour->original PASS want=161 got=167 ready=10330 ms playing=yes, moving by 10484 ms frozen=2257 ms engine=exo rung=360p
+  LAB check tour->auto PASS want=168 got=169 ready=2759 ms playing=yes, moving by 3663 ms frozen=1190 ms engine=exo rung=360p
+  LAB check preview-far PASS at=447 bytes=16204 ms=1298
+  LAB check preview-again PASS at=447 bytes=16204 ms=0
+  LAB check preview-next PASS at=453 bytes=14397 ms=883
+  LAB check far-jump PASS want=447 got=448 ready=276 ms playing=yes, moving by 1174 ms frozen=717 ms engine=exo rung=360p
+  LAB check landing PASS held 533 ms, first frame
+  LAB check back PASS frames=+72 moved=3115 ms at=527s left=523s
+  LAB check summary pass=15 fail=0
+LAB jump rule spare on (the build's own)
+play through the ladder on ExoPlayer
+open ladder (exo) start=0s autoplay=true rung=auto first=360
+hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+hls: 360p playlist, 299 segments
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+hls jump: answer 173 ms, first byte 186 ms, segment 511 ms (65536 B); conn kept 0 ms, wait 172 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+exo rung 360p 600 kbps
+hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+hls jump: answer 1547 ms, first byte 1684 ms, segment 2111 ms (65536 B); conn new 1050 ms (dns 138, tcp 267, tls 645), wait 496 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+exo picture after seek 1327 ms
+hls jump: answer 264 ms, first byte 352 ms, segment 823 ms (82646 B); conn kept 0 ms, wait 264 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 0.0 s ago
+exo rung=360p
+exo steer quality target=240 made=1 rungs=[360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
+hls: 240p playlist, 299 segments
+hls jump: answer 211 ms, first byte 217 ms, segment 758 ms (100582 B); conn kept 2 ms, wait 208 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other reading, last whole on it 6.4 s ago
+exo rung=360p
+exo rung 240p 300 kbps
+exo picture after seek 942 ms
+hls jump: answer 282 ms, first byte 289 ms, segment 1006 ms (70552 B); conn new 54 ms (dns 13, tcp 23, tls 18), wait 228 ms, before 39 ms, tries 1; a read cut, pool 2, lost (cut, 2.0 s ago), the other reading, last whole on it 6.5 s ago
+exo rung=240p
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+exo held 1040 ms (scrubbing) at 275s
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+hls jump: answer 260 ms, first byte 269 ms, segment 418 ms (45656 B); conn kept 4 ms, wait 256 ms, before 28 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.2 s ago
+exo picture after seek 802 ms
+exo rung=240p
+exo steer quality target=auto made=3 rungs=[360, 240] picks=360
+quality -> auto on the ladder (no reopen)
+exo rung=240p
+exo steer quality target=360 made=3 rungs=[360, 240] picks=360
+quality -> 360 on the ladder (no reopen)
+hls jump: answer 446 ms, first byte 491 ms, segment 940 ms (112929 B); conn new 228 ms (dns 102, tcp 67, tls 59), wait 218 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 3.7 s ago), the other reading, last whole on it 14.9 s ago
+exo rung=240p
+exo steer quality target=240 made=3 rungs=[360, 240] picks=240
+quality -> 240 on the ladder (no reopen)
+hls jump: answer 413 ms, first byte 419 ms, segment 888 ms (161701 B); conn new 147 ms (dns 28, tcp 71, tls 48), wait 266 ms, before 33 ms, tries 1; a read cut, pool 1, lost (cut, 1.8 s ago), the other reading, last whole on it 5.8 s ago
+exo rung 360p 600 kbps
+exo rung=360p
+renewal: copies from the grant held 28 s
+exo rung 240p 300 kbps
+hls jump: answer 610 ms, first byte 685 ms, segment 1344 ms (35449 B); conn new 260 ms (dns 9, tcp 128, tls 123), wait 348 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 3.1 s ago), the other reading, last whole on it 19.8 s ago
+quality -> original at 165s
+exo tracks 360 selected=1 adaptive=false peaks=697 kbps
+exo rung 360p 697 kbps
+exo rung=360p
+quality -> auto at 168s
+open ladder (exo) start=168s autoplay=true rung=auto first=360
+hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+hls: 360p playlist, 299 segments
+exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+exo rung 360p 600 kbps
+hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+hls jump: answer 300 ms, first byte 306 ms, segment 670 ms (103539 B); conn kept 0 ms, wait 300 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+hls jump: answer 389 ms, first byte 406 ms, segment 629 ms (103848 B); conn kept 0 ms, wait 389 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other never, last whole on it 0.3 s ago
+exo rung=360p
+hls jump: answer 242 ms, first byte 248 ms, segment 456 ms (88179 B); conn kept 0 ms, wait 242 ms, before 14 ms, tries 1; a read cut, pool 1, open, the other never, last whole on it 0.0 s ago
+exo picture after seek 643 ms
+exo landing picture held 533 ms, first frame
+exo rung=360p
+LAB away: home
+lifecycle hidden mounted=true
+lifecycle paused mounted=true
+LAB away: back
+lifecycle detached mounted=true
+lifecycle resumed mounted=true
+lifecycle inactive mounted=true
+lifecycle resumed mounted=true
+lifecycle inactive mounted=true
