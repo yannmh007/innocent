@@ -324,8 +324,22 @@ jobs:
           # changed and untracked files behind; `pull --rebase` refuses to
           # run over them, and the results were lost that way once.
           git stash --include-untracked -q || true
+          # A RE-RUN'S RESULTS WIN (19 Nov 2026). An attempt that failed early
+          # (Maven Central's 429, run 44505438819) committed a results
+          # directory with no phone in it; the re-run's rebase then stopped on
+          # modify/delete conflicts with it, every retry refused "unmerged
+          # files", and the phones' results were lost. On a failed rebase the
+          # branch is taken as it is and this run's directory laid over it.
+          keep=$(mktemp -d)
+          cp -a "$dest/." "$keep/"
           for i in 1 2 3 4; do
             git pull -q --rebase origin "$branch" && git push -q origin "HEAD:$branch" && exit 0
+            git rebase --abort >/dev/null 2>&1 || true
+            if git fetch -q origin "$branch" && git reset -q --hard "origin/$branch"; then
+              rm -rf "$dest" && mkdir -p "$dest" && cp -a "$keep/." "$dest/"
+              git add -A "$dest"
+              git commit -q -m "device-cloud: results of run ${GITHUB_RUN_ID}" || exit 0
+            fi
             sleep $((i * 5))
           done
           exit 1
