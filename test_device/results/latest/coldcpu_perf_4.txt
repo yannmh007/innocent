@@ -1,0 +1,61 @@
+simpleperf W dso.cpp:467] /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libapp.so doesn't contain symbol table
+Cmdline: /system/bin/simpleperf record -e cpu-clock -f 500 -p 26130 --duration 12 -o /data/local/tmp/cold_4.data
+Arch: x86_64
+Event: cpu-clock (type 1, config 0)
+Samples: 1193
+Event count: 2386000000
+
+Overhead  Sample  Command             Shared Object
+30.85%    368     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+11.23%    134     1.raster            [kernel.kallsyms]
+8.13%     97      com.innocent.media  [kernel.kallsyms]
+6.04%     72      RenderThread        /vendor/lib/modules/goldfish_pipe.ko
+3.52%     42      Signal Catcher      [kernel.kallsyms]
+2.60%     31      Signal Catcher      /apex/com.android.runtime/lib64/bionic/libc.so
+2.51%     30      com.innocent.media  /apex/com.android.art/lib64/libart.so
+2.10%     25      com.innocent.media  /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libflutter.so
+2.01%     24      Signal Catcher      /apex/com.android.art/lib64/libunwindstack.so
+1.68%     20      com.innocent.media  /vendor/lib/modules/goldfish_pipe.ko
+1.59%     19      1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+1.59%     19      RenderThread        [kernel.kallsyms]
+1.59%     19      com.innocent.media  /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libapp.so
+1.42%     17      DartWorker          [kernel.kallsyms]
+1.42%     17      Signal Catcher      /apex/com.android.art/lib64/liblzma.so
+1.17%     14      DartWorker          /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libflutter.so
+1.17%     14      com.innocent.media  /apex/com.android.runtime/lib64/bionic/libc.so
+0.84%     10      1.io                /vendor/lib/modules/goldfish_pipe.ko
+0.84%     10      RenderThread        /apex/com.android.runtime/lib64/bionic/libc.so
+0.75%     9       RenderThread        /apex/com.android.runtime/bin/linker64
+0.67%     8       Thread-6            /apex/com.android.art/lib64/libart.so
+0.67%     8       pool-2-thread-4     [kernel.kallsyms]
+0.59%     7       1.raster            /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libflutter.so
+0.59%     7       estorage.worker     /apex/com.android.art/lib64/libart.so
+0.50%     6       1.raster            /vendor/lib64/libOpenglSystemCommon.so
+0.50%     6       flutter-worker-     [kernel.kallsyms]
+simpleperf W dso.cpp:467] /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libapp.so doesn't contain symbol table
+Cmdline: /system/bin/simpleperf record -e cpu-clock -f 500 -p 26130 --duration 12 -o /data/local/tmp/cold_4.data
+Arch: x86_64
+Event: cpu-clock (type 1, config 0)
+Samples: 1193
+Event count: 2386000000
+
+Overhead  Sample  Command             Symbol
+30.85%    368     1.raster            goldfish_pipe_read_write
+6.04%     72      RenderThread        goldfish_pipe_read_write
+4.95%     59      1.raster            internal_get_user_pages_fast
+3.77%     45      com.innocent.media  _raw_spin_unlock_irq
+1.68%     20      com.innocent.media  goldfish_pipe_read_write
+1.59%     19      1.raster            unpin_user_pages
+1.26%     15      1.raster            preempt_schedule_irq
+1.17%     14      Signal Catcher      LzmaDec_DecodeReal2
+0.84%     10      1.io                goldfish_pipe_read_write
+0.75%     9       DartWorker          _raw_spin_unlock_irq
+0.75%     9       RenderThread        internal_get_user_pages_fast
+0.67%     8       1.raster            syscall_enter_from_user_mode
+0.67%     8       Signal Catcher      show_map_vma
+0.67%     8       Signal Catcher      void std::__1::__sort<void unwindstack::Symbols::BuildRemapTable<elf64_sym>(unwindstack::Memory*)::'lambda'(auto, auto)&, unsigned int*>(auto, auto, auto)
+0.59%     7       com.innocent.media  _raw_spin_unlock_irqrestore
+0.59%     7       com.innocent.media  finish_task_switch
+0.50%     6       1.raster            read
+0.50%     6       Signal Catcher      scudo::Allocator<scudo::AndroidConfig, &(scudo_malloc_postinit)>::allocate(unsigned long, scudo::Chunk::Origin, unsigned long, bool)
+0.50%     6       Signal Catcher      std::__1::__function::__func<unwindstack::Maps::Parse()::$_0, std::__1::allocator<unwindstack::Maps::Parse()::$_0>, void (android::procinfo::MapInfo const&)>::operator()(android::procinfo::MapInfo const&)
