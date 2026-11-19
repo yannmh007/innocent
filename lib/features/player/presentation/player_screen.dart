@@ -4721,7 +4721,8 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
   }
 
   void _loadLadderPreview(MediaKitPlayerService svc, int seconds) {
-    final loader = _ladderPreviews ??= LadderPreviewLoader(svc.ladderPreview);
+    final loader = _ladderPreviews ??= LadderPreviewLoader(svc.ladderPreview,
+        maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1);
     loader.request(seconds, (bytes) {
       if (!mounted || _dragValue == null) return;
       setState(() => _previewBytes = bytes);
@@ -5269,7 +5270,8 @@ class _LadderSwipePreview extends StatefulWidget {
 }
 
 class _LadderSwipePreviewState extends State<_LadderSwipePreview> {
-  late final LadderPreviewLoader _loader = LadderPreviewLoader(widget.service.ladderPreview);
+  late final LadderPreviewLoader _loader = LadderPreviewLoader(widget.service.ladderPreview,
+      maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1);
   Uint8List? _bytes;
 
   void _ask() => _loader.request(widget.at.inSeconds, (b) {

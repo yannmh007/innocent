@@ -559,18 +559,24 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       for (final (by, over) in drags) {
         i++;
         if (!mounted) return;
-        final len = svc.duration.inSeconds;
-        final p0 = svc.position.inSeconds;
-        final to = (p0 + by).clamp(0, max(0, len - 1));
         // Each fetch's moment and when it was done.
         final done = <(int, DateTime)>[];
         var fetched = 0;
+        // As a viewer's drag: the controls come up (the pictures beside the
+        // moment taken ahead, when the build does), the finger reaches the
+        // bar a moment later.
+        svc.prefetchPreviewsAround(svc.position);
+        await Future<void>.delayed(const Duration(seconds: 3));
+        if (!mounted) return;
         final loader = LadderPreviewLoader((at) async {
           fetched++;
           final b = await svc.ladderPreview(at);
           done.add((at.inSeconds, DateTime.now()));
           return b;
-        });
+        }, maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1);
+        final len = svc.duration.inSeconds;
+        final p0 = svc.position.inSeconds;
+        final to = (p0 + by).clamp(0, max(0, len - 1));
         final t0 = DateTime.now();
         DateTime? firstPicture;
         var pictures = 0;
@@ -598,7 +604,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         PlaybackLog.add('LAB drag $i/${drags.length} by=$by over_ms=${over.inMilliseconds} '
             'from=$p0 to=$to asked=$steps fetched=$fetched pictures=$pictures '
             'first_ms=${firstPicture == null ? -1 : firstPicture!.difference(t0).inMilliseconds} '
-            'stop_ms=$stopMs word=${plan.word ?? '-'}');
+            'stop_ms=$stopMs word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead}');
         await Future<void>.delayed(const Duration(seconds: 2));
       }
     } finally {

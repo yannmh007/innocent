@@ -1281,7 +1281,10 @@ Future<void> _warmOpening(
     final chosen = pick.chosen;
     final url = chosen?.url ?? grant.url;
     if (url == null || url.isEmpty) return;
+    // Where Play will open it: a resume point warms the seconds there.
+    final point = ref.read(watchPointsProvider).pointFor(content.id, assetIdOf(source));
     await StreamCacheServer.instance.warmOpening(
+      at: point != null && point.resumable ? Duration(seconds: point.positionS) : null,
       cacheId: streamCacheId(
         titleId: content.id,
         assetId: assetIdOf(source),

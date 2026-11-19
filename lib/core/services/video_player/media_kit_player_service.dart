@@ -172,11 +172,59 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   final Map<int, Uint8List> _previews = <int, Uint8List>{};
   String? _previewsFor;
 
+  /// THE SEEK BAR'S PICTURES AHEAD OF THE FINGER (19 Nov 2026): when the
+  /// controls come up on the ladder, the pictures 10, 20 and 30 s either
+  /// side of the film's moment are taken in the background
+  /// ([prefetchPreviewsAround]), and the seek bar keeps two fetches on the
+  /// way ([LadderPreviewLoader.maxInFlight]). A picture not yet seen cost
+  /// 478-1010 ms on the owner's phone and a median 1.2-1.4 s in the device
+  /// lab — the Worker's answer (~0.5 s) and the picture's decode most of it,
+  /// which only a fetch made earlier hides. Off only for the device lab's
+  /// `base` (the A/B).
+  static bool previewAhead = true;
+
+  /// The moments either side of the film's that [prefetchPreviewsAround]
+  /// takes, nearest first.
+  static const List<int> aheadOffsetsS = <int>[10, -10, 20, -20, 30, -30];
+
+  int _aheadGen = 0;
+  Duration? _aheadAround;
+
+  /// The pictures beside [at] (see [previewAhead]), one at a time, in the
+  /// background; those already taken cost nothing. Stopped by the seek
+  /// bar's own first fetch (a drag has begun: its pictures come first) and
+  /// by a newer call; not repeated within 15 s of the last centre.
+  void prefetchPreviewsAround(Duration at) {
+    if (!previewAhead || !_exoActive) return;
+    final last = _aheadAround;
+    if (last != null && (last - at).abs() < const Duration(seconds: 15)) return;
+    _aheadAround = at;
+    final gen = ++_aheadGen;
+    unawaited(() async {
+      final clock = Stopwatch()..start();
+      var took = 0;
+      for (final off in aheadOffsetsS) {
+        if (gen != _aheadGen || !_exoActive) return;
+        final t = at + Duration(seconds: off);
+        if (t < Duration.zero || (duration > Duration.zero && t >= duration)) continue;
+        final before = _previews.length;
+        await ladderPreview(t, ahead: true);
+        if (_previews.length > before) took++;
+      }
+      PlaybackLog.add('preview ahead: around ${at.inSeconds}s, $took taken in '
+          '${clock.elapsedMilliseconds} ms');
+    }());
+  }
+
   /// THE SEEK BAR'S PICTURE while a ladder plays: the frame nearest [at],
   /// from the smallest rung (about 75 KB the first time, nothing after).
   /// Null off the ladder or when it cannot be had.
-  Future<Uint8List?> ladderPreview(Duration at) async {
+  ///
+  /// [ahead]: a picture taken before it is asked for
+  /// ([prefetchPreviewsAround]); any other call stops those still to come.
+  Future<Uint8List?> ladderPreview(Duration at, {bool ahead = false}) async {
     if (!_exoActive) return null;
+    if (!ahead) _aheadGen++;
     final clipAt = ladderClipAt;
     if (clipAt == null) return null;
     if (_previewsFor != _ladderUri) {
@@ -201,7 +249,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     _previews[clip.startMs] = jpeg;
     // Where its time went: the bytes (from the phone, or the line and what
     // its answer was made of), then the picture taken from them.
-    PlaybackLog.add('preview at ${at.inSeconds}s: ${film.length ~/ 1024} KB, '
+    PlaybackLog.add('preview${ahead ? ' (ahead)' : ''} at ${at.inSeconds}s: ${film.length ~/ 1024} KB, '
         '${clock.elapsedMilliseconds} ms (bytes $fetched ms, ${clip.how}; '
         'picture ${clock.elapsedMilliseconds - fetched} ms)');
     return jpeg;
@@ -252,6 +300,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// [fallback] is the start rung's own address, for libmpv, should
   /// ExoPlayer fail before its first picture. Kept for every [open] of
   /// exactly that address — a reconnect, a renewal — until the next film.
+  /// A film opened from where it was left starts on the warmed rung, as
+  /// one from its start does ([_openLadder]). Off only for the device lab's
+  /// `base` (the A/B of 19 Nov 2026).
+  static bool startOnResume = true;
+
   static void armLadder(String uri,
       {int? target,
       int? maxHeight,
@@ -1275,6 +1328,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       return;
     }
     final armed = _armedLadders[uri];
+    // This arm's first open: a film from where it was left is one too.
+    final firstOpen = startOnResume && armed != null && !armed.opened;
+    armed?.opened = true;
     PlaybackLog.add(progressive
         ? 'open file (exo) start=${startAt?.inSeconds ?? 0}s autoplay=$autoplay'
         : 'open ladder (exo) start=${startAt?.inSeconds ?? 0}s '
@@ -1314,8 +1370,15 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
         maxHeight: armed?.maxHeight,
         kbps: networkKbps?.value ?? armed?.kbps,
         // Only the film's first open starts on the warmed rung; a reopen
-        // (a reconnect) is Auto's from the start.
-        start: startAt == null || startAt == Duration.zero ? armed?.start : null,
+        // (a reconnect) is Auto's from the start. A RESUME IS A FIRST OPEN
+        // TOO (19 Nov 2026): told apart by its start time, a film opened
+        // from Continue watching never started on the rung the app chose
+        // and warmed — Auto picked one from the meter (360p with nothing
+        // measured, 720p on the owner's 2592 kbps), whose index had not
+        // been read, and the first segment waited for it behind the start
+        // rung's (device lab S1 44534768953: playlist 1.4 s, picture
+        // 4.2 s; the owner's 579 s resume 2078 ms).
+        start: firstOpen || startAt == null || startAt == Duration.zero ? armed?.start : null,
         rungs: armed?.rungs ?? const <int, int>{},
         progressive: progressive);
     if (!ok) {
@@ -3104,7 +3167,7 @@ int softwareDecodeThreads(int cores) {
 
 /// How a ladder should start ([MediaKitPlayerService.armLadder]).
 class _LadderArm {
-  const _LadderArm(
+  _LadderArm(
       {this.target,
       this.maxHeight,
       this.kbps,
@@ -3119,4 +3182,7 @@ class _LadderArm {
   /// Each rung's average rate (kbps) by height, as the grant lists them.
   final Map<int, int> rungs;
   final Future<String?> Function()? fallback;
+
+  /// Opened once already: every later open is a reconnect or a renewal.
+  bool opened = false;
 }

@@ -6,7 +6,15 @@ import 'dart:typed_data';
 /// LAST position always asked for, so the picture is never one a step
 /// behind where the drag ended.
 class LadderPreviewLoader {
-  LadderPreviewLoader(this.fetch);
+  LadderPreviewLoader(this.fetch, {this.maxInFlight = 1});
+
+  /// How many fetches may be on their way at once. Two (19 Nov 2026): when
+  /// the finger stops, the picture of where it stopped starts as soon as
+  /// one slot is free rather than after the one fetch ahead of it — that
+  /// wait was 0.27 s of the median 1.49 s from the finger's stop to its
+  /// picture in device lab S1 (44534768953). The newest moment still
+  /// replaces any that waited.
+  final int maxInFlight;
 
   /// The picture nearest a moment, or null.
   final Future<Uint8List?> Function(Duration at) fetch;
@@ -18,7 +26,7 @@ class LadderPreviewLoader {
   /// Asked for while one was on its way: only the newest is kept.
   int? _next;
   void Function(Uint8List bytes)? _onPicture;
-  bool _busy = false;
+  int _inFlight = 0;
   bool _gone = false;
 
   /// A picture for [seconds], to [onPicture].
@@ -33,7 +41,7 @@ class LadderPreviewLoader {
   void request(int seconds, void Function(Uint8List bytes) onPicture) {
     if (_gone) return;
     _onPicture = onPicture;
-    if (_busy) {
+    if (_inFlight >= maxInFlight) {
       _next = seconds;
       return;
     }
@@ -53,7 +61,7 @@ class LadderPreviewLoader {
   }
 
   void _fetch(int seconds) {
-    _busy = true;
+    _inFlight++;
     _bucket = seconds ~/ 2;
     _last = null;
     final bucket = _bucket;
@@ -64,7 +72,7 @@ class LadderPreviewLoader {
       // is, until the newer one arrives.
       _onPicture?.call(bytes);
     }, onError: (Object _) {}).whenComplete(() {
-      _busy = false;
+      _inFlight--;
       if (_gone) return;
       final next = _next;
       _next = null;

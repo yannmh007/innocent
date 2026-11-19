@@ -4,6 +4,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../features/video_hub/data/cache/stream_cache_server.dart';
 import '../video_player/exo_engine.dart';
+import '../video_player/media_kit_player_service.dart';
 import 'playback_log.dart';
 
 /// DEVICE LAB ONLY — a film from a URL the lab names, played through the real
@@ -119,13 +120,31 @@ class LabStream {
   /// ([StreamCacheServer.startRule]), `hold` Auto's first climb only with
   /// [holdMs] of film in hand ([ExoEngine.startHoldMs]); any other word
   /// (`a`, `b`: an A/A) the build's own. Said in the trail.
+  ///
+  /// `base` is the start as 1.64.85 made it: a resume opened on Auto's own
+  /// rung, not the warmed one ([MediaKitPlayerService.startOnResume] off),
+  /// and its warm-up took the film's opening
+  /// ([StreamCacheServer.warmAtResume] off) — the A/B of 19 Nov 2026
+  /// against the build's own (`fix`).
   static const int holdMs = 10000;
-  static void applyStartRule(String? word) {
+  ///
+  /// A word may carry a second after a `+`, for the seek bar's pictures:
+  /// `base` as 1.64.85 (one fetch at a time, none ahead), anything else the
+  /// build's own ([MediaKitPlayerService.previewAhead]) — `fix+near`.
+  static void applyStartRule(String? pass) {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    final parts = (pass ?? '').split('+');
+    final word = parts.first.isEmpty ? null : parts.first;
+    final preview = parts.length > 1 ? parts[1] : null;
+    MediaKitPlayerService.previewAhead = preview != 'base';
     StreamCacheServer.startRule = word == 'one' || word == 'par' ? word! : 'base';
     ExoEngine.startHoldMs = word == 'hold' ? holdMs : 0;
+    MediaKitPlayerService.startOnResume = word != 'base';
+    StreamCacheServer.warmAtResume = word != 'base';
     PlaybackLog.add('LAB start rule ${word ?? '-'}: heads ${StreamCacheServer.startRule}, '
-        'climb hold ${ExoEngine.startHoldMs} ms');
+        'climb hold ${ExoEngine.startHoldMs} ms, resume on the warmed rung '
+        '${MediaKitPlayerService.startOnResume}, warm at the resume point '
+        '${StreamCacheServer.warmAtResume}, previews ahead ${MediaKitPlayerService.previewAhead}');
   }
 
   /// The seek bar's drags (`lab_drags`): "+60/1.5 -30/1 …", each a move of

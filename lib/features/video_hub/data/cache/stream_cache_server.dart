@@ -153,6 +153,10 @@ class StreamCacheServer {
   /// rung's.
   static String startRule = 'base';
 
+  /// A resume's warm-up takes the seconds where the film resumes, not its
+  /// opening ([warmOpening]'s `at`). Off only for the device lab's `base`.
+  static bool warmAtResume = true;
+
   /// How much one parallel stretch covers before the loop comes round again
   /// (to check the cache, renew a link).
   @visibleForTesting
@@ -1185,12 +1189,17 @@ class StreamCacheServer {
   /// rung's cache entry — and Play finds them as if it had read them itself.
   /// What the warm-up learnt of the film's length and index is handed to
   /// that play ([localUrlFor]), so it does not ask again.
+  ///
+  /// [at]: where Play will open the film (a resume point). Then the seconds
+  /// THERE are warmed after the head, not the opening's (see
+  /// [warmAtResume]).
   Future<bool> warmOpening({
     required String cacheId,
     required String upstream,
     required Future<String?> Function() refresh,
     int? total,
     String label = '',
+    Duration? at,
   }) async {
     if (_warming != null || _warmed.contains(cacheId)) return false;
     if (_sources.containsKey(cacheId) || servingAPlayer) return false;
@@ -1231,17 +1240,55 @@ class StreamCacheServer {
         }
       }
       var got = 0;
-      for (final (from, to) in ranges) {
-        if (!identical(_sources[cacheId], mine)) break; // Play took over
+      Future<void> read(int from, int to, [BytesBuilder? into]) async {
         final req = await client.getUrl(Uri.parse(local));
         req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
         final resp = await req.close();
         await for (final chunk in resp) {
           got += chunk.length;
+          into?.add(chunk);
         }
       }
+
+      // A RESUME (19 Nov 2026): the head, then the seconds where Play opens.
+      // The opening's 2 MB are not what a resume reads, and on the device
+      // lab's 579 s resumes that read was still on the line 3 s after the
+      // tap, beside the start's own (run S1 44534768953).
+      var where = 'the opening';
+      final resumeAt = at;
+      if (warmAtResume && resumeAt != null && resumeAt > Duration.zero && idx != null &&
+          idx.$1 < 1024 * 1024) {
+        // The head as [_rungWithHead] reads it: 64 KB, more if the fragment
+        // table runs past them (`moov` is [idx]; the `sidx` follows it).
+        final head = BytesBuilder(copy: false);
+        await read(0, min(length, max(idx.$2, headRead)) - 1, head);
+        var bytes = head.toBytes();
+        final need = CmafIndex.headBytes(bytes);
+        if (need != null && need > bytes.length && need <= min(length, _switchHeadCap)) {
+          await read(bytes.length, need - 1, head);
+          bytes = head.toBytes();
+        }
+        final cmaf = CmafIndex.parse(bytes);
+        if (cmaf != null && cmaf.length > 0 && identical(_sources[cacheId], mine)) {
+          final ms = resumeAt.inMilliseconds;
+          var i = 0;
+          while (i + 1 < cmaf.length && cmaf.timesMs[i + 1] <= ms) {
+            i++;
+          }
+          ranges
+            ..clear()
+            ..add((cmaf.starts[i], min(length, cmaf.starts[i] + warmFilmBytes) - 1));
+          where = '${resumeAt.inSeconds} s';
+        } else {
+          ranges.clear();
+        }
+      }
+      for (final (from, to) in ranges) {
+        if (!identical(_sources[cacheId], mine)) break; // Play took over
+        await read(from, to);
+      }
       _confirmed[cacheId] = _Confirmed(length, idx);
-      PlaybackLog.add('warm: ${(got / 1048576).toStringAsFixed(1)} MB of the opening held');
+      PlaybackLog.add('warm: ${(got / 1048576).toStringAsFixed(1)} MB of $where held');
       return got > 0;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.warmOpening: $e');
