@@ -1,0 +1,292 @@
+LAB scenario 3 surfaceProducer=null
+LAB device kind=DeviceKind.phone sw=360.0
+LAB    0.0 LAB script: catalogue title
+LAB    0.0 LAB jump rule spare on (Test Lab: the jumps in Auto alternate)
+LAB    5.3 LAB title: opening Sintel
+LAB    6.5 play server granted in 1245 ms, 4 rungs
+LAB    6.5 play rung 480p 912 kbps (choice auto, measured - kbps)
+LAB    6.5 stream lanes=6 peak=window
+LAB    6.6 stream cache: a new film, sealed
+LAB    6.6 play through the ladder on ExoPlayer
+LAB    6.6 play: opening the player
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=48.0
+LAB    6.8 hwdec -> auto
+LAB    7.0 open ladder (exo) start=0s autoplay=true rung=auto first=480
+LAB    7.1 wakelock playing=true bg=false priv=false pos=0ms
+LAB    7.1 open ok
+LAB insets stable l=0.0 t=32.0 r=0.0 b=48.0 padding l=0.0 t=32.0 r=0.0 b=0.0 bar=48.0
+LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+LAB    7.6 stream index 0.0 MB at 0.0 MB
+LAB    8.0 fg stream: watching
+LAB    8.1 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB    8.1 hls: 480p playlist, 444 segments
+LAB    8.2 hls jump: answer 454 ms, first byte 461 ms, segment 609 ms (65536 B); conn kept 0 ms, wait 454 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+LAB    8.4 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB    8.5 exo rung 480p 1000 kbps
+LAB    9.0 stream index 0.0 MB at 0.0 MB
+LAB    9.1 first frame 2413 ms
+LAB cpu app 90% · 18.1fps · pool-thread 44% | .innocent.media 16% | 1.raster 6% | Jit thread pool 5% | io.worker. 3% | ExoPlayer:Playb 3%
+LAB    9.8 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB    9.9 hls jump: answer 823 ms, first byte 831 ms, segment 888 ms (65536 B); conn kept 0 ms, wait 823 ms, before 0 ms, tries 1; no read cut, pool 1, reading, the other reading, last whole on it 0.8 s ago
+LAB   10.0 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB   10.1 hls jump: answer 1008 ms, first byte 1013 ms, segment 1074 ms (65536 B); conn new 54 ms (dns 19, tcp 9, tls 25), wait 954 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+LAB   10.4 line 16178 kbps, a read
+LAB   10.4 measured 16178 kbps
+LAB   10.4 hls: 720p playlist, 444 segments
+LAB   11.0 hls jump: answer 418 ms, first byte 423 ms, segment 531 ms (364903 B); conn kept 0 ms, wait 418 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other open, last whole on it 0.1 s ago
+LAB   11.7 line 22982 kbps, a read
+LAB   11.7 measured 22982 kbps
+LAB   13.3 line 14327 kbps, a read
+LAB   13.3 measured 14327 kbps
+LAB   14.7 measured 15265 kbps
+LAB   14.9 jump fill start (ahead 0 ms)
+LAB   15.3 exo rung 720p 2000 kbps
+LAB   15.8 exo picture after seek 864 ms
+LAB   15.9 hls jump: answer 358 ms, first byte 364 ms, segment 627 ms (537551 B); conn kept 0 ms, wait 358 ms, before 6 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.6 s ago
+LAB   16.1 jump fill end 1158 ms
+LAB   16.5 line 20510 kbps, a read
+LAB   16.5 measured 20510 kbps
+LAB   17.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB   17.4 LAB check seek PASS want=355 got=356 ready=256 ms playing=yes, moving by 1526 ms frozen=900 ms engine=exo rung=720p
+LAB   17.5 exo steer quality target=240 made=1 rungs=[720, 480, 360, 240] picks=240
+LAB   17.5 quality -> 240 on the ladder (no reopen)
+LAB   17.6 measured 24966 kbps
+LAB   18.2 stream index 0.0 MB at 0.0 MB
+LAB   19.0 LAB check quality->240 PASS want=357 got=357 ready=519 ms playing=yes, moving by 524 ms frozen=201 ms engine=exo rung=720p
+LAB   19.1 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   19.1 hls: 240p playlist, 444 segments
+LAB   19.1 hls jump: answer 832 ms, first byte 837 ms, segment 888 ms (65536 B); conn kept 0 ms, wait 832 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 0.6 s ago
+LAB   19.4 exo rung 240p 300 kbps
+LAB   19.5 LAB check shown 240p after 2027 ms
+LAB   19.5 jump fill start (ahead 0 ms)
+LAB   19.6 hls jump: answer 409 ms, first byte 413 ms, segment 446 ms (75316 B); conn kept 0 ms, wait 409 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 0.0 s ago
+LAB cpu app 107% · 23.9fps · .innocent.media 37% | ExoPlayer:Playb 12% | DartWorker 10% | 1.raster 9% | MediaCodec_loop 9% | flutter-worker- 6%
+LAB   20.0 hls jump: answer 328 ms, first byte 336 ms, segment 362 ms (90078 B); conn kept 0 ms, wait 328 ms, before 5 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 3.2 s ago
+LAB   20.2 exo picture after seek 678 ms
+LAB   20.2 jump fill end 712 ms
+LAB   20.6 measured 24708 kbps
+LAB   21.7 LAB check skip+30 PASS want=389 got=390 ready=254 ms playing=yes, moving by 1266 ms frozen=601 ms engine=exo rung=240p
+LAB   21.8 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB   21.9 line 26630 kbps, a read
+LAB   21.9 measured 26630 kbps
+LAB   22.6 preview at 381s: 87 KB, 866 ms
+LAB   22.7 jump fill start (ahead 0 ms)
+LAB   22.9 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB   23.2 preview at 281s: 70 KB, 582 ms
+LAB   23.4 hls jump: answer 428 ms, first byte 441 ms, segment 491 ms (81497 B); conn kept 0 ms, wait 428 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other open, last whole on it 0.7 s ago
+LAB   23.4 exo picture after seek 720 ms
+LAB   23.6 jump fill end 837 ms
+LAB   24.4 line 17154 kbps, a read
+LAB   24.4 measured 17154 kbps
+LAB   25.0 LAB check swipe-120 PASS want=271 got=272 ready=510 ms playing=yes, moving by 1271 ms frozen=700 ms engine=exo rung=240p
+LAB   25.0 exo steer quality target=auto made=3 rungs=[720, 480, 360, 240] picks=720
+LAB   25.0 quality -> auto on the ladder (no reopen)
+LAB   25.0 line 22498 kbps, a read
+LAB   25.5 hls jump: answer 315 ms, first byte 320 ms, segment 472 ms (584858 B); conn kept 0 ms, wait 315 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other reading, last whole on it 0.7 s ago
+LAB   25.9 line 28484 kbps, a read
+LAB   25.9 measured 28484 kbps
+LAB   26.8 LAB check quality->auto PASS want=273 got=273 ready=765 ms playing=yes, moving by 769 ms frozen=200 ms engine=exo rung=240p
+LAB   26.8 LAB tour: 720 480 360 240 original auto (menu Auto, 720p, 480p, 360p, 240p, Original)
+LAB   26.8 exo steer quality target=720 made=3 rungs=[720, 480, 360, 240] picks=720
+LAB   26.8 quality -> 720 on the ladder (no reopen)
+LAB   26.9 measured 24230 kbps
+LAB   27.4 hls jump: answer 328 ms, first byte 334 ms, segment 499 ms (619400 B); conn kept 0 ms, wait 328 ms, before 18 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 1.0 s ago
+LAB   27.8 measured 26929 kbps
+LAB   28.3 LAB check tour->720 PASS want=274 got=275 ready=509 ms playing=yes, moving by 514 ms frozen=201 ms engine=exo rung=240p
+LAB   28.3 exo steer quality target=480 made=3 rungs=[720, 480, 360, 240] picks=480
+LAB   28.3 quality -> 480 on the ladder (no reopen)
+LAB   28.8 hls jump: answer 436 ms, first byte 441 ms, segment 501 ms (195413 B); conn kept 0 ms, wait 436 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other lost (hung up, 0.0 s ago), last whole on it 0.5 s ago
+LAB   28.9 exo rung 720p 2000 kbps
+LAB   29.4 measured 27776 kbps
+LAB cpu app 109% · 27.2fps · .innocent.media 40% | DartWorker 10% | ExoPlayer:Playb 10% | 1.raster 8% | ExoPlayer:Loade 7% | MediaCodec_loop 6%
+LAB   29.8 LAB check tour->480 PASS want=276 got=276 ready=510 ms playing=yes, moving by 517 ms frozen=200 ms engine=exo rung=720p
+LAB   29.8 exo steer quality target=360 made=3 rungs=[720, 480, 360, 240] picks=360
+LAB   29.8 quality -> 360 on the ladder (no reopen)
+LAB   29.8 hls: 360p playlist, 444 segments
+LAB   30.4 hls jump: answer 414 ms, first byte 419 ms, segment 479 ms (189173 B); conn kept 0 ms, wait 414 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other lost (hung up, 0.1 s ago), last whole on it 0.6 s ago
+LAB   30.9 exo rung 480p 1000 kbps
+LAB   30.9 measured 28532 kbps
+LAB   31.6 LAB check tour->360 PASS want=277 got=278 ready=764 ms playing=yes, moving by 768 ms frozen=200 ms engine=exo rung=480p
+LAB   31.6 exo steer quality target=240 made=3 rungs=[720, 480, 360, 240] picks=240
+LAB   31.6 quality -> 240 on the ladder (no reopen)
+LAB   32.1 measured 21873 kbps
+LAB   32.6 hls jump: answer 428 ms, first byte 433 ms, segment 444 ms (54053 B); conn kept 0 ms, wait 428 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 0.2 s ago
+LAB   32.9 exo rung 240p 300 kbps
+LAB   33.1 LAB check tour->240 PASS want=279 got=280 ready=512 ms playing=yes, moving by 517 ms frozen=198 ms engine=exo rung=240p
+LAB   33.1 renewal: copies from the grant held 26 s
+LAB   33.1 stream lanes=6 peak=window
+LAB   33.1 stream cache: a new film, sealed
+LAB   33.9 stream index 0.7 MB at 0.0 MB
+LAB   36.2 quality -> original at 284s
+LAB   36.3 open file (exo) start=284s autoplay=true
+LAB   36.3 jump fill start (ahead 0 ms)
+LAB   36.3 open ok
+LAB   36.6 exo tracks 818 selected=1 adaptive=false peaks=9989 kbps
+LAB   37.1 exo rung 818p 9989 kbps
+LAB   39.3 measured 17764 kbps
+LAB cpu app 92% · 34.9fps · .innocent.media 38% | DartWorker 15% | 1.raster 10% | HwBinder:11599_ 5% | flutter-worker- 4% | dart:io EventHa 3%
+LAB   40.5 jump fill end 4151 ms
+LAB   41.5 measured 31514 kbps
+LAB   42.6 LAB check tour->original PASS want=281 got=284 ready=8266 ms playing=yes, moving by 8533 ms frozen=4408 ms engine=exo rung=818p
+LAB   42.6 stream lanes=6 peak=window
+LAB   42.6 quality -> auto at 286s
+LAB   42.7 open ladder (exo) start=286s autoplay=true rung=auto first=480
+LAB   42.8 jump fill start (ahead 0 ms)
+LAB   42.8 open ok
+LAB   43.0 measured 27838 kbps
+LAB   43.7 stream index 0.0 MB at 0.0 MB
+LAB   43.7 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+LAB   43.7 hls: 480p playlist, 444 segments
+LAB   43.8 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+LAB   44.4 stream index 0.0 MB at 0.0 MB
+LAB   44.4 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+LAB   44.6 stream index 0.0 MB at 0.0 MB
+LAB   44.6 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+LAB   44.6 hls: 720p playlist, 444 segments
+LAB   44.8 exo rung 720p 2000 kbps
+LAB   45.3 hls jump: answer 421 ms, first byte 428 ms, segment 611 ms (429817 B); conn kept 0 ms, wait 421 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+LAB   45.5 jump fill end 2707 ms
+LAB   45.8 measured 24385 kbps
+LAB   46.8 measured 24337 kbps
+LAB   47.2 LAB check tour->auto PASS want=286 got=286 ready=3553 ms playing=yes, moving by 3559 ms frozen=2797 ms engine=exo rung=720p
+LAB   47.7 hls jump: answer 450 ms, first byte 455 ms, segment 583 ms (383224 B); conn kept 0 ms, wait 450 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 0.3 s ago
+LAB   47.9 stream index 0.0 MB at 0.0 MB
+LAB   47.9 hls: 240p index, 444 segments, average 306, peak 2s 507, 10s 394, 20s 380 kbps
+LAB   48.4 line 20560 kbps, a read
+LAB   48.4 measured 20560 kbps
+LAB   48.5 preview at 666s: 94 KB, 1326 ms
+LAB   48.5 LAB check preview-far PASS at=666 bytes=6323 ms=1327
+LAB   48.5 LAB check preview-again PASS at=666 bytes=6323 ms=0
+LAB   49.3 preview at 674s: 96 KB, 770 ms
+LAB   49.3 LAB check preview-next PASS at=674 bytes=4575 ms=771
+LAB   49.3 jump fill start (ahead 0 ms)
+LAB   49.3 measured 21233 kbps
+LAB cpu app 113% · 31.9fps · .innocent.media 48% | DartWorker 15% | 1.raster 10% | flutter-worker- 5% | ExoPlayer:Playb 5% | dart:io EventHa 5%
+LAB   49.8 exo picture after seek 522 ms
+LAB   49.8 exo landing picture held 401 ms, first frame
+LAB   49.9 hls jump: answer 411 ms, first byte 416 ms, segment 589 ms (472370 B); conn kept 0 ms, wait 410 ms, before 15 ms, tries 1; a read cut, pool 2, open, the other reading, last whole on it 1.0 s ago
+LAB   50.1 jump fill end 849 ms
+LAB   50.5 measured 22339 kbps
+LAB   51.5 line 29905 kbps, a read
+LAB   51.5 measured 29905 kbps
+LAB   52.0 LAB check far-jump PASS want=666 got=666 ready=1768 ms playing=yes, moving by 1772 ms frozen=700 ms engine=exo rung=720p
+LAB   52.0 LAB check landing PASS held 401 ms, first frame
+LAB   52.0 LAB check back SKIP (no trip to the home screen)
+LAB   52.0 LAB check summary pass=16 fail=0
+LAB   52.0 LAB proxy upstream 71 requests 63.9 MB (1.11 a MB), steps back 0, handed over 0, bind {ok: 80}
+LAB   52.1 jump fill start (ahead 0 ms)
+LAB   52.2 line 22122 kbps, a read
+LAB   52.6 exo picture after seek 552 ms
+LAB   52.6 hls jump: answer 426 ms, first byte 433 ms, segment 502 ms (184322 B); conn kept 0 ms, wait 426 ms, before 15 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.7 s ago
+LAB   52.9 jump fill end 784 ms
+LAB   53.2 measured 27413 kbps
+LAB   54.3 measured 25811 kbps
+LAB   55.3 measured 27235 kbps
+LAB   56.5 measured 22250 kbps
+LAB   57.4 line 31476 kbps, a read
+LAB   57.4 measured 31476 kbps
+LAB cpu app 109% · 26.9fps · .innocent.media 39% | DartWorker 10% | MediaCodec_loop 10% | 1.raster 9% | ExoPlayer:Playb 9% | flutter-worker- 7%
+LAB   69.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=4
+LAB cpu app 47% · 22.4fps · MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | .innocent.media 4% | ExoPlayer:Media 3%
+LAB   74.5 LAB autojump 1/6 at=0.10 want=88 got=89 frozen_ms=910 ready_ms=2433 before=720 first=720 low_ms=0 back_ms=0 stall_ms=203 mean=720 rule=spare-on conn=kept conn_ms=0 wait_ms=426 tcp_ms=-1 tls_ms=-1 answer_ms=426 seg_ms=502 cut=1 idle_ms=662 pool=1 state=open other=reading
+LAB   74.5 jump fill start (ahead 0 ms)
+LAB   75.0 fg stream: watching
+LAB   75.1 exo picture after seek 559 ms
+LAB   75.2 hls jump: answer 432 ms, first byte 439 ms, segment 623 ms (543489 B); conn kept 0 ms, wait 432 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other open, last whole on it 17.2 s ago
+LAB   75.4 jump fill end 892 ms
+LAB   75.7 measured 25078 kbps
+LAB   76.7 measured 26011 kbps
+LAB   77.8 measured 24564 kbps
+LAB   78.9 measured 25771 kbps
+LAB cpu app 87% · 25.8fps · .innocent.media 27% | MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | DartWorker 7% | HwBinder:11599_ 6%
+LAB   80.0 line 21816 kbps, a read
+LAB   80.0 measured 21816 kbps
+LAB   81.1 measured 25850 kbps
+LAB   82.3 measured 21959 kbps
+LAB   84.7 line 6600 kbps, in a read
+LAB   86.3 line 4664 kbps, a read
+LAB   86.3 measured 4664 kbps
+LAB   88.8 line 8770 kbps, a read
+LAB   88.8 measured 8770 kbps
+LAB cpu app 95% · 24.9fps · .innocent.media 30% | MediaCodec_loop 11% | 1.raster 10% | ExoPlayer:Playb 9% | DartWorker 7% | HwBinder:11599_ 6%
+LAB   95.8 LAB autojump 2/6 at=0.20 want=177 got=178 frozen_ms=617 ready_ms=1226 before=720 first=720 low_ms=0 back_ms=0 stall_ms=209 mean=720 rule=spare-off conn=kept conn_ms=0 wait_ms=432 tcp_ms=-1 tls_ms=-1 answer_ms=432 seg_ms=623 cut=0 idle_ms=17191 pool=1 state=open other=open
+LAB   95.8 jump fill start (ahead 0 ms)
+LAB   96.5 exo picture after seek 712 ms
+LAB   96.7 hls jump: answer 626 ms, first byte 633 ms, segment 859 ms (467054 B); conn kept 0 ms, wait 626 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other open, last whole on it 7.1 s ago
+LAB   96.8 jump fill end 980 ms
+LAB   97.6 line 14703 kbps, a read
+LAB   97.6 measured 14703 kbps
+LAB cpu app 63% · 24.5fps · .innocent.media 13% | 1.raster 10% | MediaCodec_loop 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | ExoPlayer:Media 3%
+LAB  100.2 line 3053 kbps, in a read
+LAB  103.4 measured 3230 kbps
+LAB  105.5 line 10531 kbps, a read
+LAB  105.5 measured 10531 kbps
+LAB  108.2 line 3313 kbps, in a read
+LAB cpu app 85% · 24.6fps · .innocent.media 25% | MediaCodec_loop 11% | 1.raster 10% | ExoPlayer:Playb 9% | DartWorker 7% | HwBinder:11599_ 7%
+LAB  111.9 measured 2954 kbps
+LAB  113.6 line 15391 kbps, a read
+LAB  113.6 measured 15391 kbps
+LAB  116.0 line 2819 kbps, in a read
+LAB  116.2 LAB autojump 3/6 at=0.63 want=559 got=560 frozen_ms=911 ready_ms=306 before=720 first=720 low_ms=0 back_ms=0 stall_ms=203 mean=720 rule=spare-on conn=kept conn_ms=0 wait_ms=626 tcp_ms=-1 tls_ms=-1 answer_ms=626 seg_ms=859 cut=0 idle_ms=7081 pool=1 state=open other=open
+LAB  116.2 jump fill start (ahead 0 ms)
+LAB  117.6 exo picture after seek 1451 ms
+LAB  118.3 hls jump: answer 1048 ms, first byte 1054 ms, segment 2036 ms (519950 B); conn new 378 ms (dns 4, tcp 185, tls 189), wait 670 ms, before 12 ms, tries 1; a read cut, pool 2, reading, the other open, last whole on it 4.4 s ago
+LAB  118.3 jump fill end 2169 ms
+LAB  119.3 line 6046 kbps, in a read
+LAB  119.7 measured 7087 kbps
+LAB cpu app 82% · 28.0fps · .innocent.media 24% | 1.raster 11% | MediaCodec_loop 9% | ExoPlayer:Playb 8% | DartWorker 7% | HwBinder:11599_ 5%
+LAB  121.8 line 10016 kbps, a read
+LAB  121.8 measured 10016 kbps
+LAB  122.8 line 34952 kbps, a read
+LAB  122.8 measured 34952 kbps
+LAB  124.4 line 14873 kbps, a read
+LAB  124.4 measured 14873 kbps
+LAB  125.6 line 24279 kbps, a read
+LAB  125.6 measured 24279 kbps
+LAB  127.7 line 10040 kbps, a read
+LAB  127.7 measured 10040 kbps
+LAB  129.5 measured 12026 kbps
+LAB cpu app 117% · 24.9fps · .innocent.media 40% | DartWorker 13% | MediaCodec_loop 11% | 1.raster 10% | flutter-worker- 9% | ExoPlayer:Playb 9%
+LAB  131.9 measured 8546 kbps
+LAB  138.7 LAB autojump 4/6 at=0.54 want=479 got=480 frozen_ms=2221 ready_ms=2528 before=720 first=720 low_ms=0 back_ms=0 stall_ms=204 mean=720 rule=spare-off conn=new conn_ms=378 wait_ms=670 tcp_ms=185 tls_ms=189 answer_ms=1048 seg_ms=2036 cut=1 idle_ms=4390 pool=2 state=reading other=open
+LAB  138.7 jump fill start (ahead 0 ms)
+LAB  139.3 exo picture after seek 609 ms
+LAB  139.3 hls jump: answer 426 ms, first byte 437 ms, segment 573 ms (271976 B); conn kept 0 ms, wait 426 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other open, last whole on it 6.9 s ago
+LAB  139.4 jump fill end 707 ms
+LAB cpu app 62% · 25.3fps · .innocent.media 14% | MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | ExoPlayer:Media 2%
+LAB  140.3 line 15391 kbps, a read
+LAB  140.3 measured 15391 kbps
+LAB  141.6 measured 17512 kbps
+LAB  143.1 measured 16561 kbps
+LAB  144.3 line 21592 kbps, a read
+LAB  144.3 measured 21592 kbps
+LAB cpu app 80% · 22.4fps · .innocent.media 26% | MediaCodec_loop 11% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | flutter-worker- 5%
+LAB  159.0 LAB autojump 5/6 at=0.83 want=737 got=738 frozen_ms=710 ready_ms=205 before=720 first=720 low_ms=0 back_ms=0 stall_ms=204 mean=720 rule=spare-on conn=kept conn_ms=0 wait_ms=426 tcp_ms=-1 tls_ms=-1 answer_ms=426 seg_ms=573 cut=0 idle_ms=6906 pool=1 state=open other=open
+LAB  159.0 jump fill start (ahead 0 ms)
+LAB  159.4 fg stream: watching
+LAB cpu app 47% · 24.3fps · 1.raster 10% | MediaCodec_loop 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | .innocent.media 5% | ExoPlayer:Media 2%
+LAB  159.9 exo picture after seek 892 ms
+LAB  160.3 hls jump: answer 435 ms, first byte 440 ms, segment 1255 ms (533328 B); conn kept 0 ms, wait 435 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other open, last whole on it 14.7 s ago
+LAB  160.3 jump fill end 1353 ms
+LAB  161.4 line 6215 kbps, in a read
+LAB  162.0 measured 6670 kbps
+LAB  164.0 line 10168 kbps, a read
+LAB  164.0 measured 10168 kbps
+LAB  165.9 measured 11023 kbps
+LAB  167.5 line 13389 kbps, a read
+LAB  167.5 measured 13389 kbps
+LAB  169.2 measured 13148 kbps
+LAB cpu app 121% · 28.2fps · .innocent.media 44% | DartWorker 15% | MediaCodec_loop 10% | 1.raster 10% | flutter-worker- 9% | ExoPlayer:Playb 9%
+LAB  171.2 measured 11691 kbps
+LAB  172.6 measured 14820 kbps
+LAB cpu app 71% · 22.4fps · .innocent.media 20% | MediaCodec_loop 11% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | flutter-worker- 4%
+LAB  181.2 LAB autojump 6/6 at=0.93 want=825 got=826 frozen_ms=1419 ready_ms=2132 before=720 first=720 low_ms=0 back_ms=0 stall_ms=217 mean=720 rule=spare-off conn=kept conn_ms=0 wait_ms=435 tcp_ms=-1 tls_ms=-1 answer_ms=435 seg_ms=1255 cut=0 idle_ms=14726 pool=2 state=open other=open
+LAB  181.2 LAB autojump done
+LAB cpu app 47% · 24.8fps · MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 8% | HwBinder:11599_ 6% | .innocent.media 4% | ExoPlayer:Media 3%
+LAB cpu app 47% · 22.4fps · MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | .innocent.media 4% | ExoPlayer:Media 3%
+LAB cpu app 48% · 24.9fps · MediaCodec_loop 11% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | .innocent.media 4% | ExoPlayer:Media 3%
+LAB cpu app 47% · 24.9fps · MediaCodec_loop 10% | 1.raster 10% | ExoPlayer:Playb 9% | HwBinder:11599_ 6% | .innocent.media 4% | ExoPlayer:Media 3%
+LAB  222.5 wakelock playing=false bg=false priv=false pos=271233ms
+LAB cpu app 12% · 7.3fps · 1.raster 3% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:11599_ 1%
+LAB cpu app 1% · 0.0fps · -
