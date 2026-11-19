@@ -223,8 +223,10 @@ def main():
     print()
     # A word may be `START+PREVIEW` (fix+near): the start's numbers are
     # grouped by the first, the seek bar's by the second.
-    sw = lambda w: w.split('+')[0]
-    pw = lambda w: w.split('+')[1] if '+' in w else '-'
+    def sw(w):
+        seed = w.split('@')[1] if '@' in w else ''
+        return w.split('@')[0].split('+')[0] + (f'@{seed}' if seed else '')
+    pw = lambda w: w.split('@')[0].split('+')[1] if '+' in w.split('@')[0] else '-'
     groups = {}
     for p, lk, word, a in passes:
         if a is not None:
@@ -244,25 +246,24 @@ def main():
               f'480p+ mean {fmt(statistics.mean(hi) if hi else None)} %; step medians: {stepmeds}')
     # The A/A (or A/B): per line, neighbouring passes of two words paired.
     for lk in sorted({k[0] for k in groups}):
-        words = sorted({w for (l, w) in groups if l == lk})
-        if len(words) != 2:
-            continue
         seq = [(sw(w), a) for p, l, w, a in passes if l == lk and a is not None and a['picture'] is not None]
-        pairs = []
+        # Neighbouring passes of two words, paired in turn, per pair of words.
+        pairs = {}
         i = 0
         while i + 1 < len(seq):
             (w1, a1), (w2, a2) = seq[i], seq[i + 1]
             if w1 != w2:
-                d = (a1['picture'] - a2['picture']) if w1 == words[0] else (a2['picture'] - a1['picture'])
-                pairs.append(d)
+                x, y = sorted((w1, w2))
+                d = (a1['picture'] - a2['picture']) if w1 == x else (a2['picture'] - a1['picture'])
+                pairs.setdefault((x, y), []).append(d)
                 i += 2
             else:
                 i += 1
-        if pairs:
-            wins = sum(1 for d in pairs if d < 0)
-            print(f'ladderstart {lk}: {words[0]} minus {words[1]}, first picture, {len(pairs)} pairs: '
-                  f'median {fmt(med(pairs))} ms, mean {fmt(statistics.mean(pairs))} ms, '
-                  f'{words[0]} sooner in {wins} of {len(pairs)}')
+        for (x, y), ds in sorted(pairs.items()):
+            wins = sum(1 for d in ds if d < 0)
+            print(f'ladderstart {lk}: {x} minus {y}, first picture, {len(ds)} pairs: '
+                  f'median {fmt(med(ds))} ms, mean {fmt(statistics.mean(ds))} ms, '
+                  f'{x} sooner in {wins} of {len(ds)}')
     # The drags, by the pass's preview word, short (30 s of film or less)
     # and long.
     pgroups = {}

@@ -635,6 +635,10 @@ for flow in $FLOWS; do
     for pass in $passes; do
       p=$((p + 1))
       lk="${pass%%:*}"; word="${pass#*:}"
+      # WORD@KBPS: a remembered line to start from (lab_throughput), as a
+      # phone that has played before has one; WORD alone, none.
+      seed=""
+      case "$word" in *@*) seed="${word##*@}"; word="${word%@*}" ;; esac
       case "$lk" in
         plain) line_shape "${START_PLAIN_DELAY:-30ms}" 0% "${START_PLAIN:-16mbit}"; how="${START_PLAIN:-16mbit}, ${START_PLAIN_DELAY:-30ms} each way, no loss" ;;
         *) lk=weak; line_shape "$LINE_DELAY" "$LINE_LOSS" "${START_WEAK:-4mbit}"; how="${START_WEAK:-4mbit}, $LINE_DELAY each way, loss $LINE_LOSS" ;;
@@ -646,7 +650,9 @@ for flow in $FLOWS; do
       adb shell "echo ${START_AT:-579} > $d/lab_start_at"
       adb shell "echo ${START_PAGE:-4} > $d/lab_start_page"
       adb shell "echo $word > $d/lab_start"
-      if [ -n "${START_DRAGS:-}" ]; then adb shell "echo '$START_DRAGS' > $d/lab_drags"; fi
+      if [ -n "$seed" ]; then adb shell "echo $seed > $d/lab_throughput"; fi
+      # The seek bar's drags only in a pass that names a preview word.
+      case "$word" in *+*) if [ -n "${START_DRAGS:-}" ]; then adb shell "echo '$START_DRAGS' > $d/lab_drags"; fi ;; esac
       log "ladderstart pass $p ($lk, $word): the test film at ${START_AT:-579} s after ${START_PAGE:-4} s on its page; line $how"
       adb shell log -p i -t flutter "LAB ladderstart begin pass=$p line=$lk start=$word" >/dev/null 2>&1 || true
       adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
@@ -667,7 +673,7 @@ for flow in $FLOWS; do
         'index($0,b){on=1} on && /LAB /{print} index($0,e){on=0}' "$OUT/logcat_raw.txt" \
         | sed -E 's#^([0-9-]+ [0-9:.]+) [^:]*: (LAB .*)$#\1 \2#; s#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' > "$ls" || true
       cat "$ls" >> "$OUT/ladderstart.txt"
-      printf '%s\t%s\t%s\n' "$p" "$lk" "$word" >> "$OUT/ladderstart_passes.tsv"
+      printf '%s\t%s\t%s\n' "$p" "$lk" "$word${seed:+@$seed}" >> "$OUT/ladderstart_passes.tsv"
       log "ladderstart pass $p ($lk, $word): $(grep -c 'hls start +' "$ls") start marks, $(grep -c 'LAB drag [0-9]' "$ls") drags"
     done
     log "ladderstart: the line passed $(tc -s qdisc show dev lo | grep -A1 'netem 40:' | grep -oE 'Sent [0-9]+ bytes [0-9]+ pkt \(dropped [0-9]+' | head -1)"
@@ -677,7 +683,7 @@ for flow in $FLOWS; do
     log "ladderstart: $(cat "$OUT/relay.txt" 2>/dev/null || echo 'relay: no counts')"
     python3 test_device/ladderstart_summary.py "$OUT" | tee "$OUT/ladderstart_summary.txt" | while read -r line; do log "$line"; done
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
-    adb shell rm -f "$d/lab_stream_url" "$d/lab_start_at" "$d/lab_start_page" "$d/lab_start" "$d/lab_drags" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_start_at" "$d/lab_start_page" "$d/lab_start" "$d/lab_drags" "$d/lab_throughput" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;
