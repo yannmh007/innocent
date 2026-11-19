@@ -1,3 +1,0 @@
-simpleperf I cmd_record.cpp:798] Recorded for 11.9925 seconds. Start post processing.
-simpleperf W dso.cpp:467] /data/app/~~MMzQrczXYUIpjMIQ16zhOA==/com.innocent.media-2j0T_PqQAGTxlfXRCIrnZw==/lib/x86_64/libapp.so doesn't contain symbol table
-simpleperf I cmd_record.cpp:891] Samples recorded: 1043. Samples lost: 0.
