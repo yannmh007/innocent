@@ -1,26 +1,170 @@
-[10:10:01] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[10:10:01] install
-[10:10:20] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[10:10:21] network: eth0 has qdisc clsact
-[10:10:21] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[10:10:47] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[10:10:47] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[10:10:47] library: pushing 24 files
-[10:11:21] library: MediaStore lists 24 videos
-[10:11:21] cold start
+[13:53:12] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[13:53:12] install
+[13:53:33] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[13:53:33] network: eth0 has qdisc clsact
+[13:53:33] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[13:54:00] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[13:54:00] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[13:54:00] library: pushing 24 files
+[13:54:31] library: MediaStore lists 24 videos
+[13:54:31] cold start
 Status: ok
-TotalTime: 4324
-WaitTime: 4334
-[10:11:36] flow genres
-[10:12:51] flow genres exit 0
-[10:13:01] flow jumps
-[10:13:02] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[10:17:10] flow jumps done
-[10:17:10] flow gestures
-[10:17:13] rotation asked 0, now 0
-[10:18:30] flow gestures exit 0
-[10:18:36] stacked taps at 918,1200: 4 taps in 467 ms
-[10:18:47] flow gestures_land
-[10:19:10] rotation asked 1, now 0
-[10:19:54] flow gestures_land exit 0
-[10:20:09] done
+TotalTime: 5717
+WaitTime: 5727
+[13:54:47] flow ladderstart
+[13:54:48] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[13:54:54] ladderstart: the line under a 900kbit cap measured 785 kbps (600000 bytes)
+[13:54:56] ladderstart pass 1 (weak, a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[13:56:39] ladderstart pass 1 (weak, a): 49 start marks, 5 drags
+[13:56:40] ladderstart pass 2 (plain, a): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[13:58:13] ladderstart pass 2 (plain, a): 49 start marks, 5 drags
+[13:58:14] ladderstart pass 3 (weak, b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[13:59:53] ladderstart pass 3 (weak, b): 49 start marks, 5 drags
+[13:59:55] ladderstart pass 4 (plain, b): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:01:29] ladderstart pass 4 (plain, b): 49 start marks, 5 drags
+[14:01:31] ladderstart pass 5 (weak, a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:03:10] ladderstart pass 5 (weak, a): 49 start marks, 5 drags
+[14:03:11] ladderstart pass 6 (plain, a): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:04:45] ladderstart pass 6 (plain, a): 49 start marks, 5 drags
+[14:04:47] ladderstart pass 7 (weak, b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:06:26] ladderstart pass 7 (weak, b): 49 start marks, 5 drags
+[14:06:27] ladderstart pass 8 (plain, b): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:08:01] ladderstart pass 8 (plain, b): 49 start marks, 5 drags
+[14:08:02] ladderstart pass 9 (weak, a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:09:41] ladderstart pass 9 (weak, a): 49 start marks, 5 drags
+[14:09:42] ladderstart pass 10 (plain, a): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:11:17] ladderstart pass 10 (plain, a): 49 start marks, 5 drags
+[14:11:18] ladderstart pass 11 (weak, b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:13:08] ladderstart pass 11 (weak, b): 42 start marks, 5 drags
+[14:13:09] ladderstart pass 12 (plain, b): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:14:43] ladderstart pass 12 (plain, b): 49 start marks, 5 drags
+[14:14:45] ladderstart pass 13 (weak, a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:16:19] ladderstart pass 13 (weak, a): 49 start marks, 5 drags
+[14:16:20] ladderstart pass 14 (plain, a): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:17:54] ladderstart pass 14 (plain, a): 49 start marks, 5 drags
+[14:17:55] ladderstart pass 15 (weak, b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:19:34] ladderstart pass 15 (weak, b): 49 start marks, 5 drags
+[14:19:36] ladderstart pass 16 (plain, b): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:21:11] ladderstart pass 16 (plain, b): 49 start marks, 5 drags
+[14:21:12] ladderstart pass 17 (weak, a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:22:46] ladderstart pass 17 (weak, a): 49 start marks, 5 drags
+[14:22:47] ladderstart pass 18 (plain, a): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:24:22] ladderstart pass 18 (plain, a): 49 start marks, 5 drags
+[14:24:24] ladderstart pass 19 (weak, b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[14:26:03] ladderstart pass 19 (weak, b): 49 start marks, 5 drags
+[14:26:05] ladderstart pass 20 (plain, b): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
+[14:27:34] ladderstart pass 20 (plain, b): 49 start marks, 5 drags
+[14:27:34] ladderstart: the line passed Sent 537435391 bytes 362725 pkt (dropped 455
+[14:27:35] ladderstart: relay: 958 connections (0 refused), 537.1 MB to the emulator, 897.2 KB from it
+[14:27:36] ladderstart pass 1 (weak, a): start 480p; ms from the tap: grant 6, register 7, index 2460, master 2463, playlist 2474, seg asked -, seg in -, picture 9436; other indexes: 240p index 8271, 360p index 6435, 720p index 5869; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs 360>240>360, first change +3.3 s to 240p
+[14:27:36] ladderstart pass 2 (plain, a): start 480p warmed; ms from the tap: grant 21, register 21, index 1421, master 1426, playlist 1535, seg asked -, seg in -, picture 4232; other indexes: 240p index 4841, 360p index 2708, 720p index 3444; 30 s: stops 0 (0 ms), 480p+ 59 %, rungs 360>720, first change +12.4 s to 720p
+[14:27:36] ladderstart pass 3 (weak, b): start 480p; ms from the tap: grant 2, register 4, index 2281, master 2287, playlist 2300, seg asked 8349, seg in 11035, picture 6054; other indexes: 240p index 6228, 360p index 4663, 720p index 4253; 30 s: stops 0 (0 ms), 480p+ 58 %, rungs 360>480, first change +12.6 s to 480p
+[14:27:36] ladderstart pass 4 (plain, b): start 480p warmed; ms from the tap: grant 15, register 16, index 1076, master 1083, playlist 1151, seg asked -, seg in -, picture 4758; other indexes: 240p index 5651, 360p index 2931, 720p index 3581; 30 s: stops 0 (0 ms), 480p+ 54 %, rungs 360>720, first change +13.7 s to 720p
+[14:27:36] ladderstart pass 5 (weak, a): start 480p warmed; ms from the tap: grant 35, register 35, index 2946, master 2951, playlist 2961, seg asked -, seg in -, picture 6136; other indexes: 240p index 7302, 360p index 4300, 720p index 6465; 30 s: stops 0 (0 ms), 480p+ 14 %, rungs 360>480, first change +25.7 s to 480p
+[14:27:36] ladderstart pass 6 (plain, a): start 480p warmed; ms from the tap: grant 25, register 26, index 1071, master 1074, playlist 1081, seg asked 7427, seg in 9111, picture 4651; other indexes: 240p index 4344, 360p index 2627, 720p index 3582; 30 s: stops 0 (0 ms), 480p+ 59 %, rungs 360>480, first change +12.4 s to 480p
+[14:27:36] ladderstart pass 7 (weak, b): start 480p warmed; ms from the tap: grant 11, register 12, index 1541, master 1545, playlist 1556, seg asked -, seg in -, picture 5258; other indexes: 240p index 4595, 360p index 3179, 720p index 4582; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs 360>240>360, first change +4.0 s to 240p
+[14:27:36] ladderstart pass 8 (plain, b): start 480p warmed; ms from the tap: grant 20, register 21, index 1270, master 1285, playlist 1320, seg asked -, seg in -, picture 4027; other indexes: 240p index 3689, 360p index 2234, 720p index 2896; 30 s: stops 1 (272 ms), 480p+ 29 %, rungs 360>480, first change +21.4 s to 480p
+[14:27:36] ladderstart pass 9 (weak, a): start 480p warmed; ms from the tap: grant 51, register 57, index 1725, master 1728, playlist 1741, seg asked -, seg in -, picture 8321; other indexes: 240p index 6333, 360p index 4592, 720p index 5419; 30 s: stops 0 (0 ms), 480p+ 34 %, rungs 360>480, first change +19.9 s to 480p
+[14:27:36] ladderstart pass 10 (plain, a): start 480p warmed; ms from the tap: grant 5, register 5, index 1368, master 1382, playlist 1392, seg asked 8066, seg in 9799, picture 4889; other indexes: 240p index 4594, 360p index 2804, 720p index 3817; 30 s: stops 0 (0 ms), 480p+ 47 %, rungs 360>480, first change +15.9 s to 480p
+[14:27:36] ladderstart pass 11 (weak, b): start 480p warmed; ms from the tap: grant 3, register 4, index 1126, master 1417, playlist 1433, seg asked -, seg in -, picture 9828; other indexes: 240p index 6374, 360p index 4311, 720p index 3501; 30 s: stops 1 (7951 ms), 480p+ 16 %, rungs 240>480>360, first change +20.2 s to 480p
+[14:27:36] ladderstart pass 12 (plain, b): start 480p warmed; ms from the tap: grant 33, register 34, index 926, master 1657, playlist 1722, seg asked -, seg in -, picture 4482; other indexes: 240p index 4913, 360p index 2872, 720p index 3591; 30 s: stops 1 (616 ms), 480p+ 35 %, rungs 360>480, first change +19.5 s to 480p
+[14:27:36] ladderstart pass 13 (weak, a): start 480p warmed; ms from the tap: grant 15, register 17, index 1356, master 1358, playlist 1374, seg asked -, seg in -, picture 5048; other indexes: 240p index 4464, 360p index 2494, 720p index 3522; 30 s: stops 1 (1395 ms), 480p+ 0 %, rungs 360>240, first change +1.3 s to 240p
+[14:27:36] ladderstart pass 14 (plain, a): start 480p warmed; ms from the tap: grant 8, register 8, index 1268, master 1272, playlist 1290, seg asked -, seg in -, picture 3914; other indexes: 240p index 4379, 360p index 2224, 720p index 2993; 30 s: stops 0 (0 ms), 480p+ 9 %, rungs 360>240>360>480, first change +3.5 s to 240p
+[14:27:36] ladderstart pass 15 (weak, b): start 480p warmed; ms from the tap: grant 16, register 17, index 1636, master 1637, playlist 1654, seg asked -, seg in -, picture 7175; other indexes: 240p index 4928, 360p index 3128, 720p index 4975; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs 360>240>360, first change +3.6 s to 240p
+[14:27:36] ladderstart pass 16 (plain, b): start 480p warmed; ms from the tap: grant 16, register 17, index 1230, master 1231, playlist 1254, seg asked 7911, seg in 9062, picture 4144; other indexes: 240p index 5125, 360p index 2932, 720p index 2402; 30 s: stops 0 (0 ms), 480p+ 42 %, rungs 360>480, first change +17.3 s to 480p
+[14:27:36] ladderstart pass 17 (weak, a): start 480p warmed; ms from the tap: grant 2, register 3, index 1423, master 1427, playlist 1437, seg asked -, seg in -, picture 5061; other indexes: 240p index 5206, 360p index 2632, 720p index 3453; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs 360>240>360, first change +3.6 s to 240p
+[14:27:36] ladderstart pass 18 (plain, a): start 480p warmed; ms from the tap: grant 51, register 55, index 1414, master 1417, playlist 1424, seg asked -, seg in -, picture 4183; other indexes: 240p index 3680, 360p index 2525, 720p index 3591; 30 s: stops 0 (0 ms), 480p+ 22 %, rungs 360>480, first change +23.5 s to 480p
+[14:27:36] ladderstart pass 19 (weak, b): start 480p warmed; ms from the tap: grant 3, register 5, index 1640, master 1643, playlist 1654, seg asked -, seg in -, picture 8391; other indexes: 240p index 5989, 360p index 3433, 720p index 4716; 30 s: stops 1 (321 ms), 480p+ 37 %, rungs 360>240>360>480, first change +1.5 s to 240p
+[14:27:36] ladderstart pass 20 (plain, b): start 480p warmed; ms from the tap: grant 22, register 22, index 1349, master 1537, playlist 1581, seg asked 6492, seg in 7580, picture 4290; other indexes: 240p index 4759, 360p index 2676, 720p index 4004; 30 s: stops 0 (0 ms), 480p+ 56 %, rungs 360>480, first change +13.2 s to 480p
+[14:27:36] 
+[14:27:36] ladderstart plain a, 5 passes: first picture median 4232 ms, p90 4794 ms (each 4232,4651,4889,3914,4183); stops in 30 s 0 in 0 passes, 0 ms; 480p+ mean 39 %; step medians: grant 21, register 21, index 1368, master 1382, playlist 1392, seg asked 7747, seg in 9455, picture 4232
+[14:27:36] ladderstart plain b, 5 passes: first picture median 4290 ms, p90 4648 ms (each 4758,4027,4482,4144,4290); stops in 30 s 2 in 2 passes, 888 ms; 480p+ mean 43 %; step medians: grant 20, register 21, index 1230, master 1285, playlist 1320, seg asked 7202, seg in 8321, picture 4290
+[14:27:36] ladderstart weak a, 5 passes: first picture median 6136 ms, p90 8990 ms (each 9436,6136,8321,5048,5061); stops in 30 s 1 in 1 passes, 1395 ms; 480p+ mean 10 %; step medians: grant 15, register 17, index 1725, master 1728, playlist 1741, seg asked -, seg in -, picture 6136
+[14:27:36] ladderstart weak b, 5 passes: first picture median 7175 ms, p90 9253 ms (each 6054,5258,9828,7175,8391); stops in 30 s 2 in 2 passes, 8272 ms; 480p+ mean 22 %; step medians: grant 3, register 5, index 1636, master 1637, playlist 1654, seg asked 8349, seg in 11035, picture 7175
+[14:27:36] ladderstart plain: a minus b, first picture, 5 pairs: median -107 ms, mean 34 ms, a sooner in 3 of 5
+[14:27:36] ladderstart weak: a minus b, first picture, 5 pairs: median -1507 ms, mean -541 ms, a sooner in 3 of 5
+[14:27:36] ladderstart plain drags: 50; picture after the finger stopped median 1486 ms, p90 2147 ms, never 0; first picture of a drag median 1220 ms
+[14:27:36] ladderstart plain previews from the line: 123, median 1219 ms (p90 1530): conn new 2 (median 579 ms), wait 518 ms, read 159 ms, 67 KB, picture 461 ms
+[14:27:36] ladderstart plain previews from the phone: 1, median 312 ms (picture 281 ms)
+[14:27:36] ladderstart weak drags: 50; picture after the finger stopped median 1712 ms, p90 2499 ms, never 0; first picture of a drag median 1358 ms
+[14:27:36] ladderstart weak previews from the line: 110, median 1406 ms (p90 1745): conn new 4 (median 456 ms), wait 608 ms, read 328 ms, 66 KB, picture 420 ms
+[14:27:36] ladderstart weak previews from the phone: 10, median 382 ms (picture 326 ms)
+[14:27:36] flow ladderstart done
+[14:27:36] flow perf_idle
+[14:29:21] flow perf_idle exit 0
+[14:29:32] flow coldcpu
+[14:30:03] coldcpu start 1: pid 20960, 4 stack dumps
+[14:30:30] coldcpu start 2: pid 21173, 4 stack dumps
+[14:30:57] coldcpu start 3: pid 21359, 4 stack dumps
+[14:31:02] coldcpu start 1: app % every 2 s: 62 0 64 0 2 0 0 2 0 0 0; first 20 s by family: flutter-worker- 5%, 1.raster 4%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, binder 1%, RenderThread 1%, 1.io 0%
+[14:31:02] coldcpu start 2: app % every 2 s: 60 0 2 0 2 0 2 0 0 0 0; first 20 s by family: flutter-worker- 5%, binder 1%, .innocent.media 1%, Runtime worker 0%, Signal Catcher 0%, dart:io EventHa 0%, 1.io 0%, estorage.worker 0%
+[14:31:02] coldcpu start 3: app % every 2 s: 71 0 6 0 2 0 0 2 0 0 0; first 20 s by family: flutter-worker- 6%, binder 1%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, dart:io EventHa 0%, RenderThread 0%, 1.io 0%
+[14:31:02] coldcpu over all starts, first 20 s, mean % by family: flutter-worker- 5%, 1.raster 1%, binder 1%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, RenderThread 0%, dart:io EventHa 0%, 1.io 0%, estorage.worker 0%
+[14:31:02] coldcpu: busy Java threads in the stack dumps, by family and the first frame not the platform's:
+[14:31:02] 8  Jit thread pool worker thread  native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so  (platform)  (Jit thread pool worker thread 0)
+[14:31:02] 4  perfetto_hprof_listener native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so  (platform)  (perfetto_hprof_listener)
+[14:31:02] 1  com.it_nomads.fluttersecurestorage.worker com.google.crypto.tink.integration.android.AndroidKeystoreAesGcm.decryptInternal  (com.it_nomads.fluttersecurestorage.worker)
+[14:31:02] 1  Thread       com.fasterxml.jackson.core.TokenStreamFactory._optimizedStreamFromURL  (Thread-5)
+[14:31:02] 1  pool-thread  com.innocent.media.TurboLink$$ExternalSyntheticApiModelOutline0.m  (pool-2-thread-7)
+[14:31:02] coldcpu start 1 profile (simpleperf), the lines for the families that matter:
+[14:31:02] Samples: 892
+[14:31:02] Overhead  Sample  Command             Shared Object
+[14:31:02] 46.75%    417     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 9.42%     84      1.raster            [kernel.kallsyms]
+[14:31:02] 1.01%     9       1.io                /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 1.01%     9       DartWorker          /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+[14:31:02] 1.01%     9       DartWorker          [kernel.kallsyms]
+[14:31:02] 0.78%     7       1.io                [kernel.kallsyms]
+[14:31:02] 0.78%     7       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+[14:31:02] 0.56%     5       1.raster            /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+[14:31:02] Samples: 892
+[14:31:02] Overhead  Sample  Command             Symbol
+[14:31:02] 46.75%    417     1.raster            goldfish_pipe_read_write
+[14:31:02] 3.25%     29      1.raster            internal_get_user_pages_fast
+[14:31:02] 2.69%     24      1.raster            preempt_schedule_irq
+[14:31:02] 1.01%     9       1.io                goldfish_pipe_read_write
+[14:31:02] 0.67%     6       1.raster            unpin_user_pages
+[14:31:02] 0.56%     5       1.raster            mod_node_page_state
+[14:31:02] 0.56%     5       DartWorker          _raw_spin_unlock_irq
+[14:31:02] coldcpu start 2 profile (simpleperf), the lines for the families that matter:
+[14:31:02] Samples: 880
+[14:31:02] Overhead  Sample  Command             Shared Object
+[14:31:02] 47.95%    422     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 13.07%    115     1.raster            [kernel.kallsyms]
+[14:31:02] 3.07%     27      1.io                /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 0.80%     7       1.raster            /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+[14:31:02] 0.57%     5       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+[14:31:02] Samples: 880
+[14:31:02] Overhead  Sample  Command             Symbol
+[14:31:02] 47.95%    422     1.raster            goldfish_pipe_read_write
+[14:31:02] 5.11%     45      1.raster            internal_get_user_pages_fast
+[14:31:02] 3.07%     27      1.io                goldfish_pipe_read_write
+[14:31:02] 2.39%     21      1.raster            preempt_schedule_irq
+[14:31:02] 1.25%     11      1.raster            unpin_user_pages
+[14:31:02] 0.68%     6       1.raster            mod_node_page_state
+[14:31:02] 0.57%     5       1.raster            finish_task_switch
+[14:31:02] coldcpu start 3 profile (simpleperf), the lines for the families that matter:
+[14:31:02] Samples: 964
+[14:31:02] Overhead  Sample  Command             Shared Object
+[14:31:02] 48.24%    465     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 11.10%    107     1.raster            [kernel.kallsyms]
+[14:31:02] 4.05%     39      1.io                /vendor/lib/modules/goldfish_pipe.ko
+[14:31:02] 1.14%     11      1.io                [kernel.kallsyms]
+[14:31:02] 0.83%     8       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+[14:31:02] 0.73%     7       DartWorker          [kernel.kallsyms]
+[14:31:02] Samples: 964
+[14:31:02] Overhead  Sample  Command             Symbol
+[14:31:02] 48.24%    465     1.raster            goldfish_pipe_read_write
+[14:31:02] 4.36%     42      1.raster            internal_get_user_pages_fast
+[14:31:02] 4.05%     39      1.io                goldfish_pipe_read_write
+[14:31:02] 2.39%     23      1.raster            preempt_schedule_irq
+[14:31:02] 1.14%     11      1.raster            unpin_user_pages
+[14:31:02] 0.62%     6       1.raster            mod_node_page_state
+[14:31:02] 0.62%     6       DartWorker          _raw_spin_unlock_irq
+[14:31:02] 0.52%     5       1.raster            clear_page_orig
+[14:31:02] 0.52%     5       1.raster            finish_task_switch
+[14:31:02] coldcpu start 1 CpuProbe: app 10% · 1.0fps · 1.raster 5% | Signal Catcher 2% | .innocent.media 1% | RenderThread 1%
+[14:31:02] coldcpu start 2 CpuProbe: app 10% · 0.8fps · 1.raster 5% | RenderThread 2% | Signal Catcher 1% | .innocent.media 1%
+[14:31:02] coldcpu start 3 CpuProbe: app 11% · 0.9fps · 1.raster 5% | RenderThread 2% | Signal Catcher 2% | .innocent.media 1%
+[14:31:02] flow coldcpu done
+[14:31:08] done

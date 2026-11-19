@@ -1,0 +1,70 @@
+coldcpu start 1: app % every 2 s: 62 0 64 0 2 0 0 2 0 0 0; first 20 s by family: flutter-worker- 5%, 1.raster 4%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, binder 1%, RenderThread 1%, 1.io 0%
+coldcpu start 2: app % every 2 s: 60 0 2 0 2 0 2 0 0 0 0; first 20 s by family: flutter-worker- 5%, binder 1%, .innocent.media 1%, Runtime worker 0%, Signal Catcher 0%, dart:io EventHa 0%, 1.io 0%, estorage.worker 0%
+coldcpu start 3: app % every 2 s: 71 0 6 0 2 0 0 2 0 0 0; first 20 s by family: flutter-worker- 6%, binder 1%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, dart:io EventHa 0%, RenderThread 0%, 1.io 0%
+coldcpu over all starts, first 20 s, mean % by family: flutter-worker- 5%, 1.raster 1%, binder 1%, Signal Catcher 1%, .innocent.media 1%, Runtime worker 1%, RenderThread 0%, dart:io EventHa 0%, 1.io 0%, estorage.worker 0%
+coldcpu: busy Java threads in the stack dumps, by family and the first frame not the platform's:
+    8  Jit thread pool worker thread  native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so  (platform)  (Jit thread pool worker thread 0)
+    4  perfetto_hprof_listener native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so  (platform)  (perfetto_hprof_listener)
+    1  com.it_nomads.fluttersecurestorage.worker com.google.crypto.tink.integration.android.AndroidKeystoreAesGcm.decryptInternal  (com.it_nomads.fluttersecurestorage.worker)
+    1  Thread       com.fasterxml.jackson.core.TokenStreamFactory._optimizedStreamFromURL  (Thread-5)
+    1  pool-thread  com.innocent.media.TurboLink$$ExternalSyntheticApiModelOutline0.m  (pool-2-thread-7)
+coldcpu start 1 profile (simpleperf), the lines for the families that matter:
+  Samples: 892
+  Overhead  Sample  Command             Shared Object
+  46.75%    417     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+  9.42%     84      1.raster            [kernel.kallsyms]
+  1.01%     9       1.io                /vendor/lib/modules/goldfish_pipe.ko
+  1.01%     9       DartWorker          /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+  1.01%     9       DartWorker          [kernel.kallsyms]
+  0.78%     7       1.io                [kernel.kallsyms]
+  0.78%     7       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+  0.56%     5       1.raster            /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+  Samples: 892
+  Overhead  Sample  Command             Symbol
+  46.75%    417     1.raster            goldfish_pipe_read_write
+  3.25%     29      1.raster            internal_get_user_pages_fast
+  2.69%     24      1.raster            preempt_schedule_irq
+  1.01%     9       1.io                goldfish_pipe_read_write
+  0.67%     6       1.raster            unpin_user_pages
+  0.56%     5       1.raster            mod_node_page_state
+  0.56%     5       DartWorker          _raw_spin_unlock_irq
+coldcpu start 2 profile (simpleperf), the lines for the families that matter:
+  Samples: 880
+  Overhead  Sample  Command             Shared Object
+  47.95%    422     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+  13.07%    115     1.raster            [kernel.kallsyms]
+  3.07%     27      1.io                /vendor/lib/modules/goldfish_pipe.ko
+  0.80%     7       1.raster            /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+  0.57%     5       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+  Samples: 880
+  Overhead  Sample  Command             Symbol
+  47.95%    422     1.raster            goldfish_pipe_read_write
+  5.11%     45      1.raster            internal_get_user_pages_fast
+  3.07%     27      1.io                goldfish_pipe_read_write
+  2.39%     21      1.raster            preempt_schedule_irq
+  1.25%     11      1.raster            unpin_user_pages
+  0.68%     6       1.raster            mod_node_page_state
+  0.57%     5       1.raster            finish_task_switch
+coldcpu start 3 profile (simpleperf), the lines for the families that matter:
+  Samples: 964
+  Overhead  Sample  Command             Shared Object
+  48.24%    465     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+  11.10%    107     1.raster            [kernel.kallsyms]
+  4.05%     39      1.io                /vendor/lib/modules/goldfish_pipe.ko
+  1.14%     11      1.io                [kernel.kallsyms]
+  0.83%     8       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+  0.73%     7       DartWorker          [kernel.kallsyms]
+  Samples: 964
+  Overhead  Sample  Command             Symbol
+  48.24%    465     1.raster            goldfish_pipe_read_write
+  4.36%     42      1.raster            internal_get_user_pages_fast
+  4.05%     39      1.io                goldfish_pipe_read_write
+  2.39%     23      1.raster            preempt_schedule_irq
+  1.14%     11      1.raster            unpin_user_pages
+  0.62%     6       1.raster            mod_node_page_state
+  0.62%     6       DartWorker          _raw_spin_unlock_irq
+  0.52%     5       1.raster            clear_page_orig
+  0.52%     5       1.raster            finish_task_switch
+coldcpu start 1 CpuProbe: app 10% · 1.0fps · 1.raster 5% | Signal Catcher 2% | .innocent.media 1% | RenderThread 1%
+coldcpu start 2 CpuProbe: app 10% · 0.8fps · 1.raster 5% | RenderThread 2% | Signal Catcher 1% | .innocent.media 1%
+coldcpu start 3 CpuProbe: app 11% · 0.9fps · 1.raster 5% | RenderThread 2% | Signal Catcher 2% | .innocent.media 1%

@@ -1,0 +1,509 @@
+Threads: 23 total,   2 running,  21 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3518252K used,   498272K free,    60740K buffers
+ Swap:  3012388K total,   120064K used,  2892324K free,  2090244K cached
+200%cpu  28%user   0%nice  88%sys  68%idle   0%iow   0%irq   0%sirq  16%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21196 u0_a192      15  -5  18G 141M  84M S 56.0   3.5   0:00.00 1.raster        com.innocent.media
+21173 u0_a192      10 -10  18G 141M  84M R 20.0   3.5   0:00.05 .innocent.media com.innocent.media
+21191 u0_a192      16  -4  18G 141M  84M S  8.0   3.5   0:00.00 RenderThread    com.innocent.media
+21202 u0_a192      10 -10  18G 141M  84M S  0.0   3.5   0:00.00 dart:io EventHa com.innocent.media
+21200 u0_a192      10 -10  18G 141M  84M S  0.0   3.5   0:00.00 io.worker.1     com.innocent.media
+21201 u0_a192      10 -10  18G 141M  84M S  0.0   3.5   0:00.00 io.worker.2     com.innocent.media
+21199 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.00 1.io            com.innocent.media
+21194 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.00 flutter-worker- com.innocent.media
+21190 u0_a192      29   9  18G 141M  84M S  0.0   3.5   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 141M  84M S  0.0   3.5   0:00.00 binder:21173_1  com.innocent.media
+21179 u0_a192      29   9  18G 141M  84M S  0.0   3.5   0:00.00 Jit thread pool com.innocent.media
+21181 u0_a192      24   4  18G 141M  84M S  0.0   3.5   0:00.00 ReferenceQueueD com.innocent.media
+21182 u0_a192      24   4  18G 141M  84M S  0.0   3.5   0:00.00 FinalizerDaemon com.innocent.media
+21183 u0_a192      24   4  18G 141M  84M S  0.0   3.5   0:00.00 FinalizerWatchd com.innocent.media
+21177 u0_a192       0 -20  18G 141M  84M S  0.0   3.5   0:00.00 Signal Catcher  com.innocent.media
+21176 u0_a192       0 -20  18G 141M  84M S  0.0   3.5   0:00.00 Runtime worker  com.innocent.media
+21180 u0_a192      24   4  18G 141M  84M S  0.0   3.5   0:00.00 HeapTaskDaemon  com.innocent.media
+21175 u0_a192       0 -20  18G 141M  84M S  0.0   3.5   0:00.00 Runtime worker  com.innocent.media
+21178 u0_a192       0 -20  18G 141M  84M S  0.0   3.5   0:00.00 perfetto_hprof_ com.innocent.media
+21198 u0_a192      16  -4  18G 141M  84M R -4.0   3.5   0:00.01 RenderThread    com.innocent.media
+
+
+
+Threads: 27 total,   1 running,  26 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3542192K used,   474332K free,    60756K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090296K cached
+200%cpu  16%user   1%nice  91%sys  64%idle   0%iow   0%irq   1%sirq  29%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21196 u0_a192      15  -5  18G 198M 114M R 43.0   5.0   0:00.14 1.raster        com.innocent.media
+21191 u0_a192      10 -10  18G 198M 114M S  7.5   5.0   0:00.02 RenderThread    com.innocent.media
+21173 u0_a192      10 -10  18G 198M 114M S  5.0   5.0   0:00.10 .innocent.media com.innocent.media
+21199 u0_a192      20   0  18G 198M 114M S  2.0   5.0   0:00.00 1.io            com.innocent.media
+21177 u0_a192       0 -20  18G 198M 114M S  2.0   5.0   0:00.00 Signal Catcher  com.innocent.media
+21209 u0_a192      20   0  18G 198M 114M S  1.0   5.0   0:00.00 estorage.worker com.innocent.media
+21215 u0_a192      10 -10  18G 198M 114M S  0.0   5.0   0:00.00 DartWorker      com.innocent.media
+21213 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 pool-8-thread-1 com.innocent.media
+21210 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 AudioPortEventH com.innocent.media
+21200 u0_a192      21   1  18G 198M 114M S  0.0   5.0   0:00.00 io.worker.1     com.innocent.media
+21201 u0_a192      21   1  18G 198M 114M S  0.0   5.0   0:00.00 io.worker.2     com.innocent.media
+21202 u0_a192      10 -10  18G 198M 114M S  0.0   5.0   0:00.00 dart:io EventHa com.innocent.media
+21194 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 flutter-worker- com.innocent.media
+21190 u0_a192      29   9  18G 198M 114M S  0.0   5.0   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 198M 114M S  0.0   5.0   0:00.00 binder:21173_1  com.innocent.media
+21175 u0_a192       0 -20  18G 198M 114M S  0.0   5.0   0:00.00 Runtime worker  com.innocent.media
+21182 u0_a192      24   4  18G 198M 114M S  0.0   5.0   0:00.00 FinalizerDaemon com.innocent.media
+21183 u0_a192      24   4  18G 198M 114M S  0.0   5.0   0:00.00 FinalizerWatchd com.innocent.media
+21180 u0_a192      24   4  18G 198M 114M S  0.0   5.0   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 198M 114M S  0.0   5.0   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 198M 114M S  0.0   5.0   0:00.00 perfetto_hprof_ com.innocent.media
+21176 u0_a192       0 -20  18G 198M 114M S  0.0   5.0   0:00.00 Runtime worker  com.innocent.media
+21181 u0_a192      24   4  18G 198M 114M S  0.0   5.0   0:00.00 ReferenceQueueD com.innocent.media
+
+
+
+Threads: 40 total,   0 running,  40 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3542192K used,   474332K free,    60788K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090184K cached
+200%cpu   3%user   0%nice   4%sys 194%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21242 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 245M 144M S  0.0   6.2   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 245M 144M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 245M 144M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 pool-11-thread- com.innocent.media
+21225 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
+21224 u0_a192      18  -2  18G 245M 144M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+21222 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 mpv/mpv core    com.innocent.media
+21219 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21218 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21217 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21216 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21215 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21213 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 245M 144M S  0.0   6.2   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 245M 144M S  0.0   6.2   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 245M 144M S  0.0   6.2   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 245M 144M S  0.0   6.2   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 binder:21173_1  com.innocent.media
+21175 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.00 Runtime worker  com.innocent.media
+21183 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 245M 144M S  0.0   6.2   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.00 perfetto_hprof_ com.innocent.media
+21177 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.04 Signal Catcher  com.innocent.media
+21176 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.00 Runtime worker  com.innocent.media
+21173 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.20 .innocent.media com.innocent.media
+
+
+
+Threads: 38 total,   0 running,  38 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3547484K used,   469040K free,    60796K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090140K cached
+200%cpu   3%user   2%nice   5%sys 190%idle   1%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21193 u0_a192      20   0  18G 245M 144M S 50.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21188 u0_a192      20   0  18G 245M 144M S  8.5   6.2   0:00.00 binder:21173_3  com.innocent.media
+21175 u0_a192       0 -20  18G 245M 144M S  4.5   6.2   0:00.00 Runtime worker  com.innocent.media
+21194 u0_a192      20   0  18G 245M 144M S  1.5   6.2   0:00.01 flutter-worker- com.innocent.media
+21202 u0_a192      10 -10  18G 245M 144M S  1.0   6.2   0:00.00 dart:io EventHa com.innocent.media
+21230 u0_a192      18  -2  18G 245M 144M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 245M 144M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 pool-11-thread- com.innocent.media
+21224 u0_a192      18  -2  18G 245M 144M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+21225 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
+21222 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 mpv/mpv core    com.innocent.media
+21218 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21219 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21217 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21216 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21215 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21213 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 pool-8-thread-1 com.innocent.media
+21210 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 AudioPortEventH com.innocent.media
+21200 u0_a192      21   1  18G 245M 144M S  0.0   6.2   0:00.00 io.worker.1     com.innocent.media
+21201 u0_a192      21   1  18G 245M 144M S  0.0   6.2   0:00.00 io.worker.2     com.innocent.media
+21190 u0_a192      29   9  18G 245M 144M S  0.0   6.2   0:00.00 Profile Saver   com.innocent.media
+21187 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 245M 144M S  0.0   6.2   0:00.00 binder:21173_1  com.innocent.media
+21176 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.00 Runtime worker  com.innocent.media
+21183 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 245M 144M S  0.0   6.2   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 245M 144M S  0.0   6.2   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 245M 144M S  0.0   6.2   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 245M 144M S  0.0   6.2   0:00.20 .innocent.media com.innocent.media
+21209 u0_a192      20   0  18G 245M 144M S -1.0   6.2   0:00.02 estorage.worker com.innocent.media
+21199 u0_a192      20   0  18G 245M 144M S -2.0   6.2   0:00.04 1.io            com.innocent.media
+21177 u0_a192       0 -20  18G 245M 144M S -2.0   6.2   0:00.04 Signal Catcher  com.innocent.media
+21191 u0_a192      10 -10  18G 245M 144M S -8.0   6.2   0:00.17 RenderThread    com.innocent.media
+21196 u0_a192      15  -5  18G 245M 144M S -50.0  6.2   0:01.00 1.raster        com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3547484K used,   469040K free,    60796K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090148K cached
+200%cpu   2%user   0%nice   2%sys 197%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21231 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-11-thread- com.innocent.media
+21225 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
+21224 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+21222 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 mpv/mpv core    com.innocent.media
+21219 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21218 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21217 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21215 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 DartWorker      com.innocent.media
+21213 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 246M 145M S  0.0   6.2   0:00.09 Signal Catcher  com.innocent.media
+21183 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 246M 145M S  0.0   6.2   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.20 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3547484K used,   469040K free,    60796K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090148K cached
+200%cpu   3%user   0%nice   2%sys 196%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21177 u0_a192       0 -20  18G 246M 145M S  2.0   6.2   0:00.09 Signal Catcher  com.innocent.media
+21251 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-11-thread- com.innocent.media
+21225 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
+21224 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+21222 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 mpv/mpv core    com.innocent.media
+21218 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21217 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_1  com.innocent.media
+21178 u0_a192       0 -20  18G 246M 145M S  0.0   6.2   0:00.00 perfetto_hprof_ com.innocent.media
+21183 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Jit thread pool com.innocent.media
+21173 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.20 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3562604K used,   453920K free,    60800K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090248K cached
+200%cpu   8%user   0%nice   6%sys 186%idle   0%iow   0%irq   0%sirq   1%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21173 u0_a192      10 -10  18G 246M 145M S  0.5   6.2   0:00.20 .innocent.media com.innocent.media
+21251 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 OkHttp Connecti com.innocent.media
+21229 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 SurfaceSyncGrou com.innocent.media
+21230 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask0       com.innocent.media
+21231 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 hwuiTask1       com.innocent.media
+21228 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-11-thread- com.innocent.media
+21225 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 Sqflite         com.innocent.media
+21224 u0_a192      18  -2  18G 246M 145M S  0.0   6.2   0:00.00 queued-work-loo com.innocent.media
+21222 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 mpv/mpv core    com.innocent.media
+21217 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21218 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 AudioPortEventH com.innocent.media
+21200 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.1     com.innocent.media
+21201 u0_a192      21   1  18G 246M 145M S  0.0   6.2   0:00.00 io.worker.2     com.innocent.media
+21202 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.00 dart:io EventHa com.innocent.media
+21196 u0_a192      15  -5  18G 246M 145M S  0.0   6.2   0:01.00 1.raster        com.innocent.media
+21199 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.04 1.io            com.innocent.media
+21194 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 246M 145M S  0.0   6.2   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 246M 145M S  0.0   6.2   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 246M 145M S  0.0   6.2   0:00.13 Signal Catcher  com.innocent.media
+21179 u0_a192      29   9  18G 246M 145M S  0.0   6.2   0:00.00 Jit thread pool com.innocent.media
+21180 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 HeapTaskDaemon  com.innocent.media
+21181 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 ReferenceQueueD com.innocent.media
+21182 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerDaemon com.innocent.media
+21183 u0_a192      24   4  18G 246M 145M S  0.0   6.2   0:00.00 FinalizerWatchd com.innocent.media
+21178 u0_a192       0 -20  18G 246M 145M S  0.0   6.2   0:00.00 perfetto_hprof_ com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3548848K used,   467676K free,    60804K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2090304K cached
+200%cpu   4%user   1%nice   3%sys 192%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21177 u0_a192       0 -20  18G 251M 145M S  1.5   6.3   0:00.13 Signal Catcher  com.innocent.media
+21251 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-11-thread- com.innocent.media
+21225 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 Sqflite         com.innocent.media
+21224 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 queued-work-loo com.innocent.media
+21222 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 mpv/mpv core    com.innocent.media
+21218 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21217 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_1  com.innocent.media
+21178 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.00 perfetto_hprof_ com.innocent.media
+21183 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Jit thread pool com.innocent.media
+21173 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.21 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3570492K used,   446032K free,    60812K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2089952K cached
+200%cpu  14%user   0%nice  11%sys 175%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21251 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-11-thread- com.innocent.media
+21224 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 queued-work-loo com.innocent.media
+21225 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 Sqflite         com.innocent.media
+21222 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 mpv/mpv core    com.innocent.media
+21217 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21218 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.16 Signal Catcher  com.innocent.media
+21183 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.21 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3570996K used,   445528K free,    60812K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2089952K cached
+200%cpu   2%user   0%nice   2%sys 197%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21251 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-11-thread- com.innocent.media
+21224 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 queued-work-loo com.innocent.media
+21225 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 Sqflite         com.innocent.media
+21222 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 mpv/mpv core    com.innocent.media
+21217 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21218 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.16 Signal Catcher  com.innocent.media
+21183 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.21 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3571740K used,   444784K free,    60812K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2089952K cached
+200%cpu   2%user   0%nice   2%sys 197%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21251 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-11-thread- com.innocent.media
+21224 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 queued-work-loo com.innocent.media
+21225 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 Sqflite         com.innocent.media
+21222 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 mpv/mpv core    com.innocent.media
+21217 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21218 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.16 Signal Catcher  com.innocent.media
+21183 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.21 .innocent.media com.innocent.media
+
+
+
+Threads: 36 total,   0 running,  36 sleeping,   0 stopped,   0 zombie
+  Mem:  4016524K total,  3572244K used,   444280K free,    60820K buffers
+ Swap:  3012388K total,   134400K used,  2877988K free,  2089944K cached
+200%cpu   1%user   0%nice   2%sys 198%idle   0%iow   0%irq   0%sirq   0%host
+  TID USER         PR  NI VIRT  RES  SHR S[%CPU] %MEM     TIME+ THREAD          PROCESS
+21251 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-2-thread-1 com.innocent.media
+21242 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 OkHttp Connecti com.innocent.media
+21231 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask1       com.innocent.media
+21230 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 hwuiTask0       com.innocent.media
+21229 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 SurfaceSyncGrou com.innocent.media
+21228 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:00.00 1.raster        com.innocent.media
+21226 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-11-thread- com.innocent.media
+21224 u0_a192      18  -2  18G 251M 145M S  0.0   6.3   0:00.00 queued-work-loo com.innocent.media
+21225 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 Sqflite         com.innocent.media
+21222 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 mpv/mpv core    com.innocent.media
+21217 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21218 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21213 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 pool-8-thread-1 com.innocent.media
+21209 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.02 estorage.worker com.innocent.media
+21210 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 WifiManagerThre com.innocent.media
+21207 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 AudioPortEventH com.innocent.media
+21201 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.2     com.innocent.media
+21200 u0_a192      21   1  18G 251M 145M S  0.0   6.3   0:00.00 io.worker.1     com.innocent.media
+21202 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.00 dart:io EventHa com.innocent.media
+21199 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.04 1.io            com.innocent.media
+21196 u0_a192      15  -5  18G 251M 145M S  0.0   6.3   0:01.00 1.raster        com.innocent.media
+21194 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.01 flutter-worker- com.innocent.media
+21193 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 flutter-worker- com.innocent.media
+21191 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.17 RenderThread    com.innocent.media
+21190 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Profile Saver   com.innocent.media
+21188 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_3  com.innocent.media
+21187 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_2  com.innocent.media
+21185 u0_a192      20   0  18G 251M 145M S  0.0   6.3   0:00.00 binder:21173_1  com.innocent.media
+21177 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.16 Signal Catcher  com.innocent.media
+21183 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerWatchd com.innocent.media
+21182 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 FinalizerDaemon com.innocent.media
+21181 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 ReferenceQueueD com.innocent.media
+21180 u0_a192      24   4  18G 251M 145M S  0.0   6.3   0:00.00 HeapTaskDaemon  com.innocent.media
+21179 u0_a192      29   9  18G 251M 145M S  0.0   6.3   0:00.00 Jit thread pool com.innocent.media
+21178 u0_a192       0 -20  18G 251M 145M S  0.0   6.3   0:00.00 perfetto_hprof_ com.innocent.media
+21173 u0_a192      10 -10  18G 251M 145M S  0.0   6.3   0:00.21 .innocent.media com.innocent.media

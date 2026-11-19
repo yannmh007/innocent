@@ -1,0 +1,141 @@
+== start 1, start 1 at 3s: "com.it_nomads.fluttersecurestorage.worker" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0091d90f  /apex/com.android.art/lib64/libart.so (artJniMethodEnd+431) (BuildId: b6dc79e02101ea0
+    android.os.BinderProxy.transactNative(Native
+    android.os.BinderProxy.transact(BinderProxy.java:584)
+    android.system.keystore2.IKeystoreOperation$Stub$Proxy.finish(IKeystoreOperation.java:254)
+    android.security.KeyStoreOperation.lambda$finish$2(KeyStoreOperation.java:128)
+    android.security.KeyStoreOperation.$r8$lambda$09rOXWKKMUxc2XwfDUGtLzdir6g(unavailable:0)
+    android.security.KeyStoreOperation$$ExternalSyntheticLambda2.execute(unavailable:6)
+    android.security.KeyStoreOperation.handleExceptions(KeyStoreOperation.java:69)
+    android.security.KeyStoreOperation.finish(KeyStoreOperation.java:128)
+    android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer$MainDataStream.finish(KeyStoreCryptoOperationChunkedStreamer.java:228)
+    android.security.keystore2.KeyStoreCryptoOperationChunkedStreamer.doFinal(KeyStoreCryptoOperationChunkedStreamer.java:181)
+    android.security.keystore2.AndroidKeyStoreAuthenticatedAESCipherSpi$BufferAllOutputUntilDoFinalStreamer.doFinal(AndroidKeyStoreAuthenticatedAESCipherSpi.java:396)
+== start 1, start 1 at 3s: "Thread-5" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0064b18b  /apex/com.android.art/lib64/libart.so (art::JNI<false>::NewByteArray+491) (BuildId: b
+    com.android.org.conscrypt.NativeCrypto.EVP_marshal_public_key(Native
+    com.android.org.conscrypt.OpenSSLECPublicKey.getEncoded(OpenSSLECPublicKey.java:93)
+    com.android.org.conscrypt.ct.CTLogInfo.<init>(CTLogInfo.java:45)
+    com.android.org.conscrypt.ct.CTLogStoreImpl.createDefaultFallbackLogs(CTLogStoreImpl.java:164)
+    com.android.org.conscrypt.ct.CTLogStoreImpl.getDefaultFallbackLogs(CTLogStoreImpl.java:153)
+    com.android.org.conscrypt.ct.CTLogStoreImpl.<init>(CTLogStoreImpl.java:90)
+    com.android.org.conscrypt.Platform.newDefaultLogStore(Platform.java:522)
+    com.android.org.conscrypt.TrustManagerImpl.<init>(TrustManagerImpl.java:216)
+    com.android.org.conscrypt.TrustManagerImpl.<init>(TrustManagerImpl.java:172)
+    com.android.org.conscrypt.TrustManagerImpl.<init>(TrustManagerImpl.java:167)
+    android.security.net.config.NetworkSecurityTrustManager.<init>(NetworkSecurityTrustManager.java:60)
+== start 1, start 1 at 3s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 1, start 1 at 3s: "pool-2-thread-7" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0091d90f  /apex/com.android.art/lib64/libart.so (artJniMethodEnd+431) (BuildId: b6dc79e02101ea0
+    android.os.BinderProxy.transactNative(Native
+    android.os.BinderProxy.transact(BinderProxy.java:584)
+    android.content.ContentProviderProxy.query(ContentProviderNative.java:493)
+    android.content.ContentResolver.query(ContentResolver.java:1229)
+    com.innocent.media.TurboLink$$ExternalSyntheticApiModelOutline0.m(D8$$SyntheticClass:0)
+    com.fluttercandies.photo_manager.core.utils.IDBUtils$DefaultImpls.logQuery(IDBUtils.kt:801)
+    com.fluttercandies.photo_manager.core.utils.AndroidQDBUtils.logQuery(AndroidQDBUtils.kt:27)
+    com.fluttercandies.photo_manager.core.utils.AndroidQDBUtils.getAssetEntity(AndroidQDBUtils.kt:236)
+    com.fluttercandies.photo_manager.core.utils.IDBUtils$DefaultImpls.getAssetEntity$default(IDBUtils.kt:152)
+    com.fluttercandies.photo_manager.core.utils.AndroidQDBUtils.getFilePath(AndroidQDBUtils.kt:303)
+    com.fluttercandies.photo_manager.core.PhotoManager.getFile(PhotoManager.kt:164)
+== start 1, start 1 at 6s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 1, start 1 at 10s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 1, start 1 at 15s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 2, start 2 at 3s: "perfetto_hprof_listener" Native
+    native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so (read+5) (BuildId: fa337969c798946280c
+    native: #01 pc 00025ed0  /apex/com.android.art/lib64/libperfetto_hprof.so (void* std::__1::__thread_proxy<std:
+    native: #02 pc 000cd06a  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start+58) (BuildId: fa33796
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 2, start 2 at 6s: "perfetto_hprof_listener" Native
+    native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so (read+5) (BuildId: fa337969c798946280c
+    native: #01 pc 00025ed0  /apex/com.android.art/lib64/libperfetto_hprof.so (void* std::__1::__thread_proxy<std:
+    native: #02 pc 000cd06a  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start+58) (BuildId: fa33796
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 2, start 2 at 10s: "perfetto_hprof_listener" Native
+    native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so (read+5) (BuildId: fa337969c798946280c
+    native: #01 pc 00025ed0  /apex/com.android.art/lib64/libperfetto_hprof.so (void* std::__1::__thread_proxy<std:
+    native: #02 pc 000cd06a  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start+58) (BuildId: fa33796
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 2, start 2 at 15s: "perfetto_hprof_listener" Native
+    native: #00 pc 000b81f5  /apex/com.android.runtime/lib64/bionic/libc.so (read+5) (BuildId: fa337969c798946280c
+    native: #01 pc 00025ed0  /apex/com.android.art/lib64/libperfetto_hprof.so (void* std::__1::__thread_proxy<std:
+    native: #02 pc 000cd06a  /apex/com.android.runtime/lib64/bionic/libc.so (__pthread_start+58) (BuildId: fa33796
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 3, start 3 at 3s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 3, start 3 at 6s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 3, start 3 at 10s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)
+== start 3, start 3 at 15s: "Jit thread pool worker thread 0" Native
+    native: #00 pc 0005db96  /apex/com.android.runtime/lib64/bionic/libc.so (syscall+22) (BuildId: fa337969c798946
+    native: #01 pc 003cf3eb  /apex/com.android.art/lib64/libart.so (art::ConditionVariable::WaitHoldingLocks+107) 
+    native: #02 pc 0087f227  /apex/com.android.art/lib64/libart.so (art::ThreadPool::GetTask+103) (BuildId: b6dc79
+    dalvik.system.VMRuntime.runHeapTasks(Native
+    java.lang.Daemons$HeapTaskDaemon.runInternal(Daemons.java:687)
+    java.lang.Daemons$Daemon.run(Daemons.java:145)
+    java.lang.Thread.run(Thread.java:1012)

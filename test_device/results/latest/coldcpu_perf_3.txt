@@ -1,0 +1,55 @@
+simpleperf W dso.cpp:467] /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libapp.so doesn't contain symbol table
+Cmdline: /system/bin/simpleperf record -e cpu-clock -f 500 -p 21359 --duration 12 -o /data/local/tmp/cold_3.data
+Arch: x86_64
+Event: cpu-clock (type 1, config 0)
+Samples: 964
+Event count: 1928000000
+
+Overhead  Sample  Command             Shared Object
+48.24%    465     1.raster            /vendor/lib/modules/goldfish_pipe.ko
+11.10%    107     1.raster            [kernel.kallsyms]
+7.68%     74      RenderThread        /vendor/lib/modules/goldfish_pipe.ko
+4.05%     39      1.io                /vendor/lib/modules/goldfish_pipe.ko
+3.53%     34      com.innocent.media  [kernel.kallsyms]
+3.22%     31      Signal Catcher      [kernel.kallsyms]
+2.07%     20      RenderThread        [kernel.kallsyms]
+1.97%     19      Signal Catcher      /apex/com.android.runtime/lib64/bionic/libc.so
+1.76%     17      Signal Catcher      /apex/com.android.art/lib64/liblzma.so
+1.56%     15      Signal Catcher      /apex/com.android.art/lib64/libunwindstack.so
+1.45%     14      com.innocent.media  /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libflutter.so
+1.24%     12      com.innocent.media  /apex/com.android.art/lib64/libart.so
+1.14%     11      1.io                [kernel.kallsyms]
+0.93%     9       com.innocent.media  /apex/com.android.runtime/lib64/bionic/libc.so
+0.83%     8       1.raster            /apex/com.android.runtime/lib64/bionic/libc.so
+0.83%     8       Thread-6            /apex/com.android.art/lib64/libart.so
+0.83%     8       estorage.worker     /apex/com.android.art/lib64/libart.so
+0.73%     7       DartWorker          [kernel.kallsyms]
+0.73%     7       com.innocent.media  /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libapp.so
+0.52%     5       EmojiCompatInit     /apex/com.android.art/lib64/libart.so
+0.52%     5       Signal Catcher      /apex/com.android.art/lib64/libart.so
+simpleperf W dso.cpp:467] /data/app/~~_cJMhFcQlw82yra1-dfFbg==/com.innocent.media-4a_kOGg7EYwZJNZKTKIg2Q==/lib/x86_64/libapp.so doesn't contain symbol table
+Cmdline: /system/bin/simpleperf record -e cpu-clock -f 500 -p 21359 --duration 12 -o /data/local/tmp/cold_3.data
+Arch: x86_64
+Event: cpu-clock (type 1, config 0)
+Samples: 964
+Event count: 1928000000
+
+Overhead  Sample  Command             Symbol
+48.24%    465     1.raster            goldfish_pipe_read_write
+7.68%     74      RenderThread        goldfish_pipe_read_write
+4.36%     42      1.raster            internal_get_user_pages_fast
+4.05%     39      1.io                goldfish_pipe_read_write
+2.39%     23      1.raster            preempt_schedule_irq
+1.76%     17      Signal Catcher      LzmaDec_DecodeReal2
+1.24%     12      com.innocent.media  _raw_spin_unlock_irq
+1.14%     11      1.raster            unpin_user_pages
+0.93%     9       Signal Catcher      void std::__1::__sort<void unwindstack::Symbols::BuildRemapTable<elf64_sym>(unwindstack::Memory*)::'lambda'(auto, auto)&, unsigned int*>(auto, auto, auto)
+0.73%     7       RenderThread        internal_get_user_pages_fast
+0.62%     6       1.raster            mod_node_page_state
+0.62%     6       DartWorker          _raw_spin_unlock_irq
+0.62%     6       RenderThread        preempt_schedule_irq
+0.62%     6       Signal Catcher      unsigned long StrToU<unsigned long, 18446744073709551615ul, char>(char const*, char**, int)
+0.52%     5       1.raster            clear_page_orig
+0.52%     5       1.raster            finish_task_switch
+0.52%     5       Signal Catcher      strchr
+0.52%     5       com.innocent.media  finish_task_switch
