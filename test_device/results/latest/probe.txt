@@ -11,9 +11,9 @@ HTTP/2 206
 content-length: 1024
 content-range: bytes 0-1023/1127595385
 --- one connection, 20 s
-curl: (56) Recv failure: Connection reset by peer
-bytes=240517122 speed=53031983 B/s ttfb=0.288146s
+curl: (28) Operation timed out after 20000 milliseconds with 973471744 out of 1127595385 bytes received
+bytes=973471744 speed=48672888 B/s ttfb=0.549662s
 --- three connections on three ranges, 20 s
-lane2 bytes=375865128 speed=30392226 B/s
-lane0 bytes=375865128 speed=29266327 B/s
-lane1 bytes=375865128 speed=25615249 B/s
+lane2 bytes=375865128 speed=38068066 B/s
+lane0 bytes=375865128 speed=33141983 B/s
+lane1 bytes=375865128 speed=32162934 B/s
