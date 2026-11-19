@@ -284,8 +284,10 @@ def main():
             firsts = [int(d['first_ms']) for d in sel if d.get('first_ms', '-1') != '-1']
             fetched = [int(d.get('fetched', '0')) for d in sel]
             miss = sum(1 for d in sel if d.get('stop_ms') == '-1')
+            near = [int(d['near_ms']) for d in sel if d.get('near_ms', '-1') != '-1']
             print(f'ladderstart {lk} drags, previews {pword}, {size}: {len(sel)}; picture after the finger '
                   f'stopped median {fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))} ms, never {miss}; '
+                  f'{"" if not near else f"one within 10 s median {fmt(med(near))} ms, p90 {fmt(pct(near, 0.9))} ms; "}'
                   f'first picture median {fmt(med(firsts))} ms; fetches a drag {fmt(statistics.mean(fetched))}')
         line_pv = [v for v in pv if v['how'].startswith('line')]
         phone_pv = [v for v in pv if v['how'] == 'phone']
