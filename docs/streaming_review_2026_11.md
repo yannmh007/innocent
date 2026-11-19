@@ -698,3 +698,76 @@ second connection in the pool), 2 on one never yet read in whole, 1 on an
 open one. There a handshake is ~30-60 ms: the weak line, not this flow, is
 where a pool rule is judged.
 
+
+**Runs S1, S2, S3 (19 Nov): a resume's start, step by step** (BACKLOG §0,
+"1.64.85's first look", weak points 5 and 6). The owner's 1.64.85 opened
+a ladder at 579 s and waited 2078 ms for the picture; the trail had the
+480p, 360p and 720p indexes 0.5 s apart and Auto on 720p at once. New
+flow `ladderstart`: Sintel resumed at 579 s after 4 s on its page (the
+grant asked ahead, the opening warmed), from a cleared app, passes on two
+lines through the relay — weak (4 Mbit/s, 60 ms each way, 0.5 % loss)
+and plain (16 Mbit/s, 30 ms, no loss) — every step of the start in ms
+(`LadderStartTrail`: register, length check, each rung's head and index,
+master, playlists, segments asked and in) beside the tap, the grant and
+the picture; then the seek bar's drags.
+
+S1 (44534768953, an A/A, 20 passes): **a resume never started on the
+rung the app chose and warmed.** `_openLadder` passed Auto its start rung
+only when the film opened at 0 — a resume was taken for a reconnect — so
+Auto chose from the meter (360p with nothing measured, 720p on the
+owner's remembered line), and that rung's index was read only after the
+start rung's playlist was out. Medians from the tap, ms:
+
+| Line | start index | its playlist | the first segment's own index | asked | picture |
+|---|---|---|---|---|---|
+| plain | 1368 | 1392 | 2627 | 2922 | 4232 |
+| weak | 1725 | 1741 | 4300 | 4747 | 6136 |
+
+And the warm-up read the film's OPENING (2 MB from 0 s) for a 579 s
+resume, still on the line 3 s after the tap beside the start's own reads;
+its length check unfinished, the ladder paid its own (~1 s). The A/A's
+spread of the first picture (median of 5 pairs): plain 107 ms, weak
+1.5 s. Previews from the line: median 1.2 s (plain) / 1.4 s (weak) — the
+Worker's answer 0.5-0.6 s, the bytes 0.16-0.33 s, the picture's decode
+0.42-0.46 s on the emulator; connections almost always kept.
+
+The fix (0a6ade35): the arm's FIRST open is the film's first open wherever
+it starts (later opens, a reconnect or a renewal, are Auto's as before),
+and a resume's warm-up reads the head and the 2 MB at the resume point.
+Behind the lab word `base` (1.64.85's way) against `fix`, both orders,
+12 passes a line each:
+
+| Line | Run | first picture median (p90), base → fix | pairs fix sooner | 480p+ in 30 s | stops in 30 s |
+|---|---|---|---|---|---|
+| plain | S2 44549507157 | 4629 (5644) → 3045 (3433) | 6 of 6, median 1726 ms | 37 → 100 % | 1 (315 ms) → 1 (332) |
+| plain | S3 44565023092 | 4433 (4730) → 3354 (3709) | 6 of 6, median 1011 ms | 44 → 88 % | 0 → 1 (538) |
+| weak | S2 | 6541 (7760) → 3834 (4233) | 6 of 6, median 2622 ms | 36 → 72 % | 3 (3039 ms) → 0 |
+| weak | S3 | 7676 (11238) → 3505 (4343) | 6 of 6, median 4170 ms | 12 → 66 % | 2 (1923) → 3 (1800) |
+
+**The decision (19 Nov): the fix stays** — 24 of 24 pairs, each line's
+gain above its A/A in both orders, 480p or better most of the first 30 s
+with no more stops. The owner's three candidate rules, each on top of it
+(S3, weak line, 4 pairs each): `one` (the neighbours' heads only after
+the first segment) 0.3 s sooner in 3 of 4, `hold` (Auto's first climb
+only with 10 s in hand, on a remembered 3000 kbps line) 0.04 s, 1 of 4 —
+both under the A/A, taken out; `par` (every head at once) with them: with
+the fix the first segment's index is the start rung's, read first. With
+the fix Auto climbs late on its own (720p at 23-29 s on the plain line,
+never on the weak one), so `hold` had nothing to hold.
+
+**The seek bar's pictures (weak point 6).** Lab word `near`: when the
+controls come up the pictures 10/20/30 s either side are taken in the
+background, and two fetches on their way. Over S2 and S3, 18 drags a
+group: a short drag's (≤ 30 s) first picture 1.3-1.5 s → 0.17-0.19 s on
+three of the four line-and-run groups (plain S3: 1.18 → 0.99 s); the
+picture of where the finger stopped (median, base → near): plain short
+1804/1762 → 1275/1650, plain long 1598/1647 → 1472/1450, weak short
+2124/2094 → 1695/1725, weak long 1377/1572 → 1798/1618 ms (p90 better in
+all eight), for 60 % more fetches. Two on their way is taken out (a weak
+line's long drag later in both orders); the ring stays, and the nearest
+picture taken within 10 s is shown at once while the moment's own is
+fetched (eb2fda2e) — what a viewer sees at a stop that the ring or a
+seen part covers. Its A/B is run G1's last block. What is left — the
+Worker's ~0.5 s and the decode for a part never seen — only a picture
+made in advance removes: a trick-play sprite from the transcode (a
+pipeline and R2 change; the owner's call, with its numbers in BACKLOG).

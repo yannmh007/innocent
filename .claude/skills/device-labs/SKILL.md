@@ -81,6 +81,26 @@ Both run only on non-main branches, started by pushing their config file.
   jumps flow, so the release gate can run with a switch on before the
   build's default is.
 
+- **A start: flow `ladderstart`** (19 Nov): CLIMB_TITLE resumed at
+  START_AT s after START_PAGE s on its page, from a cleared app, one pass a
+  word of START_PASSES `LINE:START[+PREVIEW][@KBPS]` — LINE `weak`
+  (START_WEAK) or `plain` (START_PLAIN, START_PLAIN_DELAY), START to
+  `lab_start` (`base` = 1.64.85's start; else the build's), PREVIEW the
+  seek bar's (`base` or the build's; drags, START_DRAGS, only in a pass
+  that names one), KBPS a remembered line (`lab_throughput`).
+  `ladderstart_summary.py` sets each step (`LAB hls start +N ms`) beside
+  the tap, the grant and the picture by logcat's ms, per line and word:
+  first picture median/p90, stops and 480p+ in 30 s, pairs of words.
+  **Its A/A** (S1 44534768953): plain 107 ms, weak 1.5 s — a start rule
+  must clear that in both orders. Read the FIRST SEGMENT's rung, not the
+  app's: a resume once started on another rung than the one chosen (S1).
+- **App start CPU: flow `coldcpu`** (as root; put it last and after
+  `perf_idle`, which grants access): cold starts by COLD_PLAN
+  `STAMP:CHANGE` (`lab_scan` volume|videos; `photo` = a screenshot into
+  MediaStore first, as a chat download), COLD_LIBRARY more videos. The
+  first start of a stamp always scans; compare the rest. The emulator's
+  CPU is fast: it proves whether the library is read again (`library
+  all: …` in the trail), not the owner's seconds.
 - **The player audit races the auto-hide.** `player_audit*` taps a
   control (More, Subtitle, holding Next) a step after showing the controls;
   Maestro's steps ran ~5 s apart on some runners (15-19 Nov) and the
@@ -93,6 +113,8 @@ Both run only on non-main branches, started by pushing their config file.
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
   day, reset 07:00 UTC; each device in a run is one.
+  Count the day's tests before a push (cloud.env's dated comments since
+  07:00 UTC): a sixth is refused, and the run is wasted (19 Nov).
 - `MEDIA_SEAL=` empty for the release build; `MODE=stream` plays Sintel.
 - `STREAM_AUTOJUMPS` (shares of the film): jumps in Auto after the checks,
   measured as on the emulator; the app then closes at 330 s, not 240. The

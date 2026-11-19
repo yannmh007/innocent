@@ -18,13 +18,69 @@ does it.
 ### WHERE THINGS STAND — read first in a new session (19 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 6ad09f63, app 1.64.85 from c70f4e94; on the
-  branch only: the lab hooks, the Google nonce, test_device/results, and
-  the 15 Nov fixes below).
+  branch only: the lab hooks, the Google nonce, test_device/results, the
+  15 Nov fixes and the 19 Nov ones below).
   A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
   would need a force-push.
+- **19 Nov, on the branch for the next release: 1.64.85's weak points
+  5-7** (the "first look" entry below; the streaming review §5, "Runs S1,
+  S2, S3"). MEASURED FIRST, new lab flows `ladderstart` (a resume at
+  579 s, every step of the start in ms — `LadderStartTrail`, one summary
+  line in every build's trail — then seek-bar drags with each preview's
+  parts) and `coldcpu` (cold starts as root: threads every 2 s, Java
+  stacks, simpleperf; COLD_PLAN, COLD_LIBRARY). (5) THE FAR START: a
+  resume never opened on the rung the app chose and warmed (`_openLadder`
+  passed the start rung only from 0), so Auto took one from the meter
+  whose index came after the start rung's playlist — S1 44534768953:
+  first picture 4.2 s plain, 6.1 s weak; and the warm-up read the film's
+  opening, not the resume point. FIXED (0a6ade35): a resume's first open
+  starts on the warmed rung; its warm-up reads the resume point. A/B both
+  orders, 12 passes a line each: S2 44549507157 plain 4629 -> 3045 ms, weak
+  6541 -> 3834; S3 44565023092 plain 4433 -> 3354, weak 7676 -> 3505
+  (median; 24 of 24 pairs; S1's A/A 0.1 s plain, 1.5 s weak); 480p+ in the
+  first 30 s 40 -> 94 % / 24 -> 69 %; stops in it weak 5 -> 3, plain 1 -> 2
+  (all under 0.6 s but two). The owner's three rules, on top of the fix:
+  `one` +0.3 s, `hold` +0.04 s (under the A/A), `par` moot — taken out
+  (0318ab39). (6) THE SEEK BAR'S PICTURES: a picture never seen is the
+  Worker's answer ~0.5 s + bytes 0.16-0.33 s + decode ~0.45 s (emulator);
+  now the pictures 10/20/30 s either side are taken when the controls come
+  up (a short drag's first picture 1.3-1.5 s -> 0.17-0.19 s in three of
+  four groups), and the nearest one taken within 10 s is shown at once
+  (eb2fda2e, A/B in G1); two fetches on their way tried and taken out (a
+  weak line's long drag later in both orders). A part never seen still
+  waits ~1.2-1.4 s: only a picture made in advance removes that — THE
+  OWNER'S CALL, below. (7) APP START CPU: the library cache was trusted
+  only while MediaStore's VOLUME generation stood still, which every
+  photo, song or chat download moves: each launch read 2000+ videos again
+  (photo_manager's pool + Dart's file workers — ScanGate's own "before"
+  numbers 25 % / 17 %, the owner's 23 % / 13-19 %). FIXED (84abb9ce): the
+  stamp is the video table's (count and newest GENERATION_MODIFIED per
+  volume). coldcpu in S2, 424 videos, a new picture before each start:
+  the volume's stamp read the library again 3 of 3 starts (0.9-1.2 s
+  each, the main thread 3 % against 1 % over the first 10 s), the videos'
+  0 of 3 ("library all: cache trusted" in the trail). The emulator's
+  fast CPU shows the mechanism, not the owner's 20 s: the next diagnostics
+  report says (`library all: …` lines). Tests: 1799 here (resume start,
+  warm at the resume point, the loader's nearest picture, the trail);
+  branch Builds 44536161098, 44549512776 green (the Kotlin), Stream bench
+  44534768955, 44549507240 green. STILL TO DO: device lab G1 (the gate,
+  the player audit both ways, the nearest picture's block) and Test Lab
+  realme + OPPO on the final code — the day's five physical tests were
+  spent by 44518397993; this session wakes at 07:12 UTC 20 Nov to run it
+  (scheduled). The 15 Nov "ready for the release call" below is stale
+  until both pass.
+  THE OWNER'S CALL (weak point 6): a trick-play sprite from the
+  transcode — one 160x90 picture every 5 s (2 s matches the ladder's
+  fragments), tiled 10x10 — about 0.5-1 MB a film-hour, a few sheets per
+  film; R2 storage pennies a month for the catalogue; a Worker request
+  per sheet, not per picture; a 30 s ffmpeg step on the 240p rung, a
+  backfill job for the films already up; a key and an upload URL from the
+  transcode's edge function, and the app reading it. Then every preview
+  is a crop of a sheet on the phone (~10-20 ms) after one sheet's
+  fetch, against 1.2-1.4 s now for a part never seen and ~67 KB each.
 - **15 Nov, on the branch for the next release: the 14 Nov weak points
   1-4 and the double open's refusal** (69374520, 7e1bbbfc, 63499b3c,
   e4212f13, 091d4278). LIVE ALREADY: migrations 081 and 082 (below).
@@ -296,8 +352,8 @@ does it.
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
 - **1.64.85's first look on the owner's phone (14 Nov, 13:51-13:54 UTC; a
-  diagnostics report and the events)** — (1)-(4) FIXED ON THE BRANCH 15 Nov
-  (the entry above); (5)-(7) open: the fix works — four drags of
+  diagnostics report and the events)** — (1)-(4) FIXED ON THE BRANCH 15 Nov,
+  (5)-(7) 19 Nov (the entries above): the fix works — four drags of
   1.4-5.8 s, each `exo held N ms (scrubbing)` ending in a jump or a Back,
   the film moving after; no double player. WEAK, for the next sessions:
   (1) THE LAST PLAYBACK'S SUMMARY IS LOST: the session's last film
