@@ -6,7 +6,17 @@ import 'dart:typed_data';
 /// LAST position always asked for, so the picture is never one a step
 /// behind where the drag ended.
 class LadderPreviewLoader {
-  LadderPreviewLoader(this.fetch, {this.maxInFlight = 1});
+  LadderPreviewLoader(this.fetch, {this.maxInFlight = 1, this.nearest});
+
+  /// A picture already taken near a moment, and the moment it is of — shown
+  /// at once while that moment's own is fetched (19 Nov 2026): a finger
+  /// that stops where nothing was taken sees the nearest picture there is
+  /// within a few seconds (as YouTube's storyboard, a picture every few
+  /// seconds), not the last one fetched wherever it was.
+  final ({Uint8List bytes, int at})? Function(int seconds)? nearest;
+
+  /// The moment (s) of the picture last handed out, provisional or not.
+  int? shownFor;
 
   /// How many fetches may be on their way at once. Two (19 Nov 2026): when
   /// the finger stops, the picture of where it stopped starts as soon as
@@ -52,10 +62,20 @@ class LadderPreviewLoader {
       final last = _last;
       if (last != null) {
         scheduleMicrotask(() {
-          if (!_gone) onPicture(last);
+          if (_gone) return;
+          shownFor = seconds;
+          onPicture(last);
         });
       }
       return;
+    }
+    final near = nearest?.call(seconds);
+    if (near != null && near.at != shownFor) {
+      scheduleMicrotask(() {
+        if (_gone) return;
+        shownFor = near.at;
+        onPicture(near.bytes);
+      });
     }
     _fetch(seconds);
   }
@@ -70,6 +90,7 @@ class LadderPreviewLoader {
       if (bucket == _bucket) _last = bytes;
       // Shown even when the finger has moved on: the nearest picture there
       // is, until the newer one arrives.
+      shownFor = seconds;
       _onPicture?.call(bytes);
     }, onError: (Object _) {}).whenComplete(() {
       _inFlight--;

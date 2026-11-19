@@ -71,4 +71,26 @@ void main() {
     expect(shown, [5, 5]);
     l.dispose();
   });
+
+  test('the nearest picture taken is shown at once, then the moment\'s own',
+      () async {
+    final held = Uint8List.fromList([42]);
+    final l = LadderPreviewLoader(fetch,
+        maxInFlight: 2,
+        nearest: (s) => (s - 300).abs() <= 10 ? (bytes: held, at: 300) : null);
+    final shown = <int>[];
+    l.request(306, (b) => shown.add(b.first));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42], reason: 'the nearest, before the fetch is back');
+    expect(l.shownFor, 300);
+    expect(asked, [306], reason: 'its own is still fetched');
+    pending[306]!.complete(Uint8List.fromList([36]));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42, 36]);
+    expect(l.shownFor, 306);
+    l.request(500, (b) => shown.add(b.first));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42, 36], reason: 'nothing near 500 s: only its own fetch');
+    l.dispose();
+  });
 }

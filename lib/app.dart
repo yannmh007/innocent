@@ -573,7 +573,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           final b = await svc.ladderPreview(at);
           done.add((at.inSeconds, DateTime.now()));
           return b;
-        }, maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1);
+        }, maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1, nearest: svc.nearestPreview);
         final len = svc.duration.inSeconds;
         final p0 = svc.position.inSeconds;
         final to = (p0 + by).clamp(0, max(0, len - 1));
@@ -590,21 +590,28 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           await Future<void>.delayed(step);
         }
         final stopped = DateTime.now();
-        // The picture of where the finger stopped: up to 6 s for it.
+        // The picture of where the finger stopped: up to 6 s for it. And
+        // the first moment the bubble showed one within 10 s of it (`near_ms`:
+        // the nearest picture taken, or its own).
         DateTime? landed;
+        DateTime? near;
         while (DateTime.now().difference(stopped) < const Duration(seconds: 6)) {
+          final f = loader.shownFor;
+          if (near == null && f != null && (f - to).abs() <= 10) near = DateTime.now();
           for (final (s, t) in done) {
             if (s ~/ 2 == to ~/ 2) landed ??= t;
           }
           if (landed != null) break;
           await Future<void>.delayed(const Duration(milliseconds: 20));
         }
+        near ??= landed;
         loader.dispose();
         final stopMs = landed == null ? -1 : max(0, landed.difference(stopped).inMilliseconds);
         PlaybackLog.add('LAB drag $i/${drags.length} by=$by over_ms=${over.inMilliseconds} '
             'from=$p0 to=$to asked=$steps fetched=$fetched pictures=$pictures '
             'first_ms=${firstPicture == null ? -1 : firstPicture!.difference(t0).inMilliseconds} '
-            'stop_ms=$stopMs word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead}');
+            'stop_ms=$stopMs near_ms=${near == null ? -1 : max(0, near.difference(stopped).inMilliseconds)} '
+            'word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead}');
         await Future<void>.delayed(const Duration(seconds: 2));
       }
     } finally {

@@ -183,6 +183,23 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// `base` (the A/B).
   static bool previewAhead = true;
 
+  /// The picture already taken nearest [at], within [within], and the
+  /// moment it is of (s): what the seek bar shows while [at]'s own is
+  /// fetched ([LadderPreviewLoader.nearest]). Null off the ladder, or when
+  /// none is that near.
+  ({Uint8List bytes, int at})? nearestPreview(int at,
+      {Duration within = const Duration(seconds: 10)}) {
+    if (!previewAhead || !_exoActive || _previewsFor != _ladderUri) return null;
+    final ms = at * 1000;
+    int? best;
+    for (final k in _previews.keys) {
+      if ((k - ms).abs() > within.inMilliseconds) continue;
+      if (best == null || (k - ms).abs() < (best - ms).abs()) best = k;
+    }
+    if (best == null) return null;
+    return (bytes: _previews[best]!, at: best ~/ 1000);
+  }
+
   /// The moments either side of the film's that [prefetchPreviewsAround]
   /// takes, nearest first.
   static const List<int> aheadOffsetsS = <int>[10, -10, 20, -20, 30, -30];
