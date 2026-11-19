@@ -94,6 +94,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       // Before the film opens: the jump switch for this pass.
       await LabStream.jumpRule();
       final plan = await LabStream.startPlan();
+      if (plan.at != null) LabStream.applyStartRule(plan.word);
       await _labTitle(titleId, plan: plan);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();

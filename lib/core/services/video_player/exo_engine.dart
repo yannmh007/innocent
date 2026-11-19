@@ -284,6 +284,12 @@ class ExoEngine {
     }
   }
 
+  /// UNDER A/B (19 Nov 2026, the device lab's `lab_start` word `hold`): how
+  /// much film must be in hand before Auto climbs above the start rung
+  /// (Steer.holdUs); 0, the build's own, lets it climb as soon as two
+  /// segments of the start rung are queued.
+  static int startHoldMs = 0;
+
   /// [target] a rung by height (null: Auto), [maxHeight] the data saver's
   /// ceiling for Auto, [kbps] what the line was last measured at, [start]
   /// Auto's first rung (the one warmed while the viewer looked at the film),
@@ -317,6 +323,7 @@ class ExoEngine {
       ],
       // One MP4 file (a film's Original) rather than the ladder's HLS.
       'progressive': progressive,
+      if (startHoldMs > 0) 'holdMs': startHoldMs,
     });
   }
 

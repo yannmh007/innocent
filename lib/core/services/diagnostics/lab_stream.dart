@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../features/video_hub/data/cache/stream_cache_server.dart';
+import '../video_player/exo_engine.dart';
 import 'playback_log.dart';
 
 /// DEVICE LAB ONLY — a film from a URL the lab names, played through the real
@@ -111,6 +112,20 @@ class LabStream {
     } catch (_) {
       return (at: null, page: null, word: null);
     }
+  }
+
+  /// THE START RULE FOR THIS PASS (19 Nov 2026), from its `lab_start` word:
+  /// `one` and `par` when the other rungs' heads are read
+  /// ([StreamCacheServer.startRule]), `hold` Auto's first climb only with
+  /// [holdMs] of film in hand ([ExoEngine.startHoldMs]); any other word
+  /// (`a`, `b`: an A/A) the build's own. Said in the trail.
+  static const int holdMs = 10000;
+  static void applyStartRule(String? word) {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    StreamCacheServer.startRule = word == 'one' || word == 'par' ? word! : 'base';
+    ExoEngine.startHoldMs = word == 'hold' ? holdMs : 0;
+    PlaybackLog.add('LAB start rule ${word ?? '-'}: heads ${StreamCacheServer.startRule}, '
+        'climb hold ${ExoEngine.startHoldMs} ms');
   }
 
   /// The seek bar's drags (`lab_drags`): "+60/1.5 -30/1 …", each a move of

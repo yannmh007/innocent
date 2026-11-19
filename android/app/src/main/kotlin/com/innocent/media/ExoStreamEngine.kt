@@ -123,11 +123,13 @@ class ExoStreamEngine private constructor(
         url: String, startMs: Long, autoplay: Boolean,
         target: Int?, maxHeight: Int?, bps: Long?, start: Int?,
         rungs: Map<Int, Int>, progressive: Boolean = false,
+        holdMs: Long = 0L,
     ) {
         release(keepSurface = true)
         steer.target = target
         steer.maxHeight = maxHeight
         steer.start = start
+        steer.holdUs = holdMs * 1000L
         steer.heightByRate = rungs
         if (bps != null && bps > 0) meter.seed(bps)
         val http = DefaultHttpDataSource.Factory()
@@ -472,6 +474,17 @@ class ExoStreamEngine private constructor(
         @Volatile var start: Int? = null
 
         /**
+         * UNDER A/B (19 Nov 2026, lab_start `hold`): how much film must be
+         * in hand before Auto may climb ABOVE [start]; a step down is let
+         * through at once. 0: the player's own choice as soon as two
+         * segments of the start rung are queued. Its own choice was settled
+         * from the remembered line while the start rung was forced, so on
+         * the owner's phone (2592 kbps remembered) the third segment was
+         * already 720p, with four seconds in hand.
+         */
+        @Volatile var holdUs: Long = 0L
+
+        /**
          * Each rung's height by its average rate (the master's
          * AVERAGE-BANDWIDTH, bits a second), for a master written before
          * any rung's size was read: without it every rung's height is
@@ -650,8 +663,15 @@ class ExoStreamEngine private constructor(
         ) {
             super.updateSelectedTrack(
                 playbackPositionUs, bufferedDurationUs, availableDurationUs, queue, mediaChunkIterators)
-            // Two segments of the start rung in hand: Auto is the player's.
-            if (steer.start != null && queue.size >= 2) steer.start = null
+            // Two segments of the start rung in hand: Auto is the player's —
+            // at once for a step down or none; for a climb, once [Steer.holdUs]
+            // of film is in hand (0: at once).
+            val start = steer.start
+            if (start != null && queue.size >= 2) {
+                val hold = steer.holdUs
+                val ideal = steer.heightOf(getFormat(super.getSelectedIndex()))
+                if (hold <= 0L || bufferedDurationUs >= hold || ideal <= start) steer.start = null
+            }
         }
 
         override fun getSelectionReason(): Int =
@@ -733,6 +753,7 @@ class ExoStreamEngine private constructor(
                             (call.argument<Number>("start"))?.toInt(),
                             rungsArg(call.argument<List<Any?>>("rungs")),
                             call.argument<Boolean>("progressive") ?: false,
+                            (call.argument<Number>("holdMs"))?.toLong() ?: 0L,
                         )
                         "play" -> e.play()
                         "pause" -> e.pause()
