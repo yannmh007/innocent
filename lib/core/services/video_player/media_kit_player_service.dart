@@ -175,8 +175,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// THE SEEK BAR'S PICTURES AHEAD OF THE FINGER (19 Nov 2026): when the
   /// controls come up on the ladder, the pictures 10, 20 and 30 s either
   /// side of the film's moment are taken in the background
-  /// ([prefetchPreviewsAround]), and the seek bar keeps two fetches on the
-  /// way ([LadderPreviewLoader.maxInFlight]). A picture not yet seen cost
+  /// ([prefetchPreviewsAround]), and the nearest one taken within 10 s is
+  /// shown at once while the moment's own is fetched ([nearestPreview]).
+  /// A picture not yet seen cost
   /// 478-1010 ms on the owner's phone and a median 1.2-1.4 s in the device
   /// lab — the Worker's answer (~0.5 s) and the picture's decode most of it,
   /// which only a fetch made earlier hides. Off only for the device lab's

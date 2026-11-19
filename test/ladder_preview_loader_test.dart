@@ -1,7 +1,6 @@
-// The seek bar's pictures on the ladder: how many fetches are on their way
-// (19 Nov 2026). One at a time, the picture of where the finger stopped
-// waited behind the fetch before it; two let it start as soon as one is
-// free. Either way the newest moment replaces any that waited.
+// The seek bar's pictures on the ladder (19 Nov 2026): one fetch on its way
+// at a time, the newest moment replacing any that waited, and the nearest
+// picture already taken shown at once while the moment's own is fetched.
 
 import 'dart:async';
 import 'dart:typed_data';
@@ -23,27 +22,6 @@ void main() {
     pending = <int, Completer<Uint8List?>>{};
   });
 
-  test(
-      'two on their way: the second starts at once, the newest waits for a slot',
-      () async {
-    final l = LadderPreviewLoader(fetch, maxInFlight: 2);
-    final shown = <int>[];
-    l.request(100, (b) => shown.add(b.first));
-    l.request(110, (b) => shown.add(b.first));
-    l.request(120, (b) => shown.add(b.first));
-    l.request(130, (b) => shown.add(b.first)); // replaces 120
-    expect(asked, [100, 110]);
-    pending[110]!.complete(Uint8List.fromList([11]));
-    await Future<void>.delayed(Duration.zero);
-    expect(asked, [100, 110, 130],
-        reason: 'the newest, not the one it replaced');
-    pending[100]!.complete(Uint8List.fromList([10]));
-    pending[130]!.complete(Uint8List.fromList([13]));
-    await Future<void>.delayed(Duration.zero);
-    expect(shown, contains(13));
-    l.dispose();
-  });
-
   test('one at a time, as before: the next waits for the one on its way',
       () async {
     final l = LadderPreviewLoader(fetch);
@@ -60,7 +38,7 @@ void main() {
   });
 
   test('the same two-second fragment again is given, not fetched', () async {
-    final l = LadderPreviewLoader(fetch, maxInFlight: 2);
+    final l = LadderPreviewLoader(fetch);
     final shown = <int>[];
     l.request(100, (b) => shown.add(b.first));
     pending[100]!.complete(Uint8List.fromList([5]));
@@ -76,7 +54,6 @@ void main() {
       () async {
     final held = Uint8List.fromList([42]);
     final l = LadderPreviewLoader(fetch,
-        maxInFlight: 2,
         nearest: (s) => (s - 300).abs() <= 10 ? (bytes: held, at: 300) : null);
     final shown = <int>[];
     l.request(306, (b) => shown.add(b.first));

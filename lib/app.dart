@@ -573,7 +573,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           final b = await svc.ladderPreview(at);
           done.add((at.inSeconds, DateTime.now()));
           return b;
-        }, maxInFlight: MediaKitPlayerService.previewAhead ? 2 : 1, nearest: svc.nearestPreview);
+        }, nearest: svc.nearestPreview);
         final len = svc.duration.inSeconds;
         final p0 = svc.position.inSeconds;
         final to = (p0 + by).clamp(0, max(0, len - 1));

@@ -144,14 +144,6 @@ class StreamCacheServer {
   @visibleForTesting
   static PeakRule peakRule = PeakRule.window;
 
-  /// UNDER A/B (19 Nov 2026, the device lab's `lab_start`): when the other
-  /// rungs' heads are read. `base`, the build's own: the start rung's at
-  /// registration, its neighbours' as its playlist is served. `one`: the
-  /// neighbours' only once the first film segment is in — on a weak line
-  /// their two reads (a length check and 64 KB each) shared it with the
-  /// first segment. `par`: every rung's at registration, beside the start
-  /// rung's.
-  static String startRule = 'base';
 
   /// A resume's warm-up takes the seconds where the film resumes, not its
   /// opening ([warmOpening]'s `at`). Off only for the device lab's `base`.
@@ -785,7 +777,6 @@ class StreamCacheServer {
       // when a read first goes to it.
       final spare = _Ladder.pool();
       LadderStartTrail.mark('rungs registered');
-      final firstIn = Completer<void>();
       final checking = _sources[start.cacheId]?.probing;
       if (checking != null) {
         unawaited(checking.then((_) => LadderStartTrail.mark('${start.height}p length checked'),
@@ -796,7 +787,6 @@ class StreamCacheServer {
         _sources[r.cacheId]
           ?..segmented = true
           ..height = r.height
-          ..firstIn = firstIn
           ..second = spare;
         entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
       }
@@ -830,11 +820,6 @@ class StreamCacheServer {
       // player's own request again, sent as it arrives and read ahead
       // from there.
       unawaited(_rungWithHead(ladder, start.height));
-      if (startRule == 'par') {
-        for (final r in rungs) {
-          if (!identical(r, start)) unawaited(_rungWithHead(ladder, r.height));
-        }
-      }
       return 'http://127.0.0.1:$port/h/$token/$ladderId/master.m3u8';
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.hlsUrlFor: $e');
@@ -1085,18 +1070,14 @@ class StreamCacheServer {
             // read now, a change of rung waits for no index.
             final heights = [for (final x in l.rungs) x.height]..sort();
             final i = heights.indexOf(r.height);
-            final firstIn = _sources[r.cacheId]?.firstIn;
-            final later = startRule == 'one' && firstIn != null && !firstIn.isCompleted;
+            // (Reading them only once the first film segment is in, and
+            // reading every rung's at registration, were A/B'd on 19 Nov
+            // 2026 — device lab S3 44565023092: `one` 0.3 s sooner to the
+            // picture in 3 of 4 pairs, under the weak line's A/A of 1.5 s;
+            // taken out with the resume fix in, which reads the start
+            // rung's index first anyway.)
             for (final n in [if (i > 0) heights[i - 1], if (i + 1 < heights.length) heights[i + 1]]) {
-              if (later) {
-                // Not before the first film segment is in, and not much
-                // after: a change of rung would wait for the index.
-                unawaited(firstIn.future
-                    .timeout(const Duration(seconds: 6), onTimeout: () {})
-                    .then((_) => _rungWithHead(l, n)));
-              } else {
-                unawaited(_rungWithHead(l, n));
-              }
+              unawaited(_rungWithHead(l, n));
             }
           }
         }
@@ -1782,10 +1763,6 @@ class StreamCacheServer {
       if (startKind != null) {
         LadderStartTrail.mark('$startKind ${complete ? 'in' : 'cut'}');
         if (complete && start > 0) LadderStartTrail.firstSegmentIn();
-      }
-      final firstIn = src.firstIn;
-      if (complete && start > 0 && src.segmented && firstIn != null && !firstIn.isCompleted) {
-        firstIn.complete();
       }
       if (complete) {
         try {
@@ -2998,10 +2975,6 @@ class _Source {
 
   /// The ladder rung this is, when [segmented] (for the start's trail).
   int? height;
-
-  /// Its ladder's first film segment, in ([StreamCacheServer.startRule]
-  /// `one`).
-  Completer<void>? firstIn;
 
   /// The read ahead in flight for this film, if any.
   _Fill? fill;
