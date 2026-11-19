@@ -111,8 +111,11 @@ does it.
   Subtitle) landed on the video (`LAB gesture tap` at that moment) because
   the 4 s auto-hide took the controls between Maestro's steps, ~5 s apart
   on those runners; nothing on the branch touches the auto-hide (the
-  device-labs skill says how to read it). Gate on the final code: run E
-  started on fd904b16.
+  device-labs skill says how to read it). GATE ON THE FINAL CODE: device
+  lab run E 44501502064 (fd904b16): genres 37/37, the jumps on Big Buck
+  Bunny 15 of 15, gestures 27/27 and 19/19 — as 1.64.85's gate; no
+  refusal, no stacked player. Test Lab on the final code: forty-second run
+  started 19 Nov.
 - **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
   `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
   the 1,954 lab events before it were marked (every install that only ever
