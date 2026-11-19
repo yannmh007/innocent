@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../diagnostics/playback_log.dart';
 
 /// Lets a cold start show the cached library WITHOUT rescanning it, when
 /// MediaStore says nothing has changed since the last scan.
@@ -51,13 +54,45 @@ class ScanGate {
   @visibleForTesting
   static Future<String?> Function() readStamp = _readPlatformStamp;
 
+  /// THE VIDEOS' OWN STAMP, NOT THE VOLUME'S (19 Nov 2026). The volume's
+  /// generation rises on every photo, song, screenshot and chat download,
+  /// and a phone gets one of those between almost every two launches: the
+  /// owner's 1.64.85 still started at 60-74 % CPU for ~20 s (photo_manager's
+  /// pool 23 %, Dart's workers 13-19 % — this gate's own "before" numbers),
+  /// rescanning 2000+ videos that had not changed. Every list this gates is
+  /// a list of videos, so the stamp is the video table's: how many there are
+  /// and the newest change among them, per volume (MainActivity
+  /// .libraryStamp). A stamp of the other kind never matches, so the first
+  /// launch after the change scans once, as a launch with no stamp does.
+  /// The device lab's coldcpu flow compares the two (`lab_scan`).
+  static bool videosOnly = true;
+
   static Future<String?> _readPlatformStamp() async {
     if (kIsWeb || !Platform.isAndroid) return null;
     try {
-      return await _channel.invokeMethod<String>('generation');
+      await _labScanRule();
+      return await _channel.invokeMethod<String>('generation', <String, Object?>{'videos': videosOnly});
     } catch (_) {
       return null;
     }
+  }
+
+  static bool _labRead = false;
+
+  /// DEVICE LAB ONLY: `lab_scan` (`videos` or `volume`) in the app's
+  /// external files directory picks the stamp for an A/B of cold starts
+  /// (flow coldcpu); said in the trail. A release build never looks.
+  static Future<void> _labScanRule() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB') || _labRead) return;
+    _labRead = true;
+    try {
+      final dir = await getExternalStorageDirectory();
+      final f = File('${dir?.path}/lab_scan');
+      if (!await f.exists()) return;
+      final v = (await f.readAsString()).trim();
+      if (v == 'videos' || v == 'volume') videosOnly = v == 'videos';
+      PlaybackLog.add('LAB scan stamp ${videosOnly ? 'videos' : 'volume'}');
+    } catch (_) {}
   }
 
   /// True when [key]'s cached list can be shown with no background scan.
@@ -67,12 +102,24 @@ class ScanGate {
     try {
       final sp = await SharedPreferences.getInstance();
       final saved = sp.getString('$_prefix$key');
-      if (saved == null) return false;
+      if (saved == null) {
+        _say(key, 'no stamp, scanned');
+        return false;
+      }
       final now = await readStamp();
-      return trusts(saved: saved, current: now, clock: DateTime.now());
+      final ok = trusts(saved: saved, current: now, clock: DateTime.now());
+      _say(key, ok ? 'cache trusted' : 'stamp moved or old, scanned');
+      return ok;
     } catch (_) {
       return false;
     }
+  }
+
+  /// A launch's decision, in the trail (the diagnostics report): whether
+  /// the library was read again in the background, and which list.
+  static void _say(String key, String what) {
+    if (key.startsWith('folder:')) return;
+    PlaybackLog.add('library $key: $what');
   }
 
   /// Whether MediaStore has moved since [key] was last scanned: true with no
