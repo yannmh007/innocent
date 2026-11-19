@@ -289,7 +289,7 @@
                       }, {
                         "attributes" : {
                           "text" : "",
-                          "accessibilityText" : "09:22",
+                          "accessibilityText" : "09:50",
                           "hintText" : "",
                           "ignoreBoundsFiltering" : "false",
                           "resource-id" : "",
@@ -529,31 +529,7 @@
                       }, {
                         "attributes" : {
                           "text" : "",
-                          "accessibilityText" : "စာတန်းထိုး 45 ဘယ်သူမှ မသိခဲ့ကြဘူး\nSubtitle line 45",
-                          "hintText" : "",
-                          "ignoreBoundsFiltering" : "false",
-                          "resource-id" : "",
-                          "clickable" : "false",
-                          "bounds" : "[298,650][2102,791]",
-                          "enabled" : "true",
-                          "focused" : "false",
-                          "checked" : "false",
-                          "scrollable" : "false",
-                          "selected" : "false",
-                          "class" : "android.view.View",
-                          "important-for-accessibility" : "true",
-                          "error" : ""
-                        },
-                        "children" : [ ],
-                        "clickable" : false,
-                        "enabled" : true,
-                        "focused" : false,
-                        "checked" : false,
-                        "selected" : false
-                      }, {
-                        "attributes" : {
-                          "text" : "",
-                          "accessibilityText" : "Playback position 02:59 of 03:00",
+                          "accessibilityText" : "Playback position 03:00 of 03:00",
                           "hintText" : "",
                           "ignoreBoundsFiltering" : "false",
                           "resource-id" : "",
@@ -577,7 +553,7 @@
                       }, {
                         "attributes" : {
                           "text" : "",
-                          "accessibilityText" : "02:59",
+                          "accessibilityText" : "03:00",
                           "hintText" : "",
                           "ignoreBoundsFiltering" : "false",
                           "resource-id" : "",
@@ -996,8 +972,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "9:22 ",
-                      "accessibilityText" : "9:22 AM",
+                      "text" : "9:50 ",
+                      "accessibilityText" : "9:50 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -1134,7 +1110,7 @@
                   "ignoreBoundsFiltering" : "false",
                   "resource-id" : "com.android.systemui:id/status_bar_end_side_content",
                   "clickable" : "false",
-                  "bounds" : "[2079,1][2200,63]",
+                  "bounds" : "[2060,1][2200,63]",
                   "enabled" : "true",
                   "focused" : "false",
                   "checked" : "false",
@@ -1152,7 +1128,7 @@
                     "ignoreBoundsFiltering" : "false",
                     "resource-id" : "com.android.systemui:id/system_icons",
                     "clickable" : "false",
-                    "bounds" : "[2079,1][2200,63]",
+                    "bounds" : "[2060,1][2200,63]",
                     "enabled" : "true",
                     "focused" : "false",
                     "checked" : "false",
@@ -1170,7 +1146,7 @@
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/statusIcons",
                       "clickable" : "false",
-                      "bounds" : "[2079,1][2180,63]",
+                      "bounds" : "[2060,1][2180,63]",
                       "enabled" : "true",
                       "focused" : "false",
                       "checked" : "false",
@@ -1183,108 +1159,12 @@
                     "children" : [ {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "",
-                        "hintText" : "",
-                        "ignoreBoundsFiltering" : "false",
-                        "resource-id" : "com.android.systemui:id/wifi_combo",
-                        "clickable" : "false",
-                        "bounds" : "[2079,3][2125,61]",
-                        "enabled" : "true",
-                        "focused" : "false",
-                        "checked" : "false",
-                        "scrollable" : "false",
-                        "selected" : "false",
-                        "class" : "android.widget.FrameLayout",
-                        "important-for-accessibility" : "false",
-                        "error" : ""
-                      },
-                      "children" : [ {
-                        "attributes" : {
-                          "text" : "",
-                          "accessibilityText" : "",
-                          "hintText" : "",
-                          "ignoreBoundsFiltering" : "false",
-                          "resource-id" : "com.android.systemui:id/wifi_group",
-                          "clickable" : "false",
-                          "bounds" : "[2086,3][2125,61]",
-                          "enabled" : "true",
-                          "focused" : "false",
-                          "checked" : "false",
-                          "scrollable" : "false",
-                          "selected" : "false",
-                          "class" : "android.widget.LinearLayout",
-                          "important-for-accessibility" : "false",
-                          "error" : ""
-                        },
-                        "children" : [ {
-                          "attributes" : {
-                            "text" : "",
-                            "accessibilityText" : "",
-                            "hintText" : "",
-                            "ignoreBoundsFiltering" : "false",
-                            "resource-id" : "com.android.systemui:id/wifi_combo",
-                            "clickable" : "false",
-                            "bounds" : "[2086,12][2125,51]",
-                            "enabled" : "true",
-                            "focused" : "false",
-                            "checked" : "false",
-                            "scrollable" : "false",
-                            "selected" : "false",
-                            "class" : "android.widget.FrameLayout",
-                            "important-for-accessibility" : "false",
-                            "error" : ""
-                          },
-                          "children" : [ {
-                            "attributes" : {
-                              "text" : "",
-                              "accessibilityText" : "Wifi signal full.",
-                              "hintText" : "",
-                              "ignoreBoundsFiltering" : "false",
-                              "resource-id" : "com.android.systemui:id/wifi_signal",
-                              "clickable" : "false",
-                              "bounds" : "[2086,12][2125,51]",
-                              "enabled" : "true",
-                              "focused" : "false",
-                              "checked" : "false",
-                              "scrollable" : "false",
-                              "selected" : "false",
-                              "class" : "android.widget.ImageView",
-                              "important-for-accessibility" : "true",
-                              "error" : ""
-                            },
-                            "children" : [ ],
-                            "clickable" : false,
-                            "enabled" : true,
-                            "focused" : false,
-                            "checked" : false,
-                            "selected" : false
-                          } ],
-                          "clickable" : false,
-                          "enabled" : true,
-                          "focused" : false,
-                          "checked" : false,
-                          "selected" : false
-                        } ],
-                        "clickable" : false,
-                        "enabled" : true,
-                        "focused" : false,
-                        "checked" : false,
-                        "selected" : false
-                      } ],
-                      "clickable" : false,
-                      "enabled" : true,
-                      "focused" : false,
-                      "checked" : false,
-                      "selected" : false
-                    }, {
-                      "attributes" : {
-                        "text" : "",
                         "accessibilityText" : "Phone signal full.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
                         "clickable" : "false",
-                        "bounds" : "[2125,3][2164,61]",
+                        "bounds" : "[2060,3][2164,61]",
                         "enabled" : "true",
                         "focused" : "false",
                         "checked" : "false",
@@ -1302,7 +1182,7 @@
                           "ignoreBoundsFiltering" : "false",
                           "resource-id" : "com.android.systemui:id/mobile_group",
                           "clickable" : "false",
-                          "bounds" : "[2125,3][2164,61]",
+                          "bounds" : "[2060,3][2164,61]",
                           "enabled" : "true",
                           "focused" : "false",
                           "checked" : "false",
@@ -1313,6 +1193,30 @@
                           "error" : ""
                         },
                         "children" : [ {
+                          "attributes" : {
+                            "text" : "",
+                            "accessibilityText" : "3G",
+                            "hintText" : "",
+                            "ignoreBoundsFiltering" : "false",
+                            "resource-id" : "com.android.systemui:id/mobile_type",
+                            "clickable" : "false",
+                            "bounds" : "[2060,11][2125,53]",
+                            "enabled" : "true",
+                            "focused" : "false",
+                            "checked" : "false",
+                            "scrollable" : "false",
+                            "selected" : "false",
+                            "class" : "android.widget.ImageView",
+                            "important-for-accessibility" : "true",
+                            "error" : ""
+                          },
+                          "children" : [ ],
+                          "clickable" : false,
+                          "enabled" : true,
+                          "focused" : false,
+                          "checked" : false,
+                          "selected" : false
+                        }, {
                           "attributes" : {
                             "text" : "",
                             "accessibilityText" : "",
