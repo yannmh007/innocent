@@ -81,6 +81,15 @@ Both run only on non-main branches, started by pushing their config file.
   jumps flow, so the release gate can run with a switch on before the
   build's default is.
 
+- **The player audit races the auto-hide.** `player_audit*` taps a
+  control (More, Subtitle, holding Next) a step after showing the controls;
+  Maestro's steps ran ~5 s apart on some runners (15-19 Nov) and the
+  controls hide after 4 s (`controlsHideDelay`), so the tap lands on the
+  video — the trail logs `LAB gesture tap` at that moment and the next
+  assert ("Playing Queue", "Online", "Loop one") fails. That is the flow,
+  not the build: run again (runs B-D, 5 of 8 on one build, the stops all
+  this kind). A stop WITHOUT that gesture tap is worth reading.
+
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
   day, reset 07:00 UTC; each device in a run is one.

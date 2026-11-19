@@ -96,8 +96,23 @@ does it.
   found by the new test on the existing deactivate path), and a summary
   says where its playback ended (a playback under 30 s said 0). Tests:
   stacked_players_test (fails without: the first summary []), the branch's
-  1788 here. Run B (layout + player audit both ways, then the mended flows)
-  started on 10d54e03.
+  1788 here; branch Build 43682174225 and Stream bench 43682165005 green on
+  10d54e03. THE KILL PATH PROVED (device lab run B 43682165030,
+  `summarykill`): three plays of the 1-rung film, each closed and the app
+  force-stopped 2 s after (the last through Home); in `events` one row
+  each, the first two `stashed: 1`, each received at the NEXT start
+  (06:01:21 made, 06:02:03 received; 06:02:08 / 06:02:49), the third at
+  Home; open_ms 1423 / 1168 / 802, stalls 0, position_s 34-35 (where each
+  ended). `reopen`: 8 plays, 8 first frames, 5 ExoPlayer opens, 7 summaries
+  sent, no refusal, no fall back, no stacked player. THE PLAYER AUDIT on
+  the branch's code: run B both stopped, run C sideways 52/52 and upright
+  stopped, run D 44497996796 all four passed (twice each way) — 5 of 8.
+  The three stops are one kind: a tap on a control (More, holding Next,
+  Subtitle) landed on the video (`LAB gesture tap` at that moment) because
+  the 4 s auto-hide took the controls between Maestro's steps, ~5 s apart
+  on those runners; nothing on the branch touches the auto-hide (the
+  device-labs skill says how to read it). Gate on the final code: run E
+  started on fd904b16.
 - **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
   `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
   the 1,954 lab events before it were marked (every install that only ever
