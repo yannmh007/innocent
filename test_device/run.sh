@@ -694,17 +694,55 @@ for flow in $FLOWS; do
   # libflutter.so the VM's own — collecting garbage, an isolate). The
   # app's own CpuProbe lines (`LAB cpu`) are in the trail beside them.
   # test_device/coldcpu_summary.py reads it all.
+  # COLD_PLAN (19 Nov, run S2): one word a start, `STAMP:CHANGE` — STAMP to
+  # lab_scan (`volume`: the library cache trusted only while nothing on
+  # the volume changed, as 1.64.85; `videos`: while no VIDEO did), CHANGE
+  # `photo` to put a new picture in MediaStore just before the start (a
+  # screenshot: what a chat app's download does between two launches) or
+  # `still`. The first start of a stamp scans whatever the change (the
+  # other kind's stamp never matches): compare the starts after it.
+  # Without COLD_PLAN: COLD_STARTS starts, no change, the build's stamp.
   case "$flow" in coldcpu)
     adb root >/dev/null 2>&1; sleep 3; adb wait-for-device
     # adbd restarted: the trail's logcat with it, appended from now.
     kill "$LOGCAT" 2>/dev/null || true
     adb logcat -v time -T 1 >> "$OUT/logcat_raw.txt" 2>&1 &
     LOGCAT=$!
+    # A LIBRARY THE SIZE OF A REAL ONE (COLD_LIBRARY copies of the test
+    # library's clip, in a folder of their own): what a rescan costs grows
+    # with it, and twelve videos hide it (S1: 60 % for 4 s, then nothing).
+    if [ "${COLD_LIBRARY:-0}" -gt 0 ] && [ -f clip.mp4 ]; then
+      rm -rf "$OUT/../coldlib" && mkdir -p "$OUT/../coldlib/ColdLib"
+      for i in $(seq 1 "$COLD_LIBRARY"); do cp clip.mp4 "$OUT/../coldlib/ColdLib/cold_$i.mp4"; done
+      adb push "$OUT/../coldlib/ColdLib" /sdcard/Movies/ >/dev/null 2>&1
+      adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+      sleep 30
+      rm -rf "$OUT/../coldlib"
+      log "coldcpu: MediaStore lists $(adb shell content query --uri content://media/external/video/media --projection _id 2>/dev/null | grep -c Row) videos"
+      # Read once, as a viewer's app has: the first start below is then a
+      # start of an app that knows its library.
+    fi
     : > "$OUT/coldcpu.txt"
-    for c in $(seq 1 "${COLD_STARTS:-3}"); do
+    : > "$OUT/coldcpu_plan.tsv"
+    plan="${COLD_PLAN:-}"
+    [ -n "$plan" ] || plan=$(for _ in $(seq 1 "${COLD_STARTS:-3}"); do printf -- '-:still '; done)
+    d="/sdcard/Android/data/$PKG/files"
+    c=0
+    for word in $plan; do
+      c=$((c + 1))
+      stamp="${word%%:*}"; change="${word#*:}"
       adb shell am force-stop "$PKG"
+      if [ "$stamp" = - ]; then adb shell rm -f "$d/lab_scan" >/dev/null 2>&1 || true
+      else adb shell "mkdir -p $d && echo $stamp > $d/lab_scan" >/dev/null 2>&1; fi
+      if [ "$change" = photo ]; then
+        adb shell mkdir -p /sdcard/Pictures/LabChat >/dev/null 2>&1
+        adb shell screencap -p "/sdcard/Pictures/LabChat/chat_$c.png" >/dev/null 2>&1
+        adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE \
+          -d "file:///sdcard/Pictures/LabChat/chat_$c.png" >/dev/null 2>&1 || true
+      fi
       sleep 4
-      adb shell log -p i -t flutter "LAB coldcpu begin start=$c" >/dev/null 2>&1 || true
+      printf '%s\t%s\t%s\n' "$c" "$stamp" "$change" >> "$OUT/coldcpu_plan.tsv"
+      adb shell log -p i -t flutter "LAB coldcpu begin start=$c stamp=$stamp change=$change" >/dev/null 2>&1 || true
       t0=$(date +%s)
       adb shell am start -n "$PKG/.MainActivity" >/dev/null 2>&1
       pid=""
@@ -725,9 +763,10 @@ for flow in $FLOWS; do
       adb shell rm -f "/data/local/tmp/cold_$c.data" >/dev/null 2>&1 || true
       wait "$tp" 2>/dev/null || true
       adb shell log -p i -t flutter "LAB coldcpu end start=$c" >/dev/null 2>&1 || true
-      log "coldcpu start $c: pid $pid, $(grep -c '^== start' "$OUT/coldcpu_stacks_$c.txt") stack dumps"
+      log "coldcpu start $c ($word): pid $pid, $(grep -c '^== start' "$OUT/coldcpu_stacks_$c.txt") stack dumps"
     done
     adb shell am force-stop "$PKG"
+    adb shell rm -rf "$d/lab_scan" /sdcard/Pictures/LabChat >/dev/null 2>&1 || true
     adb unroot >/dev/null 2>&1; sleep 3; adb wait-for-device
     kill "$LOGCAT" 2>/dev/null || true
     adb logcat -v time -T 1 >> "$OUT/logcat_raw.txt" 2>&1 &

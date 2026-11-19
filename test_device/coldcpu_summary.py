@@ -121,6 +121,27 @@ def main():
     if not starts:
         print('coldcpu: nothing measured')
         return
+    plan = {}
+    pp = out / 'coldcpu_plan.tsv'
+    if pp.exists():
+        for line in pp.read_text().splitlines():
+            parts = line.split('\t')
+            if len(parts) == 3:
+                plan[int(parts[0])] = (parts[1], parts[2])
+    # The trail between each start's markers: CpuProbe, the library's lines.
+    trail = defaultdict(list)
+    raw = out / 'logcat_raw.txt'
+    if raw.exists():
+        on = None
+        for line in raw.read_text(errors='replace').splitlines():
+            m = re.search(r'LAB coldcpu (begin|end) start=(\d+)', line)
+            if m:
+                on = int(m.group(2)) if m.group(1) == 'begin' else None
+                continue
+            if on is not None and ('LAB cpu ' in line or 'library ' in line or 'LAB scan stamp' in line):
+                trail[on].append(re.sub(r'^.*?LAB\s+(\d+\.\d\s+)?', '', line).strip()[:200])
+    group = defaultdict(lambda: defaultdict(list))
+    seen_stamp = set()
     by_family_all = defaultdict(list)
     busy_out = []
     code = Counter()
@@ -138,8 +159,22 @@ def main():
         for k, v in fam_mean.items():
             by_family_all[k].append(v)
         top = sorted(fam_mean.items(), key=lambda kv: -kv[1])[:8]
-        print(f'coldcpu start {c}: app % every 2 s: {" ".join(str(t) for t in totals)}; '
-              f'first 20 s by family: ' + ', '.join(f'{k} {v:.0f}%' for k, v in top))
+        stamp, change = plan.get(c, ('-', '-'))
+        first20 = sum(totals[:10]) / max(1, min(10, len(totals)))
+        print(f'coldcpu start {c} ({stamp}, {change}): app % every 2 s: {" ".join(str(t) for t in totals)}; '
+              f'first 20 s mean {first20:.0f}%, by family: ' + ', '.join(f'{k} {v:.0f}%' for k, v in top))
+        for t in trail.get(c, []):
+            if not t.startswith('LAB cpu') and not t.startswith('cpu '):
+                print(f'coldcpu start {c} trail: {t}')
+        # The first start of a stamp scans whatever happened (the other
+        # kind's stamp never matches): the comparison is the starts after.
+        if stamp in seen_stamp:
+            g = group[(stamp, change)]
+            g['app'].append(first20)
+            g['pool'].append(fam_mean.get('pool-thread', 0.0))
+            g['dart'].append(fam_mean.get('DartWorker', 0.0))
+            g['scans'].append(1 if any('read again' in t for t in trail.get(c, [])) else 0)
+        seen_stamp.add(stamp)
         sp = out / f'coldcpu_stacks_{c}.txt'
         if sp.exists():
             for label, threads in read_stacks(sp):
@@ -150,6 +185,11 @@ def main():
                         code_threads[(family(t[0]), key)].add(t[0])
                         busy_out.append(f'== start {c}, {label}: "{t[0]}" {t[1]}\n' +
                                         '\n'.join('    ' + f for f in t[2][:14]))
+    for (stamp, change), g in sorted(group.items()):
+        n = len(g['app'])
+        print(f'coldcpu {stamp} stamp, {change} before each start, {n} starts (the first of the stamp left out): '
+              f'app {sum(g["app"]) / n:.0f}% over the first 20 s, pool-thread {sum(g["pool"]) / n:.0f}%, '
+              f'DartWorker {sum(g["dart"]) / n:.0f}%; the library read again in {sum(g["scans"])} of {n}')
     print('coldcpu over all starts, first 20 s, mean % by family: ' + ', '.join(
         f'{k} {sum(v) / len(starts):.0f}%' for k, v in
         sorted(by_family_all.items(), key=lambda kv: -sum(kv[1]))[:10]))
@@ -169,17 +209,10 @@ def main():
         print(f'coldcpu start {c} profile (simpleperf), the lines for the families that matter:')
         for l in lines[:40]:
             print('  ' + l.strip()[:160])
-    # CpuProbe's own lines.
-    raw = out / 'logcat_raw.txt'
-    if raw.exists():
-        on = None
-        for line in raw.read_text(errors='replace').splitlines():
-            m = re.search(r'LAB coldcpu (begin|end) start=(\d+)', line)
-            if m:
-                on = int(m.group(2)) if m.group(1) == 'begin' else None
-                continue
-            if on is not None and 'LAB cpu ' in line:
-                print(f'coldcpu start {on} CpuProbe: ' + line.split('LAB cpu ', 1)[1].strip()[:200])
+    for c in starts:
+        for t in trail.get(c, []):
+            if t.startswith('LAB cpu') or t.startswith('cpu '):
+                print(f'coldcpu start {c} CpuProbe: {t}')
 
 
 if __name__ == '__main__':

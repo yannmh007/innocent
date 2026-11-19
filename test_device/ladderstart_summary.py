@@ -166,17 +166,29 @@ def analyse(rows):
                          read_ms=int(hw.group(4)))
             previews.append(p)
     out['previews'] = previews
+    out['ahead'] = sum(1 for t, m in rows if m.startswith('preview (ahead) at '))
     return out
+
+
+def first_seg(a):
+    """The first film segment's rung, its index, asked and in (ms)."""
+    asked = [(ms, k) for k, ms in a['marks'].items() if k.endswith('p segment asked')]
+    if not asked:
+        return None, None, None, None
+    ms, k = min(asked)
+    h = k.split('p ')[0]
+    return h, a['marks'].get(f'{h}p index'), ms, a['marks'].get(f'{h}p segment in')
 
 
 STEPS = [
     ('grant', lambda a, h: a.get('grant')),
     ('register', lambda a, h: a['marks'].get('register')),
-    ('index', lambda a, h: a['marks'].get(f'{h}p index')),
+    ('start index', lambda a, h: a['marks'].get(f'{h}p index')),
     ('master', lambda a, h: a['marks'].get('master served')),
-    ('playlist', lambda a, h: a['marks'].get(f'{h}p playlist served')),
-    ('seg asked', lambda a, h: a['marks'].get(f'{h}p segment asked')),
-    ('seg in', lambda a, h: a['marks'].get(f'{h}p segment in')),
+    ('start playlist', lambda a, h: a['marks'].get(f'{h}p playlist served')),
+    ('1st seg index', lambda a, h: first_seg(a)[1]),
+    ('1st seg asked', lambda a, h: first_seg(a)[2]),
+    ('1st seg in', lambda a, h: first_seg(a)[3]),
     ('picture', lambda a, h: a.get('picture')),
 ]
 
@@ -201,16 +213,22 @@ def main():
         others = sorted({k for k in a['marks'] if k.endswith('p index') and not k.startswith(f'{h}p')})
         nb = ', '.join(f'{k} {fmt(a["marks"][k])}' for k in others) or 'none'
         fc = a['first_change']
-        print(f'ladderstart pass {p} ({lk}, {word}): start {h}p{" warmed" if a["warmed"] else ""}; '
+        fh = first_seg(a)[0]
+        print(f'ladderstart pass {p} ({lk}, {word}): start {h}p{" warmed" if a["warmed"] else ""}, '
+              f'first segment {fh or "?"}p; '
               f'ms from the tap: {steps}; other indexes: {nb}; '
               f'30 s: stops {len(a["stops"])} ({sum(a["stops"])} ms), 480p+ {fmt(a["hi_share"])} %, '
               f'rungs {a["rungs"]}, first change '
               f'{"none" if fc is None else f"+{fc[0]:.1f} s to {fc[1]}p"}')
     print()
+    # A word may be `START+PREVIEW` (fix+near): the start's numbers are
+    # grouped by the first, the seek bar's by the second.
+    sw = lambda w: w.split('+')[0]
+    pw = lambda w: w.split('+')[1] if '+' in w else '-'
     groups = {}
     for p, lk, word, a in passes:
         if a is not None:
-            groups.setdefault((lk, word), []).append(a)
+            groups.setdefault((lk, sw(word)), []).append(a)
     for (lk, word), xs in sorted(groups.items()):
         pics = [a['picture'] for a in xs if a['picture'] is not None]
         stops = [len(a['stops']) for a in xs]
@@ -229,7 +247,7 @@ def main():
         words = sorted({w for (l, w) in groups if l == lk})
         if len(words) != 2:
             continue
-        seq = [(w, a) for p, l, w, a in passes if l == lk and a is not None and a['picture'] is not None]
+        seq = [(sw(w), a) for p, l, w, a in passes if l == lk and a is not None and a['picture'] is not None]
         pairs = []
         i = 0
         while i + 1 < len(seq):
@@ -245,32 +263,46 @@ def main():
             print(f'ladderstart {lk}: {words[0]} minus {words[1]}, first picture, {len(pairs)} pairs: '
                   f'median {fmt(med(pairs))} ms, mean {fmt(statistics.mean(pairs))} ms, '
                   f'{words[0]} sooner in {wins} of {len(pairs)}')
-    # The drags.
-    for lk in sorted({k[0] for k in groups}):
-        ds = [d for (l, w), xs in groups.items() if l == lk for a in xs for d in a['drags']]
-        pv = [v for (l, w), xs in groups.items() if l == lk for a in xs for v in a['previews']]
+    # The drags, by the pass's preview word, short (30 s of film or less)
+    # and long.
+    pgroups = {}
+    for p, lk, word, a in passes:
+        if a is not None:
+            pgroups.setdefault((lk, pw(word)), []).append(a)
+    for (lk, pword), xs in sorted(pgroups.items()):
+        ds = [d for a in xs for d in a['drags']]
+        pv = [v for a in xs for v in a['previews']]
         if not ds and not pv:
             continue
-        stop = [int(d['stop_ms']) for d in ds if d.get('stop_ms', '-1') != '-1']
-        firsts = [int(d['first_ms']) for d in ds if d.get('first_ms', '-1') != '-1']
-        miss = sum(1 for d in ds if d.get('stop_ms') == '-1')
+        for size, keep in (('short', lambda d: abs(int(d.get('by', '0'))) <= 30),
+                           ('long', lambda d: abs(int(d.get('by', '0'))) > 30)):
+            sel = [d for d in ds if keep(d)]
+            if not sel:
+                continue
+            stop = [int(d['stop_ms']) for d in sel if d.get('stop_ms', '-1') != '-1']
+            firsts = [int(d['first_ms']) for d in sel if d.get('first_ms', '-1') != '-1']
+            fetched = [int(d.get('fetched', '0')) for d in sel]
+            miss = sum(1 for d in sel if d.get('stop_ms') == '-1')
+            print(f'ladderstart {lk} drags, previews {pword}, {size}: {len(sel)}; picture after the finger '
+                  f'stopped median {fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))} ms, never {miss}; '
+                  f'first picture median {fmt(med(firsts))} ms; fetches a drag {fmt(statistics.mean(fetched))}')
         line_pv = [v for v in pv if v['how'].startswith('line')]
         phone_pv = [v for v in pv if v['how'] == 'phone']
         new = [v for v in line_pv if v.get('conn') == 'new']
-        print(f'ladderstart {lk} drags: {len(ds)}; picture after the finger stopped median '
-              f'{fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))} ms, never {miss}; first picture of a drag '
-              f'median {fmt(med(firsts))} ms')
         if line_pv:
-            print(f'ladderstart {lk} previews from the line: {len(line_pv)}, median {fmt(med([v["ms"] for v in line_pv]))} ms '
-                  f'(p90 {fmt(pct([v["ms"] for v in line_pv], 0.9))}): conn new {len(new)} '
-                  f'(median {fmt(med([v["conn_ms"] for v in new]))} ms), '
+            print(f'ladderstart {lk} previews {pword} from the line: {len(line_pv)}, median '
+                  f'{fmt(med([v["ms"] for v in line_pv]))} ms (p90 {fmt(pct([v["ms"] for v in line_pv], 0.9))}): '
+                  f'conn new {len(new)} (median {fmt(med([v["conn_ms"] for v in new]))} ms), '
                   f'wait {fmt(med([v["wait_ms"] for v in line_pv if "wait_ms" in v]))} ms, '
                   f'read {fmt(med([v["read_ms"] for v in line_pv if "read_ms" in v]))} ms, '
                   f'{fmt(med([v["kb"] for v in line_pv]))} KB, '
                   f'picture {fmt(med([v["pic_ms"] for v in line_pv]))} ms')
         if phone_pv:
-            print(f'ladderstart {lk} previews from the phone: {len(phone_pv)}, median '
+            print(f'ladderstart {lk} previews {pword} from the phone: {len(phone_pv)}, median '
                   f'{fmt(med([v["ms"] for v in phone_pv]))} ms (picture {fmt(med([v["pic_ms"] for v in phone_pv]))} ms)')
+        ahead = sum(a['ahead'] for a in xs)
+        if ahead:
+            print(f'ladderstart {lk} previews {pword}: {ahead} taken ahead of the drags')
 
 
 if __name__ == '__main__':
