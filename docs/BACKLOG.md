@@ -47,10 +47,14 @@ does it.
   (0318ab39). (6) THE SEEK BAR'S PICTURES: a picture never seen is the
   Worker's answer ~0.5 s + bytes 0.16-0.33 s + decode ~0.45 s (emulator);
   now the pictures 10/20/30 s either side are taken when the controls come
-  up (a short drag's first picture 1.3-1.5 s -> 0.17-0.19 s in three of
-  four groups), and the nearest one taken within 10 s is shown at once
-  (eb2fda2e, A/B in G1); two fetches on their way tried and taken out (a
-  weak line's long drag later in both orders). A part never seen still
+  up, and the nearest one taken within 10 s is shown at once (eb2fda2e);
+  two fetches on their way tried and taken out (a weak line's long drag
+  later in both orders, S2/S3). A/B in device lab G1 44580628422 (9 drags
+  a group, base -> near): a drag's first picture 0.7-1.3 s -> 0 ms; a
+  picture within 10 s of where the finger stopped, short drags plain 945
+  -> 431 ms, weak 1553 -> 597, long plain 1199 -> 1006, weak 1604 -> 1282;
+  its own picture 0.2-0.6 s sooner in all four groups; the same fetches a
+  drag, plus ~3.5 pictures each time the controls come up. A part never seen still
   waits ~1.2-1.4 s: only a picture made in advance removes that — THE
   OWNER'S CALL, below. (7) APP START CPU: the library cache was trusted
   only while MediaStore's VOLUME generation stood still, which every
@@ -66,12 +70,15 @@ does it.
   report says (`library all: …` lines). Tests: 1799 here (resume start,
   warm at the resume point, the loader's nearest picture, the trail);
   branch Builds 44536161098, 44549512776 green (the Kotlin), Stream bench
-  44534768955, 44549507240 green. STILL TO DO: device lab G1 (the gate,
-  the player audit both ways, the nearest picture's block) and Test Lab
-  realme + OPPO on the final code — the day's five physical tests were
-  spent by 44518397993; this session wakes at 07:12 UTC 20 Nov to run it
-  (scheduled). The 15 Nov "ready for the release call" below is stale
-  until both pass.
+  44534768955, 44549507240 green; on the final code (0318ab39) Build
+  44580634917 green and THE GATE, device lab G1 44580628422: genres 37/37,
+  the jumps on Big Buck Bunny 15 of 15, gestures 27/27 and 19/19, the
+  player audit both ways (52 and 52 steps, exit 0), no refusal, no
+  stacked player; its start passes (fix) plain 2671 ms, weak 3300 ms
+  median to the picture. STILL TO DO: Test Lab realme + OPPO on the final
+  code — the day's five physical tests were spent by 44518397993; this
+  session wakes at 07:12 UTC 20 Nov to run it (scheduled). The 15 Nov
+  "ready for the release call" below is stale until it passes.
   THE OWNER'S CALL (weak point 6): a trick-play sprite from the
   transcode — one 160x90 picture every 5 s (2 s matches the ladder's
   fragments), tiled 10x10 — about 0.5-1 MB a film-hour, a few sheets per

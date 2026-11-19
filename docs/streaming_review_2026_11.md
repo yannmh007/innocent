@@ -767,7 +767,14 @@ all eight), for 60 % more fetches. Two on their way is taken out (a weak
 line's long drag later in both orders); the ring stays, and the nearest
 picture taken within 10 s is shown at once while the moment's own is
 fetched (eb2fda2e) — what a viewer sees at a stop that the ring or a
-seen part covers. Its A/B is run G1's last block. What is left — the
+seen part covers. Device lab G1 44580628422 (the gate's run on the final
+code; 6 passes `fix+base` / `fix+near` a line, 9 drags a group), base →
+near: a drag's first picture 0.7-1.3 s → 0 ms; a picture within 10 s of
+where the finger stopped, short drags plain 945 → 431 ms, weak 1553 →
+597, long plain 1199 → 1006, weak 1604 → 1282; its own picture plain
+1269 → 1096 / 1403 → 1056, weak 2001 → 1390 / 1570 → 1259 ms; the same
+fetches a drag, plus ~3.5 pictures each time the controls come up. It
+stays. What is left — the
 Worker's ~0.5 s and the decode for a part never seen — only a picture
 made in advance removes: a trick-play sprite from the transcode (a
 pipeline and R2 change; the owner's call, with its numbers in BACKLOG).
