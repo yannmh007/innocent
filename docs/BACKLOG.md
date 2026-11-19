@@ -15,7 +15,7 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (15 Nov 2026, morning)
+### WHERE THINGS STAND — read first in a new session (19 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is 6ad09f63, app 1.64.85 from c70f4e94; on the
   branch only: the lab hooks, the Google nonce, test_device/results, and
@@ -114,8 +114,20 @@ does it.
   device-labs skill says how to read it). GATE ON THE FINAL CODE: device
   lab run E 44501502064 (fd904b16): genres 37/37, the jumps on Big Buck
   Bunny 15 of 15, gestures 27/27 and 19/19 — as 1.64.85's gate; no
-  refusal, no stacked player. Test Lab on the final code: forty-second run
-  started 19 Nov.
+  refusal, no stacked player. TEST LAB ON THE FINAL CODE (19 Nov):
+  44514004930 — realme 16 PASS and the home-trip SKIP, as before; OPPO 14
+  PASS, 2 FAIL (seek frozen 6.2 s, tour->original ready 13.2 s) on a line
+  measured median 2200 kbps (min 659) against its 25-27 Mbit/s of 15 and
+  14 Nov, TCP handshakes 0.5-2.9 s: the line; the OPPO alone once more,
+  44518397993: 15 PASS, 0 FAIL, 2 SKIP (the home trip; tour->original "line
+  6085 kbps, the copy 9989 kbps", as 1.64.84's OPPO run), line median 5.3
+  Mbit/s, no crash. THE BRANCH IS READY FOR THE OWNER'S RELEASE CALL: gate
+  (run E), the player audit (run D), the kill path (run B), Test Lab both
+  phones, branch Builds and Stream bench green, 1788 Flutter tests. On the way, 44505438819 lost its results twice over (its
+  first attempt's build met Maven Central's 429 and committed an empty
+  results directory; the re-run's phones finished but its commit conflicted
+  with it): device-cloud.yml now lays a re-run's results over the branch as
+  device-lab.yml does (e3ba2552).
 - **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
   `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
   the 1,954 lab events before it were marked (every install that only ever
