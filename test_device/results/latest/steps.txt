@@ -1,45 +1,24 @@
-[05:56:07] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[05:56:07] install
-[05:56:18] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[05:56:18] network: eth0 has qdisc clsact
-[05:56:18] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[05:56:45] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[05:56:46] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[05:56:46] library: pushing 24 files
-[05:57:16] library: MediaStore lists 24 videos
-[05:57:16] cold start
+[09:16:47] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[09:16:47] install
+[09:17:04] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[09:17:05] network: eth0 has qdisc clsact
+[09:17:05] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[09:17:33] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[09:17:33] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[09:17:33] library: pushing 24 files
+[09:18:02] library: MediaStore lists 24 videos
+[09:18:02] cold start
 Status: ok
-TotalTime: 2232
-WaitTime: 2241
-[05:57:28] flow layout_portrait
-[05:57:30] rotation asked 0, now 0
-[05:58:07] flow layout_portrait exit 0
-[05:58:17] flow player_audit
-[05:59:01] flow player_audit exit 1
-[05:59:09] flow layout_landscape
-[05:59:12] rotation asked 1, now 90
-[05:59:26] flow layout_landscape exit 0
-[05:59:34] flow player_audit_land
-[06:00:28] flow player_audit_land exit 1
-[06:00:37] flow summarykill
-[06:01:24] summarykill: pass 1 closed, the app stopped 2 s after
-[06:02:10] summarykill: pass 2 closed, the app stopped 2 s after
-[06:03:05] summarykill: pass 3 closed, the app stopped 10 s after (Home)
-[06:03:08] summarykill: 3 play(s), 3 first frame(s), 3 summary send(s), 2 of them kept from an earlier run
-[06:03:08] summarykill: LAB summarykill pass 1
-[06:03:08] summarykill: first frame 1423 ms
-[06:03:08] summarykill: LAB summarykill pass 2
-[06:03:08] summarykill: summaries kept by an ea
-[06:03:08] summarykill: first frame 1168 ms
-[06:03:08] summarykill: summary cde4d9 sent (kept f
-[06:03:08] summarykill: LAB summarykill pass 3
-[06:03:08] summarykill: summaries kept by an ea
-[06:03:08] summarykill: first frame 802 ms
-[06:03:08] summarykill: summary a0ad56 sent (kept f
-[06:03:08] summarykill: summary c67332 sent
-[06:03:08] flow summarykill done
-[06:03:08] flow reopen
-[06:05:15] reopen: 8 play(s), 5 ladder open(s), 8 first frame(s), 7 summary send(s)
-[06:05:15] reopen: 0 fall back(s) to libmpv, 0 refusal(s), 0 newer-video guard(s), 0 stacked player(s)
-[06:05:15] flow reopen done
-[06:05:19] done
+TotalTime: 4315
+WaitTime: 4397
+[09:18:17] flow layout_portrait
+[09:18:19] rotation asked 0, now 0
+[09:19:09] flow layout_portrait exit 0
+[09:19:22] flow player_audit
+[09:21:01] flow player_audit exit 1
+[09:21:13] flow layout_landscape
+[09:21:16] rotation asked 1, now 90
+[09:21:36] flow layout_landscape exit 0
+[09:21:48] flow player_audit_land
+[09:22:42] flow player_audit_land exit 0
+[09:22:59] done
