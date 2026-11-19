@@ -116,6 +116,12 @@ line_rate() {
     sudo tc qdisc change dev lo parent 1:4 handle 40: netem delay "$LINE_DELAY" loss "$LINE_LOSS" rate "$1" limit 300
   fi
 }
+# The whole line at once (flow ladderstart: a weak line and a plain one,
+# pass by pass): delay each way, loss on what comes in, the cap.
+line_shape() {
+  sudo tc qdisc change dev lo parent 1:4 handle 40: netem delay "$1" loss "$2" rate "$3" limit 300
+  sudo tc qdisc change dev lo parent 1:5 handle 50: netem delay "$1" limit 10000
+}
 line_down() {
   [ "$LINE_UP" = 1 ] || return 0
   LINE_UP=0
@@ -598,6 +604,139 @@ for flow in $FLOWS; do
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell rm -f "$d/lab_stream_url" "$d/lab_peak" >/dev/null 2>&1 || true
     rm -f "$OUT"/weakline_ms_*.txt
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  # THE LADDER'S START, STEP BY STEP (19 Nov 2026, BACKLOG §0 "1.64.85's
+  # first look" weak points 5 and 6). The test film from a resume point
+  # (START_AT s, the owner's 579 s), after its page was looked at for
+  # START_PAGE s (the grant asked ahead, the opening warmed), from a cleared
+  # app each pass, on the line its word names: `weak:WORD` is the weakjumps
+  # line (START_WEAK, LINE_DELAY each way, LINE_LOSS), `plain:WORD` a good
+  # one (START_PLAIN, START_PLAIN_DELAY each way, no loss) — both through
+  # the relay, the cap proved once. WORD goes to lab_start for a start rule
+  # under A/B (`a`/`b`: the build's own, an A/A). The app marks each step
+  # in ms from the ladder's registration (`LAB hls start +N ms: …`,
+  # LadderStartTrail) and, 40 s of film in, makes the seek bar's drags
+  # (START_DRAGS) and says how long their pictures trailed the finger
+  # (`LAB drag …`). test_device/ladderstart_summary.py lays each pass's
+  # steps beside the tap, the grant and the picture (logcat's own ms), and
+  # sums per line and word: the first picture (median, p90), stops in the
+  # first 30 s, the time at 480p or better, the drags.
+  case "$flow" in ladderstart)
+    if [ -z "${CLIMB_TITLE:-}" ]; then log "flow ladderstart: no CLIMB_TITLE in config.env — skipped"; continue; fi
+    line_proved ladderstart || continue
+    passes="${START_PASSES:-weak:a plain:a weak:b plain:b}"
+    d="/sdcard/Android/data/$PKG/files"
+    : > "$OUT/ladderstart.txt"
+    : > "$OUT/ladderstart_passes.tsv"
+    p=0
+    for pass in $passes; do
+      p=$((p + 1))
+      lk="${pass%%:*}"; word="${pass#*:}"
+      case "$lk" in
+        plain) line_shape "${START_PLAIN_DELAY:-30ms}" 0% "${START_PLAIN:-16mbit}"; how="${START_PLAIN:-16mbit}, ${START_PLAIN_DELAY:-30ms} each way, no loss" ;;
+        *) lk=weak; line_shape "$LINE_DELAY" "$LINE_LOSS" "${START_WEAK:-4mbit}"; how="${START_WEAK:-4mbit}, $LINE_DELAY each way, loss $LINE_LOSS" ;;
+      esac
+      adb shell am force-stop "$PKG"
+      adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+      adb shell mkdir -p "$d" >/dev/null 2>&1
+      adb shell "echo title:$CLIMB_TITLE > $d/lab_stream_url"
+      adb shell "echo ${START_AT:-579} > $d/lab_start_at"
+      adb shell "echo ${START_PAGE:-4} > $d/lab_start_page"
+      adb shell "echo $word > $d/lab_start"
+      if [ -n "${START_DRAGS:-}" ]; then adb shell "echo '$START_DRAGS' > $d/lab_drags"; fi
+      log "ladderstart pass $p ($lk, $word): the test film at ${START_AT:-579} s after ${START_PAGE:-4} s on its page; line $how"
+      adb shell log -p i -t flutter "LAB ladderstart begin pass=$p line=$lk start=$word" >/dev/null 2>&1 || true
+      adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+      waited=0
+      while [ "$waited" -lt "${START_PASS_S:-150}" ]; do
+        sleep 5; waited=$((waited + 5))
+        if awk -v b="LAB ladderstart begin pass=$p " 'index($0,b){on=1} on && /LAB ladderstart done/{f=1} END{exit !f}' "$OUT/logcat_raw.txt"; then
+          break
+        fi
+      done
+      adb exec-out screencap -p > "$OUT/shots/9_ladderstart_end_$p.png"
+      adb shell log -p i -t flutter "LAB ladderstart end pass=$p line=$lk start=$word" >/dev/null 2>&1 || true
+      sleep 2
+      adb shell am force-stop "$PKG"
+      ls="$OUT/ladderstart_$p.txt"
+      # logcat's own time kept (ms): the steps are set beside each other by it.
+      awk -v b="LAB ladderstart begin pass=$p " -v e="LAB ladderstart end pass=$p " \
+        'index($0,b){on=1} on && /LAB /{print} index($0,e){on=0}' "$OUT/logcat_raw.txt" \
+        | sed -E 's#^([0-9-]+ [0-9:.]+) [^:]*: (LAB .*)$#\1 \2#; s#https?://[^ "]+#<url>#g; s#[A-Za-z0-9_-]{40,}#<token>#g' > "$ls" || true
+      cat "$ls" >> "$OUT/ladderstart.txt"
+      printf '%s\t%s\t%s\n' "$p" "$lk" "$word" >> "$OUT/ladderstart_passes.tsv"
+      log "ladderstart pass $p ($lk, $word): $(grep -c 'hls start +' "$ls") start marks, $(grep -c 'LAB drag [0-9]' "$ls") drags"
+    done
+    log "ladderstart: the line passed $(tc -s qdisc show dev lo | grep -A1 'netem 40:' | grep -oE 'Sent [0-9]+ bytes [0-9]+ pkt \(dropped [0-9]+' | head -1)"
+    line_down
+    adb emu network speed "$NET_SPEED" >/dev/null 2>&1 || true
+    adb emu network delay "$NET_DELAY" >/dev/null 2>&1 || true
+    log "ladderstart: $(cat "$OUT/relay.txt" 2>/dev/null || echo 'relay: no counts')"
+    python3 test_device/ladderstart_summary.py "$OUT" | tee "$OUT/ladderstart_summary.txt" | while read -r line; do log "$line"; done
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_start_at" "$d/lab_start_page" "$d/lab_start" "$d/lab_drags" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
+  # THE APP'S FIRST SECONDS ON THE CPU (19 Nov 2026, BACKLOG §0 weak point
+  # 7: 60-74 % for ~20 s on the owner's phone, pool-thread 23 %, DartWorker
+  # 13-19 %, before any playback). The app as the flows before left it
+  # (perf_idle first: the introduction done, access granted, the library
+  # on the phone), started cold COLD_STARTS times. For 24 s from each
+  # launch: every thread's CPU every 2 s (top -H), the Java stacks at 3, 6,
+  # 10 and 15 s (debuggerd -j, as root: which code a pool-N-thread-M runs),
+  # and a 12 s cpu-clock profile by thread and library (simpleperf: a
+  # DartWorker in libc and the kernel is dart:io's file work, in
+  # libflutter.so the VM's own — collecting garbage, an isolate). The
+  # app's own CpuProbe lines (`LAB cpu`) are in the trail beside them.
+  # test_device/coldcpu_summary.py reads it all.
+  case "$flow" in coldcpu)
+    adb root >/dev/null 2>&1; sleep 3; adb wait-for-device
+    # adbd restarted: the trail's logcat with it, appended from now.
+    kill "$LOGCAT" 2>/dev/null || true
+    adb logcat -v time -T 1 >> "$OUT/logcat_raw.txt" 2>&1 &
+    LOGCAT=$!
+    : > "$OUT/coldcpu.txt"
+    for c in $(seq 1 "${COLD_STARTS:-3}"); do
+      adb shell am force-stop "$PKG"
+      sleep 4
+      adb shell log -p i -t flutter "LAB coldcpu begin start=$c" >/dev/null 2>&1 || true
+      t0=$(date +%s)
+      adb shell am start -n "$PKG/.MainActivity" >/dev/null 2>&1
+      pid=""
+      for _ in $(seq 1 20); do pid=$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r'); [ -n "$pid" ] && break; sleep 0.2; done
+      if [ -z "$pid" ]; then log "coldcpu start $c: no process"; continue; fi
+      adb shell top -H -b -d 2 -n 12 -m 40 -p "$pid" > "$OUT/coldcpu_top_$c.txt" 2>&1 &
+      tp=$!
+      ( adb shell "simpleperf record -e cpu-clock -f 500 -p $pid --duration 12 -o /data/local/tmp/cold_$c.data" > "$OUT/coldcpu_perf_rec_$c.txt" 2>&1 ) &
+      sp=$!
+      for at in 3 6 10 15; do
+        now=$(( $(date +%s) - t0 ))
+        [ "$now" -lt "$at" ] && sleep $(( at - now ))
+        { echo "== start $c at ${at}s"; adb shell debuggerd -j "$pid" 2>&1; } >> "$OUT/coldcpu_stacks_$c.txt"
+      done
+      wait "$sp" 2>/dev/null || true
+      adb shell "simpleperf report -i /data/local/tmp/cold_$c.data --sort comm,dso -n --percent-limit 0.5" > "$OUT/coldcpu_perf_$c.txt" 2>&1 || true
+      adb shell "simpleperf report -i /data/local/tmp/cold_$c.data --sort comm,symbol -n --percent-limit 0.5" >> "$OUT/coldcpu_perf_$c.txt" 2>&1 || true
+      adb shell rm -f "/data/local/tmp/cold_$c.data" >/dev/null 2>&1 || true
+      wait "$tp" 2>/dev/null || true
+      adb shell log -p i -t flutter "LAB coldcpu end start=$c" >/dev/null 2>&1 || true
+      log "coldcpu start $c: pid $pid, $(grep -c '^== start' "$OUT/coldcpu_stacks_$c.txt") stack dumps"
+    done
+    adb shell am force-stop "$PKG"
+    adb unroot >/dev/null 2>&1; sleep 3; adb wait-for-device
+    kill "$LOGCAT" 2>/dev/null || true
+    adb logcat -v time -T 1 >> "$OUT/logcat_raw.txt" 2>&1 &
+    LOGCAT=$!
+    python3 test_device/coldcpu_summary.py "$OUT" | tee "$OUT/coldcpu.txt" | head -80 | while read -r line; do log "$line"; done
+    # The raw dumps are long (every thread, four times a start): the summary
+    # keeps the busy threads' stacks (coldcpu_busy_stacks.txt).
+    rm -f "$OUT"/coldcpu_stacks_*.txt
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;

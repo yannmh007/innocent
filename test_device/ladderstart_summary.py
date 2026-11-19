@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""The ladder's start, pass by pass and per line and word (flow ladderstart).
+
+Reads out/ladderstart_passes.tsv (pass, line, word) and each pass's trail,
+out/ladderstart_<pass>.txt — lines "MM-DD HH:MM:SS.mmm LAB …", logcat's own
+time kept — and says, for each pass, when each step of the start came, in
+ms from the tap (`LAB title: opening`):
+
+  grant · register (the ladder's rungs made local) · the start rung's index
+  · master · its playlist · the first film segment asked and in · the
+  picture (`first frame`), and the neighbours' indexes beside them;
+
+then in the 30 s after the picture: stops a viewer sees (>= 250 ms), the
+time at 480p or better, Auto's first change of rung; and the seek bar's
+drags (`LAB drag …`) with each preview's parts (`preview at …`).
+
+Per line and word: the first picture's median and p90, stops, 480p+ share,
+each step's median, the drags. Two words of one build (`a`, `b`) are an
+A/A: their difference is the noise a rule must clear.
+"""
+import re
+import statistics
+import sys
+from datetime import datetime
+from pathlib import Path
+
+STOP_MS = 250
+WINDOW_S = 30.0
+
+
+def stamp(line):
+    m = re.match(r'(\d\d-\d\d \d\d:\d\d:\d\d\.\d{3}) (LAB .*)$', line)
+    if not m:
+        return None, None
+    t = datetime.strptime('2026-' + m.group(1), '%Y-%m-%d %H:%M:%S.%f')
+    return t.timestamp(), m.group(2)
+
+
+def pct(xs, q):
+    xs = sorted(xs)
+    if not xs:
+        return None
+    k = (len(xs) - 1) * q
+    lo = int(k)
+    hi = min(lo + 1, len(xs) - 1)
+    return xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
+
+
+def med(xs):
+    return round(statistics.median(xs)) if xs else None
+
+
+def fmt(v):
+    return '-' if v is None else str(round(v))
+
+
+def read_pass(path):
+    rows = []
+    for raw in Path(path).read_text(errors='replace').splitlines():
+        t, msg = stamp(raw)
+        if t is not None:
+            # PlaybackLog's own 0.1 s stamp, when there is one, is dropped.
+            msg = re.sub(r'^LAB\s+\d+\.\d\s+', 'LAB ', msg)
+            rows.append((t, msg[4:]))
+    return rows
+
+
+def first(rows, pat, after=None):
+    for t, m in rows:
+        if after is not None and t < after:
+            continue
+        mm = re.search(pat, m)
+        if mm:
+            return t, mm
+    return None, None
+
+
+def analyse(rows):
+    out = {}
+    tap, _ = first(rows, r'^LAB title: opening')
+    if tap is None:
+        return None
+    out['tap'] = tap
+    ms = lambda t: None if t is None else (t - tap) * 1000.0
+    t, mm = first(rows, r'^play \S+ .* in (\d+) ms', tap)
+    out['grant'] = ms(t)
+    out['grant_own'] = int(mm.group(1)) if mm else None
+    marks = {}
+    for t, m in rows:
+        mm = re.match(r'hls start \+(\d+) ms: (.*)$', m)
+        if mm and t >= tap and mm.group(2) not in marks:
+            marks[mm.group(2)] = ms(t)
+    out['marks'] = marks
+    t, mm = first(rows, r'^play rung (\d+)p', tap)
+    start_h = int(mm.group(1)) if mm else None
+    out['start_h'] = start_h
+    t, _ = first(rows, r'^open ladder \(exo\)', tap)
+    out['open'] = ms(t)
+    frame_t, mm = first(rows, r'^first frame (\d+) ms', tap)
+    out['picture'] = ms(frame_t)
+    out['frame_own'] = int(mm.group(1)) if mm else None
+    t, _ = first(rows, r'^warm: ', None)
+    out['warmed'] = t is not None
+    # The 30 s after the picture.
+    rung_at = []  # (t, h) as shown
+    for t, m in rows:
+        mm = re.match(r'exo rung (\d+)p', m)
+        if mm and t >= tap:
+            rung_at.append((t, int(mm.group(1))))
+    stops = []
+    if frame_t is not None:
+        end = frame_t + WINDOW_S
+        for t, m in rows:
+            mm = re.match(r'rebuffer end (\d+) ms', m)
+            if mm and frame_t <= t <= end + 10:
+                v = int(mm.group(1))
+                # Its start inside the window.
+                if t - v / 1000.0 <= end and v >= STOP_MS:
+                    stops.append(v)
+        # Time at each rung over [picture, +30 s].
+        shown = None
+        for t, h in rung_at:
+            if t <= frame_t:
+                shown = h
+        if shown is None and rung_at:
+            shown = rung_at[0][1]
+        cur_t, cur_h = frame_t, shown
+        share = {}
+        for t, h in rung_at:
+            if t <= frame_t:
+                continue
+            if t >= end:
+                break
+            if cur_h is not None:
+                share[cur_h] = share.get(cur_h, 0) + (t - cur_t)
+            cur_t, cur_h = t, h
+        if cur_h is not None:
+            share[cur_h] = share.get(cur_h, 0) + (end - cur_t)
+        tot = sum(share.values()) or 1
+        out['hi_share'] = 100.0 * sum(v for h, v in share.items() if h >= 480) / tot
+        out['rungs'] = '>'.join(str(h) for h in [shown] + [h for t, h in rung_at if frame_t < t < end] if h)
+        later = [(t, h) for t, h in rung_at if frame_t < t < end and h != shown]
+        out['first_change'] = None if not later else ((later[0][0] - frame_t), later[0][1])
+    else:
+        out['hi_share'] = None
+        out['rungs'] = '-'
+        out['first_change'] = None
+    out['stops'] = stops
+    # Drags and previews.
+    drags = []
+    for t, m in rows:
+        mm = re.match(r'LAB drag (\d+)/(\d+) (.*)$', m)
+        if mm:
+            kv = dict(x.split('=', 1) for x in mm.group(3).split() if '=' in x)
+            drags.append(kv)
+    out['drags'] = drags
+    previews = []
+    for t, m in rows:
+        mm = re.match(r'preview at (\d+)s: (\d+) KB, (\d+) ms \(bytes (\d+) ms, (.*); picture (\d+) ms\)', m)
+        if mm:
+            p = {'kb': int(mm.group(2)), 'ms': int(mm.group(3)), 'bytes_ms': int(mm.group(4)),
+                 'how': mm.group(5), 'pic_ms': int(mm.group(6))}
+            hw = re.search(r'conn (new|kept|\?) (\d+) ms.*wait (\d+) ms, read (\d+) ms', p['how'])
+            if hw:
+                p.update(conn=hw.group(1), conn_ms=int(hw.group(2)), wait_ms=int(hw.group(3)),
+                         read_ms=int(hw.group(4)))
+            previews.append(p)
+    out['previews'] = previews
+    return out
+
+
+STEPS = [
+    ('grant', lambda a, h: a.get('grant')),
+    ('register', lambda a, h: a['marks'].get('register')),
+    ('index', lambda a, h: a['marks'].get(f'{h}p index')),
+    ('master', lambda a, h: a['marks'].get('master served')),
+    ('playlist', lambda a, h: a['marks'].get(f'{h}p playlist served')),
+    ('seg asked', lambda a, h: a['marks'].get(f'{h}p segment asked')),
+    ('seg in', lambda a, h: a['marks'].get(f'{h}p segment in')),
+    ('picture', lambda a, h: a.get('picture')),
+]
+
+
+def main():
+    out = Path(sys.argv[1] if len(sys.argv) > 1 else 'out')
+    tsv = out / 'ladderstart_passes.tsv'
+    if not tsv.exists():
+        print('ladderstart: no passes')
+        return
+    passes = []
+    for line in tsv.read_text().splitlines():
+        p, lk, word = line.split('\t')
+        a = analyse(read_pass(out / f'ladderstart_{p}.txt'))
+        passes.append((int(p), lk, word, a))
+    for p, lk, word, a in passes:
+        if a is None:
+            print(f'ladderstart pass {p} ({lk}, {word}): no tap in the trail')
+            continue
+        h = a['start_h']
+        steps = ', '.join(f'{n} {fmt(f(a, h))}' for n, f in STEPS)
+        others = sorted({k for k in a['marks'] if k.endswith('p index') and not k.startswith(f'{h}p')})
+        nb = ', '.join(f'{k} {fmt(a["marks"][k])}' for k in others) or 'none'
+        fc = a['first_change']
+        print(f'ladderstart pass {p} ({lk}, {word}): start {h}p{" warmed" if a["warmed"] else ""}; '
+              f'ms from the tap: {steps}; other indexes: {nb}; '
+              f'30 s: stops {len(a["stops"])} ({sum(a["stops"])} ms), 480p+ {fmt(a["hi_share"])} %, '
+              f'rungs {a["rungs"]}, first change '
+              f'{"none" if fc is None else f"+{fc[0]:.1f} s to {fc[1]}p"}')
+    print()
+    groups = {}
+    for p, lk, word, a in passes:
+        if a is not None:
+            groups.setdefault((lk, word), []).append(a)
+    for (lk, word), xs in sorted(groups.items()):
+        pics = [a['picture'] for a in xs if a['picture'] is not None]
+        stops = [len(a['stops']) for a in xs]
+        frozen = [sum(a['stops']) for a in xs]
+        hi = [a['hi_share'] for a in xs if a['hi_share'] is not None]
+        h = xs[0]['start_h']
+        stepmeds = ', '.join(
+            f'{n} {fmt(med([f(a, a["start_h"]) for a in xs if f(a, a["start_h"]) is not None]))}'
+            for n, f in STEPS)
+        print(f'ladderstart {lk} {word}, {len(xs)} passes: first picture median {fmt(med(pics))} ms, '
+              f'p90 {fmt(pct(pics, 0.9))} ms (each {",".join(fmt(x) for x in pics)}); '
+              f'stops in 30 s {sum(stops)} in {sum(1 for s in stops if s)} passes, {sum(frozen)} ms; '
+              f'480p+ mean {fmt(statistics.mean(hi) if hi else None)} %; step medians: {stepmeds}')
+    # The A/A (or A/B): per line, neighbouring passes of two words paired.
+    for lk in sorted({k[0] for k in groups}):
+        words = sorted({w for (l, w) in groups if l == lk})
+        if len(words) != 2:
+            continue
+        seq = [(w, a) for p, l, w, a in passes if l == lk and a is not None and a['picture'] is not None]
+        pairs = []
+        i = 0
+        while i + 1 < len(seq):
+            (w1, a1), (w2, a2) = seq[i], seq[i + 1]
+            if w1 != w2:
+                d = (a1['picture'] - a2['picture']) if w1 == words[0] else (a2['picture'] - a1['picture'])
+                pairs.append(d)
+                i += 2
+            else:
+                i += 1
+        if pairs:
+            wins = sum(1 for d in pairs if d < 0)
+            print(f'ladderstart {lk}: {words[0]} minus {words[1]}, first picture, {len(pairs)} pairs: '
+                  f'median {fmt(med(pairs))} ms, mean {fmt(statistics.mean(pairs))} ms, '
+                  f'{words[0]} sooner in {wins} of {len(pairs)}')
+    # The drags.
+    for lk in sorted({k[0] for k in groups}):
+        ds = [d for (l, w), xs in groups.items() if l == lk for a in xs for d in a['drags']]
+        pv = [v for (l, w), xs in groups.items() if l == lk for a in xs for v in a['previews']]
+        if not ds and not pv:
+            continue
+        stop = [int(d['stop_ms']) for d in ds if d.get('stop_ms', '-1') != '-1']
+        firsts = [int(d['first_ms']) for d in ds if d.get('first_ms', '-1') != '-1']
+        miss = sum(1 for d in ds if d.get('stop_ms') == '-1')
+        line_pv = [v for v in pv if v['how'].startswith('line')]
+        phone_pv = [v for v in pv if v['how'] == 'phone']
+        new = [v for v in line_pv if v.get('conn') == 'new']
+        print(f'ladderstart {lk} drags: {len(ds)}; picture after the finger stopped median '
+              f'{fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))} ms, never {miss}; first picture of a drag '
+              f'median {fmt(med(firsts))} ms')
+        if line_pv:
+            print(f'ladderstart {lk} previews from the line: {len(line_pv)}, median {fmt(med([v["ms"] for v in line_pv]))} ms '
+                  f'(p90 {fmt(pct([v["ms"] for v in line_pv], 0.9))}): conn new {len(new)} '
+                  f'(median {fmt(med([v["conn_ms"] for v in new]))} ms), '
+                  f'wait {fmt(med([v["wait_ms"] for v in line_pv if "wait_ms" in v]))} ms, '
+                  f'read {fmt(med([v["read_ms"] for v in line_pv if "read_ms" in v]))} ms, '
+                  f'{fmt(med([v["kb"] for v in line_pv]))} KB, '
+                  f'picture {fmt(med([v["pic_ms"] for v in line_pv]))} ms')
+        if phone_pv:
+            print(f'ladderstart {lk} previews from the phone: {len(phone_pv)}, median '
+                  f'{fmt(med([v["ms"] for v in phone_pv]))} ms (picture {fmt(med([v["pic_ms"] for v in phone_pv]))} ms)')
+
+
+if __name__ == '__main__':
+    main()

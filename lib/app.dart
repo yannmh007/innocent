@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io' show exit;
+import 'dart:math' show max;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,7 @@ import 'features/downloader/presentation/downloader_home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/updater/presentation/app_update_screen.dart';
 import 'features/player/presentation/floating_pip_overlay.dart';
+import 'features/player/presentation/ladder_preview_loader.dart';
 import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
@@ -38,6 +40,7 @@ import 'core/services/network/throughput_memory.dart';
 import 'features/video_hub/data/cache/stream_cache_server.dart';
 import 'features/video_hub/presentation/playback.dart';
 import 'features/video_hub/presentation/video_hub_provider.dart';
+import 'features/video_hub/presentation/watch_points_provider.dart';
 
 class InnocentApp extends ConsumerStatefulWidget {
   final bool showOnboarding;
@@ -90,12 +93,16 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
     if (titleId != null) {
       // Before the film opens: the jump switch for this pass.
       await LabStream.jumpRule();
-      await _labTitle(titleId);
+      final plan = await LabStream.startPlan();
+      await _labTitle(titleId, plan: plan);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
       // Jumps in Auto on a weak line (run.sh, flow weakjumps).
       final auto = await LabStream.autoJumps();
       if (auto.isNotEmpty) await _labAutoJumps(auto);
+      // A ladder's start, then the seek bar's drags (run.sh, ladderstart).
+      final drags = await LabStream.drags();
+      if (plan.at != null || drags.isNotEmpty) await _labStartPass(plan, drags);
       return;
     }
     final local = await LabStream.localUrl();
@@ -124,8 +131,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   }
 
   /// DEVICE LAB ONLY — a catalogue title, played exactly as a viewer's tap
-  /// plays it (see [LabStream.titleId]).
-  Future<void> _labTitle(String id) async {
+  /// plays it (see [LabStream.titleId]). With a [plan] (flow ladderstart):
+  /// from a resume point, after its page was looked at for a while.
+  Future<void> _labTitle(String id, {({int? at, int? page, String? word})? plan}) async {
     if (_showOnboarding) setState(() => _showOnboarding = false);
     await Future<void>.delayed(const Duration(seconds: 3));
     if (!mounted) return;
@@ -143,9 +151,31 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         PlaybackLog.add('LAB title: ${content == null ? 'not found' : 'no screen'}');
         return;
       }
-      PlaybackLog.add('LAB title: opening ${content.title}');
+      final at = plan?.at;
+      if (at != null) {
+        // Where a viewer stopped: Play opens there, as on Continue watching.
+        ref.read(watchPointsProvider.notifier).record(
+              titleId: content.id,
+              assetId: assetIdOf(content.source),
+              position: Duration(seconds: at),
+              // The length is not in the catalogue's card: unknown (0) keeps
+              // any point past 30 s resumable.
+              duration: Duration.zero,
+            );
+      }
+      final page = plan?.page ?? 0;
+      if (page > 0) {
+        // The film's page, looked at: the grant asked ahead and the opening
+        // warmed, as the page does (prefetchPlayback).
+        PlaybackLog.add('LAB title: page ${content.title}, $page s');
+        prefetchPlayback(ref, content: content, source: content.source);
+        await Future<void>.delayed(Duration(seconds: page));
+        if (!ctx.mounted) return;
+      }
+      PlaybackLog.add('LAB title: opening ${content.title}'
+          '${at == null ? '' : ' at $at s'}${plan?.word == null ? '' : ' start=${plan!.word}'}');
       await playMedia(ctx, ref, content: content, source: content.source,
-          fromStart: true);
+          fromStart: at == null);
     } catch (e) {
       PlaybackLog.add('LAB title failed: $e');
     }
@@ -497,6 +527,84 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
   /// ([StreamCacheServer.spareForJumps]), on one phone's line. (On 14 Nov
   /// it alternated a pool known lost instead, for Test Lab 43560350582;
   /// taken out with that rule.)
+  /// DEVICE LAB ONLY (flow ladderstart): once 40 s of film have played past
+  /// where it opened — the start's 30 s are over — the seek bar's [drags],
+  /// each a finger moving at a steady pace, its requests every 150 ms
+  /// through the player's own [LadderPreviewLoader]. One line a drag: how
+  /// many pictures it fetched, the first one's wait, and how long after the
+  /// finger stopped the picture of where it stopped came (`stop_ms`; 0 when
+  /// it was there already). Then `LAB ladderstart done`, which the flow
+  /// waits for.
+  Future<void> _labStartPass(
+      ({int? at, int? page, String? word}) plan, List<(int, Duration)> drags) async {
+    final svc = ref.read(videoPlayerServiceProvider);
+    final began = DateTime.now();
+    final from = Duration(seconds: plan.at ?? 0);
+    try {
+      while (svc.position < from + const Duration(seconds: 40)) {
+        if (!mounted) return;
+        if (DateTime.now().difference(began) > const Duration(seconds: 120)) {
+          PlaybackLog.add('LAB ladderstart: the film never got going');
+          return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+      if (svc is! MediaKitPlayerService || !svc.playingLadder) {
+        if (drags.isNotEmpty) PlaybackLog.add('LAB drag: not on the ladder, none made');
+        return;
+      }
+      const step = Duration(milliseconds: 150);
+      var i = 0;
+      for (final (by, over) in drags) {
+        i++;
+        if (!mounted) return;
+        final len = svc.duration.inSeconds;
+        final p0 = svc.position.inSeconds;
+        final to = (p0 + by).clamp(0, max(0, len - 1));
+        // Each fetch's moment and when it was done.
+        final done = <(int, DateTime)>[];
+        var fetched = 0;
+        final loader = LadderPreviewLoader((at) async {
+          fetched++;
+          final b = await svc.ladderPreview(at);
+          done.add((at.inSeconds, DateTime.now()));
+          return b;
+        });
+        final t0 = DateTime.now();
+        DateTime? firstPicture;
+        var pictures = 0;
+        final steps = max(1, over.inMilliseconds ~/ step.inMilliseconds);
+        for (var k = 1; k <= steps; k++) {
+          final s = p0 + ((to - p0) * k / steps).round();
+          loader.request(s, (_) {
+            pictures++;
+            firstPicture ??= DateTime.now();
+          });
+          await Future<void>.delayed(step);
+        }
+        final stopped = DateTime.now();
+        // The picture of where the finger stopped: up to 6 s for it.
+        DateTime? landed;
+        while (DateTime.now().difference(stopped) < const Duration(seconds: 6)) {
+          for (final (s, t) in done) {
+            if (s ~/ 2 == to ~/ 2) landed ??= t;
+          }
+          if (landed != null) break;
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+        loader.dispose();
+        final stopMs = landed == null ? -1 : max(0, landed.difference(stopped).inMilliseconds);
+        PlaybackLog.add('LAB drag $i/${drags.length} by=$by over_ms=${over.inMilliseconds} '
+            'from=$p0 to=$to asked=$steps fetched=$fetched pictures=$pictures '
+            'first_ms=${firstPicture == null ? -1 : firstPicture!.difference(t0).inMilliseconds} '
+            'stop_ms=$stopMs word=${plan.word ?? '-'}');
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    } finally {
+      PlaybackLog.add('LAB ladderstart done');
+    }
+  }
+
   Future<void> _labAutoJumps(List<double> shares, {bool alternate = false}) async {
     final svc = ref.read(videoPlayerServiceProvider);
     PlayerController player() => ref.read(playerControllerProvider.notifier);

@@ -91,6 +91,52 @@ class LabStream {
     } catch (_) {}
   }
 
+  /// THE LADDER'S START, MEASURED (19 Nov 2026, flow `ladderstart`):
+  /// where the film opens (`lab_start_at`, seconds — a resume point, the
+  /// way a viewer's "Continue watching" opens it), how long the film's page
+  /// is looked at first (`lab_start_page`, seconds: the grant asked ahead
+  /// and the opening warmed, as on the page), and the pass's word
+  /// (`lab_start`), which a start rule under A/B reads. All null or empty
+  /// when the lab wrote none.
+  static Future<({int? at, int? page, String? word})> startPlan() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) {
+      return (at: null, page: null, word: null);
+    }
+    try {
+      return (
+        at: int.tryParse((await _read('lab_start_at')) ?? ''),
+        page: int.tryParse((await _read('lab_start_page')) ?? ''),
+        word: await _read('lab_start'),
+      );
+    } catch (_) {
+      return (at: null, page: null, word: null);
+    }
+  }
+
+  /// The seek bar's drags (`lab_drags`): "+60/1.5 -30/1 …", each a move of
+  /// that many seconds of film over that many seconds of finger, measured
+  /// for how long its pictures trail it. Empty when the lab asked for none.
+  static Future<List<(int by, Duration over)>> drags() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return const [];
+    try {
+      return parseDrags((await _read('lab_drags')) ?? '');
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// "+60/1.5 -30/1" (spaces or commas); malformed ones are skipped.
+  static List<(int by, Duration over)> parseDrags(String raw) => [
+        for (final w in raw.split(RegExp(r'[\s,]+')))
+          if (w.split('/') case [final a, final b]
+              when int.tryParse(a.replaceFirst('+', '')) != null &&
+                  (double.tryParse(b) ?? 0) > 0)
+            (
+              int.parse(a.replaceFirst('+', '')),
+              Duration(milliseconds: (double.parse(b) * 1000).round()),
+            ),
+      ];
+
   /// The lab's jumps in Auto (`lab_autojumps`): where each lands, as shares
   /// of the film ("0.40 0.70 0.20"), one after another. Empty when the lab
   /// asked for none.

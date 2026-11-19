@@ -17,6 +17,7 @@ import '../rate_limited.dart';
 import '../seal/media_seal.dart';
 import '../seal/unseal_gateway.dart';
 import '../stream_door.dart';
+import 'ladder_start_trail.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -730,6 +731,7 @@ class StreamCacheServer {
   }) async {
     if (rungs.isEmpty) return null;
     try {
+      LadderStartTrail.begin();
       await StreamCacheStore.instance.load();
       await _ensureStarted();
       final port = _server?.port;
@@ -769,10 +771,17 @@ class StreamCacheServer {
       // A SECOND POOL, FOR A JUMP ([keepSpare]): made now, connected only
       // when a read first goes to it.
       final spare = _Ladder.pool();
+      LadderStartTrail.mark('rungs registered');
+      final checking = _sources[start.cacheId]?.probing;
+      if (checking != null) {
+        unawaited(checking.then((_) => LadderStartTrail.mark('${start.height}p length checked'),
+            onError: (Object _) {}));
+      }
       for (var i = 0; i < rungs.length; i++) {
         final r = rungs[i];
         _sources[r.cacheId]
           ?..segmented = true
+          ..height = r.height
           ..second = spare;
         entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
       }
@@ -832,7 +841,13 @@ class StreamCacheServer {
   ///
   /// [have]: whether the caller already holds the picture of the fragment
   /// starting at that many ms — then nothing is read, and [film] is null.
-  Future<({Uint8List? film, int startMs})?> previewClip(Duration at,
+  ///
+  /// [how]: where the bytes came from, for the trail — the phone, or the
+  /// line and what its answer was made of (`line 74 KB: conn kept 0 ms,
+  /// wait 452 ms, read 180 ms`) — so a slow picture says whether it was
+  /// the handshake, the Worker or the bytes (19 Nov 2026: unseen parts
+  /// took 478-1010 ms on the owner's phone, seen ones 24-45).
+  Future<({Uint8List? film, int startMs, String how})?> previewClip(Duration at,
       {bool Function(int startMs)? have}) async {
     final id = _playingLadder;
     final l = id == null ? null : _ladders[id];
@@ -850,22 +865,29 @@ class StreamCacheServer {
     while (i + 1 < idx.length && idx.timesMs[i + 1] <= ms) {
       i++;
     }
-    if (have != null && have(idx.timesMs[i])) return (film: null, startMs: idx.timesMs[i]);
+    if (have != null && have(idx.timesMs[i])) {
+      return (film: null, startMs: idx.timesMs[i], how: 'held');
+    }
     final entry = await StreamCacheStore.instance.entryFor(r.cacheId);
     if (entry.total <= 0) return null;
     final init = await _readExact(src, entry, 0, head.initEnd);
-    final frag = await _readExact(src, entry, idx.starts[i], idx.starts[i] + idx.sizes[i]);
+    final cost = <String>[];
+    final frag = await _readExact(src, entry, idx.starts[i], idx.starts[i] + idx.sizes[i], cost: cost);
     if (init == null || frag == null) return null;
     final film = (BytesBuilder(copy: false)
           ..add(init)
           ..add(frag))
         .takeBytes();
-    return (film: film, startMs: idx.timesMs[i]);
+    return (film: film, startMs: idx.timesMs[i], how: cost.isEmpty ? 'phone' : cost.join('; '));
   }
 
   /// Bytes [start, end) of a film: from the phone where it has them, the
   /// rest from the Worker — not written to the cache ([previewClip]).
-  Future<Uint8List?> _readExact(_Source src, CacheEntry entry, int start, int end) async {
+  ///
+  /// [cost]: given, one line for each stretch read from the line (bytes,
+  /// the connection, the server's wait, the read after the answer).
+  Future<Uint8List?> _readExact(_Source src, CacheEntry entry, int start, int end,
+      {List<String>? cost}) async {
     final out = BytesBuilder(copy: false);
     var pos = start;
     try {
@@ -882,14 +904,24 @@ class StreamCacheServer {
         }
         if (src.offline) return null;
         final stop = min(end, entry.nextPartStart(pos, entry.total));
-        final up = await _openPooled(src, pos, stop - 1);
+        _Opened? how;
+        final clock = Stopwatch()..start();
+        final up = await _openPooled(src, pos, stop - 1, opened: (c) => how = c);
         if (up == null) return null;
+        final answered = clock.elapsedMilliseconds;
         var got = 0;
         await for (final chunk in up) {
           out.add(chunk);
           got += chunk.length;
         }
         upstreamBytes += got;
+        final o = how;
+        if (cost != null && o != null) {
+          final hs = o.handshake;
+          cost.add('line ${got ~/ 1024} KB: conn ${o.fresh == null ? '?' : o.fresh! ? 'new' : 'kept'} ${o.connMs} ms'
+              '${hs == null ? '' : ' (dns ${hs.$1}, tcp ${hs.$2}, tls ${hs.$3})'}, wait ${o.waitMs} ms, '
+              'read ${clock.elapsedMilliseconds - answered} ms');
+        }
         if (got != stop - pos) return null;
         _readWhole(src.io);
         pos = stop;
@@ -924,6 +956,7 @@ class StreamCacheServer {
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
     final loading = r.loading ??= () async {
+      LadderStartTrail.mark('${r.height}p head asked');
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
       var handedOff = false;
       try {
@@ -950,6 +983,7 @@ class StreamCacheServer {
             if (idx != null) {
               r.index = idx;
               r.head = CmafHead.parse(bytes);
+              LadderStartTrail.mark('${r.height}p index');
               // What a rung asks of the line, over one fragment and over
               // longer stretches: the numbers BACKLOG 5b weighs rungs by.
               int k(int bps) => bps ~/ 1000;
@@ -998,6 +1032,7 @@ class StreamCacheServer {
       final port = _server?.port;
       final token = _token;
       if (name == 'master.m3u8') {
+        LadderStartTrail.mark('master asked');
         // The picture's shape, when the catalogue did not say it: the start
         // rung's head, read now — the player asks for it next anyway.
         final startHeight = l.startHeight;
@@ -1020,6 +1055,7 @@ class StreamCacheServer {
         );
       } else if (name.endsWith('.m3u8')) {
         final h = int.tryParse(name.substring(0, name.length - 5));
+        LadderStartTrail.mark('${h}p playlist asked');
         final r = h == null ? null : await _rungWithHead(l, h);
         if (r != null) {
           body = HlsLadder.media(r.hls);
@@ -1048,6 +1084,8 @@ class StreamCacheServer {
       ..set(HttpHeaders.cacheControlHeader, 'no-store');
     res.write(body);
     await res.close();
+    LadderStartTrail.mark(
+        name == 'master.m3u8' ? 'master served' : '${name.replaceAll('.m3u8', '')}p playlist served');
   }
 
   /// THE DEVICE LAB'S A/B SWITCH, AND ONLY THERE. A lab build reads the lane
@@ -1590,6 +1628,12 @@ class StreamCacheServer {
     }
     src.serving.add(gone);
     var complete = false;
+    // A ladder's start, read by kind: a head or init segment from byte 0,
+    // film segments after it ([LadderStartTrail]).
+    final startKind = src.segmented && LadderStartTrail.active
+        ? '${src.height}p ${start == 0 ? 'head/init' : 'segment'}'
+        : null;
+    if (startKind != null) LadderStartTrail.mark('$startKind asked');
     try {
       if (leaving.isNotEmpty) {
         await Future.any<void>([
@@ -1662,6 +1706,10 @@ class StreamCacheServer {
     } finally {
       src.serving.remove(gone);
       gone.finish();
+      if (startKind != null) {
+        LadderStartTrail.mark('$startKind ${complete ? 'in' : 'cut'}');
+        if (complete && start > 0) LadderStartTrail.firstSegmentIn();
+      }
       if (complete) {
         try {
           await out.flush();
@@ -2870,6 +2918,9 @@ class _Source {
   /// Read as segments of the ladder as HLS ([StreamCacheServer.hlsUrlFor]):
   /// one pooled request each, reading ahead, never lanes.
   bool segmented = false;
+
+  /// The ladder rung this is, when [segmented] (for the start's trail).
+  int? height;
 
   /// The read ahead in flight for this film, if any.
   _Fill? fill;

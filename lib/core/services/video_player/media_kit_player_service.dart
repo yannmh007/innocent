@@ -165,7 +165,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   /// The ladder's smallest rung at a moment, as a little MP4 to take a
   /// picture from (StreamCacheServer.previewClip). Set in main.dart.
-  static Future<({Uint8List? film, int startMs})?> Function(Duration at,
+  static Future<({Uint8List? film, int startMs, String how})?> Function(Duration at,
       {bool Function(int startMs)? have})? ladderClipAt;
 
   /// Pictures already taken this film, by the fragment's start (ms).
@@ -190,6 +190,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (known != null) return known;
     final film = clip.film;
     if (film == null) return null;
+    final fetched = clock.elapsedMilliseconds;
     final jpeg = await ExoEngine.frame(film, Duration(milliseconds: clip.startMs));
     if (jpeg == null) {
       PlaybackLog.add('preview at ${at.inSeconds}s: no picture');
@@ -198,8 +199,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     // A drag across a long film is a few dozen pictures; keep the latest.
     if (_previews.length >= 48) _previews.remove(_previews.keys.first);
     _previews[clip.startMs] = jpeg;
+    // Where its time went: the bytes (from the phone, or the line and what
+    // its answer was made of), then the picture taken from them.
     PlaybackLog.add('preview at ${at.inSeconds}s: ${film.length ~/ 1024} KB, '
-        '${clock.elapsedMilliseconds} ms');
+        '${clock.elapsedMilliseconds} ms (bytes $fetched ms, ${clip.how}; '
+        'picture ${clock.elapsedMilliseconds - fetched} ms)');
     return jpeg;
   }
 
