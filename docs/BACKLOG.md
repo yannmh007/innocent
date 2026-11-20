@@ -26,29 +26,43 @@ does it.
   branch starts at main, has no history in common with this one, and
   would need a force-push.
 - **20 Nov: the trick-play sprite, the owner's go-ahead ("Sprite လုပ်၊ plan
-  သေချာချ")** — the design, the order of work and the checkpoint are
-  docs/trickplay_plan.md. Phase 0 done on the branch: tool/trickplay.py
-  (the `ITP1` pack: one picture every N s, read by byte range; its test in
-  tool/check.py) and the Trick-play measure workflow, run 44668658121 on
-  the nine open films: 12 s of a runner per film-hour; 4 s at 224 px JPEG
-  2.5-3.5 MB per film-hour, 320 px 5.9 (q5). The films with a ladder today
-  are the nine open films (1.3 h), so the whole store is ~6 MB. Chosen: 4 s,
-  320 px (today's previews are 320 px), JPEG q8: 4.4 KB a picture, 4.28
-  PHASE 1 DONE ON THE BRANCH (29d57ea5, 8fcb3b69): migration 083 (table
-  asset_trickplay; claim_trickplay / record_trickplay / trickplay_for /
-  trickplay_key, service role only; r2_refs names the packs; r2_move_switch
-  moves them) — NOT APPLIED; dry runs on live rolled back: TRICKPLAY TEST
-  PASSED (14 cases) and MOVE TEST PASSED, nothing stayed. The reviewer's
-  five findings fixed (27e9f91a): a new pack key at every claim
-  (`-trick-<tag>.itp`; the Worker caches blocks 30 days by key), the
-  replaced pack binned, r2_refs naming only a current pack, a refused report
-  never ending the batch, the run file read and not sourced. transcode.ts
-  trick_claim / trick_done and request-playback.ts's additive `trickplay`
-  field — NOT DEPLOYED (deno check no new error, slice test, a local boot).
-  tool/trickplay_job.py (+ test) and .github/workflows/trickplay.yml (runs
-  on a push of tool/trickplay_run.env, which waits uncommitted). NEXT: THE
-  CHECKPOINT — the owner says go — then phase 2 (apply 083, deploy both
-  functions).
+  သေချာချ"), then "Sprite ပဲ အရင်" for phases 2-3 (no release with it)** —
+  the design and the order of work are docs/trickplay_plan.md. PHASES 0-3
+  DONE; THE APP DOES NOT READ THE PACKS YET (phase 4).
+  - Phase 0 (44668658121, 44671051967): chosen 4 s, 320 px, JPEG q8 —
+    4.4 KB a picture, 4.28 MB per film-hour; 12-19 s of a runner a film-hour.
+  - Phase 1 (29d57ea5, 8fcb3b69, reviewer's five findings fixed 27e9f91a):
+    migration 083, transcode trick_claim / trick_done, request-playback's
+    additive `trickplay` field, tool/trickplay_job.py, trickplay.yml.
+  - Phase 2, LIVE 20 Nov: 083 applied (table asset_trickplay; claim / record
+    / trickplay_for / trickplay_key, service role only; r2_refs names the
+    current packs; r2_move_switch moves them). On live after the apply:
+    TRICKPLAY, FILES, MEDIA KEYS and FRAMES TEST PASSED; r2_refs per kind
+    unchanged (backups 17 = db_backups, streaming copies 26 = renditions);
+    security advisors: the new table only under RLS-no-policy (INFO, as every
+    service-only table), no new function callable by anon or authenticated.
+    transcode v29 and request-playback v44, shims at 8746f216 (only the
+    trick-play change differs from the live SHAs ea45f9b0 / 6a874828).
+    Playback check 44710855254 on v44: grant 200, `trickplay: none` before
+    the packs, every other step as before; function logs: 200s, no error.
+  - Phase 3, LIVE 20 Nov: Trick-play 44723609469 (scope open, 1 min of
+    ffmpeg): NINE PACKS, all recorded — 1,201 pictures, 5.7 MB in all
+    (0.18-1.02 MB a film, median 3.0-6.4 KB a picture; widths 320, heights
+    134-180 by the film's shape). DB: nine rows `done`, each key the one its
+    claim minted, trickplay_for serves each, r2_refs names each as in use,
+    count = duration / 4 s. Playback check 44725839247 (Sintel, the playback
+    check grew a pack step in 039325aa): the grant's `trickplay` field read
+    through the real Worker — header = grant, offsets end at the object's
+    size, a picture is a whole JPEG, a run of 20 is one request, edge and
+    direct paths byte-identical.
+  - NEXT, phase 4 (on the branch, no live change): the app reader. Register
+    the pack with StreamCacheServer like a rung — the Worker enforces bound
+    tokens (/health bind=enforce), and a bound grant binds the pack's URL as
+    it does the rungs', so the pack is read with the install's device header
+    exactly as a rung is. Then phase 5 (labs `trick` vs `near`, gate, Test
+    Lab), and the release only on the owner's word: the job's cron on main
+    for new ladders ships with it; `all` (the catalogue) only on the owner's
+    word.
 - **19 Nov, on the branch for the next release: 1.64.85's weak points
   5-7** (the "first look" entry below; the streaming review §5, "Runs S1,
   S2, S3"). MEASURED FIRST, new lab flows `ladderstart` (a resume at

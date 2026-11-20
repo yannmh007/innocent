@@ -78,9 +78,9 @@ choice is made there, not guessed.
    made again under the same key would be served old and new mixed); the
    pack it replaces goes to the bin for a week. No sealed key in v1.
 5. **Database, migration 083 (additive)** — table `asset_trickplay`
-   (asset_id primary key → title_assets on delete cascade, object_key,
-   bytes, interval_ms, width, height, count, codec, source_height,
-   source_bytes, claimed_at, created_at); RLS on, no policy; security-definer
+   (asset_id primary key → title_assets on delete cascade, state, object_key,
+   bytes, interval_ms, width, height, count, codec, source_key,
+   source_bytes, pack_key, note, claimed_at, made_at); RLS on, no policy; security-definer
    RPCs `claim_trickplay(p_scope, p_limit)`, `record_trickplay(p_asset,
    p_row)`, `trickplay_for(p_asset)`, granted to service_role and revoked
    from anon / authenticated explicitly (.claude/rules/migrations.md);
@@ -102,7 +102,11 @@ choice is made there, not guessed.
    - `PlaybackGrant.trickplay` (domain) and its parsing
      (api_content_repository.dart), unknown keys ignored as now.
    - The pack registered with StreamCacheServer when the ladder is armed
-     (playback.dart), refreshed with the grant like a rung.
+     (playback.dart), refreshed with the grant like a rung. It MUST go
+     through the proxy's rung path, device header included: the Worker
+     enforces bound tokens (/health `bind=enforce`, 20 Nov) and a bound
+     grant binds the pack's URL exactly as a rung's (`workerUrl(key, who)`),
+     so a pack fetched without the install's header is a 404.
    - A reader (lib/features/video_hub/domain/trickplay_pack.dart): first read
      [0, 16 KB) — the header and every offset of a film up to ~4 h at 4 s —
      then a picture or a run is one range. In memory (an LRU of ~2 MB a
@@ -146,8 +150,8 @@ docs/MEDIA_ENCRYPTION.md's ENC-4 note about preview pictures.
 | 0 | The tool and the measurement on the open films (done 20 Nov, 44668658121) | no |
 | 1 | Choose the setting from phase 0; write migration 083, the edge ops, the grant field, the job — all on the branch, tested locally (SQL dry-run rolled back as each role). DONE 20 Nov: 29d57ea5, 8fcb3b69 (TRICKPLAY TEST PASSED and MOVE TEST PASSED on live, rolled back; deno check, slice test and a local boot of transcode; tool/trickplay_job_test.py) | no |
 | **checkpoint** | **The owner sees the exact SQL, the grant field and the costs, and says go** | — |
-| 2 | Apply 083 (skill `live-db-change`), deploy transcode + request-playback (skill `edge-deploy`), prove: SQL tests, a grant with no pack unchanged | yes, additive |
-| 3 | Run the job on the branch, scope `open`: nine packs; prove each (bytes, header, a ranged read through the Worker) | yes (R2 writes, open films) |
+| 2 | Apply 083 (skill `live-db-change`), deploy transcode + request-playback (skill `edge-deploy`), prove: SQL tests, a grant with no pack unchanged. DONE 20 Nov: TRICKPLAY, FILES, MEDIA KEYS, FRAMES TEST PASSED on live; transcode v29, request-playback v44 at 8746f216; Playback check 44710855254 (`trickplay: none`, all else as before) | yes, additive |
+| 3 | Run the job on the branch, scope `open`: nine packs; prove each (bytes, header, a ranged read through the Worker). DONE 20 Nov: Trick-play 44723609469, nine packs, 1,201 pictures, 5.7 MB; Playback check 44725839247 read one through the Worker (header = grant, offsets to the end, a whole JPEG, edge = direct) | yes (R2 writes, open films) |
 | 4 | The app reader, its tests, Stream bench, branch Build | no |
 | 5 | Device lab A/B `trick` against `near`, the gate, Test Lab | no |
 | 6 | The owner's release call: the app reader ships; the job's cron on main for new ladders | owner |
