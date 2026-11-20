@@ -179,14 +179,14 @@ px on the owner's phone) and today's pictures are 320 px from the same 240p
 rung: a narrower picture would look softer than what it replaces. 4 s, not
 2: half the size for a picture at most 2 s from the finger (the time label
 stays exact). JPEG, not WebP: 6 % bigger at 224 px for a codec every
-decoder has. Quality q8 rather than q5 (a third smaller at 224 px): phase 1
-measures 320 px at q8 first (estimate ~4.3 MB per film-hour, ~4.5 KB a
-picture) and the owner sees one before the checkpoint.
+decoder has. Quality q8 rather than q5: measured in run 44671051967, 320 px
+at q8 is a median 4.4 KB a picture (p90 9.3 KB), 4.28 MB per film-hour,
+against 5.92 at q5 (288 px q8: 3.9 KB, 3.68 MB/h).
 
 What that costs:
 - R2: the films with a ladder today are the nine open films, 1.3 h: about
-  6 MB in all. A hundred film-hours later: ~430 MB, under a cent a month.
-- The runner: 12 s per film-hour.
+  5.6 MB in all. A hundred film-hours later: ~430 MB, under a cent a month.
+- The runner: 12-19 s per film-hour (two runs).
 - The Worker: one request for the header, then one a run of pictures —
   ±40 s around the finger is 20 pictures, ~90 KB, one request — where today
   each picture is one request of ~67 KB.

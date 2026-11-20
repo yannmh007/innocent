@@ -33,8 +33,8 @@ does it.
   the nine open films: 12 s of a runner per film-hour; 4 s at 224 px JPEG
   2.5-3.5 MB per film-hour, 320 px 5.9 (q5). The films with a ladder today
   are the nine open films (1.3 h), so the whole store is ~6 MB. Chosen: 4 s,
-  320 px (today's previews are 320 px), JPEG q8, measured again before the
-  checkpoint. NEXT (phase 1, branch only): migration 083, the edge ops and
+  320 px (today's previews are 320 px), JPEG q8: 4.4 KB a picture, 4.28
+  MB per film-hour (44671051967). NEXT (phase 1, branch only): migration 083, the edge ops and
   the grant field, the job; then THE CHECKPOINT — the owner sees the SQL
   and says go — before anything live.
 - **19 Nov, on the branch for the next release: 1.64.85's weak points
