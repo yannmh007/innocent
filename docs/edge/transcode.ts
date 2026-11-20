@@ -708,9 +708,10 @@ Deno.serve(async (req: Request) => {
   // One pack of small pictures per film (tool/trickplay.py; the design is
   // docs/trickplay_plan.md), made by .github/workflows/trickplay.yml from the
   // smallest PLAIN rung and put beside it in the media bucket under the key
-  // the claim minted (`-NNNp.mp4` -> `-trick.itp`). `scope` is `open` — the
-  // open films — unless the run asks for `all`, which is the owner's word
-  // (CLAUDE.md). Matched before `done` below, which answers to any token.
+  // the claim minted (`-NNNp.mp4` -> `-trick-<tag>.itp`, a new tag every
+  // claim). `scope` is `open` — the open films — unless the run asks for
+  // `all`, which is the owner's word (CLAUDE.md). Matched before `done`
+  // below, which answers to any token.
   if (op === 'trick_claim') {
     const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
     if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
