@@ -18,9 +18,19 @@ import statistics
 import subprocess
 import sys
 import tempfile
-import urllib.parse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+OPEN_FILMS = [
+    '5c01507a-ef1d-46eb-8bb8-a9a2326be153:open-film-big-buck-bunny',
+    '1ac9f7c8-4053-4728-9016-030285cfd107:open-film-big-buck-bunny-60fps',
+    'b6fe803e-7a6b-4c5e-9fd4-b2bd8f24478f:open-film-caminandes-llamigos',
+    '7fdd9b66-1cc6-4840-9dfe-3195f4b9f993:open-film-cosmos-laundromat',
+    '40c64a2b-2657-49b9-8e36-1192e1830b0c:open-film-elephants-dream',
+    'c8f469c1-34f3-4436-ad8b-9547489c5bed:open-film-glass-half',
+    '76d94e20-a2a8-4751-824a-6f2494b31499:open-film-hero',
+    '0839dacb-59ae-4c95-9279-4901b925965d:open-film-sintel',
+    'ab8b0f1e-e23b-4141-94ba-67f1b29a7765:open-film-tears-of-steel',
+]
 SETTINGS = [
     # (interval s, width, codec, quality)
     (2, 224, 'jpeg', 5),
@@ -48,8 +58,11 @@ def _get(url, key, body=None):
 
 def main():
     sb, key = os.environ['SB_URL'].rstrip('/'), os.environ['SB_KEY']
-    titles = _get(f'{sb}/rest/v1/titles?select=id,slug&published=eq.true&slug=like.'
-                  + urllib.parse.quote('open-film-*') + '&order=slug', key)
+    # The open films by id (their slugs from the database, 20 Nov 2026):
+    # anon may not filter titles by slug or published (curl exit 22, run
+    # 44668303774) — as probe.sh, only by id or name. OPEN_FILMS overrides.
+    titles = [dict(zip(('id', 'slug'), x.split(':', 1)))
+              for x in os.environ.get('OPEN_FILMS', ' '.join(OPEN_FILMS)).split()]
     rows = []
     work = tempfile.mkdtemp(prefix='trick_measure_')
     for t in titles:
