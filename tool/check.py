@@ -136,6 +136,11 @@ CHECKS = [
      'picture, a picture not at i x interval, a height squashed out of the '
      'film\'s shape, or a pack cut short read as whole (the ffmpeg half runs '
      'wherever ffmpeg is on PATH)'),
+    ('trickplay_job_test.py', None,
+     'a seek-bar pack made and never seen: one PUT somewhere the claim did '
+     'not say, reported with bytes that are not the bytes PUT, a film that '
+     'cannot be read ending the batch, or an address or the runner\'s '
+     'token in the log (the ffmpeg half runs wherever ffmpeg is on PATH)'),
     ('open_films_test.py', None,
      'a test film that may not be in the catalogue: a licence other than CC '
      'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '

@@ -10,7 +10,8 @@
 -- the key minted from its rung; request-playback's reader returns it while
 -- the ladder is the one it was made from, and the claim offers it again
 -- once the ladder changes; a failure waits a day; the bin never purges a
--- pack a row names (r2_refs); `all` reaches the rest of the catalogue.
+-- pack a row names (r2_refs); `all` reaches the rest of the catalogue; a
+-- move on the Files page takes the pack and its source key with the film.
 do $$
 declare
   owner_id uuid := '6c679480-3387-4442-ad3d-4423b8aceb71';
@@ -128,6 +129,37 @@ begin
     raise exception 'case 12: an unknown scope was taken';
   exception when others then
     if sqlerrm like 'case 12%' then raise; end if;
+  end;
+
+  -- ── a move on the Files page takes the pack with it ──────────────────────
+  declare
+    mover uuid; t_m uuid; a_m uuid; mv uuid; res jsonb; k record;
+  begin
+    select user_id into mover from public.admins where role = 'owner' and not disabled limit 1;
+    insert into public.titles (title, slug, published, status, created_by)
+    values ('Move test', 'open-film-zz-move', false, 'draft', owner_id) returning id into t_m;
+    insert into public.title_assets (title_id, kind, bucket, object_key, sort_order, master_state)
+    values (t_m, 'video', 'innocent-media', 'open-film-zz-move/video/m.mp4', 1, 'r2') returning id into a_m;
+    insert into public.asset_renditions (asset_id, height, kbps, object_key, bytes)
+    values (a_m, 240, 300, 'open-film-zz-move/video/m-240p.mp4', 1000);
+    insert into public.asset_trickplay (asset_id, state, object_key, bytes, source_key, source_bytes)
+    values (a_m, 'done', 'open-film-zz-move/video/m-trick.itp', 50, 'open-film-zz-move/video/m-240p.mp4', 1000);
+    insert into public.r2_moves (mode, to_folder, title_id, objects, state)
+    values ('title', 'open-film-zz-moved', t_m, jsonb_build_array(
+      jsonb_build_object('bucket', 'innocent-media', 'from', 'open-film-zz-move/video/m.mp4',
+                         'to', 'open-film-zz-moved/video/m.mp4', 'done', true, 'bytes', 9),
+      jsonb_build_object('bucket', 'innocent-media', 'from', 'open-film-zz-move/video/m-240p.mp4',
+                         'to', 'open-film-zz-moved/video/m-240p.mp4', 'done', true, 'bytes', 1000),
+      jsonb_build_object('bucket', 'innocent-media', 'from', 'open-film-zz-move/video/m-trick.itp',
+                         'to', 'open-film-zz-moved/video/m-trick.itp', 'done', true, 'bytes', 50)),
+      'copying') returning id into mv;
+    res := public.r2_move_switch(mv, mover);
+    if res ? 'error' then raise exception 'case 13: the move was refused: %', res; end if;
+    select * into k from public.asset_trickplay where asset_id = a_m;
+    if k.object_key <> 'open-film-zz-moved/video/m-trick.itp'
+       or k.source_key <> 'open-film-zz-moved/video/m-240p.mp4' then
+      raise exception 'case 13: the pack did not follow its film (% from %)', k.object_key, k.source_key;
+    end if;
   end;
 
   raise exception 'TRICKPLAY TEST PASSED';

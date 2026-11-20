@@ -1,0 +1,73 @@
+name: Trick-play
+
+# THE SEEK BAR'S PICTURES MADE IN ADVANCE (docs/trickplay_plan.md, 20 Nov
+# 2026). Asks the transcode function for films with a ladder and no current
+# pack (`trick_claim`, migration 083's claim_trickplay), and for each: its
+# smallest plain rung, tool/trickplay.py at the plan's setting, the pack PUT
+# beside the rungs, `trick_done` (the function checks the object's size in
+# the bucket before recording it). Presigned URLs only, none printed; no
+# picture kept on the runner.
+#
+# On a branch a push of tool/trickplay_run.env runs it (SCOPE there: `open`,
+# the open films; `all` only on the owner's word). On main, a schedule
+# picks up new ladders once the owner's release call takes it there.
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'tool/trickplay_run.env'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trickplay
+  cancel-in-progress: false
+
+jobs:
+  packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Ask for films
+        id: claim
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          RUNNER_SECRET: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
+            echo "films=0" >> "$GITHUB_OUTPUT"; echo "no project or secret"; exit 0
+          fi
+          SCOPE=open
+          # shellcheck disable=SC1091
+          . tool/trickplay_run.env
+          [ "$SCOPE" = all ] || SCOPE=open
+          code=$(curl -sS -o /tmp/trick.json -w '%{http_code}' \
+            -X POST "$SB_URL/functions/v1/transcode" \
+            -H "Authorization: Bearer $RUNNER_SECRET" \
+            -H 'Content-Type: application/json' \
+            -d "{\"op\":\"trick_claim\",\"scope\":\"$SCOPE\"}" || echo 000)
+          n=$(python3 -c "import json;print(len(json.load(open('/tmp/trick.json')).get('jobs') or []))" 2>/dev/null || echo 0)
+          echo "trick_claim: HTTP $code, $n film(s), scope $SCOPE"
+          echo "films=$n" >> "$GITHUB_OUTPUT"
+
+      - name: ffmpeg
+        if: steps.claim.outputs.films != '0'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Make the packs
+        if: steps.claim.outputs.films != '0'
+        env:
+          RUNNER_SECRET: ${{ secrets.TRANSCODE_SECRET }}
+        run: |
+          set -euo pipefail
+          python3 tool/trickplay_job.py /tmp/trick.json | tee trick.txt
+          { echo '### Trick-play'; echo; sed 's/^trickplay: /- /' trick.txt; } >> "$GITHUB_STEP_SUMMARY"
+          rm -f /tmp/trick.json

@@ -698,6 +698,33 @@ Deno.serve(async (req) => {
     logRefusal('renditions_failed', String(e).slice(0, 160));
   }
 
+  // THE SEEK BAR'S PICTURES (083, docs/trickplay_plan.md): one pack of small
+  // pictures beside the ladder, signed exactly as a rung is (same token,
+  // same expiry). Additive: an app that does not know the field never reads
+  // it. Only beside a ladder (it is made from the smallest rung) and only
+  // while it was made from the ladder that is there now (trickplay_for).
+  let trickplay: Record<string, unknown> | null = null;
+  try {
+    if (assetId && renditions.length) {
+      const { data: tp } = await admin.rpc('trickplay_for', { p_asset: assetId });
+      const t = Array.isArray(tp) && tp.length ? tp[0] as Record<string, unknown> : null;
+      const tKey = String(t?.object_key ?? '');
+      if (t && tKey) {
+        const s = await signFor(tKey);
+        const tUrl = s && !s.seal ? await workerUrl(s.key, who) : null;
+        if (tUrl) {
+          trickplay = {
+            url: tUrl, bytes: t.bytes ?? null, interval_ms: t.interval_ms, width: t.width,
+            height: t.height, count: t.count, codec: t.codec,
+          };
+        }
+      }
+    }
+  } catch (e) {
+    // No pictures is the seek bar as it was: never a reason to refuse.
+    logRefusal('trickplay_failed', String(e).slice(0, 160));
+  }
+
   const masterSigned = masterInR2 ? await signFor(objectKey) : null;
   const masterUrl = masterSigned ? await workerUrl(masterSigned.key, who) : null;
   const url = primaryUrl(masterUrl, renditions);
@@ -728,6 +755,8 @@ Deno.serve(async (req) => {
     // Cheapest first. Empty for anything not transcoded, which the client
     // reads as "there is one copy and this is it".
     renditions,
+    // The seek bar's pictures, when this film has them (above).
+    ...(trickplay ? { trickplay } : {}),
     // The seal of `url` when it is a sealed object; each rung carries its
     // own. Absent when seals were not looked for: the response is as it was.
     ...(sealing ? { seal_v: 1 } : {}),

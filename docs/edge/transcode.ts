@@ -703,6 +703,72 @@ Deno.serve(async (req: Request) => {
     }, 200, req);
   }
 
+  // ── trick_claim / trick_done (083): the seek bar's pictures ─────────────
+  //
+  // One pack of small pictures per film (tool/trickplay.py; the design is
+  // docs/trickplay_plan.md), made by .github/workflows/trickplay.yml from the
+  // smallest PLAIN rung and put beside it in the media bucket under the key
+  // the claim minted (`-NNNp.mp4` -> `-trick.itp`). `scope` is `open` — the
+  // open films — unless the run asks for `all`, which is the owner's word
+  // (CLAUDE.md). Matched before `done` below, which answers to any token.
+  if (op === 'trick_claim') {
+    const given = (req.headers.get('Authorization') ?? '').replace(/^Bearer /i, '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const scope = body.scope === 'all' ? 'all' : 'open';
+    const rows = await rpc('claim_trickplay', { p_scope: scope, p_limit: 10 }) as Array<Record<string, unknown>>;
+    if (!Array.isArray(rows) || !rows.length) return json({ jobs: [], scope }, 200, req);
+    const jobs = [];
+    for (const r of rows) {
+      const src = String(r.src_key ?? '');
+      const pack = String(r.pack_key ?? '');
+      if (!src || !pack || isSealedKey(src)) {
+        await rpc('record_trickplay', { p_asset: r.asset_id, p_row: null, p_note: 'no plain rung to read' });
+        continue;
+      }
+      jobs.push({
+        asset_id: r.asset_id,
+        // Six hours, as a ladder's source: a long film's 240p is read whole.
+        src_url: await presign('GET', src, 21600),
+        src_height: r.src_height ?? null,
+        key: pack,
+        put_url: await presign('PUT', pack, 21600),
+      });
+    }
+    return json({ jobs, scope, done_url: `${SUPABASE_URL}/functions/v1/transcode` }, 200, req);
+  }
+  if (op === 'trick_done') {
+    const given = String(body.token ?? '');
+    if (!sameSecret(given, RUNNER_SECRET)) return json({ error: 'no' }, 403, req);
+    const asset = String(body.asset_id ?? '');
+    if (!/^[0-9a-f-]{36}$/i.test(asset)) return json({ error: 'no_asset' }, 400, req);
+    let pack = body.pack && typeof body.pack === 'object' && !Array.isArray(body.pack)
+      ? body.pack as Record<string, unknown> : null;
+    let note = typeof body.note === 'string' ? body.note.slice(0, 200) : null;
+    if (pack) {
+      // WHAT R2 HOLDS, not what the runner says: the object under the key,
+      // its size the runner's. A PUT that never landed is a failure here,
+      // not a pack the app is sent to read.
+      const head = await fetch(await presign('HEAD', String(pack.key ?? ''), 300), { method: 'HEAD' })
+        .catch(() => null);
+      const size = head?.ok ? Number(head.headers.get('content-length')) : NaN;
+      if (!Number.isSafeInteger(size) || size <= 0 || size !== Number(pack.bytes)) {
+        note = `the pack is not in the bucket as made (${head ? head.status : 'no answer'})`;
+        pack = null;
+      } else {
+        pack = {
+          key: pack.key, bytes: size, interval_ms: pack.interval_ms, width: pack.width,
+          height: pack.height, count: pack.count, codec: pack.codec,
+        };
+      }
+    }
+    try {
+      const key = await rpc('record_trickplay', { p_asset: asset, p_row: pack, p_note: note });
+      return json({ ok: true, key: key ?? null }, 200, req);
+    } catch (e) {
+      return json({ error: 'not_recorded', detail: String(e).slice(0, 200) }, 409, req);
+    }
+  }
+
   // ── frames_claim / frames_done (043) ────────────────────────────────────
   //
   // A BATCH, not one: ten seeks of a video take seconds, a run happens when
