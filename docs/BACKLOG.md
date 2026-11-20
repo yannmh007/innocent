@@ -119,8 +119,11 @@ does it.
     (a 5xx) — until the isolate goes. The 19 Nov start (a resume on the
     WARMED rung) puts the player on the same key as the warm-up, so a quick
     tap meets it. Not proved: the Worker's logs at those minutes (14:00:36-
-    14:01:16 and 14:16:13-14:17:20 UTC) would say. Measured in T3
-    44758587901 (`fix` against `base`, 24 passes). A fix is the Worker's
+    14:01:16 and 14:16:13-14:17:20 UTC) would say. T3 44758587901 (`fix`
+    against `base`, 24 passes, no drags): NO stall (one cut, recovered:
+    4.9 s); fix again the faster start, plain 4889 -> 3429 ms, weak 7329 ->
+    4398 ms median. So 2 long starts in the day's 60 passes, 0 in the 76
+    before: a race of the tap against the warm-up. A fix is the Worker's
     (keep the RESULT per key, never a pending promise across requests) —
     the owner's call (no Worker change in this release without it).
   - NEXT, phase 4 (DONE above; kept for its notes): the app reader. Register
