@@ -19,7 +19,6 @@ import subprocess
 import sys
 import tempfile
 import urllib.parse
-import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SETTINGS = [
@@ -35,11 +34,16 @@ SETTINGS = [
 
 
 def _get(url, key, body=None):
-    req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(),
-                                 headers={'apikey': key, 'Content-Type': 'application/json'},
-                                 method='GET' if body is None else 'POST')
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return json.loads(r.read())
+    """JSON from [url] through curl, as test_device/probe.sh asks: the same
+    request from Python's urllib was answered 401 on the runner (run
+    44666701538), curl's never."""
+    args = ['curl', '-sS', '--fail', '--max-time', '60', url, '-H', f'apikey: {key}']
+    if body is not None:
+        args += ['-X', 'POST', '-H', 'Content-Type: application/json', '-d', json.dumps(body)]
+    out = subprocess.run(args, capture_output=True, text=True)
+    if out.returncode != 0:
+        raise RuntimeError(f'curl exit {out.returncode}')
+    return json.loads(out.stdout)
 
 
 def main():
