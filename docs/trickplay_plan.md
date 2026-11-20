@@ -154,7 +154,7 @@ docs/MEDIA_ENCRYPTION.md's ENC-4 note about preview pictures.
 | 3 | Run the job on the branch, scope `open`: nine packs; prove each (bytes, header, a ranged read through the Worker). DONE 20 Nov: Trick-play 44723609469, nine packs, 1,201 pictures, 5.7 MB; Playback check 44725839247 read one through the Worker (header = grant, offsets to the end, a whole JPEG, edge = direct) | yes (R2 writes, open films) |
 | 4 | The app reader, its tests, Stream bench, branch Build. ON THE BRANCH 20 Nov: 8ec30178 (reader, proxy, service, 40 tests), 3e076d37 (lab words `trick`/`near`); runs in BACKLOG §0 | no |
 | 5 | Device lab A/B `trick` against `near`, the gate, Test Lab | no |
-| 6 | The owner's release call: the app reader ships; the job's cron on main for new ladders | owner |
+| 6 | The owner's release call: the app reader ships; the job's cron on main for new ladders. DONE 20 Nov: 1.64.86 (main a6d68c93); the cron `37 3 * * *` with SCOPE=all (the owner's word for this job); shims at a6d68c93 (transcode v30, request-playback v45) | owner |
 | 7 | The catalogue, when the owner says `all`; then sealed films | owner |
 
 ## Costs
