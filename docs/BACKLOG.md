@@ -76,9 +76,53 @@ does it.
     (37 3 * * *) with SCOPE=all, the owner's word for this job only:
     branch run 44734070021 "0 film(s), scope all" (the live database before
     it: 9 assets with a ladder, all open films, all packed).
-    Runs on it: Build 44734076158, device lab T1 44734069987 (the gate and
-    `trick` vs `near` order 1), Stream bench 44734069861, Test Lab
-    44734557188 (realme and OPPO).
+    PROVED (20 Nov): Build 44734076158 and, on the final code (b904977d,
+    the release review's fixes), 44745251407 — Analyze, Test, both APKs;
+    Stream bench 44734069861, 44740642743; Playback check 44737887377 (its
+    pack step now in the run's summary). Device lab, the drags' A/B (8 a
+    pass, two far into a part never seen): T1 44734069987 (near first, 16
+    passes) and T2 44744740674 (trick first, 12, then the pack's A/A 8):
+    TRICK SOONER IN EVERY PAIR, both lines, both orders, every drag size —
+    its own picture after the finger stopped, median: plain 1050 -> 221 ms
+    (T1) / 1558 -> 301 (T2), weak 1598 -> 278 / 1785 -> 340; far drags
+    plain 1086 -> 386 / 1712 -> 492, weak 1933 -> 524 / 1404 -> 634; within
+    10 s plain 963 -> 46 / 1336 -> 56, weak 1531 -> 93 / 1649 -> 161; a
+    drag's line 213-283 KB -> 14-18 KB, requests 2-3 either way; first
+    picture 0 ms both. A/A (T2, a vs b): within 10 s 51 ms plain, -16 ms
+    weak (all drags); far drags 48-278 ms — against near-minus-trick 919-
+    1323 ms. The header 0.6-1.4 s once a film (read with the pictures ahead
+    when the controls come up). THE GATE on both (T2 = final code): genres
+    37/37, jumps 15/15, gestures 27/27 and 19/19, player audit 52 and 52,
+    no crash, no refusal. Test Lab 44734557188 (8ec30178): realme 15 PASS
+    2 SKIP, OPPO 16 PASS 1 SKIP, no crash; the far seek-bar picture 1637 ->
+    344 ms and 1617 -> 343 ms (from the pack: 1 request, 2.5 KB; header
+    0.85 / 1.04 s on the first drag with no controls shown).
+    RELEASE REVIEW (reviewer, 20 Nov): ship; fixed b904977d — a hung pack
+    read ends (packAnswer 15 s, a read at most 20 s), the pack reader made
+    again for another pack on the same ladder, `_leaveLadder` stops
+    ExoPlayer when the newer open is libmpv, a non-finite number is no
+    pack. LEFT TO THE OWNER: with the data saver on, a film WITHOUT a pack
+    still takes its six fragments ahead (~450 KB each time the controls
+    come up; as the 19 Nov build does).
+  - FOUND 20 Nov (T2): TWO STARTS STOOD STILL 46.5 s and 72.8 s (pass 1
+    trick, pass 8 near — not the pack): Play tapped 1.3-1.8 s after the
+    warm-up registered the 480p rung, its head read still on the line; the
+    player's head reads of the SAME rung then failed again and again (~1.5
+    s each: three answers that were not a 206, `480.m3u8 not served (no
+    index)` every 2 s, the pool's last read `failed`) while 720p's head on
+    the same pool came at 6.7 s, until a NEW connection read it 43 s / 60 s
+    later. Suspect: the stream Worker's `strayIndexes` (since 19 Oct) keeps
+    ONE pending promise per key per isolate; the warm-up's request, cut when
+    Play takes the film over, cancels the R2 read inside it, and every later
+    request for that key's front (offset < HEAD_SCAN_BYTES) on that isolate
+    awaits a promise from a cancelled request — the runtime's "hung" error
+    (a 5xx) — until the isolate goes. The 19 Nov start (a resume on the
+    WARMED rung) puts the player on the same key as the warm-up, so a quick
+    tap meets it. Not proved: the Worker's logs at those minutes (14:00:36-
+    14:01:16 and 14:16:13-14:17:20 UTC) would say. Measured in T3
+    44758587901 (`fix` against `base`, 24 passes). A fix is the Worker's
+    (keep the RESULT per key, never a pending promise across requests) —
+    the owner's call (no Worker change in this release without it).
   - NEXT, phase 4 (DONE above; kept for its notes): the app reader. Register
     the pack with StreamCacheServer like a rung — the Worker enforces bound
     tokens (/health bind=enforce), and a bound grant binds the pack's URL as
