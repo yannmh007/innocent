@@ -38,7 +38,11 @@ does it.
   asset_trickplay; claim_trickplay / record_trickplay / trickplay_for /
   trickplay_key, service role only; r2_refs names the packs; r2_move_switch
   moves them) — NOT APPLIED; dry runs on live rolled back: TRICKPLAY TEST
-  PASSED (13 cases) and MOVE TEST PASSED, nothing stayed. transcode.ts
+  PASSED (14 cases) and MOVE TEST PASSED, nothing stayed. The reviewer's
+  five findings fixed (27e9f91a): a new pack key at every claim
+  (`-trick-<tag>.itp`; the Worker caches blocks 30 days by key), the
+  replaced pack binned, r2_refs naming only a current pack, a refused report
+  never ending the batch, the run file read and not sourced. transcode.ts
   trick_claim / trick_done and request-playback.ts's additive `trickplay`
   field — NOT DEPLOYED (deno check no new error, slice test, a local boot).
   tool/trickplay_job.py (+ test) and .github/workflows/trickplay.yml (runs

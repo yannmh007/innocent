@@ -72,9 +72,11 @@ choice is made there, not guessed.
 3. **Scope** — the claim takes `scope`: `open` (slugs `open-film-…`, the
    default) or `all`. CLAUDE.md: no catalogue title but the open films
    unless the owner names it — `all` only on the owner's word.
-4. **Keys** — in docs/edge/transcode.ts, a sibling of `rungKey`:
-   `<master stem>-trick.itp` in the private media bucket. No sealed key in
-   v1 (below).
+4. **Keys** — minted by claim_trickplay beside the smallest rung:
+   `<master stem>-trick-<tag>.itp` in the private media bucket, a new tag at
+   every claim (the stream Worker caches blocks for 30 days by key: a pack
+   made again under the same key would be served old and new mixed); the
+   pack it replaces goes to the bin for a week. No sealed key in v1.
 5. **Database, migration 083 (additive)** — table `asset_trickplay`
    (asset_id primary key → title_assets on delete cascade, object_key,
    bytes, interval_ms, width, height, count, codec, source_height,
