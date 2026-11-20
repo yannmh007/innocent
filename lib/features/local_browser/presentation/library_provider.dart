@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/cache/library_cache.dart';
 import '../../../core/services/cache/scan_gate.dart';
+import '../../../core/services/diagnostics/playback_log.dart';
 import '../../../core/services/thumbnail/thumbnail_cache.dart';
 import '../../../core/services/adb/adb_service.dart';
 import '../../../core/services/saf/saf_service.dart';
@@ -478,7 +479,12 @@ final allVideosProvider = FutureProvider<List<Video>>((ref) async {
     () async {
       try {
         final stamp = await ScanGate.before();
+        final clock = Stopwatch()..start();
         final fresh = await ds.getAllVideos();
+        // What a launch's background read of the library costs: the number
+        // weak point 7 (19 Nov 2026) was about.
+        PlaybackLog.add('library all: ${fresh.length} videos read again in '
+            '${clock.elapsedMilliseconds} ms');
         await cache.saveAllVideos(fresh);
         await ScanGate.record('all', stamp);
         // Which files, not how many: a rename or a swap keeps the count.

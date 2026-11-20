@@ -30,6 +30,13 @@ class _Capture extends EventSender {
       Map<String, dynamic>? meta}) {
     logged.add((kind, meta));
   }
+
+  /// The summary is built and queued (SummaryOutbox), not logged.
+  @override
+  void enqueue(Map<String, dynamic> event, {void Function(bool sent)? onDone}) {
+    logged
+        .add((event['kind'] as String, event['meta'] as Map<String, dynamic>?));
+  }
 }
 
 void main() {
@@ -38,7 +45,8 @@ void main() {
   final t0 = DateTime(2026, 11, 7, 12);
 
   group('PlaybackQoe', () {
-    test('a blip under a quarter second is not a stall, but its time counts', () {
+    test('a blip under a quarter second is not a stall, but its time counts',
+        () {
       final q = PlaybackQoe()
         ..stallEnded(3)
         ..stallEnded(67)
@@ -74,7 +82,8 @@ void main() {
       expect(q.toMeta(t0)['engine'], 'ladder');
     });
 
-    test('playing time adds up, including a stretch still running at the end', () {
+    test('playing time adds up, including a stretch still running at the end',
+        () {
       final q = PlaybackQoe()
         ..playing(true, t0)
         ..playing(false, t0.add(const Duration(seconds: 50)))
@@ -114,7 +123,10 @@ void main() {
         ..error('offline')
         ..reset();
       expect(q.toMeta(t0), <String, dynamic>{
-        'played_s': 0, 'stalls': 0, 'frozen_ms': 0, 'jumps': 0,
+        'played_s': 0,
+        'stalls': 0,
+        'frozen_ms': 0,
+        'jumps': 0,
       });
     });
   });
@@ -129,18 +141,30 @@ void main() {
       r.reportSummary(<String, dynamic>{'stalls': 3});
       final summaries = s.logged.where((e) => e.$1 == Ev.playSummary).toList();
       expect(summaries, hasLength(1));
-      expect(summaries.single.$2, <String, dynamic>{'stalls': 1});
+      expect(summaries.single.$2, <String, dynamic>{
+        'stalls': 1,
+        'summary_id': r.summaryId,
+      });
     });
 
     test('an error is a code, once per code, three at most', () {
       final s = _Capture();
       final r = PlaybackReporter(s, titleId: 't');
-      for (final c in ['player_error', 'player_error', 'offline', 'stalled', 'link_expired']) {
+      for (final c in [
+        'player_error',
+        'player_error',
+        'offline',
+        'stalled',
+        'link_expired'
+      ]) {
         r.reportError(c);
       }
       final errors = s.logged.where((e) => e.$1 == Ev.error).toList();
-      expect(errors.map((e) => e.$2!['code']), ['player_error', 'offline', 'stalled']);
-      expect(errors.every((e) => e.$2!['where'] == 'player' && e.$2!.length == 2), isTrue,
+      expect(errors.map((e) => e.$2!['code']),
+          ['player_error', 'offline', 'stalled']);
+      expect(
+          errors.every((e) => e.$2!['where'] == 'player' && e.$2!.length == 2),
+          isTrue,
           reason: 'only where and code: nothing else from the player travels');
     });
 
@@ -148,11 +172,20 @@ void main() {
       final s = _Capture();
       final r = PlaybackReporter(s, titleId: 't');
       for (var i = 0; i < 8; i++) {
-        r.reportStall(<String, dynamic>{'reason': 'ladder', 'frozen_ms': 1000 + i, 'res': 480});
+        r.reportStall(<String, dynamic>{
+          'reason': 'ladder',
+          'frozen_ms': 1000 + i,
+          'res': 480
+        });
       }
       final stalls = s.logged.where((e) => e.$1 == Ev.playStall).toList();
       expect(stalls, hasLength(6));
-      expect(stalls.first.$2, <String, dynamic>{'reason': 'ladder', 'frozen_ms': 1000, 'res': 480, 'n': 1});
+      expect(stalls.first.$2, <String, dynamic>{
+        'reason': 'ladder',
+        'frozen_ms': 1000,
+        'res': 480,
+        'n': 1
+      });
     });
   });
 }

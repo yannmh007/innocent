@@ -247,10 +247,36 @@ class ExoEngine {
 
   Future<bool> _call(String method, [Map<String, Object?> args = const {}]) async {
     try {
-      return await _m.invokeMethod<bool>(method, <String, Object?>{'id': id, ...args}) ?? false;
-    } catch (e) {
-      if (kDebugMode) debugPrint('ExoEngine.$method: $e');
+      final ok =
+          await _m.invokeMethod<bool>(method, <String, Object?>{'id': id, ...args}) ?? false;
+      // ExoStreamEngine answers false for one reason only: it holds no
+      // engine by this id (released, or never made in this process).
+      if (!ok) _refused(method, 'no engine $id');
+      return ok;
+    } on PlatformException catch (e) {
+      _refused(method, e.message ?? e.code);
       return false;
+    } catch (e) {
+      _refused(method, '$e');
+      return false;
+    }
+  }
+
+  /// WHY IT REFUSED, IN THE TRAIL (14 Nov 2026). After the double open the
+  /// next film's open answered false within a tenth of a second and fell
+  /// back to libmpv, and the trail could not say why: a missing engine and a
+  /// Kotlin exception both read as false. Each method's reason once per
+  /// engine; any address in a message is left out.
+  final Set<String> _saidRefusals = <String>{};
+
+  void _refused(String method, String why) {
+    final plain = why
+        .replaceAll(RegExp(r'[a-zA-Z][a-zA-Z0-9+.-]*://\S+'), '<address>')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final line = plain.length > 160 ? '${plain.substring(0, 160)}…' : plain;
+    if (_saidRefusals.add('$method $line')) {
+      PlaybackLog.add('exo $method refused: $line');
     }
   }
 

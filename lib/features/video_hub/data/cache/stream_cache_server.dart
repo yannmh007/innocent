@@ -17,6 +17,7 @@ import '../rate_limited.dart';
 import '../seal/media_seal.dart';
 import '../seal/unseal_gateway.dart';
 import '../stream_door.dart';
+import 'ladder_start_trail.dart';
 import 'stream_cache_store.dart';
 
 /// Gives the player a local address for a remote film, and keeps what passes
@@ -142,6 +143,11 @@ class StreamCacheServer {
   /// Settable for the lab's A/B (`lab_peak`) and for tests.
   @visibleForTesting
   static PeakRule peakRule = PeakRule.window;
+
+
+  /// A resume's warm-up takes the seconds where the film resumes, not its
+  /// opening ([warmOpening]'s `at`). Off only for the device lab's `base`.
+  static bool warmAtResume = true;
 
   /// How much one parallel stretch covers before the loop comes round again
   /// (to check the cache, renew a link).
@@ -683,9 +689,11 @@ class StreamCacheServer {
     double? aspect,
     double? frameRate,
     String? startCacheId,
+    HlsPackSource? pack,
   }) async {
     if (rungs.isEmpty) return null;
     try {
+      LadderStartTrail.begin();
       await StreamCacheStore.instance.load();
       await _ensureStarted();
       final port = _server?.port;
@@ -725,10 +733,17 @@ class StreamCacheServer {
       // A SECOND POOL, FOR A JUMP ([keepSpare]): made now, connected only
       // when a read first goes to it.
       final spare = _Ladder.pool();
+      LadderStartTrail.mark('rungs registered');
+      final checking = _sources[start.cacheId]?.probing;
+      if (checking != null) {
+        unawaited(checking.then((_) => LadderStartTrail.mark('${start.height}p length checked'),
+            onError: (Object _) {}));
+      }
       for (var i = 0; i < rungs.length; i++) {
         final r = rungs[i];
         _sources[r.cacheId]
           ?..segmented = true
+          ..height = r.height
           ..second = spare;
         entries.add(_LadderRung(height: r.height, kbps: r.kbps, cacheId: r.cacheId, url: urls[i]!));
       }
@@ -739,6 +754,13 @@ class StreamCacheServer {
           aspect: aspect,
           frameRate: frameRate,
           startHeight: start.height);
+      // THE SEEK BAR'S PICTURES MADE IN ADVANCE ([packRange]): the pack is
+      // a source as a rung is — its signed address, its renewal, the
+      // ladder's pool, the install's header — but it has NO cache entry and
+      // no local address: its bytes are never written to the phone.
+      if (pack != null && SealedUrls.of(pack.upstream) == null) {
+        ladder.pack = _Source(upstream: pack.upstream, refresh: pack.refresh)..shared = pool;
+      }
       // A ladder registered again (a renewal, a return from Original): the
       // old pools close once their reads are done.
       _ladders.remove(ladderId)?.close();
@@ -788,7 +810,13 @@ class StreamCacheServer {
   ///
   /// [have]: whether the caller already holds the picture of the fragment
   /// starting at that many ms — then nothing is read, and [film] is null.
-  Future<({Uint8List? film, int startMs})?> previewClip(Duration at,
+  ///
+  /// [how]: where the bytes came from, for the trail — the phone, or the
+  /// line and what its answer was made of (`line 74 KB: conn kept 0 ms,
+  /// wait 452 ms, read 180 ms`) — so a slow picture says whether it was
+  /// the handshake, the Worker or the bytes (19 Nov 2026: unseen parts
+  /// took 478-1010 ms on the owner's phone, seen ones 24-45).
+  Future<({Uint8List? film, int startMs, String how})?> previewClip(Duration at,
       {bool Function(int startMs)? have}) async {
     final id = _playingLadder;
     final l = id == null ? null : _ladders[id];
@@ -806,22 +834,96 @@ class StreamCacheServer {
     while (i + 1 < idx.length && idx.timesMs[i + 1] <= ms) {
       i++;
     }
-    if (have != null && have(idx.timesMs[i])) return (film: null, startMs: idx.timesMs[i]);
+    if (have != null && have(idx.timesMs[i])) {
+      return (film: null, startMs: idx.timesMs[i], how: 'held');
+    }
     final entry = await StreamCacheStore.instance.entryFor(r.cacheId);
     if (entry.total <= 0) return null;
     final init = await _readExact(src, entry, 0, head.initEnd);
-    final frag = await _readExact(src, entry, idx.starts[i], idx.starts[i] + idx.sizes[i]);
+    final cost = <String>[];
+    final frag = await _readExact(src, entry, idx.starts[i], idx.starts[i] + idx.sizes[i], cost: cost);
     if (init == null || frag == null) return null;
     final film = (BytesBuilder(copy: false)
           ..add(init)
           ..add(frag))
         .takeBytes();
-    return (film: film, startMs: idx.timesMs[i]);
+    return (film: film, startMs: idx.timesMs[i], how: cost.isEmpty ? 'phone' : cost.join('; '));
+  }
+
+  /// What the seek bar's pictures took from the line: requests and bytes,
+  /// the fragments' ([previewClip]) and the pack's ([packRange]) alike —
+  /// for the trail and the lab's drags, never the player's own reads.
+  int previewRequests = 0;
+  int previewBytes = 0;
+
+  /// Whether the ladder at [ladderUrl] (its master playlist's local
+  /// address) has a pack registered ([hlsUrlFor]'s `pack`).
+  bool hasPack(String ladderUrl) => _ladderAt(ladderUrl)?.pack != null;
+
+  _Ladder? _ladderAt(String ladderUrl) {
+    final p = Uri.tryParse(ladderUrl)?.pathSegments;
+    if (p == null || p.length != 4 || p.first != 'h' || p[1] != _token) return null;
+    return _ladders[p[2]];
+  }
+
+  /// How long a pack's read may bring nothing before it is given up.
+  static Duration packStall = const Duration(seconds: 8);
+
+  /// How long a pack's read may wait for its answer — a renewal and a
+  /// retry included — before it is given up: a pooled connection that died
+  /// can hang there, and a reader waiting on it would hold the seek bar's
+  /// pictures for the rest of the film (release review, 20 Nov).
+  static Duration packAnswer = const Duration(seconds: 15);
+
+  /// BYTES [start, endExclusive) OF THE PACK beside the ladder at
+  /// [ladderUrl] (docs/trickplay_plan.md): one range request to the Worker
+  /// on the ladder's pool, through [_openPooled] exactly as a rung's
+  /// segment — the signed address, the install's header (StreamDoor; the
+  /// Worker enforces bound tokens, so a pack read without it is a 404),
+  /// a renewal on 403/404/410, a pause on 429.
+  ///
+  /// NEVER WRITTEN TO THE PHONE: the pack has no cache entry, and what is
+  /// read here goes only to the caller (an in-memory LRU, TrickplayPack).
+  /// Null when there is no pack, or the bytes did not all come.
+  Future<Uint8List?> packRange(String ladderUrl, int start, int endExclusive) async {
+    final src = _ladderAt(ladderUrl)?.pack;
+    if (src == null || start < 0 || endExclusive <= start) return null;
+    final want = endExclusive - start;
+    try {
+      final up = await _openPooled(src, start, endExclusive - 1).timeout(packAnswer);
+      if (up == null) return null;
+      previewRequests++;
+      final out = BytesBuilder(copy: false);
+      // A 200 (the whole object, for a read from 0) is cut at what was
+      // asked; a read that stalls is given up.
+      var over = false;
+      await for (final chunk in up.timeout(packStall)) {
+        final room = want - out.length;
+        if (chunk.length > room) {
+          out.add(chunk.sublist(0, room));
+          over = true;
+          break;
+        }
+        out.add(chunk);
+      }
+      previewBytes += out.length;
+      upstreamBytes += out.length;
+      if (out.length != want) return null;
+      if (!over) _readWhole(src.io);
+      return out.takeBytes();
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.packRange: $e');
+      return null;
+    }
   }
 
   /// Bytes [start, end) of a film: from the phone where it has them, the
   /// rest from the Worker — not written to the cache ([previewClip]).
-  Future<Uint8List?> _readExact(_Source src, CacheEntry entry, int start, int end) async {
+  ///
+  /// [cost]: given, one line for each stretch read from the line (bytes,
+  /// the connection, the server's wait, the read after the answer).
+  Future<Uint8List?> _readExact(_Source src, CacheEntry entry, int start, int end,
+      {List<String>? cost}) async {
     final out = BytesBuilder(copy: false);
     var pos = start;
     try {
@@ -838,14 +940,28 @@ class StreamCacheServer {
         }
         if (src.offline) return null;
         final stop = min(end, entry.nextPartStart(pos, entry.total));
-        final up = await _openPooled(src, pos, stop - 1);
+        _Opened? how;
+        final clock = Stopwatch()..start();
+        final up = await _openPooled(src, pos, stop - 1, opened: (c) => how = c);
         if (up == null) return null;
+        final answered = clock.elapsedMilliseconds;
         var got = 0;
         await for (final chunk in up) {
           out.add(chunk);
           got += chunk.length;
         }
         upstreamBytes += got;
+        if (cost != null) {
+          previewRequests++;
+          previewBytes += got;
+        }
+        final o = how;
+        if (cost != null && o != null) {
+          final hs = o.handshake;
+          cost.add('line ${got ~/ 1024} KB: conn ${o.fresh == null ? '?' : o.fresh! ? 'new' : 'kept'} ${o.connMs} ms'
+              '${hs == null ? '' : ' (dns ${hs.$1}, tcp ${hs.$2}, tls ${hs.$3})'}, wait ${o.waitMs} ms, '
+              'read ${clock.elapsedMilliseconds - answered} ms');
+        }
         if (got != stop - pos) return null;
         _readWhole(src.io);
         pos = stop;
@@ -880,6 +996,7 @@ class StreamCacheServer {
     if (r == null) return null;
     if (r.index != null && r.head != null) return r;
     final loading = r.loading ??= () async {
+      LadderStartTrail.mark('${r.height}p head asked');
       final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
       var handedOff = false;
       try {
@@ -906,6 +1023,7 @@ class StreamCacheServer {
             if (idx != null) {
               r.index = idx;
               r.head = CmafHead.parse(bytes);
+              LadderStartTrail.mark('${r.height}p index');
               // What a rung asks of the line, over one fragment and over
               // longer stretches: the numbers BACKLOG 5b weighs rungs by.
               int k(int bps) => bps ~/ 1000;
@@ -954,6 +1072,7 @@ class StreamCacheServer {
       final port = _server?.port;
       final token = _token;
       if (name == 'master.m3u8') {
+        LadderStartTrail.mark('master asked');
         // The picture's shape, when the catalogue did not say it: the start
         // rung's head, read now — the player asks for it next anyway.
         final startHeight = l.startHeight;
@@ -976,6 +1095,7 @@ class StreamCacheServer {
         );
       } else if (name.endsWith('.m3u8')) {
         final h = int.tryParse(name.substring(0, name.length - 5));
+        LadderStartTrail.mark('${h}p playlist asked');
         final r = h == null ? null : await _rungWithHead(l, h);
         if (r != null) {
           body = HlsLadder.media(r.hls);
@@ -985,6 +1105,12 @@ class StreamCacheServer {
             // read now, a change of rung waits for no index.
             final heights = [for (final x in l.rungs) x.height]..sort();
             final i = heights.indexOf(r.height);
+            // (Reading them only once the first film segment is in, and
+            // reading every rung's at registration, were A/B'd on 19 Nov
+            // 2026 — device lab S3 44565023092: `one` 0.3 s sooner to the
+            // picture in 3 of 4 pairs, under the weak line's A/A of 1.5 s;
+            // taken out with the resume fix in, which reads the start
+            // rung's index first anyway.)
             for (final n in [if (i > 0) heights[i - 1], if (i + 1 < heights.length) heights[i + 1]]) {
               unawaited(_rungWithHead(l, n));
             }
@@ -1004,6 +1130,8 @@ class StreamCacheServer {
       ..set(HttpHeaders.cacheControlHeader, 'no-store');
     res.write(body);
     await res.close();
+    LadderStartTrail.mark(
+        name == 'master.m3u8' ? 'master served' : '${name.replaceAll('.m3u8', '')}p playlist served');
   }
 
   /// THE DEVICE LAB'S A/B SWITCH, AND ONLY THERE. A lab build reads the lane
@@ -1077,12 +1205,17 @@ class StreamCacheServer {
   /// rung's cache entry — and Play finds them as if it had read them itself.
   /// What the warm-up learnt of the film's length and index is handed to
   /// that play ([localUrlFor]), so it does not ask again.
+  ///
+  /// [at]: where Play will open the film (a resume point). Then the seconds
+  /// THERE are warmed after the head, not the opening's (see
+  /// [warmAtResume]).
   Future<bool> warmOpening({
     required String cacheId,
     required String upstream,
     required Future<String?> Function() refresh,
     int? total,
     String label = '',
+    Duration? at,
   }) async {
     if (_warming != null || _warmed.contains(cacheId)) return false;
     if (_sources.containsKey(cacheId) || servingAPlayer) return false;
@@ -1123,17 +1256,55 @@ class StreamCacheServer {
         }
       }
       var got = 0;
-      for (final (from, to) in ranges) {
-        if (!identical(_sources[cacheId], mine)) break; // Play took over
+      Future<void> read(int from, int to, [BytesBuilder? into]) async {
         final req = await client.getUrl(Uri.parse(local));
         req.headers.set(HttpHeaders.rangeHeader, 'bytes=$from-$to');
         final resp = await req.close();
         await for (final chunk in resp) {
           got += chunk.length;
+          into?.add(chunk);
         }
       }
+
+      // A RESUME (19 Nov 2026): the head, then the seconds where Play opens.
+      // The opening's 2 MB are not what a resume reads, and on the device
+      // lab's 579 s resumes that read was still on the line 3 s after the
+      // tap, beside the start's own (run S1 44534768953).
+      var where = 'the opening';
+      final resumeAt = at;
+      if (warmAtResume && resumeAt != null && resumeAt > Duration.zero && idx != null &&
+          idx.$1 < 1024 * 1024) {
+        // The head as [_rungWithHead] reads it: 64 KB, more if the fragment
+        // table runs past them (`moov` is [idx]; the `sidx` follows it).
+        final head = BytesBuilder(copy: false);
+        await read(0, min(length, max(idx.$2, headRead)) - 1, head);
+        var bytes = head.toBytes();
+        final need = CmafIndex.headBytes(bytes);
+        if (need != null && need > bytes.length && need <= min(length, _switchHeadCap)) {
+          await read(bytes.length, need - 1, head);
+          bytes = head.toBytes();
+        }
+        final cmaf = CmafIndex.parse(bytes);
+        if (cmaf != null && cmaf.length > 0 && identical(_sources[cacheId], mine)) {
+          final ms = resumeAt.inMilliseconds;
+          var i = 0;
+          while (i + 1 < cmaf.length && cmaf.timesMs[i + 1] <= ms) {
+            i++;
+          }
+          ranges
+            ..clear()
+            ..add((cmaf.starts[i], min(length, cmaf.starts[i] + warmFilmBytes) - 1));
+          where = '${resumeAt.inSeconds} s';
+        } else {
+          ranges.clear();
+        }
+      }
+      for (final (from, to) in ranges) {
+        if (!identical(_sources[cacheId], mine)) break; // Play took over
+        await read(from, to);
+      }
       _confirmed[cacheId] = _Confirmed(length, idx);
-      PlaybackLog.add('warm: ${(got / 1048576).toStringAsFixed(1)} MB of the opening held');
+      PlaybackLog.add('warm: ${(got / 1048576).toStringAsFixed(1)} MB of $where held');
       return got > 0;
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.warmOpening: $e');
@@ -1546,6 +1717,12 @@ class StreamCacheServer {
     }
     src.serving.add(gone);
     var complete = false;
+    // A ladder's start, read by kind: a head or init segment from byte 0,
+    // film segments after it ([LadderStartTrail]).
+    final startKind = src.segmented && LadderStartTrail.active
+        ? '${src.height}p ${start == 0 ? 'head/init' : 'segment'}'
+        : null;
+    if (startKind != null) LadderStartTrail.mark('$startKind asked');
     try {
       if (leaving.isNotEmpty) {
         await Future.any<void>([
@@ -1618,6 +1795,10 @@ class StreamCacheServer {
     } finally {
       src.serving.remove(gone);
       gone.finish();
+      if (startKind != null) {
+        LadderStartTrail.mark('$startKind ${complete ? 'in' : 'cut'}');
+        if (complete && start > 0) LadderStartTrail.firstSegmentIn();
+      }
       if (complete) {
         try {
           await out.flush();
@@ -2827,6 +3008,9 @@ class _Source {
   /// one pooled request each, reading ahead, never lanes.
   bool segmented = false;
 
+  /// The ladder rung this is, when [segmented] (for the start's trail).
+  int? height;
+
   /// The read ahead in flight for this film, if any.
   _Fill? fill;
 
@@ -3434,6 +3618,15 @@ class HlsRungSource {
   final int? bytes;
 }
 
+/// A ladder's pack of seek-bar pictures ([StreamCacheServer.packRange]):
+/// its signed address and how to renew it, as a rung's.
+class HlsPackSource {
+  const HlsPackSource({required this.upstream, required this.refresh});
+
+  final String upstream;
+  final Future<String?> Function() refresh;
+}
+
 class _Ladder {
   _Ladder(
       {required this.rungs,
@@ -3443,6 +3636,10 @@ class _Ladder {
       this.frameRate,
       this.startHeight});
   final List<_LadderRung> rungs;
+
+  /// The pack of seek-bar pictures, if the grant had one: a source with no
+  /// cache entry ([StreamCacheServer.packRange]).
+  _Source? pack;
 
   /// One pool for every rung (see [_Source.shared]), kept a minute between
   /// reads: [pool], made before the rungs are registered.

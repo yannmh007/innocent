@@ -71,7 +71,26 @@ class EventSender {
 
   final List<Map<String, dynamic>> _buffer = <Map<String, dynamic>>[];
   Timer? _timer;
-  bool _sending = false;
+
+  /// The post on its way, if one is: one at a time.
+  Future<bool>? _inFlight;
+
+  /// The flush waiting for it, shared by every flush asked for meanwhile.
+  Future<bool>? _next;
+
+  /// Who wants to know what became of an event ([enqueue]'s `onDone`), by the
+  /// event itself (identity, not equality: two taps can make equal events).
+  final Map<Map<String, dynamic>, void Function(bool sent)> _watchers =
+      Map<Map<String, dynamic>, void Function(bool sent)>.identity();
+
+  /// 'lab' from a device-lab or Test Lab build (INNOCENT_LAB), 'phone'
+  /// from every other. THE LABS' PLAYS ARE NOT VIEWERS' (14 Nov 2026): they
+  /// reach production like any phone's — on 14 Nov 1,594 of the week's
+  /// 1,798 events — and led Trending, fed co-watch and the daily rollups and
+  /// set the start-up percentiles. The server leaves 'lab' out of all of
+  /// them (migration 081); a release build sends 'phone' as before.
+  static const String deviceKind =
+      bool.fromEnvironment('INNOCENT_LAB') ? 'lab' : 'phone';
 
   /// One app run.
   ///
@@ -81,12 +100,25 @@ class EventSender {
   /// person — two runs by the same user are two ids.
   final String sessionId = _randomId();
 
-  static String _randomId() {
-    final r = Random();
+  static String _randomId([Random? random]) {
+    final r = random ?? Random();
     // 64 bits as hex. Not a uuid package for twelve characters of entropy.
     return List<int>.generate(8, (_) => r.nextInt(256))
         .map((b) => b.toRadixString(16).padLeft(2, '0'))
         .join();
+  }
+
+  /// 64 random bits as hex, from the platform's secure source: an id that
+  /// names one row across every copy of it (PlaybackReporter.summaryId), so
+  /// it must not repeat between two phones that start in the same instant.
+  static String newId() {
+    Random r;
+    try {
+      r = Random.secure();
+    } on UnsupportedError {
+      r = Random();
+    }
+    return _randomId(r);
   }
 
   /// Queue one event.
@@ -143,7 +175,7 @@ class EventSender {
       // makes the same call for the same reason. The column exists server-side
       // for the day that changes; sending a guess would be worse than sending
       // nothing, because a guess cannot be told from a measurement later.
-      'device_kind': 'phone',
+      'device_kind': deviceKind,
       if (titleId != null && titleId.isNotEmpty) 'title_id': titleId,
       if (assetId != null && assetId.isNotEmpty) 'asset_id': assetId,
       if (positionS != null) 'position_s': positionS,
@@ -153,12 +185,21 @@ class EventSender {
   }
 
   /// Queues an event as [build] made it — now, or after the app was closed
-  /// and opened again (PlaybackReporter.sendStashed).
-  void enqueue(Map<String, dynamic> event) {
+  /// and opened again (SummaryOutbox.sendEarlier).
+  ///
+  /// [onDone] hears what became of it: true once the server has taken the
+  /// batch it went in, false if that batch failed or the event was pushed
+  /// out of a full buffer. Only for an event kept elsewhere until it is known
+  /// to have gone (SummaryOutbox): the sender itself still never re-queues.
+  void enqueue(
+    Map<String, dynamic> event, {
+    void Function(bool sent)? onDone,
+  }) {
     _buffer.add(event);
+    if (onDone != null) _watchers[event] = onDone;
     // Oldest first. See the class note.
     while (_buffer.length > maxBuffered) {
-      _buffer.removeAt(0);
+      _tell(_buffer.removeAt(0), false);
     }
 
     if (_buffer.length >= flushAt) {
@@ -177,25 +218,47 @@ class EventSender {
     });
   }
 
-  /// Sends whatever is buffered.
+  /// Sends whatever is buffered, and says whether the server took it.
   ///
   /// Called on a timer, when the buffer fills, and when the app goes to the
   /// background — the last of which is the important one, because an app that
   /// only flushed on a timer would lose the final thirty seconds of every
   /// session, and the final thirty seconds is where people stop watching.
   ///
+  /// ONE POST AT A TIME, AND A FLUSH IS NEVER SKIPPED (14 Nov 2026). A flush
+  /// that met a post on its way used to return at once, leaving what came
+  /// after it to the thirty-second timer — and the flush that meets one is
+  /// typically the background's, after which Android may freeze or end the
+  /// app before any timer runs. Now it waits for that post and sends the
+  /// rest at once. True when the last post it made or waited on was taken
+  /// (or there was nothing to send); false when it failed.
+  ///
   /// EVENTS ARE NOT PUT BACK ON FAILURE. A retry queue for analytics is a way
   /// to turn one dead network into a buffer that never drains and a request
-  /// that runs forever. Losing a batch loses a batch.
-  Future<void> flush() async {
-    if (_sending || _buffer.isEmpty) return;
+  /// that runs forever. Losing a batch loses a batch — except the few events
+  /// kept on the phone until they are known to have gone (SummaryOutbox),
+  /// which hear the outcome through [enqueue]'s `onDone`.
+  Future<bool> flush() {
+    final running = _inFlight;
+    if (running != null) {
+      // Every flush that meets this post shares the one that follows it.
+      return _next ??= running.then((ok) {
+        _next = null;
+        return _buffer.isEmpty ? ok : flush();
+      });
+    }
+    if (_buffer.isEmpty) return Future<bool>.value(true);
+    return _inFlight = _post();
+  }
+
+  Future<bool> _post() async {
     _timer?.cancel();
     _timer = null;
-    _sending = true;
 
     final batch = List<Map<String, dynamic>>.unmodifiable(_buffer);
     _buffer.clear();
 
+    var sent = false;
     try {
       await _api.postJson(
         '/rest/v1/rpc/record_events',
@@ -206,12 +269,28 @@ class EventSender {
         // somebody rather than being thrown away.
         authenticated: true,
       );
+      sent = true;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('events: dropped ${batch.length} (${e.kind})');
     } catch (e) {
       if (kDebugMode) debugPrint('events: dropped ${batch.length} ($e)');
     } finally {
-      _sending = false;
+      // Before anyone waiting on this post wakes: they must find none.
+      _inFlight = null;
+    }
+    for (final event in batch) {
+      _tell(event, sent);
+    }
+    return sent;
+  }
+
+  void _tell(Map<String, dynamic> event, bool sent) {
+    final onDone = _watchers.remove(event);
+    if (onDone == null) return;
+    try {
+      onDone(sent);
+    } catch (_) {
+      // A listener's fault is never the sender's.
     }
   }
 

@@ -15,15 +15,318 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (14 Nov 2026, afternoon)
+### WHERE THINGS STAND — read first in a new session (19 Nov 2026)
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 52088a48, app 1.64.84 from 333c7071; on the
-  branch only: the lab hooks, the Google nonce, test_device/results).
+  not yet live (main is 6ad09f63, app 1.64.85 from c70f4e94; on the
+  branch only: the lab hooks, the Google nonce, test_device/results, the
+  15 Nov fixes and the 19 Nov ones below).
   A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
   would need a force-push.
+- **20 Nov: the trick-play sprite, the owner's go-ahead ("Sprite လုပ်၊ plan
+  သေချာချ"), then "Sprite ပဲ အရင်" for phases 2-3 (no release with it)** —
+  the design and the order of work are docs/trickplay_plan.md. PHASES 0-3
+  DONE; THE APP DOES NOT READ THE PACKS YET (phase 4).
+  - Phase 0 (44668658121, 44671051967): chosen 4 s, 320 px, JPEG q8 —
+    4.4 KB a picture, 4.28 MB per film-hour; 12-19 s of a runner a film-hour.
+  - Phase 1 (29d57ea5, 8fcb3b69, reviewer's five findings fixed 27e9f91a):
+    migration 083, transcode trick_claim / trick_done, request-playback's
+    additive `trickplay` field, tool/trickplay_job.py, trickplay.yml.
+  - Phase 2, LIVE 20 Nov: 083 applied (table asset_trickplay; claim / record
+    / trickplay_for / trickplay_key, service role only; r2_refs names the
+    current packs; r2_move_switch moves them). On live after the apply:
+    TRICKPLAY, FILES, MEDIA KEYS and FRAMES TEST PASSED; r2_refs per kind
+    unchanged (backups 17 = db_backups, streaming copies 26 = renditions);
+    security advisors: the new table only under RLS-no-policy (INFO, as every
+    service-only table), no new function callable by anon or authenticated.
+    transcode v29 and request-playback v44, shims at 8746f216 (only the
+    trick-play change differs from the live SHAs ea45f9b0 / 6a874828).
+    Playback check 44710855254 on v44: grant 200, `trickplay: none` before
+    the packs, every other step as before; function logs: 200s, no error.
+    BOTH SHIMS POINT AT A BRANCH COMMIT: until the release brings
+    docs/edge to main, a deploy of either function from main would drop the
+    trick-play code (deploy from this branch, or from main after the release).
+  - Phase 3, LIVE 20 Nov: Trick-play 44723609469 (scope open, 1 min of
+    ffmpeg): NINE PACKS, all recorded — 1,201 pictures, 5.7 MB in all
+    (0.18-1.02 MB a film, median 3.0-6.4 KB a picture; widths 320, heights
+    134-180 by the film's shape). DB: nine rows `done`, each key the one its
+    claim minted, trickplay_for serves each, r2_refs names each as in use,
+    count = duration / 4 s. Playback check 44725839247 (Sintel, the playback
+    check grew a pack step in 039325aa): the grant's `trickplay` field read
+    through the real Worker — header = grant, offsets end at the object's
+    size, a picture is a whole JPEG, a run of 20 is one request, edge and
+    direct paths byte-identical.
+  - Phase 4, ON THE BRANCH 20 Nov (8ec30178, labs 3e076d37): the app reads
+    the pack. `PlaybackGrant.trickplay` (TrickplayInfo.fromJson: null for no
+    field, codec other than jpeg, count/interval/bytes/size <= 0, no url, a
+    sealed pack, a header that cannot fit); the pack registered with
+    StreamCacheServer beside the ladder (HlsPackSource: the ladder's pool,
+    StreamDoor's header, renewal on 403/404/410 with the same pack only) —
+    `packRange` reads it with NO cache entry: nothing written to the phone;
+    TrickplayPack (domain/trickplay_pack.dart): first read [0, max(16 KB,
+    header)), header = grant or not used, a picture or a run one range, LRU
+    2 MB, three failed reads and the fragments take over; ladderPreview /
+    prefetchPreviewsAround (+-40 s in one request, none with the data saver)
+    / nearestPreview / the jump's landing picture read it; trail `preview
+    pack: N pictures, header X ms` and one `preview drag:` line a drag.
+    Lab words `trick` / `near` (LabStream), drag costs, far drags
+    (ladderstart_summary). Tests 1839 here (40 new). Trick-play cron daily
+    (37 3 * * *) with SCOPE=all, the owner's word for this job only:
+    branch run 44734070021 "0 film(s), scope all" (the live database before
+    it: 9 assets with a ladder, all open films, all packed).
+    PROVED (20 Nov): Build 44734076158 and, on the final code (b904977d,
+    the release review's fixes), 44745251407 — Analyze, Test, both APKs;
+    Stream bench 44734069861, 44740642743; Playback check 44737887377 (its
+    pack step now in the run's summary). Device lab, the drags' A/B (8 a
+    pass, two far into a part never seen): T1 44734069987 (near first, 16
+    passes) and T2 44744740674 (trick first, 12, then the pack's A/A 8):
+    TRICK SOONER IN EVERY PAIR, both lines, both orders, every drag size —
+    its own picture after the finger stopped, median: plain 1050 -> 221 ms
+    (T1) / 1558 -> 301 (T2), weak 1598 -> 278 / 1785 -> 340; far drags
+    plain 1086 -> 386 / 1712 -> 492, weak 1933 -> 524 / 1404 -> 634; within
+    10 s plain 963 -> 46 / 1336 -> 56, weak 1531 -> 93 / 1649 -> 161; a
+    drag's line 213-283 KB -> 14-18 KB, requests 2-3 either way; first
+    picture 0 ms both. A/A (T2, a vs b): within 10 s 51 ms plain, -16 ms
+    weak (all drags); far drags 48-278 ms — against near-minus-trick 919-
+    1323 ms. The header 0.6-1.4 s once a film (read with the pictures ahead
+    when the controls come up). THE GATE on both (T2 = final code): genres
+    37/37, jumps 15/15, gestures 27/27 and 19/19, player audit 52 and 52,
+    no crash, no refusal. Test Lab 44734557188 (8ec30178): realme 15 PASS
+    2 SKIP, OPPO 16 PASS 1 SKIP, no crash; the far seek-bar picture 1637 ->
+    344 ms and 1617 -> 343 ms (from the pack: 1 request, 2.5 KB; header
+    0.85 / 1.04 s on the first drag with no controls shown).
+    RELEASE REVIEW (reviewer, 20 Nov): ship; fixed b904977d — a hung pack
+    read ends (packAnswer 15 s, a read at most 20 s), the pack reader made
+    again for another pack on the same ladder, `_leaveLadder` stops
+    ExoPlayer when the newer open is libmpv, a non-finite number is no
+    pack. LEFT TO THE OWNER: with the data saver on, a film WITHOUT a pack
+    still takes its six fragments ahead (~450 KB each time the controls
+    come up; as the 19 Nov build does).
+  - FOUND 20 Nov (T2): TWO STARTS STOOD STILL 46.5 s and 72.8 s (pass 1
+    trick, pass 8 near — not the pack): Play tapped 1.3-1.8 s after the
+    warm-up registered the 480p rung, its head read still on the line; the
+    player's head reads of the SAME rung then failed again and again (~1.5
+    s each: three answers that were not a 206, `480.m3u8 not served (no
+    index)` every 2 s, the pool's last read `failed`) while 720p's head on
+    the same pool came at 6.7 s, until a NEW connection read it 43 s / 60 s
+    later. Suspect: the stream Worker's `strayIndexes` (since 19 Oct) keeps
+    ONE pending promise per key per isolate; the warm-up's request, cut when
+    Play takes the film over, cancels the R2 read inside it, and every later
+    request for that key's front (offset < HEAD_SCAN_BYTES) on that isolate
+    awaits a promise from a cancelled request — the runtime's "hung" error
+    (a 5xx) — until the isolate goes. The 19 Nov start (a resume on the
+    WARMED rung) puts the player on the same key as the warm-up, so a quick
+    tap meets it. Not proved: the Worker's logs at those minutes (14:00:36-
+    14:01:16 and 14:16:13-14:17:20 UTC) would say. T3 44758587901 (`fix`
+    against `base`, 24 passes, no drags): NO stall (one cut, recovered:
+    4.9 s); fix again the faster start, plain 4889 -> 3429 ms, weak 7329 ->
+    4398 ms median. So 2 long starts in the day's 60 passes, 0 in the 76
+    before: a race of the tap against the warm-up. A fix is the Worker's
+    (keep the RESULT per key, never a pending promise across requests) —
+    the owner's call (no Worker change in this release without it).
+  - NEXT, phase 4 (DONE above; kept for its notes): the app reader. Register
+    the pack with StreamCacheServer like a rung — the Worker enforces bound
+    tokens (/health bind=enforce), and a bound grant binds the pack's URL as
+    it does the rungs', so the pack is read with the install's device header
+    exactly as a rung is. Then phase 5 (labs `trick` vs `near`, gate, Test
+    Lab), and the release only on the owner's word: the job's cron on main
+    for new ladders ships with it; `all` (the catalogue) only on the owner's
+    word.
+- **19 Nov, on the branch for the next release: 1.64.85's weak points
+  5-7** (the "first look" entry below; the streaming review §5, "Runs S1,
+  S2, S3"). MEASURED FIRST, new lab flows `ladderstart` (a resume at
+  579 s, every step of the start in ms — `LadderStartTrail`, one summary
+  line in every build's trail — then seek-bar drags with each preview's
+  parts) and `coldcpu` (cold starts as root: threads every 2 s, Java
+  stacks, simpleperf; COLD_PLAN, COLD_LIBRARY). (5) THE FAR START: a
+  resume never opened on the rung the app chose and warmed (`_openLadder`
+  passed the start rung only from 0), so Auto took one from the meter
+  whose index came after the start rung's playlist — S1 44534768953:
+  first picture 4.2 s plain, 6.1 s weak; and the warm-up read the film's
+  opening, not the resume point. FIXED (0a6ade35): a resume's first open
+  starts on the warmed rung; its warm-up reads the resume point. A/B both
+  orders, 12 passes a line each: S2 44549507157 plain 4629 -> 3045 ms, weak
+  6541 -> 3834; S3 44565023092 plain 4433 -> 3354, weak 7676 -> 3505
+  (median; 24 of 24 pairs; S1's A/A 0.1 s plain, 1.5 s weak); 480p+ in the
+  first 30 s 40 -> 94 % / 24 -> 69 %; stops in it weak 5 -> 3, plain 1 -> 2
+  (all under 0.6 s but two). The owner's three rules, on top of the fix:
+  `one` +0.3 s, `hold` +0.04 s (under the A/A), `par` moot — taken out
+  (0318ab39). (6) THE SEEK BAR'S PICTURES: a picture never seen is the
+  Worker's answer ~0.5 s + bytes 0.16-0.33 s + decode ~0.45 s (emulator);
+  now the pictures 10/20/30 s either side are taken when the controls come
+  up, and the nearest one taken within 10 s is shown at once (eb2fda2e);
+  two fetches on their way tried and taken out (a weak line's long drag
+  later in both orders, S2/S3). A/B in device lab G1 44580628422 (9 drags
+  a group, base -> near): a drag's first picture 0.7-1.3 s -> 0 ms; a
+  picture within 10 s of where the finger stopped, short drags plain 945
+  -> 431 ms, weak 1553 -> 597, long plain 1199 -> 1006, weak 1604 -> 1282;
+  its own picture 0.2-0.6 s sooner in all four groups; the same fetches a
+  drag, plus ~3.5 pictures each time the controls come up. A part never seen still
+  waits ~1.2-1.4 s: only a picture made in advance removes that — THE
+  OWNER'S CALL, below. (7) APP START CPU: the library cache was trusted
+  only while MediaStore's VOLUME generation stood still, which every
+  photo, song or chat download moves: each launch read 2000+ videos again
+  (photo_manager's pool + Dart's file workers — ScanGate's own "before"
+  numbers 25 % / 17 %, the owner's 23 % / 13-19 %). FIXED (84abb9ce): the
+  stamp is the video table's (count and newest GENERATION_MODIFIED per
+  volume). coldcpu in S2, 424 videos, a new picture before each start:
+  the volume's stamp read the library again 3 of 3 starts (0.9-1.2 s
+  each, the main thread 3 % against 1 % over the first 10 s), the videos'
+  0 of 3 ("library all: cache trusted" in the trail). The emulator's
+  fast CPU shows the mechanism, not the owner's 20 s: the next diagnostics
+  report says (`library all: …` lines). Tests: 1799 here (resume start,
+  warm at the resume point, the loader's nearest picture, the trail);
+  branch Builds 44536161098, 44549512776 green (the Kotlin), Stream bench
+  44534768955, 44549507240 green; on the final code (0318ab39) Build
+  44580634917 green and THE GATE, device lab G1 44580628422: genres 37/37,
+  the jumps on Big Buck Bunny 15 of 15, gestures 27/27 and 19/19, the
+  player audit both ways (52 and 52 steps, exit 0), no refusal, no
+  stacked player; its start passes (fix) plain 2671 ms, weak 3300 ms
+  median to the picture. TEST LAB ON THE FINAL CODE (20 Nov) 44700090814:
+  realme 15 PASS, OPPO 15 PASS, 2 SKIP each (tour->original: lines 7.7 and
+  5.1 Mbit/s under the 10 Mbit/s copy; the home trip, by design), no crash,
+  no ANR; first frame 2.6 s on both, a far seek-bar picture 1.6 s (no
+  controls shown in that check, so nothing ahead — the sprite's case). A
+  push at 07:16 UTC (44693769383) was refused TEST_QUOTA_EXCEEDED: the
+  quota resets at midnight Pacific, 08:00 UTC in winter (device-labs fixed).
+  THE BRANCH IS READY FOR THE OWNER'S RELEASE CALL: gate G1, the player
+  audit both ways, Test Lab both phones, Builds and Stream bench green, 1799
+  Flutter tests — the app as of 0318ab39 (lib/ and android/ unchanged
+  since; what came after is the sprite's phase 0-1: docs, tools, a
+  migration and two edge functions not applied or deployed).
+  THE OWNER'S CALL (weak point 6): a trick-play sprite from the
+  transcode — one 160x90 picture every 5 s (2 s matches the ladder's
+  fragments), tiled 10x10 — about 0.5-1 MB a film-hour, a few sheets per
+  film; R2 storage pennies a month for the catalogue; a Worker request
+  per sheet, not per picture; a 30 s ffmpeg step on the 240p rung, a
+  backfill job for the films already up; a key and an upload URL from the
+  transcode's edge function, and the app reading it. Then every preview
+  is a crop of a sheet on the phone (~10-20 ms) after one sheet's
+  fetch, against 1.2-1.4 s now for a part never seen and ~67 KB each.
+- **15 Nov, on the branch for the next release: the 14 Nov weak points
+  1-4 and the double open's refusal** (69374520, 7e1bbbfc, 63499b3c,
+  e4212f13, 091d4278). LIVE ALREADY: migrations 081 and 082 (below).
+  (1) THE LAST SUMMARY: kept on the phone until its batch is taken
+  (`SummaryOutbox`: SharedPreferences, at most 8, none older than 7 days —
+  record_events takes an event's time back 7 days at most), tried twice
+  more in the run, then sent at the next start with `stashed: 1`; every
+  copy carries the playback's `meta.summary_id`; 1.64.81-1.64.85's single
+  kept summary is adopted with an id made from its own time and session.
+  `EventSender.flush` says whether the server took the batch and is never
+  skipped: one that met a post on its way used to return and leave the rest
+  to a 30 s timer a frozen app never runs. Viewer data behind it (1.64.84 /
+  1.64.85, labs left out): 3 / 5 opens, 2 / 4 summaries — 1.64.84's two are
+  one playback twice (the double open's two screens), so 2 of 3 and 1 of 5
+  playbacks lost theirs; 1.64.84's 08:18:57 summary was lost although the
+  app lived on (same session: the batch's post failed — dropped by design).
+  Privacy text, three languages: "a record not yet sent is kept on this
+  phone until it can be sent, 7 days at most", and "network type" out (never
+  sent). (2) LIBMPV'S OPEN: media_kit's open() stops the file before it and
+  says "not buffering" as it resets; real libmpv here, through a server
+  answering in 700 ms: "not buffering" 10 ms, first byte 735 ms,
+  video-params 766 ms (test/libmpv_first_picture_test.dart, Stream bench).
+  `VideoPlayerService.firstPictureStream` (video-params; ExoPlayer's first
+  rendered frame) or a moving position is the first frame on libmpv; READY
+  stays the ladder's. (3) THE STALE START: a libmpv open forgets the
+  position and length of the engine before it (the start check read the
+  ladder film's 650 s; the 5 s resume save could have written it against
+  the new film). (4) A scrub's end starts the jump clock (`sinceLastSeek`).
+  THE REFUSAL: `ExoEngine` says in the trail why an engine call was refused
+  (`exo open refused: no engine N` / `…: <Class>: <message>`, addresses left
+  out; Kotlin's error carries the class); and two races closed —
+  `stopPlayback` stopped a next film that began inside its awaited pause,
+  and `_leaveLadder` iterated `_exoSubs` across awaits (a ladder bound
+  meanwhile lost its listeners and its ExoPlayer was stopped). No other
+  release of the engine exists (one service for the app; released only in
+  its dispose), so the 14 Nov "answered false" is not explained by code
+  alone: the `reopen` lab flow and the next phone trail will say. Tests: the
+  branch's 1787 Flutter tests here (analyze: no error or warning), each
+  fix's own test failing on the code without it (summary_outbox_test 3 of
+  3, first_picture_test 2 of 3, player_service_state_test 3 of 4,
+  exo_refusal_test 2 of 3, stop_race_test), the summary tests five times
+  under CPU and disk load (29/29 each). PROVED SO FAR: device lab run A
+  43675629684 (on 091d4278): genres, the jumps on Big Buck Bunny (15
+  checks, as before), gestures both ways — all passed; `reopen` 7 plays, 7
+  first frames, 4 ExoPlayer opens, no refusal and no fall back; the labs'
+  first summaries ever reached `events` (device_kind lab): libmpv open_ms
+  886 / 441 / 1275 with stalls 0 and frozen 0 (it read 32-43 and a stall),
+  ladder 1252 / 1712, stalls 0. Test Lab 43675629659: realme and OPPO 16
+  PASS and the one SKIP each as 43589024823 (the Test Lab path's home trip),
+  no crash of the app (the OPPO's one FATAL is Google's Files app). Branch
+  Build 43675638790 green (the Kotlin change), Stream bench 43673989316
+  green (the whole suite with libmpv and ffmpeg installed: the real-libmpv
+  test runs there), Static analysis green. NOT PROVED by run A:
+  `summarykill` — a fresh app's permission dialog took the first Back (the
+  launch waited 12 minutes) and a plain start stops at the introduction,
+  logs no event and so sends nothing; mended (lab_grants, every start the
+  lab's launch) and run again in run B. FOUND BY run A, fixed (abc60f3d):
+  a player screen pushed over an open one — the first Back went to that
+  dialog, the next play opened over it — left the one below mounted: every
+  30 s it reported the new film's position against its own title (Big Buck
+  Bunny "at 8 s of 653 s", in the live events), wrote it into its own
+  resume point, never sent its summary, and closed later would have
+  cleared the callbacks, PiP callbacks, wakelock, volume keys and full-screen
+  UI of the one on top. Any play reaching the player over an open one does
+  this ("open with"). Now `PlayerScreen._onTop`: the newcomer supersedes the
+  screen below, which says its last with its own position and then touches
+  nothing shared. The last watch point is written just after the tree
+  change (Riverpod refuses a provider change during it in a debug build —
+  found by the new test on the existing deactivate path), and a summary
+  says where its playback ended (a playback under 30 s said 0). Tests:
+  stacked_players_test (fails without: the first summary []), the branch's
+  1788 here; branch Build 43682174225 and Stream bench 43682165005 green on
+  10d54e03. THE KILL PATH PROVED (device lab run B 43682165030,
+  `summarykill`): three plays of the 1-rung film, each closed and the app
+  force-stopped 2 s after (the last through Home); in `events` one row
+  each, the first two `stashed: 1`, each received at the NEXT start
+  (06:01:21 made, 06:02:03 received; 06:02:08 / 06:02:49), the third at
+  Home; open_ms 1423 / 1168 / 802, stalls 0, position_s 34-35 (where each
+  ended). `reopen`: 8 plays, 8 first frames, 5 ExoPlayer opens, 7 summaries
+  sent, no refusal, no fall back, no stacked player. THE PLAYER AUDIT on
+  the branch's code: run B both stopped, run C sideways 52/52 and upright
+  stopped, run D 44497996796 all four passed (twice each way) — 5 of 8.
+  The three stops are one kind: a tap on a control (More, holding Next,
+  Subtitle) landed on the video (`LAB gesture tap` at that moment) because
+  the 4 s auto-hide took the controls between Maestro's steps, ~5 s apart
+  on those runners; nothing on the branch touches the auto-hide (the
+  device-labs skill says how to read it). GATE ON THE FINAL CODE: device
+  lab run E 44501502064 (fd904b16): genres 37/37, the jumps on Big Buck
+  Bunny 15 of 15, gestures 27/27 and 19/19 — as 1.64.85's gate; no
+  refusal, no stacked player. TEST LAB ON THE FINAL CODE (19 Nov):
+  44514004930 — realme 16 PASS and the home-trip SKIP, as before; OPPO 14
+  PASS, 2 FAIL (seek frozen 6.2 s, tour->original ready 13.2 s) on a line
+  measured median 2200 kbps (min 659) against its 25-27 Mbit/s of 15 and
+  14 Nov, TCP handshakes 0.5-2.9 s: the line; the OPPO alone once more,
+  44518397993: 15 PASS, 0 FAIL, 2 SKIP (the home trip; tour->original "line
+  6085 kbps, the copy 9989 kbps", as 1.64.84's OPPO run), line median 5.3
+  Mbit/s, no crash. THE BRANCH IS READY FOR THE OWNER'S RELEASE CALL: gate
+  (run E), the player audit (run D), the kill path (run B), Test Lab both
+  phones, branch Builds and Stream bench green, 1788 Flutter tests. On the way, 44505438819 lost its results twice over (its
+  first attempt's build met Maven Central's 429 and committed an empty
+  results directory; the re-run's phones finished but its commit conflicted
+  with it): device-cloud.yml now lays a re-run's results over the branch as
+  device-lab.yml does (e3ba2552).
+- **081 and 082 are LIVE (14 Nov, the owner's go-ahead)**: lab builds send
+  `device_kind` `lab` (`EventSender.deviceKind`; a release build 'phone'),
+  the 1,954 lab events before it were marked (every install that only ever
+  reported 1.64.78+391 — not every 1.64.78+391 event: one install that
+  reports every version ran the 1.64.78 release on 30-31 Oct, 26 events,
+  kept a viewer's); heat, Trending, co-watch and reach, the daily rollups
+  (re-rolled: event_daily 476 -> 394 rows) and startup_latency /
+  startup_by_title / stall_reasons leave `lab` out; event_geo's audience
+  `lab`; `_refresh_cowatch` zeroes the reach of a title no viewer engages
+  with any more (it only upserted). 082: a unique index on a
+  play_summary's `meta.summary_id` — a copy sent again after a lost answer
+  is skipped inside record_events. Reproduced first (a lab play moved the
+  heat 7.6449 -> 8.6449, a lab open the day's start-up samples 39 -> 40; a
+  second copy was kept), dry runs rolled back, then on live
+  tool/sql/lab_events_test.sql, play_summary_once_test.sql and
+  events_housekeeping_test.sql passed. Still counting the labs: the
+  console's raw `kinds` tally (studio.ts `stats` reads `events` itself — an
+  edge change, the owner's call). Reading viewer data by hand now:
+  `device_kind is distinct from 'lab'`.
 - **1.64.81 (394) is out, 8 Nov**: the Privacy text, the HLS read-ahead
   fix, the playback telemetry (`play_summary`, ladder `play_stall` with
   `ahead_ms`, `error` codes, `grant_ms`), the 7 Nov streaming fixes and
@@ -137,7 +440,11 @@ does it.
   Supabase keys off, the GitHub Pages console retired (security review
   P4), R2 CORS of both buckets = the console alone (seen: console allowed,
   Pages and a control refused).
-- **The owner still has to**: update a phone to 1.64.85 (and with it: a
+- **The owner still has to** (15 Nov): say when the next release may go
+  (it carries the 15 Nov entry above; skill `release`); choose whether the
+  console's event-kind tally should leave the labs out (studio.ts, an edge
+  change) and whether the stream Worker gets `Server-Timing` (deferred 14
+  Nov). Earlier: update a phone to 1.64.85 (and with it: a
   drag on the seek bar held still for 5 s, then let go — the film moves
   on) and say if the
   player's glass menus are smooth over a playing film (⋮, CC — the blur's
@@ -168,13 +475,45 @@ does it.
   Analyze, Test, both APKs; it publishes nothing off main) — the first
   since 13 Nov, for the 14 Nov Dart change that ships with the next
   release (`_PoolUse`'s state in a jump's trail).
+- **1.64.85's first look on the owner's phone (14 Nov, 13:51-13:54 UTC; a
+  diagnostics report and the events)** — (1)-(4) FIXED ON THE BRANCH 15 Nov,
+  (5)-(7) 19 Nov (the entries above): the fix works — four drags of
+  1.4-5.8 s, each `exo held N ms (scrubbing)` ending in a jump or a Back,
+  the film moving after; no double player. WEAK, for the next sessions:
+  (1) THE LAST PLAYBACK'S SUMMARY IS LOST: the session's last film
+  (ladder, opened 13:53:53, closed ~13:54:22) sent no `play_summary` and
+  no progress (13:57 still none) — as on 1.64.84 (08:18:57). The summary
+  waits in memory (`EventSender`, 30 s or the pause flush) and its kept
+  copy is dropped as it is queued; leaving the app soon after loses it.
+  The longest playback is often the last. (2) LIBMPV'S OPEN IS COUNTED AS
+  A STALL: on the local-proxy path `first frame` fires at 32-35 ms, before
+  a byte ("stream index 0.0 MB"), then the real start wait is a
+  "rebuffer" of 881 / 986 ms — the summaries say open_ms 32 / 35 and
+  stalls 1, frozen 881 / 986 ms; ExoPlayer's opens read 1393-2078 ms
+  honestly. Frozen seconds a minute, the number to lower, is wrong for
+  every libmpv playback. (3) A STALE START: a libmpv open after ExoPlayer
+  films read "open began at 650s, not 491s - jumping there" — likely
+  `_position` left by the ExoPlayer film (`_confirmStart` breaks on any
+  position > 0); its needless seek sat inside that 881 ms. (4) A scrub's
+  end on ExoPlayer re-buffers 25-106 ms with 61 s in hand and is counted
+  a blip, not a jump. (5) A far ladder start took 2078 ms to a picture:
+  the 480p, 360p and 720p indexes read one after another (141.8, 142.3,
+  142.8) and Auto went to 720p at once on a line measured 2592 kbps
+  (warmed: 480p). (6) Seek-bar pictures of parts not yet seen took
+  478-1010 ms (seen ones 24-45 ms): the picture lags the finger. (7) App
+  start: 60-74 % CPU for the first ~20 s (pool-thread 23 %, DartWorker
+  13-19 %), before any playback. Also open from earlier: the ExoPlayer
+  open that answered false after the double open; transport check
+  43567299617 (06:38) cancelled mid-step after 7.5 min (13:16's passed).
 - **1.64.84's viewer bug, fixed in 1.64.85 (14 Nov)**: after a jump by
   the seek bar the film could stay still while it "played", the pause
   button dead, until another drag — the owner met it on Sintel. Cause,
   proof and fix under "Next app release", with a second one found in the
   same reports (a double tap on a card opened two players). Both shipped
   in 1.64.85 the same afternoon.
-- **The labs' plays are in the live `events` as viewers' (found 14 Nov)**:
+- **The labs' plays are in the live `events` as viewers' (found 14 Nov;
+  FIXED 14-15 Nov: the owner chose (a), migration 081 live and the app's
+  `device_kind` `lab` on the branch — the entry above)**:
   lab builds (device lab and Test Lab, `INNOCENT_LAB=true`) report
   `app_version` `1.64.78+391` — the branch's own, bumped on main alone —
   and send their events to production like any phone. 7 days to 14 Nov:
@@ -606,7 +945,8 @@ security). Found, most urgent first:
   most 10 s, so a stuck play never blocks the next; a paywall's own retry
   goes past it). test/play_tap_guard_test.dart. Build 43585867675 on
   1ff7566e (both fixes, the whole branch) green: Analyze, Test, both APKs.
-- **Open from the same reports, not fixed (next session)**: (1) the next
+- **Open from the same reports — both addressed 15 Nov on the branch
+  (refusals now say why; the summary kept until it has gone)**: (1) the next
   film after the double open (a different one, one tap) also fell back to
   libmpv at once — ExoPlayer's open answered false within the same tenth
   of a second; the trail cannot say why (logcat holds the engine's side):

@@ -183,6 +183,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   PlaybackReporter? _reporter;
   Timer? _reportTimer;
 
+  /// The player screen on top: the one whose film the shared controller
+  /// plays. A screen pushed over another (an "open with", the lab's intent, a
+  /// play that reached the player while one was open) takes the controller
+  /// over, and the one below is SUPERSEDED (15 Nov 2026, the device lab's
+  /// reopen flow, 43675629684): it went on reporting the new film's position
+  /// against its own title every 30 s (BBB at 8 s of a 653 s film), wrote it
+  /// into its own resume point, and never sent its summary. Now it says its
+  /// last as the newcomer arrives, and touches nothing shared after: not the
+  /// controller's callbacks, not the lifecycle, not the wakelock, the PiP
+  /// callbacks or the system UI the screen on top now owns.
+  static _PlayerScreenState? _onTop;
+  bool _superseded = false;
+
   bool _videoDisplayEnabled = true;
 
   /// The subtitle track libmpv chose itself, asked as the CC panel opens
@@ -337,6 +350,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // Can this phone afford the menus' frosted glass? (Asked once.)
     // ignore: discarded_futures
     PlayerUi.probeGlass();
+    final below = _onTop;
+    if (below != null && !identical(below, this) && below.mounted) {
+      below._supersede();
+    }
+    _onTop = this;
     _startReporting();
     // ignore: discarded_futures
     _refreshStableInsets();
@@ -720,6 +738,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // v1.61: the real guard. `mounted` below is kept as a second check but it
     // is NOT sufficient on its own — see [_disposed].
     if (_disposed) return;
+    // Under a newer player screen this one plays nothing: the one on top
+    // pauses, keeps or detaches the film (see [_onTop]).
+    if (_superseded) return;
     // If this player is already being torn down, do nothing — otherwise a
     // late resume callback could re-assert immersiveSticky just as the user
     // lands back on the main shell, hiding the nav bar there. (The shell
@@ -1021,6 +1042,76 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// `dispose()` may not touch `ref` at all — see the long note on
   /// [deactivate] — so holding the object is what lets the teardown below
   /// send its last event.
+  /// A newer player screen has the controller ([_onTop]). What this
+  /// screen's playback was like and where it stopped go out NOW: the
+  /// newcomer resets the measurement and opens its own film right after.
+  void _supersede() {
+    if (_superseded) return;
+    _superseded = true;
+    _reportTimer?.cancel();
+    _reportTimer = null;
+    PlaybackLog.add('player: a newer player screen took over; this one has said its last');
+    final reporter = _reporter;
+    if (reporter == null) return;
+    try {
+      final svc = ref.read(videoPlayerServiceProvider);
+      final at = svc.position;
+      final of = svc.duration;
+      reporter.reportSummary(
+          ref.read(playerControllerProvider.notifier).qoe.toMeta(DateTime.now()),
+          position: at,
+          duration: of);
+      reporter.finish(position: at, duration: of);
+      _rememberPoint(at, of, last: true);
+    } catch (e) {
+      PlaybackLog.add('superseded report failed: $e');
+      try {
+        reporter.finish();
+      } catch (_) {}
+    }
+  }
+
+  /// The playback's last events, as this screen closes ([deactivate]).
+  void _reportLast() {
+    try {
+      final svc = ref.read(videoPlayerServiceProvider);
+      // What watching was like, just before the last progress row.
+      try {
+        _reporter?.reportSummary(
+            ref.read(playerControllerProvider.notifier).qoe.toMeta(DateTime.now()),
+            position: svc.position,
+            duration: svc.duration);
+      } catch (e) {
+        PlaybackLog.add('summary report failed: $e');
+      }
+      _reporter?.finish(position: svc.position, duration: svc.duration);
+      _rememberPoint(svc.position, svc.duration, last: true);
+    } catch (e) {
+      // Still finish, with whatever the reporter already saw.
+      PlaybackLog.add('final report failed: $e');
+      try {
+        _reporter?.finish();
+      } catch (_) {}
+    }
+  }
+
+  /// Hands the controller's callbacks back as this screen closes.
+  void _releaseCallbacks() {
+    // Hand the callback back before this screen goes. The controller outlives
+    // the screen, so a callback left pointing at a finished reporter would
+    // attribute the NEXT video's start-up time to the previous title — and a
+    // finished reporter drops it, so the new one would be missing instead.
+    try {
+      ref.read(playerControllerProvider.notifier).onFirstFrame = null;
+      ref.read(playerControllerProvider.notifier).onStall = null;
+      ref.read(playerControllerProvider.notifier).onLadderStall = null;
+      ref.read(playerControllerProvider.notifier).onPlaybackError = null;
+      ref.read(playerControllerProvider.notifier).onFinished = null;
+    } catch (_) {
+      // Nothing to release if the provider is already gone.
+    }
+  }
+
   void _startReporting() {
     final id = widget.titleId;
     if (id == null || id.isEmpty) return;
@@ -1076,7 +1167,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// the overlay last faded out.
   void _reportProgress() {
     final reporter = _reporter;
-    if (reporter == null) return;
+    if (reporter == null || _superseded) return;
     try {
       final svc = ref.read(videoPlayerServiceProvider);
       reporter.report(svc.position, svc.duration);
@@ -1093,16 +1184,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       {bool last = false}) {
     final id = widget.titleId;
     if (id == null || id.isEmpty || position <= Duration.zero) return;
-    ref.read(watchPointsProvider.notifier).record(
+    final points = ref.read(watchPointsProvider.notifier);
+    final assetId = widget.assetId;
+    final finished = last &&
+        PlaybackReporter.completed(
+            furthestS: position.inSeconds, durationS: duration.inSeconds);
+    void write() => points.record(
           titleId: id,
-          assetId: widget.assetId,
+          assetId: assetId,
           position: position,
           duration: duration,
-          finished: last &&
-              PlaybackReporter.completed(
-                  furthestS: position.inSeconds,
-                  durationS: duration.inSeconds),
+          finished: finished,
         );
+    // THE LAST POINT IS WRITTEN JUST AFTER (15 Nov 2026). It is taken as the
+    // screen leaves (deactivate) or as a newer player arrives (initState of
+    // that one): both while the tree is changing, where a provider must not
+    // change — Riverpod refuses it in a debug build, and listeners told then
+    // can draw a half-changed tree. The notifier is the app's, so it is
+    // there after this screen is not.
+    if (last) {
+      Future<void>.microtask(write);
+    } else {
+      write();
+    }
   }
 
   /// v1.61 — the last moment `ref` is legal.
@@ -1118,36 +1222,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // playback, and it carries where the viewer actually stopped — the single
     // most valuable row the log collects. Losing it to an unrelated snapshot
     // failure below would lose the answer to "does this title hold people".
-    try {
-      final svc = ref.read(videoPlayerServiceProvider);
-      // What watching was like, just before the last progress row.
-      try {
-        _reporter?.reportSummary(
-            ref.read(playerControllerProvider.notifier).qoe.toMeta(DateTime.now()));
-      } catch (e) {
-        PlaybackLog.add('summary report failed: $e');
-      }
-      _reporter?.finish(position: svc.position, duration: svc.duration);
-      _rememberPoint(svc.position, svc.duration, last: true);
-    } catch (e) {
-      // Still finish, with whatever the reporter already saw.
-      PlaybackLog.add('final report failed: $e');
-      try {
-        _reporter?.finish();
-      } catch (_) {}
-    }
-    // Hand the callback back before this screen goes. The controller outlives
-    // the screen, so a callback left pointing at a finished reporter would
-    // attribute the NEXT video's start-up time to the previous title — and a
-    // finished reporter drops it, so the new one would be missing instead.
-    try {
-      ref.read(playerControllerProvider.notifier).onFirstFrame = null;
-      ref.read(playerControllerProvider.notifier).onStall = null;
-      ref.read(playerControllerProvider.notifier).onLadderStall = null;
-      ref.read(playerControllerProvider.notifier).onPlaybackError = null;
-      ref.read(playerControllerProvider.notifier).onFinished = null;
-    } catch (_) {
-      // Nothing to release if the provider is already gone.
+    // A superseded screen said its last as the newer one arrived, and the
+    // engine and the controller's callbacks are that one's now ([_supersede]).
+    if (!_superseded) {
+      _reportLast();
+      _releaseCallbacks();
     }
     try {
       _floatingPipActiveAtTeardown = ref.read(floatingPipProvider).isActive;
@@ -1183,6 +1262,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // FIRST, before anything that could throw. A leaked observer is the one
     // failure that outlives the screen and keeps firing forever.
     _disposed = true;
+    if (identical(_onTop, this)) _onTop = null;
     if (PlayerToastController.current == _toast) {
       PlayerToastController.current = null;
     }
@@ -1258,6 +1338,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // callbacks pointing into a disposed State would invoke methods on
     // a dead widget tree.
     _step('pipCallbacks', () {
+      // A superseded screen's callbacks were replaced by the screen on top.
+      if (_superseded) return;
       final pipSvc = _pipServiceAtTeardown;
       // Only drop the PiP callbacks if we're NOT handing off to the floating
       // window. When the user pops the player into the in-app floating window,
@@ -1275,6 +1357,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     });
     // (removeObserver has already run, on the first line.)
     _step('systemUi', () {
+      // The screen on top still plays full screen, in its orientation.
+      if (_superseded) return;
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       // On a phone the app is portrait-locked and only the player may rotate,
       // so leaving it must restore portrait — otherwise the whole app stays
@@ -1290,13 +1374,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // held while the floating player is alive; its own teardown releases it.
     _step('bgDetachTimer', () => _bgDetachTimer?.cancel());
     _step('wakelock', () {
-      if (!_floatingPipActiveAtTeardown && _wakelockHeld) {
+      // One wakelock for the app: the screen on top's film needs it.
+      if (!_floatingPipActiveAtTeardown && _wakelockHeld && !_superseded) {
         _wakelockHeld = false;
         // ignore: discarded_futures
         WakelockPlus.disable();
       }
     });
-    _step('hwKeys', () => _hwKeys.disable());
+    _step('hwKeys', () {
+      if (!_superseded) _hwKeys.disable();
+    });
     // Recorded so the NEXT crash log can say whether teardown finished. A
     // missing line here is the signal that something threw in a place still
     // not covered.
@@ -4634,7 +4721,8 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
   }
 
   void _loadLadderPreview(MediaKitPlayerService svc, int seconds) {
-    final loader = _ladderPreviews ??= LadderPreviewLoader(svc.ladderPreview);
+    final loader =
+        _ladderPreviews ??= LadderPreviewLoader(svc.ladderPreview, nearest: svc.nearestPreview);
     loader.request(seconds, (bytes) {
       if (!mounted || _dragValue == null) return;
       setState(() => _previewBytes = bytes);
@@ -5182,7 +5270,8 @@ class _LadderSwipePreview extends StatefulWidget {
 }
 
 class _LadderSwipePreviewState extends State<_LadderSwipePreview> {
-  late final LadderPreviewLoader _loader = LadderPreviewLoader(widget.service.ladderPreview);
+  late final LadderPreviewLoader _loader =
+      LadderPreviewLoader(widget.service.ladderPreview, nearest: widget.service.nearestPreview);
   Uint8List? _bytes;
 
   void _ask() => _loader.request(widget.at.inSeconds, (b) {

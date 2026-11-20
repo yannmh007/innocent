@@ -1,0 +1,51 @@
+name: Trick-play measure
+
+# PHASE 0 OF THE SEEK BAR'S SPRITE (docs/trickplay_plan.md, 20 Nov 2026):
+# what a pack of pictures costs, on the open films' real frames, before a
+# format is chosen. Reads each open film's smallest rung the way the app
+# does (request-playback with the publishable key, the Worker), runs
+# tool/trickplay.py at several settings, prints the sizes and the runner's
+# time. Uploads nothing, keeps nothing, prints no address. Branch-only: a
+# push of the tool or this file starts it (a dispatch needs the file on main).
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'tool/trickplay.py'
+      - 'tool/trickplay_measure.py'
+      - '.github/workflows/trickplay-measure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trickplay-measure-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: The pack's own tests
+        run: python3 tool/trickplay_test.py
+
+      - name: Measure on the open films
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+        run: |
+          set -euo pipefail
+          # The publishable key every APK carries, as test_device/probe.sh has it.
+          SB_KEY=$(sed -n 's/^SB_KEY=\([^ ]*\).*/\1/p' test_device/probe.sh | head -1)
+          export SB_KEY
+          python3 tool/trickplay_measure.py | tee measure.txt
+          { echo '### Trick-play measure'; echo; grep '^|' measure.txt; } >> "$GITHUB_STEP_SUMMARY"

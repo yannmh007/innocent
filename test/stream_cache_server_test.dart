@@ -14,6 +14,8 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:innocent/core/services/diagnostics/playback_log.dart';
+
 import 'support/cmaf.dart';
 
 class _FakePaths extends PathProviderPlatform with MockPlatformInterfaceMixin {
@@ -997,6 +999,46 @@ void main() {
 
     Future<String> register(String id) async => (await StreamCacheServer.instance
         .localUrlFor(cacheId: id, upstream: rung.url('t1'), refresh: () async => null))!;
+
+    test('a resume\'s warm-up takes the head and the seconds where it resumes, '
+        'not the opening', () async {
+      ForegroundStream.reset();
+      StreamCacheServer.instance.resetWarmForTest();
+      final ok = await StreamCacheServer.instance.warmOpening(
+          cacheId: 'warm-resume',
+          upstream: rung.url('t1'),
+          refresh: () async => null,
+          at: const Duration(seconds: 25));
+      expect(ok, isTrue);
+      // 25 s is in the fragment from 24 s: it is fetched, and nothing of the
+      // film between the head and it.
+      final at = film.fragmentStarts[12];
+      expect(rung.ranges.any((r) => r.$1 <= at && r.$2 >= at), isTrue,
+          reason: '${rung.ranges} ${PlaybackLog.text}');
+      // The head is read as the ladder reads it (64 KB); past it, nothing
+      // before the fragment.
+      expect(rung.ranges.where((r) => r.$2 >= StreamCacheServer.headRead && r.$1 < at), isEmpty,
+          reason: 'the opening is not what a resume reads: ${rung.ranges}');
+      expect(PlaybackLog.text, contains('of 25 s held'));
+      StreamCacheServer.instance.release('warm-resume');
+    });
+
+    test('with warmAtResume off (the lab\'s base), a resume\'s warm-up takes the opening',
+        () async {
+      ForegroundStream.reset();
+      StreamCacheServer.instance.resetWarmForTest();
+      StreamCacheServer.warmAtResume = false;
+      addTearDown(() => StreamCacheServer.warmAtResume = true);
+      final ok = await StreamCacheServer.instance.warmOpening(
+          cacheId: 'warm-resume-off',
+          upstream: rung.url('t1'),
+          refresh: () async => null,
+          at: const Duration(seconds: 25));
+      expect(ok, isTrue);
+      expect(rung.ranges.any((r) => r.$1 <= film.fragmentStarts[1] && r.$2 >= film.fragmentStarts[1]),
+          isTrue, reason: '${rung.ranges}');
+      StreamCacheServer.instance.release('warm-resume-off');
+    });
 
     test('fetches the new copy from the moment it will open at, and the reopen '
         'then reads nothing from the network', () async {

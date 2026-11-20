@@ -729,35 +729,21 @@ class MainActivity : AudioServiceFragmentActivity() {
                     }.start()
                 }
                 "generation" -> {
-                    var stamp: String? = null
-                    if (Build.VERSION.SDK_INT >= 30) {
-                        try {
-                            val ctx = applicationContext
-                            val sb = StringBuilder(android.provider.MediaStore.getVersion(ctx))
-                            for (v in android.provider.MediaStore.getExternalVolumeNames(ctx).sorted()) {
-                                sb.append('|').append(v)
-                                    .append(':').append(android.provider.MediaStore.getVersion(ctx, v))
-                                    .append(':').append(android.provider.MediaStore.getGeneration(ctx, v))
-                            }
-                            val perms = mutableListOf(
-                                if (Build.VERSION.SDK_INT >= 33) "android.permission.READ_MEDIA_VIDEO"
-                                else "android.permission.READ_EXTERNAL_STORAGE"
-                            )
-                            if (Build.VERSION.SDK_INT >= 34) {
-                                perms.add("android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
-                            }
-                            sb.append("|p:")
-                            for (p in perms) {
-                                val granted = ctx.checkSelfPermission(p) ==
-                                    android.content.pm.PackageManager.PERMISSION_GRANTED
-                                sb.append(if (granted) '1' else '0')
-                            }
-                            stamp = sb.toString()
-                        } catch (_: Throwable) {
-                            stamp = null
-                        }
-                    }
-                    result.success(stamp)
+                    // [videos]: the VIDEO library's own stamp per volume
+                    // (how many videos, and the newest change among them)
+                    // in place of the volume's generation, which rises on
+                    // every photo, song, screenshot and chat download too
+                    // (19 Nov 2026): every such change between two launches
+                    // cost a full rescan of 2000+ videos, and a phone gets
+                    // one between almost every two. Every list this stamp
+                    // gates is a list of videos (ScanGate). A cursor over
+                    // the videos, so off the main thread.
+                    val videos = call.argument<Boolean>("videos") == true
+                    val ctx = applicationContext
+                    Thread {
+                        val stamp = try { libraryStamp(ctx, videos) } catch (_: Throwable) { null }
+                        runOnUiThread { result.success(stamp) }
+                    }.start()
                 }
                 else -> result.notImplemented()
             }
@@ -3270,6 +3256,59 @@ class MainActivity : AudioServiceFragmentActivity() {
     // single still into an ImageReader, writes it to [path], and tears
     // everything down. Any exception → result(null). Runs on a dedicated
     // background thread so it never blocks the UI.
+    /**
+     * MediaStore's stamp for the library cache (ScanGate): its version, each
+     * external volume's version and change counter, and whether video
+     * access is granted. With [videos], each volume's counter is the video
+     * table's own instead: how many videos it lists and the highest
+     * GENERATION_MODIFIED among them. A video added, renamed, moved or
+     * rewritten raises that; one deleted or trashed lowers the count; a
+     * photo or a song moves neither. Null below Android 11 (no
+     * generations): the caller scans, as it always has.
+     */
+    private fun libraryStamp(ctx: Context, videos: Boolean): String? {
+        if (Build.VERSION.SDK_INT < 30) return null
+        val sb = StringBuilder(android.provider.MediaStore.getVersion(ctx))
+        if (videos) sb.append("|videos")
+        for (v in android.provider.MediaStore.getExternalVolumeNames(ctx).sorted()) {
+            sb.append('|').append(v)
+                .append(':').append(android.provider.MediaStore.getVersion(ctx, v))
+            if (!videos) {
+                sb.append(':').append(android.provider.MediaStore.getGeneration(ctx, v))
+                continue
+            }
+            var n = 0L
+            var newest = 0L
+            ctx.contentResolver.query(
+                android.provider.MediaStore.Video.Media.getContentUri(v),
+                arrayOf(android.provider.MediaStore.MediaColumns.GENERATION_MODIFIED),
+                null, null, null
+            )?.use { c ->
+                val g = c.getColumnIndexOrThrow(android.provider.MediaStore.MediaColumns.GENERATION_MODIFIED)
+                while (c.moveToNext()) {
+                    n++
+                    val x = c.getLong(g)
+                    if (x > newest) newest = x
+                }
+            } ?: return null
+            sb.append(':').append(n).append('/').append(newest)
+        }
+        val perms = mutableListOf(
+            if (Build.VERSION.SDK_INT >= 33) "android.permission.READ_MEDIA_VIDEO"
+            else "android.permission.READ_EXTERNAL_STORAGE"
+        )
+        if (Build.VERSION.SDK_INT >= 34) {
+            perms.add("android.permission.READ_MEDIA_VISUAL_USER_SELECTED")
+        }
+        sb.append("|p:")
+        for (p in perms) {
+            val granted = ctx.checkSelfPermission(p) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            sb.append(if (granted) '1' else '0')
+        }
+        return sb.toString()
+    }
+
     private fun captureIntruderSelfie(path: String, result: MethodChannel.Result) {
         // Camera permission is required; bail cleanly if missing.
         if (checkSelfPermission(android.Manifest.permission.CAMERA)

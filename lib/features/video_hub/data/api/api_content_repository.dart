@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../domain/access.dart';
 import '../../domain/rendition.dart';
+import '../../domain/trickplay_pack.dart';
 import '../../domain/content_category.dart';
 import '../../domain/content_filters.dart';
 import '../../domain/content_repository.dart';
@@ -1003,15 +1004,21 @@ class ApiContentRepository implements ContentRepository {
         PlaybackLog.add('grant: ${sealed.length} of ${ladder.length + 1} copies sealed'
             '${sealed.isEmpty ? '' : ', keys ${sealed.map((x) => x.wrap).toSet().join('/')}'}');
       }
+      // THE SEEK BAR'S PICTURES (docs/trickplay_plan.md): only beside a
+      // ladder, only plain, only what this build reads — anything else is
+      // no pack, and the seek bar works as before.
+      final trickplay = ladder.isEmpty ? null : TrickplayInfo.fromJson(body['trickplay']);
       // Where these URLs point is where the install id may be sent.
       StreamDoor.learn(url);
       for (final r in ladder) {
         StreamDoor.learn(r.url);
       }
+      if (trickplay != null) StreamDoor.learn(trickplay.url);
       return PlaybackGrant.granted(
         url,
         expiresAt: _parseServerTime(expiresRaw),
         renditions: ladder,
+        trickplay: trickplay,
       );
     } on ApiException catch (e) {
       // The paywall case, and the ONLY place it comes from: the server said

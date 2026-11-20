@@ -989,15 +989,19 @@ class PlayerController extends StateNotifier<PlayerState> {
       // (a local file, or a stream mpv had cached) would otherwise stay
       // "opening" forever and never be measured.
       if (!_firstFrameSeen && p > Duration.zero) {
-        final player = _ref.read(videoPlayerServiceProvider);
-        if (player is MediaKitPlayerService && player.playingLadder) {
-          // On the ladder the position is ExoPlayer's from the moment it
-          // opens: a resume at minute 40 says 40:00 with nothing loaded.
-          // Only a position that has MOVED is a picture; READY (buffering
-          // going false) is the usual signal and comes first.
-          final from = _openPosition ??= p;
-          if (p - from >= const Duration(milliseconds: 200)) _markFirstFrame();
-        } else {
+        // Only a position that has MOVED is a picture, on either engine: a
+        // resume at minute 40 says 40:00 with nothing loaded (ExoPlayer from
+        // the moment it opens; libmpv once its demuxer has gone there). A
+        // step back or a step of more than a few seconds is that start, or
+        // a jump, not playback: the count starts again from it. The first
+        // picture itself (firstPictureStream) and, on the ladder, READY come
+        // first; this is for a file that has neither.
+        final base = _openPosition;
+        if (base == null ||
+            p < base ||
+            p - base > const Duration(seconds: 3)) {
+          _openPosition = p;
+        } else if (p - base >= const Duration(milliseconds: 200)) {
           _markFirstFrame();
         }
       }
@@ -1016,6 +1020,10 @@ class PlayerController extends StateNotifier<PlayerState> {
       _updateBackgroundWakeLock(p);
       _syncSession(force: true);
       qoe.playing(p, DateTime.now());
+    }));
+    _subs.add(svc.firstPictureStream.listen((_) {
+      if (!mounted) return;
+      _markFirstFrame();
     }));
     _subs.add(svc.bufferingStream.listen((b) {
       if (!mounted) return;
@@ -1064,10 +1072,20 @@ class PlayerController extends StateNotifier<PlayerState> {
         _rebufferAheadMs = null;
         _fillAfterJump = false;
       }
-      // Buffering going FALSE is the first-frame signal: libmpv only stops
-      // reporting a starved demuxer once it has enough to render, so this is
-      // the moment the black screen ends.
-      if (!b) _markFirstFrame();
+      // READY on the ladder is ExoPlayer's: it has a frame to show. libmpv's
+      // "not buffering" is not, at an open: media_kit's open() stops the
+      // file before it and says "not buffering" as it resets, 30 ms in,
+      // before a byte of the new one (14 Nov 2026: "first frame 32 ms", then
+      // a "rebuffer" of 881 ms that was the real wait, so every libmpv
+      // summary said open 32-43 ms and a stall). There the first frame is
+      // the decoder's first picture (firstPictureStream) or a position that
+      // moves.
+      if (!b) {
+        final player = _ref.read(videoPlayerServiceProvider);
+        if (player is MediaKitPlayerService && player.playingLadder) {
+          _markFirstFrame();
+        }
+      }
       // Debounce the SPINNER: a brief buffer refill right after a
       // seek/skip (typically well under 350 ms) should never flash a
       // "loading" circle — only a sustained stall surfaces it. Clearing
@@ -2308,10 +2326,10 @@ class PlayerController extends StateNotifier<PlayerState> {
 
   /// The black screen just ended.
   ///
-  /// Idempotent by design: three separate signals can arrive first (buffering
-  /// clearing, the position advancing, a seek completing) and whichever wins
-  /// is the right one. Everything after the first call is ignored, so a
-  /// mid-film refill can never be mistaken for another start.
+  /// Idempotent by design: three separate signals can arrive first (the
+  /// decoder's first picture, READY on the ladder, the position moving) and
+  /// whichever wins is the right one. Everything after the first call is
+  /// ignored, so a mid-film refill can never be mistaken for another start.
   void _markFirstFrame() {
     if (_firstFrameSeen) return;
     _firstFrameSeen = true;

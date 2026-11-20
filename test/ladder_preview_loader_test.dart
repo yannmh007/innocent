@@ -1,0 +1,73 @@
+// The seek bar's pictures on the ladder (19 Nov 2026): one fetch on its way
+// at a time, the newest moment replacing any that waited, and the nearest
+// picture already taken shown at once while the moment's own is fetched.
+
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/features/player/presentation/ladder_preview_loader.dart';
+
+void main() {
+  late List<int> asked;
+  late Map<int, Completer<Uint8List?>> pending;
+
+  Future<Uint8List?> fetch(Duration at) {
+    asked.add(at.inSeconds);
+    return (pending[at.inSeconds] = Completer<Uint8List?>()).future;
+  }
+
+  setUp(() {
+    asked = <int>[];
+    pending = <int, Completer<Uint8List?>>{};
+  });
+
+  test('one at a time, as before: the next waits for the one on its way',
+      () async {
+    final l = LadderPreviewLoader(fetch);
+    l.request(100, (_) {});
+    l.request(110, (_) {});
+    l.request(120, (_) {});
+    expect(asked, [100]);
+    pending[100]!.complete(Uint8List.fromList([1]));
+    await Future<void>.delayed(Duration.zero);
+    expect(asked, [100, 120]);
+    pending[120]!.complete(null);
+    await Future<void>.delayed(Duration.zero);
+    l.dispose();
+  });
+
+  test('the same two-second fragment again is given, not fetched', () async {
+    final l = LadderPreviewLoader(fetch);
+    final shown = <int>[];
+    l.request(100, (b) => shown.add(b.first));
+    pending[100]!.complete(Uint8List.fromList([5]));
+    await Future<void>.delayed(Duration.zero);
+    l.request(101, (b) => shown.add(b.first));
+    await Future<void>.delayed(Duration.zero);
+    expect(asked, [100]);
+    expect(shown, [5, 5]);
+    l.dispose();
+  });
+
+  test('the nearest picture taken is shown at once, then the moment\'s own',
+      () async {
+    final held = Uint8List.fromList([42]);
+    final l = LadderPreviewLoader(fetch,
+        nearest: (s) => (s - 300).abs() <= 10 ? (bytes: held, at: 300) : null);
+    final shown = <int>[];
+    l.request(306, (b) => shown.add(b.first));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42], reason: 'the nearest, before the fetch is back');
+    expect(l.shownFor, 300);
+    expect(asked, [306], reason: 'its own is still fetched');
+    pending[306]!.complete(Uint8List.fromList([36]));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42, 36]);
+    expect(l.shownFor, 306);
+    l.request(500, (b) => shown.add(b.first));
+    await Future<void>.delayed(Duration.zero);
+    expect(shown, [42, 36], reason: 'nothing near 500 s: only its own fetch');
+    l.dispose();
+  });
+}

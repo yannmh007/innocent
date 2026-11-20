@@ -651,6 +651,10 @@ class ExoStreamEngine private constructor(
             super.updateSelectedTrack(
                 playbackPositionUs, bufferedDurationUs, availableDurationUs, queue, mediaChunkIterators)
             // Two segments of the start rung in hand: Auto is the player's.
+            // (Holding its first climb until 10 s were in hand was A/B'd on
+            // 19 Nov 2026, device lab S3 44565023092, on a remembered
+            // 3000 kbps line: the picture 36 ms apart, stops alike — taken
+            // out.)
             if (steer.start != null && queue.size >= 2) steer.start = null
         }
 
@@ -759,8 +763,10 @@ class ExoStreamEngine private constructor(
                     result.success(true)
                 } catch (t: Throwable) {
                     // A player that cannot do what it was asked says so; it
-                    // never takes the app down with it.
-                    result.error("exo", t.message, null)
+                    // never takes the app down with it. The class too: a
+                    // message alone is often null, and the trail then said
+                    // nothing (ExoEngine._refused, 14 Nov 2026).
+                    result.error("exo", "${t.javaClass.simpleName}: ${t.message ?: ""}", null)
                 }
             }
         }

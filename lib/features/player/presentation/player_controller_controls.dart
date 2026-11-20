@@ -32,13 +32,33 @@ extension PlayerControls on PlayerController {
       // always starts from the default 4 icons — never the full list.
       shortcutsExpanded: willShow ? state.shortcutsExpanded : false,
     );
-    if (willShow) _scheduleHideControls();
+    if (willShow) {
+      _scheduleHideControls();
+      _previewsAhead();
+    }
   }
 
   void showControls() {
+    final wasHidden = !state.controlsVisible;
     syncPositionToState();
     state = state.copyWith(controlsVisible: true);
     _scheduleHideControls();
+    if (wasHidden) _previewsAhead();
+  }
+
+  /// The controls came up: the seek bar's pictures beside the film's moment
+  /// are taken before a finger reaches it, on the ladder, when the seek
+  /// bar shows pictures at all (MediaKitPlayerService.prefetchPreviewsAround).
+  void _previewsAhead() {
+    try {
+      final svc = _ref.read(videoPlayerServiceProvider);
+      if (svc is! MediaKitPlayerService || !svc.playingLadder) return;
+      final s = _ref.read(playerSettingsProvider);
+      if (!s.get(PlayerSetting.previewSeek) || !s.get(PlayerSetting.navSeekBarPreview)) return;
+      svc.prefetchPreviewsAround(svc.position);
+    } catch (_) {
+      // A picture ahead is a nicety; the controls are not.
+    }
   }
 
   /// Phase 45: forcibly hide the controls. Used by the PiP integration so

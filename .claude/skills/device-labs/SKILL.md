@@ -81,9 +81,43 @@ Both run only on non-main branches, started by pushing their config file.
   jumps flow, so the release gate can run with a switch on before the
   build's default is.
 
+- **A start: flow `ladderstart`** (19 Nov): CLIMB_TITLE resumed at
+  START_AT s after START_PAGE s on its page, from a cleared app, one pass a
+  word of START_PASSES `LINE:START[+PREVIEW][@KBPS]` — LINE `weak`
+  (START_WEAK) or `plain` (START_PLAIN, START_PLAIN_DELAY), START to
+  `lab_start` (`base` = 1.64.85's start; else the build's), PREVIEW the
+  seek bar's (`base` or the build's; drags, START_DRAGS, only in a pass
+  that names one), KBPS a remembered line (`lab_throughput`).
+  `ladderstart_summary.py` sets each step (`LAB hls start +N ms`) beside
+  the tap, the grant and the picture by logcat's ms, per line and word:
+  first picture median/p90, stops and 480p+ in 30 s, pairs of words.
+  **Its A/A** (S1 44534768953): plain 107 ms, weak 1.5 s — a start rule
+  must clear that in both orders. Read the FIRST SEGMENT's rung, not the
+  app's: a resume once started on another rung than the one chosen (S1).
+- **App start CPU: flow `coldcpu`** (as root; put it last and after
+  `perf_idle`, which grants access): cold starts by COLD_PLAN
+  `STAMP:CHANGE` (`lab_scan` volume|videos; `photo` = a screenshot into
+  MediaStore first, as a chat download), COLD_LIBRARY more videos. The
+  first start of a stamp always scans; compare the rest. The emulator's
+  CPU is fast: it proves whether the library is read again (`library
+  all: …` in the trail), not the owner's seconds.
+- **The player audit races the auto-hide.** `player_audit*` taps a
+  control (More, Subtitle, holding Next) a step after showing the controls;
+  Maestro's steps ran ~5 s apart on some runners (15-19 Nov) and the
+  controls hide after 4 s (`controlsHideDelay`), so the tap lands on the
+  video — the trail logs `LAB gesture tap` at that moment and the next
+  assert ("Playing Queue", "Online", "Loop one") fails. That is the flow,
+  not the build: run again (runs B-D, 5 of 8 on one build, the stops all
+  this kind). A stop WITHOUT that gesture tap is worth reading.
+
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
-  day, reset 07:00 UTC; each device in a run is one.
+  day, reset at midnight PACIFIC: 07:00 UTC in summer time, 08:00 UTC from
+  early November to March (20 Nov: a push at 07:16 UTC failed validation
+  with TEST_QUOTA_EXCEEDED, 44693769383, and spent nothing); each device in
+  a run is one.
+  Count the day's tests before a push (cloud.env's dated comments since
+  07:00 UTC): a sixth is refused, and the run is wasted (19 Nov).
 - `MEDIA_SEAL=` empty for the release build; `MODE=stream` plays Sintel.
 - `STREAM_AUTOJUMPS` (shares of the film): jumps in Auto after the checks,
   measured as on the emulator; the app then closes at 330 s, not 240. The
@@ -98,10 +132,14 @@ Both run only on non-main branches, started by pushing their config file.
 ## Both labs write to the live `events` table
 A lab build is a phone to the database: its plays land in `events` with
 `app_version` `1.64.78+391` (the branch's version; main alone is bumped)
-and a fresh `viewer_key` each run — 1,594 of 1,798 events in the week to
-14 Nov. Leave that version out when reading viewer data (`play_summary` has
-none: a lab's play ends in a force-stop), and out of any number shown as
-the viewers' (the console's start-up latency and Trending read the lab
-until BACKLOG §0's fix).
+and a fresh `viewer_key` each run. Since 15 Nov (7e1bbbfc) a lab build
+sends `device_kind` `lab`, and migration 081 (live) marked the 1,954 lab
+events before it (every install that only ever reported 1.64.78+391) and
+leaves `lab` out of heat, Trending, co-watch, the daily rollups and the
+start-up and stall readings. Reading viewer data by hand: `device_kind is
+distinct from 'lab'`. A lab play that ends in a force-stop now sends its
+`play_summary` at the app's next start (SummaryOutbox) — only if the next
+start keeps the app's data (no `pm clear`): flow `summarykill` does that,
+the other flows clear it.
 
 main never carries `test_device/results/`.

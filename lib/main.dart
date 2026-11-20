@@ -167,6 +167,11 @@ void main() async {
   MediaKitPlayerService.networkKbps = StreamCacheServer.networkKbps;
   // The seek bar's picture on the ladder engine.
   MediaKitPlayerService.ladderClipAt = StreamCacheServer.instance.previewClip;
+  MediaKitPlayerService.ladderPackRange = StreamCacheServer.instance.packRange;
+  MediaKitPlayerService.previewLineCost = () => (
+        requests: StreamCacheServer.instance.previewRequests,
+        bytes: StreamCacheServer.instance.previewBytes,
+      );
 
   // Wire the equalizer's audio-session id to the video player. The player
   // asks this hook (at each video's startup) for the shared session id and

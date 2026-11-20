@@ -29,3 +29,8 @@ paths:
 - `tool/check.py` runs `workflow_yaml.py` and `security_invariants.py` over
   these files; Semgrep runs on push and fails on new findings (a JWT-shaped
   literal counts, even a fake one: build it at run time).
+- **Reading a step in the middle of a long job log:** `get_job_logs` with
+  `return_content: false` gives a blob URL the sandbox cannot fetch (proxy
+  403, 20 Nov), and `tail_lines` only reaches the last steps. Print what a
+  step proves into `$GITHUB_STEP_SUMMARY` as well, or hand the run to
+  `ci-reader`; do not pull 150+ lines hoping to reach it.

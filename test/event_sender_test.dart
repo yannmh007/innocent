@@ -61,7 +61,8 @@ void main() {
           'path': request.url.path,
           'body': jsonDecode(request.body),
         });
-        return http.Response(status == 200 ? '3' : '{"message":"nope"}', status);
+        return http.Response(
+            status == 200 ? '3' : '{"message":"nope"}', status);
       }),
     );
     return (client, seen);
@@ -104,8 +105,8 @@ void main() {
       // THE CASE THAT ACTUALLY THREATENS THE CAP, and it is not "offline".
       // A failed flush empties the buffer on its way out, so failures cannot
       // accumulate. What accumulates is a flush that has STARTED and not
-      // finished: `_sending` is true, every later flush returns early, and the
-      // user keeps scrolling. That is a mobile connection that accepted the
+      // finished: every later flush waits behind it (one post at a time), and
+      // the user keeps scrolling. That is a mobile connection that accepted the
       // request and went quiet — the normal Myanmar failure, which is a hang
       // rather than a refusal.
       final gate = Completer<http.Response>();
@@ -121,7 +122,9 @@ void main() {
       // hands off to flush() entirely synchronously, and flush() empties the
       // buffer before its first await. The buffer's size is therefore already
       // final when this loop ends.
-      for (var i = 0; i < EventSender.flushAt + EventSender.maxBuffered + 50; i++) {
+      for (var i = 0;
+          i < EventSender.flushAt + EventSender.maxBuffered + 50;
+          i++) {
         sender.log(Ev.impression, titleId: 't$i');
       }
 
@@ -145,7 +148,8 @@ void main() {
       final sender = EventSender(client);
       addTearDown(sender.dispose);
 
-      sender.log(Ev.search, meta: <String, dynamic>{'q': 'solar', 'results': 0});
+      sender
+          .log(Ev.search, meta: <String, dynamic>{'q': 'solar', 'results': 0});
       sender.log(Ev.playStart, titleId: 'abc', durationS: 600);
       await sender.flush();
 
@@ -175,6 +179,23 @@ void main() {
       expect(batch.last['duration_s'], 600);
     });
 
+    test("a lab build's events say so; any other build's say phone", () async {
+      // Migration 081 leaves device_kind 'lab' out of Trending, co-watch,
+      // the rollups and the start-up numbers. Run this file once with
+      // --dart-define=INNOCENT_LAB=true to see the lab's.
+      const lab = bool.fromEnvironment('INNOCENT_LAB');
+      final (client, seen) = recording();
+      final sender = EventSender(client);
+      addTearDown(sender.dispose);
+      sender.log(Ev.playOpen, titleId: 'abc');
+      await sender.flush();
+      final batch =
+          ((seen.single['body'] as Map<String, dynamic>)['batch'] as List)
+              .cast<Map<String, dynamic>>();
+      expect(batch.single['device_kind'], lab ? 'lab' : 'phone');
+      expect(EventSender.deviceKind, lab ? 'lab' : 'phone');
+    });
+
     test('never carries anything that could name a person', () async {
       final (client, seen) = recording();
       final sender = EventSender(client);
@@ -186,9 +207,9 @@ void main() {
       // The server attributes an event to auth.uid() or the install id and
       // ignores anything the client claims. This asserts the client does not
       // even offer it: there is no viewer_key here to be believed.
-      final batch = ((seen.single['body'] as Map<String, dynamic>)['batch']
-              as List)
-          .cast<Map<String, dynamic>>();
+      final batch =
+          ((seen.single['body'] as Map<String, dynamic>)['batch'] as List)
+              .cast<Map<String, dynamic>>();
       expect(batch.single.containsKey('viewer_key'), isFalse);
       expect(batch.single.containsKey('email'), isFalse);
       expect(batch.single.containsKey('phone'), isFalse);

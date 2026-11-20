@@ -45,7 +45,12 @@ paths:
   320/360/411 dp, both orientations, `LANGS=my,en,th`, `SCALES=1.0,1.3`.
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
-  the release review. Name the files.
+  the release review. Name the files. And not a changed file that HEAD
+  never formatted: `media_kit_player_service.dart` and `player_provider.dart`
+  are not (14 Nov: formatting them rewrote ~500 untouched lines). Check
+  first — `git show HEAD:f > /tmp/x.dart; dart format -o none
+  --set-exit-if-changed /tmp/x.dart` — and if it would change, format only
+  your new files and lay out your own lines by hand.
 - **A dialog closes through ITS context.** `showDialog(builder: (_) => …
   Navigator.of(context).pop())` pops the navigator the PAGE is in: on the
   root one that happened to be the dialog; in a pane's own navigator
