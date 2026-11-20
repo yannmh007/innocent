@@ -15,11 +15,38 @@ Written at the owner's request so nothing below is lost between sessions.
 Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
-### WHERE THINGS STAND — read first in a new session (19 Nov 2026)
+### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **1.64.86 IS OUT (20 Nov, the owner's "Release လုပ်ပါ")**: main a6d68c93
+  (pushed 16:30 UTC after the libmpv jar came whole 3 of 3), Build
+  44774072388 green (Analyze, Test, both APKs, CDN, Release); GitHub
+  release v1.64.86-399 (16:55): arm64 95711908 B `4e95c499…899b`, arm32
+  87694124 B `368423c1…bf52` (GitHub's asset digests); app_releases id 1
+  moved 18:55:39 UTC after a rolled-back dry run (CDN urls, both digests
+  and sizes, mirrors = the GitHub release, notes_en / notes_mm as shown to
+  the owner, released_at now). Both Workers rebuilt from main (stream
+  16:31:12, console 16:32:18). Playback check on main 44776762810, and
+  44797438536 after the re-point. EDGE SHIMS RE-POINTED to a6d68c93
+  (docs/edge identical to 8746f216): transcode v30, request-playback v45;
+  function logs since: 200s only. Trick-play on main 44797433895: "0
+  film(s), scope all"; its schedule `37 3 * * *` runs main's copy from now.
+  Transport check on main 44797364068 (from 18:55:45, after the row
+  moved): "every transport check passed" — the APK on the CDN HTTP 200,
+  95711908 B, its bytes and SHA-256 the row's (the 32-bit one is not in
+  that check: put by the same Build step, whose PUT fails the step on any
+  error). Ships: the 19 Nov weak points 5-7,
+  the 15 Nov items, the trick-play pack reader. Left out: the lab hooks,
+  the Google nonce, test_device/**.
+  STATIC ANALYSIS ON MAIN 44774072468 RED: six ERROR findings first met on
+  the branch (four red branch runs, 20 Nov, never cleared) — five
+  subprocess audits in the trick-play tools, one curl piped into python3
+  in playback-check.yml. Fixed on the branch (4993cb65: argv lists marked,
+  the pipe replaced; the pinned Semgrep here: 0 ERROR findings); they reach
+  main with the next release, and later pushes to main do not raise them
+  again (a push is compared with the commit before it). The release skill
+  now says to clear red branch scans before the push.
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
-  not yet live (main is 6ad09f63, app 1.64.85 from c70f4e94; on the
-  branch only: the lab hooks, the Google nonce, test_device/results, the
-  15 Nov fixes and the 19 Nov ones below).
+  not yet live (main is a6d68c93, app 1.64.86; on the branch only: the lab
+  hooks, the Google nonce, test_device/results, 4993cb65's scan fixes).
   A new session starts on main:
   fetch this branch and work on top of it, or the notes below are missing.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
