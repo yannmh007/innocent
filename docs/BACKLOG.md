@@ -99,10 +99,18 @@ does it.
   the jumps on Big Buck Bunny 15 of 15, gestures 27/27 and 19/19, the
   player audit both ways (52 and 52 steps, exit 0), no refusal, no
   stacked player; its start passes (fix) plain 2671 ms, weak 3300 ms
-  median to the picture. STILL TO DO: Test Lab realme + OPPO on the final
-  code — the day's five physical tests were spent by 44518397993; this
-  session wakes at 07:12 UTC 20 Nov to run it (scheduled). The 15 Nov
-  "ready for the release call" below is stale until it passes.
+  median to the picture. TEST LAB ON THE FINAL CODE (20 Nov) 44700090814:
+  realme 15 PASS, OPPO 15 PASS, 2 SKIP each (tour->original: lines 7.7 and
+  5.1 Mbit/s under the 10 Mbit/s copy; the home trip, by design), no crash,
+  no ANR; first frame 2.6 s on both, a far seek-bar picture 1.6 s (no
+  controls shown in that check, so nothing ahead — the sprite's case). A
+  push at 07:16 UTC (44693769383) was refused TEST_QUOTA_EXCEEDED: the
+  quota resets at midnight Pacific, 08:00 UTC in winter (device-labs fixed).
+  THE BRANCH IS READY FOR THE OWNER'S RELEASE CALL: gate G1, the player
+  audit both ways, Test Lab both phones, Builds and Stream bench green, 1799
+  Flutter tests — the app as of 0318ab39 (lib/ and android/ unchanged
+  since; what came after is the sprite's phase 0-1: docs, tools, a
+  migration and two edge functions not applied or deployed).
   THE OWNER'S CALL (weak point 6): a trick-play sprite from the
   transcode — one 160x90 picture every 5 s (2 s matches the ladder's
   fragments), tiled 10x10 — about 0.5-1 MB a film-hour, a few sheets per
