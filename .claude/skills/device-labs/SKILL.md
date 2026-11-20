@@ -112,7 +112,10 @@ Both run only on non-main branches, started by pushing their config file.
 
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
-  day, reset 07:00 UTC; each device in a run is one.
+  day, reset at midnight PACIFIC: 07:00 UTC in summer time, 08:00 UTC from
+  early November to March (20 Nov: a push at 07:16 UTC failed validation
+  with TEST_QUOTA_EXCEEDED, 44693769383, and spent nothing); each device in
+  a run is one.
   Count the day's tests before a push (cloud.env's dated comments since
   07:00 UTC): a sixth is refused, and the run is wasted (19 Nov).
 - `MEDIA_SEAL=` empty for the release build; `MODE=stream` plays Sintel.
