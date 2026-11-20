@@ -415,10 +415,22 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (!ahead) _aheadGen++;
     if (ahead) return _fragmentPreview(at, ahead: true);
     final clock = Stopwatch()..start();
+    // The drag's line cost counted from its first ask, not its first
+    // answer (the owner's 1.64.86 report DZQXVZT2, 20 Nov: a drag's own
+    // read fell outside its line and a later run ahead inside it).
+    _dragCostFrom ??= previewLineCost?.call();
+    final ladder = _ladderUri;
     final (pic, from) = await SeekPreviewSource.picture(_packNow(), at, () => _fragmentPreview(at));
     // Said once the pack has opened (or been found wrong).
     _packNow();
-    _noteDragPicture(from, clock.elapsedMilliseconds);
+    // A picture that came after its film closed was never shown: not a
+    // drag's picture (the same report: 3.3 s and 7.1 s "pictures", each
+    // after `player teardown done`).
+    if (_exoActive && _ladderUri == ladder) {
+      _noteDragPicture(from, clock.elapsedMilliseconds);
+    } else if (!(_dragQuiet?.isActive ?? false) && _dragPack + _dragFragment + _dragNone == 0) {
+      _dragCostFrom = null;
+    }
     return pic;
   }
 

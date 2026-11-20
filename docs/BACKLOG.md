@@ -44,6 +44,21 @@ does it.
   main with the next release, and later pushes to main do not raise them
   again (a push is compared with the commit before it). The release skill
   now says to clear red branch scans before the push.
+- **The owner's first 1.64.86 report, DZQXVZT2 (20 Nov 19:25 UTC, wifi
+  metered, diagnostic_reports id 10)**: THE PACK WORKS ON THE PHONE —
+  Sintel `preview pack: 222 pictures, header 818 ms`; every drag `pack N,
+  fragment 0` (11 drags, 1-122 pictures each); a picture from memory 2-9
+  ms, from the line 270-470 ms; a drag's first picture 1.1 s when the
+  header and the picture went one after the other (no pictures ahead yet);
+  runs ahead 6-21 pictures, 1 request, 0.4-1.3 s. A resume at 249 s: first
+  frame 1846 ms. Two "pictures" of 3.3 s and 7.1 s came AFTER `player
+  teardown done` (never shown) — the 7.1 s one behind a far jump whose new
+  connection took 2.7 s (`exo picture after seek 4286 ms`, `conn new 2668
+  ms`). The drag line counted its line cost from the first ANSWER and
+  counted pictures after the film closed: fixed on the branch (the cost
+  from the first ask; a picture after its film closed is not a drag's).
+  The first start after the update read the library once (`stamp moved or
+  old, scanned`), by design: the stamp's kind changed.
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is a6d68c93, app 1.64.86; on the branch only: the lab
   hooks, the Google nonce, test_device/results, 4993cb65's scan fixes).
