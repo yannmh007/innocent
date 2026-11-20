@@ -45,6 +45,9 @@ does it.
     trick-play change differs from the live SHAs ea45f9b0 / 6a874828).
     Playback check 44710855254 on v44: grant 200, `trickplay: none` before
     the packs, every other step as before; function logs: 200s, no error.
+    BOTH SHIMS POINT AT A BRANCH COMMIT: until the release brings
+    docs/edge to main, a deploy of either function from main would drop the
+    trick-play code (deploy from this branch, or from main after the release).
   - Phase 3, LIVE 20 Nov: Trick-play 44723609469 (scope open, 1 min of
     ffmpeg): NINE PACKS, all recorded — 1,201 pictures, 5.7 MB in all
     (0.18-1.02 MB a film, median 3.0-6.4 KB a picture; widths 320, heights
