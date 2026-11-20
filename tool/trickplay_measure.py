@@ -50,6 +50,9 @@ def _get(url, key, body=None):
     args = ['curl', '-sS', '--fail', '--max-time', '60', url, '-H', f'apikey: {key}']
     if body is not None:
         args += ['-X', 'POST', '-H', 'Content-Type: application/json', '-d', json.dumps(body)]
+    # A list of arguments, no shell: each value is one argv element (a path, or a
+    # presigned address from our own edge function), never parsed by a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     out = subprocess.run(args, capture_output=True, text=True)
     if out.returncode != 0:
         raise RuntimeError(f'curl exit {out.returncode}')
@@ -81,6 +84,9 @@ def main():
         mb = os.path.getsize(src) / 1e6
         for iv, w, codec, q in SETTINGS:
             out = os.path.join(work, 'p.itp')
+            # A list of arguments, no shell: each value is one argv element (a path, or a
+            # presigned address from our own edge function), never parsed by a shell.
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
             p = subprocess.run([sys.executable, os.path.join(HERE, 'trickplay.py'), src, out,
                                 '--interval', str(iv), '--width', str(w), '--codec', codec,
                                 '--quality', str(q), '--report'], capture_output=True, text=True)

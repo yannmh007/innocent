@@ -28,6 +28,17 @@ files, minus what must not ship. Nothing is merged.
   run that phone once more before calling it the line.
 - Dispatch `build.yml` on the branch: Analyze, Flutter tests, the JVM seal,
   signed arm64 and 32-bit APKs; publishing steps are main-only.
+- **Static analysis on the branch since the last release: every red run is
+  a finding the release push WILL show again.** sast.yml compares a push
+  with the commit before it — on the branch the branch's last commit, on
+  main the last release — so a finding met once on the branch (and left)
+  is green on every later branch push and red on main. 1.64.86 (20 Nov):
+  four red branch runs from the trick-play tools (subprocess audits, a
+  curl piped into python3) became main's red 44774072468. Before the push,
+  list sast.yml runs on the branch with conclusion failure since the last
+  release; fix them, or run the pinned Semgrep against main
+  (`--baseline-commit origin/main`, the args of sast.yml) in the worktree:
+  0 ERROR findings.
 
 ## 3. The release tree (worktree, detached at origin/main)
 - `git worktree add --detach $SCRATCHPAD/main-wt origin/main` (or reuse it
