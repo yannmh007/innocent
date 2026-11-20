@@ -52,6 +52,11 @@ jobs:
           d = json.load(open('/tmp/p.json'))
           print('url set:', bool(d.get('url')), '| via:', d.get('via'),
                 '| rungs:', len(d.get('renditions') or []), '| code:', d.get('code'))
+          # The seek bar's pictures (083): what is in the pack, never its URL.
+          t = d.get('trickplay')
+          print('trickplay:', 'none' if not t else
+                f"{t.get('count')} pictures {t.get('width')}x{t.get('height')} {t.get('codec')}, "
+                f"every {t.get('interval_ms')} ms, {t.get('bytes')} B, url set: {bool(t.get('url'))}")
           PY
           [ "$code" = "200" ]
 
@@ -126,6 +131,75 @@ jobs:
           if bad:
               print(f'{bad} range(s) DIFFER between the edge and the direct path'); sys.exit(1)
           print('every range identical on both paths')
+          PY
+
+      # THE SEEK BAR'S PICTURES, READ AS THE APP WILL READ THEM (083,
+      # docs/trickplay_plan.md): the pack's header, then one picture, each one
+      # range request through the stream Worker, edge path and direct path
+      # compared byte for byte. The header must say what the grant says, its
+      # offsets must end at the object's size, and the picture must be a
+      # whole JPEG. Numbers only: no URL, no picture (public log). A film
+      # without a pack says so and passes: the field is optional.
+      - name: Seek-bar pictures — the pack through the real Worker
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, struct, sys, time, urllib.request, urllib.error
+          d = json.load(open('/tmp/p.json'))
+          t = d.get('trickplay')
+          if not t:
+              print('no pack for this film (the seek bar works as before)'); sys.exit(0)
+          url = t.get('url')
+          if not url:
+              print('a pack without a url'); sys.exit(1)
+
+          def fetch(s, e, bypass=False):
+              h = {'Range': f'bytes={s}-{e}', 'User-Agent': 'innocent-playback-check/1'}
+              if bypass:
+                  h['X-Edge-Bypass'] = '1'
+              t0 = time.time()
+              try:
+                  with urllib.request.urlopen(urllib.request.Request(url, headers=h), timeout=90) as r:
+                      return (r.status, r.headers.get('Content-Range') or '', r.headers.get('X-Edge') or 'direct',
+                              r.read(), int((time.time() - t0) * 1000))
+              except urllib.error.HTTPError as e:
+                  return (e.code, '', 'direct', b'', int((time.time() - t0) * 1000))
+
+          bad = 0
+          def same(name, s, e):
+              global bad
+              c, x = fetch(s, e), fetch(s, e, bypass=True)
+              ok = c[0] == x[0] == 206 and c[3] == x[3]
+              bad += not ok
+              print(f"{'ok ' if ok else 'BAD'} {name:<28} {len(x[3]):>7} B | edge {c[4]:>5} ms [{c[2]}] "
+                    f"| direct {x[4]:>5} ms")
+              return x
+          h = same('header (24 B)', 0, 23)
+          if len(h[3]) != 24:
+              print('the header could not be read'); sys.exit(1)
+          magic, ver, codec, iv, w, hh, n, hlen = struct.unpack('>4sHHIHHII', h[3])
+          total = int(h[1].split('/')[-1]) if '/' in h[1] else -1
+          print(f'pack: {magic!r} v{ver}, codec {codec}, every {iv} ms, {w}x{hh}, {n} pictures, '
+                f'header {hlen} B, object {total} B')
+          want = (b'ITP1', 1, {'jpeg': 1, 'webp': 2}.get(t.get('codec')), t.get('interval_ms'),
+                  t.get('width'), t.get('height'), t.get('count'), 24 + 4 * ((t.get('count') or 0) + 1))
+          if (magic, ver, codec, iv, w, hh, n, hlen) != want:
+              print(f'the header does not say what the grant says: {want[2:]}'); sys.exit(1)
+          if total != t.get('bytes'):
+              print(f"the object is {total} B, the grant says {t.get('bytes')}"); sys.exit(1)
+          o = same('offsets', 24, hlen - 1)[3]
+          offs = struct.unpack(f'>{n + 1}I', o)
+          if offs[0] != hlen or offs[-1] != total or any(b < a for a, b in zip(offs, offs[1:])):
+              print('the offsets do not run from the header to the end'); sys.exit(1)
+          i = n // 2
+          p = same(f'picture {i} of {n}', offs[i], offs[i + 1] - 1)[3]
+          if not (p[:2] == b'\xff\xd8' and p[-2:] == b'\xff\xd9'):
+              print('the picture is not a whole JPEG'); sys.exit(1)
+          run = same('a run of 20 pictures', offs[i], offs[min(n, i + 20)] - 1)[3]
+          print(f'picture {i}: {len(p)} B; 20 pictures: {len(run)} B in one request')
+          if bad:
+              print(f'{bad} range(s) DIFFER between the edge and the direct path'); sys.exit(1)
+          print('the pack reads whole through the Worker, on both paths')
           PY
 
       - name: Grant time, asked the way the app asks
