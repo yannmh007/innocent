@@ -562,12 +562,20 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // Each fetch's moment and when it was done.
         final done = <(int, DateTime)>[];
         var fetched = 0;
+        // What the drag cost on the line, the pictures ahead included, and
+        // where its pictures came from (the pack or fragments).
+        ({int requests, int bytes}) cost() =>
+            MediaKitPlayerService.previewLineCost?.call() ?? (requests: 0, bytes: 0);
+        final cost0 = cost();
+        final pack0 = svc.packPictures;
+        final frag0 = svc.fragmentPictures;
         // As a viewer's drag: the controls come up (the pictures beside the
         // moment taken ahead, when the build does), the finger reaches the
         // bar a moment later.
         svc.prefetchPreviewsAround(svc.position);
         await Future<void>.delayed(const Duration(seconds: 3));
         if (!mounted) return;
+        final cost1 = cost();
         final loader = LadderPreviewLoader((at) async {
           fetched++;
           final b = await svc.ladderPreview(at);
@@ -607,11 +615,25 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         near ??= landed;
         loader.dispose();
         final stopMs = landed == null ? -1 : max(0, landed.difference(stopped).inMilliseconds);
+        final cost2 = cost();
+        final packN = svc.packPictures - pack0;
+        final fragN = svc.fragmentPictures - frag0;
+        final src = packN > 0 && fragN > 0
+            ? 'mixed'
+            : packN > 0
+                ? 'pack'
+                : fragN > 0
+                    ? 'fragment'
+                    : 'none';
         PlaybackLog.add('LAB drag $i/${drags.length} by=$by over_ms=${over.inMilliseconds} '
             'from=$p0 to=$to asked=$steps fetched=$fetched pictures=$pictures '
             'first_ms=${firstPicture == null ? -1 : firstPicture!.difference(t0).inMilliseconds} '
             'stop_ms=$stopMs near_ms=${near == null ? -1 : max(0, near.difference(stopped).inMilliseconds)} '
-            'word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead}');
+            'src=$src pack=$packN fragment=$fragN '
+            'requests=${cost2.requests - cost0.requests} bytes=${cost2.bytes - cost0.bytes} '
+            'ahead_requests=${cost1.requests - cost0.requests} ahead_bytes=${cost1.bytes - cost0.bytes} '
+            'word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead} '
+            'packon=${MediaKitPlayerService.previewPack}');
         await Future<void>.delayed(const Duration(seconds: 2));
       }
     } finally {

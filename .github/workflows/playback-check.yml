@@ -140,10 +140,14 @@ jobs:
       # offsets must end at the object's size, and the picture must be a
       # whole JPEG. Numbers only: no URL, no picture (public log). A film
       # without a pack says so and passes: the field is optional.
+      # Its lines go to the run's summary as well (.claude/rules/workflows.md:
+      # a mid-log step cannot be read from the sandbox).
       - name: Seek-bar pictures — the pack through the real Worker
         run: |
           set -euo pipefail
-          python3 - <<'PY'
+          { echo '### Seek-bar pictures: the pack through the real Worker'; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          rc=0
+          python3 - <<'PY' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" || rc=$?
           import json, struct, sys, time, urllib.request, urllib.error
           d = json.load(open('/tmp/p.json'))
           t = d.get('trickplay')
@@ -201,6 +205,8 @@ jobs:
               print(f'{bad} range(s) DIFFER between the edge and the direct path'); sys.exit(1)
           print('the pack reads whole through the Worker, on both paths')
           PY
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
 
       - name: Grant time, asked the way the app asks
         env:

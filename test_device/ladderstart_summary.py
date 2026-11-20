@@ -167,6 +167,16 @@ def analyse(rows):
             previews.append(p)
     out['previews'] = previews
     out['ahead'] = sum(1 for t, m in rows if m.startswith('preview (ahead) at '))
+    # The pack (20 Nov, docs/trickplay_plan.md): its header's read, and the
+    # runs taken ahead of the drags.
+    pk = [re.match(r'preview pack: (\d+) pictures, header (\d+) ms', m) for t, m in rows]
+    pk = [x for x in pk if x]
+    out['pack_header_ms'] = int(pk[0].group(2)) if pk else None
+    out['pack_unused'] = [m for t, m in rows if m.startswith('preview pack: not used')]
+    out['pack_ahead'] = [
+        {'took': int(x.group(1)), 'ms': int(x.group(2)), 'requests': int(x.group(3)), 'kb': int(x.group(4))}
+        for x in (re.match(r'preview ahead \(pack\): around \d+s, (\d+) taken in (\d+) ms, (\d+) requests, '
+                           r'(\d+) KB', m) for t, m in rows) if x]
     return out
 
 
@@ -264,31 +274,59 @@ def main():
             print(f'ladderstart {lk}: {x} minus {y}, first picture, {len(ds)} pairs: '
                   f'median {fmt(med(ds))} ms, mean {fmt(statistics.mean(ds))} ms, '
                   f'{x} sooner in {wins} of {len(ds)}')
-    # The drags, by the pass's preview word, short (30 s of film or less)
-    # and long.
+    # The drags, by the pass's preview word (`trick` the pack, `near` the
+    # fragments, `base` 1.64.85), short (30 s of film or less), long (to
+    # 120 s) and far (further: a part never seen). Each: the first picture
+    # (`first_ms`), one within 10 s of where the finger stopped
+    # (`near_ms`), its own picture (`stop_ms`) — median and p90 — and what
+    # a drag cost on the line (requests, KB; the pictures ahead included).
     pgroups = {}
     for p, lk, word, a in passes:
         if a is not None:
             pgroups.setdefault((lk, pw(word)), []).append(a)
+
+    def ints(sel, k):
+        return [int(d[k]) for d in sel if d.get(k, '-1') not in ('-1', None)]
+
+    def size_of(d):
+        by = abs(int(d.get('by', '0')))
+        return 'short' if by <= 30 else ('long' if by <= 120 else 'far')
+
     for (lk, pword), xs in sorted(pgroups.items()):
         ds = [d for a in xs for d in a['drags']]
         pv = [v for a in xs for v in a['previews']]
         if not ds and not pv:
             continue
-        for size, keep in (('short', lambda d: abs(int(d.get('by', '0'))) <= 30),
-                           ('long', lambda d: abs(int(d.get('by', '0'))) > 30)):
-            sel = [d for d in ds if keep(d)]
+        for size in ('short', 'long', 'far', 'all'):
+            sel = [d for d in ds if size == 'all' or size_of(d) == size]
             if not sel:
                 continue
-            stop = [int(d['stop_ms']) for d in sel if d.get('stop_ms', '-1') != '-1']
-            firsts = [int(d['first_ms']) for d in sel if d.get('first_ms', '-1') != '-1']
+            stop = ints(sel, 'stop_ms')
+            firsts = ints(sel, 'first_ms')
+            near = ints(sel, 'near_ms')
             fetched = [int(d.get('fetched', '0')) for d in sel]
             miss = sum(1 for d in sel if d.get('stop_ms') == '-1')
-            near = [int(d['near_ms']) for d in sel if d.get('near_ms', '-1') != '-1']
-            print(f'ladderstart {lk} drags, previews {pword}, {size}: {len(sel)}; picture after the finger '
-                  f'stopped median {fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))} ms, never {miss}; '
-                  f'{"" if not near else f"one within 10 s median {fmt(med(near))} ms, p90 {fmt(pct(near, 0.9))} ms; "}'
-                  f'first picture median {fmt(med(firsts))} ms; fetches a drag {fmt(statistics.mean(fetched))}')
+            srcs = {}
+            for d in sel:
+                srcs[d.get('src', '?')] = srcs.get(d.get('src', '?'), 0) + 1
+            reqs = ints(sel, 'requests')
+            kb = [b / 1024 for b in ints(sel, 'bytes')]
+            print(f'ladderstart {lk} drags, previews {pword}, {size}: {len(sel)} '
+                  f'(src {", ".join(f"{k} {v}" for k, v in sorted(srcs.items()))}); '
+                  f'first picture median {fmt(med(firsts))} ms, p90 {fmt(pct(firsts, 0.9))}; '
+                  f'one within 10 s median {fmt(med(near))} ms, p90 {fmt(pct(near, 0.9))}; '
+                  f'its own picture median {fmt(med(stop))} ms, p90 {fmt(pct(stop, 0.9))}, never {miss}; '
+                  f'a drag: {fmt(med(reqs))} requests, {fmt(med(kb))} KB median '
+                  f'(mean {fmt(statistics.mean(reqs) if reqs else None)}, {fmt(statistics.mean(kb) if kb else None)}); '
+                  f'fetches {fmt(statistics.mean(fetched))}')
+        hdr = [a['pack_header_ms'] for a in xs if a.get('pack_header_ms') is not None]
+        runs = [r for a in xs for r in a.get('pack_ahead', [])]
+        unused = [u for a in xs for u in a.get('pack_unused', [])]
+        if hdr or runs or unused:
+            print(f'ladderstart {lk} previews {pword}: pack opened in {len(hdr)} of {len(xs)} passes, header '
+                  f'median {fmt(med(hdr))} ms; runs ahead {len(runs)}, median {fmt(med([r["ms"] for r in runs]))} ms, '
+                  f'{fmt(med([r["took"] for r in runs]))} pictures, {fmt(med([r["kb"] for r in runs]))} KB'
+                  f'{"; NOT USED: " + "; ".join(sorted(set(unused))) if unused else ""}')
         line_pv = [v for v in pv if v['how'].startswith('line')]
         phone_pv = [v for v in pv if v['how'] == 'phone']
         new = [v for v in line_pv if v.get('conn') == 'new']
@@ -306,6 +344,43 @@ def main():
         ahead = sum(a['ahead'] for a in xs)
         if ahead:
             print(f'ladderstart {lk} previews {pword}: {ahead} taken ahead of the drags')
+    for line in drag_pairs(passes):
+        print(line)
+
+
+def drag_pairs(passes):
+    """Neighbouring passes of two preview words, per line and drag size:
+    the difference of each pass's median near_ms and stop_ms (x minus y).
+    Two words of one build (`a`, `b`) are the drags' A/A."""
+    pw = lambda w: w.split('@')[0].split('+')[1] if '+' in w.split('@')[0] else '-'
+    out = []
+    for lk in sorted({l for p, l, w, a in passes}):
+        seq = [(pw(w), a) for p, l, w, a in passes if l == lk and a is not None and a['drags']]
+        for size in ('short', 'long', 'far', 'all'):
+            def m(a, k):
+                sel = [d for d in a['drags']
+                       if size == 'all' or ((abs(int(d.get('by', '0'))) <= 30 and size == 'short')
+                                            or (30 < abs(int(d.get('by', '0'))) <= 120 and size == 'long')
+                                            or (abs(int(d.get('by', '0'))) > 120 and size == 'far'))]
+                v = [int(d[k]) for d in sel if d.get(k, '-1') != '-1']
+                return med(v)
+            pairs = {}
+            i = 0
+            while i + 1 < len(seq):
+                (w1, a1), (w2, a2) = seq[i], seq[i + 1]
+                if w1 != w2:
+                    x, y = sorted((w1, w2))
+                    ax, ay = (a1, a2) if w1 == x else (a2, a1)
+                    for k in ('near_ms', 'stop_ms'):
+                        if m(ax, k) is not None and m(ay, k) is not None:
+                            pairs.setdefault((x, y, k), []).append(m(ax, k) - m(ay, k))
+                    i += 2
+                else:
+                    i += 1
+            for (x, y, k), ds in sorted(pairs.items()):
+                out.append(f'ladderstart {lk} drags {size}: {x} minus {y}, {k}, {len(ds)} pairs: '
+                           f'median {fmt(med(ds))} ms, {x} sooner in {sum(1 for d in ds if d < 0)} of {len(ds)}')
+    return out
 
 
 if __name__ == '__main__':

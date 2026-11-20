@@ -123,19 +123,24 @@ class LabStream {
   /// A/B'd in S3 44565023092 and taken out.)
   ///
   /// A word may carry a second after a `+`, for the seek bar's pictures:
-  /// `base` as 1.64.85 (one fetch at a time, none ahead), anything else the
-  /// build's own ([MediaKitPlayerService.previewAhead]) — `fix+near`.
+  /// `base` as 1.64.85 (one fetch at a time, none ahead, no pack); `near`
+  /// the fragments with the pictures ahead and the nearest shown at once
+  /// (19 Nov), the pack left unread ([MediaKitPlayerService.previewPack]
+  /// off); `trick` the pack (20 Nov, docs/trickplay_plan.md) — anything
+  /// else the build's own: `fix+trick`, `fix+near`.
   static void applyStartRule(String? pass) {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
     final parts = (pass ?? '').split('+');
     final word = parts.first.isEmpty ? null : parts.first;
     final preview = parts.length > 1 ? parts[1] : null;
     MediaKitPlayerService.previewAhead = preview != 'base';
+    MediaKitPlayerService.previewPack = preview != 'base' && preview != 'near';
     MediaKitPlayerService.startOnResume = word != 'base';
     StreamCacheServer.warmAtResume = word != 'base';
     PlaybackLog.add('LAB start rule ${word ?? '-'}: resume on the warmed rung '
         '${MediaKitPlayerService.startOnResume}, warm at the resume point '
-        '${StreamCacheServer.warmAtResume}, previews ahead ${MediaKitPlayerService.previewAhead}');
+        '${StreamCacheServer.warmAtResume}, previews ahead ${MediaKitPlayerService.previewAhead}, '
+        'pack ${MediaKitPlayerService.previewPack}');
   }
 
   /// The seek bar's drags (`lab_drags`): "+60/1.5 -30/1 …", each a move of
