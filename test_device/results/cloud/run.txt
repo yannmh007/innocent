@@ -3,28 +3,11 @@ Have questions, feedback, or issues? Get support by visiting:
   https://firebase.google.com/support/
 
 Uploading [app.apk] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/44518397993/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/44693769383/]
 
-Test [matrix-1m7jj66vljh5u] has been created in the Google Cloud.
+Test [matrix-l4d5wylwcczxa] has been created in the Google Cloud.
 Creating individual test executions...
-............................................................................done.
-Firebase Test Lab will execute your game-loop test on 1 device(s). More devices may be added later if flaky test attempts are specified.
-
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5719616329146054253 ].
-12:05:03 Test is Pending
-12:06:15 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
-12:06:15 Starting attempt 1.
-12:06:15 Test is Running
-12:43:25 Infrastructure error occurred.
-12:43:25 Test is Pending
-12:44:13 Starting attempt 2.
-12:44:13 Test is Running
-12:51:15 Done. Test time = 334 (secs)
-12:51:15 Starting results processing. Attempt: 1
-12:51:27 Completed results processing. Time taken = 14 (secs)
-12:51:27 Test is Finished
-
-Game-loop testing complete.
-
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5719616329146054253 ].
-exit 0
+.............................................................failed.
+ERROR: (gcloud.firebase.test.android.run) Matrix [matrix-l4d5wylwcczxa] failed during validation.
+Reason: TEST_QUOTA_EXCEEDED Message: Insufficient testing quota. See https://firebase.google.com/docs/test-lab/usage-quotas-pricing for details.
+exit 1
