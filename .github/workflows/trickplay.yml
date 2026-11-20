@@ -45,9 +45,9 @@ jobs:
           if [ -z "${SB_URL:-}" ] || [ -z "${RUNNER_SECRET:-}" ]; then
             echo "films=0" >> "$GITHUB_OUTPUT"; echo "no project or secret"; exit 0
           fi
-          SCOPE=open
-          # shellcheck disable=SC1091
-          . tool/trickplay_run.env
+          # Read, never sourced: this step holds the runner's secret. No file
+          # (main before the release) is the default scope.
+          SCOPE=$(grep -oE '^SCOPE=(open|all)$' tool/trickplay_run.env 2>/dev/null | cut -d= -f2 || true)
           [ "$SCOPE" = all ] || SCOPE=open
           code=$(curl -sS -o /tmp/trick.json -w '%{http_code}' \
             -X POST "$SB_URL/functions/v1/transcode" \

@@ -18,13 +18,18 @@
 --     running; a runner that died is offered again after two hours, a
 --     failure after a day. Serialised by an advisory lock.
 --   * record_trickplay(asset, row, note) — the pack made, or the failure;
---     the key must be the one claim_trickplay's caller minted: the smallest
---     rung's key with `-NNNp.mp4` → `-trick.itp`, beside it in the private
---     media bucket.
+--     the key must be the one claim_trickplay minted for that claim: the
+--     smallest rung's key with `-NNNp.mp4` → `-trick-<tag>.itp`, beside it in
+--     the private media bucket, a NEW key every claim — the stream Worker
+--     keeps blocks for 30 days by key, so a pack made again under the same
+--     key would be served old and new mixed (review of 20 Nov). The pack it
+--     replaces goes to the bin for a week.
 --   * trickplay_for(asset) — the pack for request-playback, only while it
 --     was made from the ladder that is there now.
---   * r2_refs() names the packs ('seek-bar pictures'): the bin's purge never
---     deletes one a row names, and an orphan check does not call it stray.
+--   * r2_refs() names the CURRENT packs ('seek-bar pictures'): the bin's
+--     purge never deletes one, the Files page does not call it stray. A pack
+--     its film has outgrown — a new ladder, a ladder now sealed only, an
+--     archived title — is no longer named, and shows as stray there.
 --   * r2_move_switch() re-points a moved pack, as 073 did for the stills.
 --
 -- CALLERS: docs/edge/transcode.ts ops trick_claim / trick_done, run by
@@ -44,6 +49,7 @@ create table if not exists public.asset_trickplay (
   codec        text,
   source_key   text,
   source_bytes bigint,
+  pack_key     text,
   note         text,
   claimed_at   timestamptz not null default now(),
   made_at      timestamptz,
@@ -55,16 +61,18 @@ alter table public.asset_trickplay enable row level security;
 revoke all on table public.asset_trickplay from public, anon, authenticated;
 grant select, insert, update, delete on table public.asset_trickplay to service_role;
 
--- The key a pack must have: the smallest rung's, its `-NNNp.mp4` made
--- `-trick.itp` (docs/edge/transcode.ts rungKey: master stem + `-NNNp.mp4`).
-create or replace function public.trickplay_key(p_rung_key text)
+-- The key a pack gets: the smallest rung's, its `-NNNp.mp4` made
+-- `-trick-<tag>.itp` (docs/edge/transcode.ts rungKey: master stem +
+-- `-NNNp.mp4`); the tag is new at every claim. Null for a key of any other
+-- shape — a sealed `s/<hex>` among them.
+create or replace function public.trickplay_key(p_rung_key text, p_tag text)
 returns text
 language sql
 immutable
 set search_path = public
 as $$
-  select case when p_rung_key ~ '-[0-9]{3,4}p\.mp4$'
-              then regexp_replace(p_rung_key, '-[0-9]{3,4}p\.mp4$', '-trick.itp')
+  select case when p_rung_key ~ '-[0-9]{3,4}p\.mp4$' and p_tag ~ '^[0-9a-f]{1,16}$'
+              then regexp_replace(p_rung_key, '-[0-9]{3,4}p\.mp4$', '-trick-' || p_tag || '.itp')
               else null end;
 $$;
 
@@ -74,6 +82,8 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  tag text := to_hex((extract(epoch from clock_timestamp()) * 1000)::bigint);
 begin
   if p_scope is null or p_scope not in ('open', 'all') then
     raise exception 'claim_trickplay: scope is open or all';
@@ -93,7 +103,7 @@ begin
       join public.titles t on t.id = a.title_id
       left join public.asset_trickplay k on k.asset_id = l.asset_id
      where l.object_key !~ '^s/'
-       and public.trickplay_key(l.object_key) is not null
+       and public.trickplay_key(l.object_key, tag) is not null
        and coalesce(l.bytes, 0) > 0
        and (p_scope = 'all' or t.slug ~ '^open-film-[a-z0-9-]{1,48}$')
        and (k.asset_id is null
@@ -104,14 +114,18 @@ begin
      limit greatest(1, least(coalesce(p_limit, 10), 50))
   ),
   mark as (
-    insert into public.asset_trickplay as k (asset_id, state, source_key, source_bytes, claimed_at, note)
-    select p.asset_id, 'running', p.object_key, p.bytes, now(), null from pick p
+    insert into public.asset_trickplay as k (asset_id, state, source_key, source_bytes, pack_key,
+                                             claimed_at, note)
+    select p.asset_id, 'running', p.object_key, p.bytes, public.trickplay_key(p.object_key, tag),
+           now(), null
+      from pick p
     on conflict on constraint asset_trickplay_pkey do update
        set state = 'running', source_key = excluded.source_key,
-           source_bytes = excluded.source_bytes, claimed_at = now(), note = null
-    returning k.asset_id
+           source_bytes = excluded.source_bytes, pack_key = excluded.pack_key,
+           claimed_at = now(), note = null
+    returning k.asset_id, k.pack_key
   )
-  select p.asset_id, p.object_key, p.height, p.bytes, public.trickplay_key(p.object_key)
+  select p.asset_id, p.object_key, p.height, p.bytes, m.pack_key
     from pick p join mark m on m.asset_id = p.asset_id;
 end;
 $$;
@@ -137,7 +151,7 @@ begin
     return null;
   end if;
   -- Only the key the claim minted, and numbers a pack can have.
-  if (p_row->>'key') is distinct from public.trickplay_key(k.source_key)
+  if k.pack_key is null or (p_row->>'key') is distinct from k.pack_key
      or coalesce((p_row->>'bytes')::bigint, 0) <= 0
      or coalesce((p_row->>'interval_ms')::integer, 0) not between 500 and 60000
      or coalesce((p_row->>'width')::integer, 0) not between 32 and 1280
@@ -159,6 +173,17 @@ begin
          made_at = now()
    where asset_id = p_asset;
   get diagnostics n = row_count;
+  -- The pack it replaces: to the bin for a week (grants made a moment ago
+  -- may still name it), unless it is there already.
+  if n = 1 and k.object_key is not null and k.object_key <> p_row->>'key' then
+    insert into public.r2_trash (bucket, key, bytes, reason, purge_after)
+    select a.bucket, k.object_key, k.bytes, 'seek-bar pictures replaced by ' || (p_row->>'key'),
+           now() + interval '7 days'
+      from public.title_assets a
+     where a.id = p_asset
+       and not exists (select 1 from public.r2_trash t where t.bucket = a.bucket and t.key = k.object_key
+                         and t.purged_at is null and t.restored_at is null);
+  end if;
   return case when n = 1 then p_row->>'key' end;
 end;
 $$;
@@ -180,11 +205,11 @@ as $$
                             where r.asset_id = p_asset order by r.height limit 1);
 $$;
 
-revoke all on function public.trickplay_key(text) from public, anon, authenticated;
+revoke all on function public.trickplay_key(text, text) from public, anon, authenticated;
 revoke all on function public.claim_trickplay(text, integer) from public, anon, authenticated;
 revoke all on function public.record_trickplay(uuid, jsonb, text) from public, anon, authenticated;
 revoke all on function public.trickplay_for(uuid) from public, anon, authenticated;
-grant execute on function public.trickplay_key(text) to service_role;
+grant execute on function public.trickplay_key(text, text) to service_role;
 grant execute on function public.claim_trickplay(text, integer) to service_role;
 grant execute on function public.record_trickplay(uuid, jsonb, text) to service_role;
 grant execute on function public.trickplay_for(uuid) to service_role;
@@ -211,10 +236,13 @@ as $function$
     select r.object_key, a.title_id, 'streaming copy'
       from public.asset_renditions r join public.title_assets a on a.id = r.asset_id
     union all
-    -- 083: the seek bar's pictures.
+    -- 083: the seek bar's pictures — the current pack only (trickplay_for's
+    -- rule): one its film outgrew is stray, not kept for ever.
     select k.object_key, a.title_id, 'seek-bar pictures'
       from public.asset_trickplay k join public.title_assets a on a.id = k.asset_id
-     where k.object_key is not null
+     where k.object_key is not null and k.state = 'done'
+       and k.source_bytes = (select r.bytes from public.asset_renditions r
+                              where r.asset_id = k.asset_id order by r.height limit 1)
     union all
     select t.locator, t.id, 'file' from public.titles t
      where coalesce(t.locator, '') <> ''
@@ -296,6 +324,8 @@ begin
     from r2_map r where x.object_key = r.from_key;
   update public.asset_trickplay x set source_key = r.to_key
     from r2_map r where x.source_key = r.from_key;
+  update public.asset_trickplay x set pack_key = r.to_key
+    from r2_map r where x.pack_key = r.from_key;
   update public.ingest_jobs x set object_key = r.to_key
     from r2_map r where x.object_key = r.from_key;
   update public.titles x set locator = r.to_key

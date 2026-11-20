@@ -76,6 +76,14 @@ class H(http.server.BaseHTTPRequestHandler):
         n = int(self.headers.get('Content-Length') or 0)
         body = json.loads(self.rfile.read(n))
         dones.append(body)
+        if body.get('asset_id') == 'a0':
+            # The function refuses this one (409): the batch must go on.
+            out = json.dumps({'error': 'not_recorded'}).encode()
+            self.send_response(409)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(out)
+            return
         out = json.dumps({'ok': True, 'key': (body.get('pack') or {}).get('key')}).encode()
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
@@ -90,6 +98,8 @@ claim = {
     'scope': 'open',
     'done_url': f'{base}/done',
     'jobs': [
+        {'asset_id': 'a0', 'src_url': f'{base}/src?sig=secret-looking', 'src_height': 240,
+         'key': 'open-film-w/video/z-trick-1.itp', 'put_url': f'{base}/put0?sig=secret-looking'},
         {'asset_id': 'a1', 'src_url': f'{base}/src?sig=secret-looking', 'src_height': 240,
          'key': 'open-film-x/video/a-trick.itp', 'put_url': f'{base}/put?sig=secret-looking'},
         {'asset_id': 'a2', 'src_url': f'{base}/gone?sig=secret-looking', 'src_height': 240,
@@ -106,7 +116,10 @@ with redirect_stdout(buf):
 log = buf.getvalue()
 srv.shutdown()
 
-check('one film of two made: the batch is not a failure', rc == 0)
+check('one film of three made: the batch is not a failure', rc == 0)
+check('a report the function refused (409) is said, and the films after it are made',
+      'a0: ' in log and 'not recorded (not_recorded)' in log and 'a1: 5 pictures' in log)
+check('a refused report is sent once, not retried', sum(1 for d in dones if d.get('asset_id') == 'a0') == 1)
 put = puts.get('/put?sig=secret-looking')
 check('the pack was PUT where the claim said, as application/octet-stream',
       put is not None and put[0] == 'application/octet-stream')

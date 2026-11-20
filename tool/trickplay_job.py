@@ -43,17 +43,27 @@ def _curl(args):
 
 
 def done(url, secret, asset, pack=None, note=None):
+    """`trick_done`, once: no --fail and no --retry — a refusal (409) is an
+    answer to report, not a reason to stop the batch, and a retried report
+    that had already been recorded would be refused as never claimed."""
     body = {'op': 'trick_done', 'token': secret, 'asset_id': asset}
     if pack is not None:
         body['pack'] = pack
     if note:
         body['note'] = note[:200]
-    out = _curl(['--max-time', '60', '-X', 'POST', url, '-H', 'Content-Type: application/json',
-                 '-d', json.dumps(body)])
+    p = subprocess.run(['curl', '-sS', '--max-time', '60', '-w', '\n%{http_code}', '-X', 'POST', url,
+                        '-H', 'Content-Type: application/json', '-d', json.dumps(body)],
+                       capture_output=True, text=True)
+    text, _, code = p.stdout.rpartition('\n')
     try:
-        return json.loads(out)
+        answer = json.loads(text) if text else {}
     except ValueError:
-        return {}
+        answer = {}
+    if not isinstance(answer, dict):
+        answer = {}
+    if p.returncode != 0 or not code.startswith('2'):
+        answer.setdefault('error', f'HTTP {code or "none"}')
+    return answer
 
 
 def run_job(job, done_url, secret, work):
@@ -102,7 +112,10 @@ def main(argv):
     work = tempfile.mkdtemp(prefix='trick_job_')
     failed = 0
     for job in jobs:
-        line = run_job(job, claim['done_url'], secret, work)
+        try:
+            line = run_job(job, claim['done_url'], secret, work)
+        except Exception as e:  # noqa: BLE001 - one film never ends the batch
+            line = f"{job.get('asset_id')}: failed ({type(e).__name__})"
         failed += 0 if line.endswith('recorded') else 1
         print('trickplay: ' + line)
     return 1 if failed and failed == len(jobs) else 0

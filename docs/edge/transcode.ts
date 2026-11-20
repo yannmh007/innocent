@@ -721,18 +721,25 @@ Deno.serve(async (req: Request) => {
     for (const r of rows) {
       const src = String(r.src_key ?? '');
       const pack = String(r.pack_key ?? '');
-      if (!src || !pack || isSealedKey(src)) {
-        await rpc('record_trickplay', { p_asset: r.asset_id, p_row: null, p_note: 'no plain rung to read' });
-        continue;
+      // Each film on its own: one that cannot be handed out is recorded a
+      // failure, never left `running` for two hours by a throw.
+      try {
+        if (!src || !pack || isSealedKey(src)) {
+          await rpc('record_trickplay', { p_asset: r.asset_id, p_row: null, p_note: 'no plain rung to read' });
+          continue;
+        }
+        jobs.push({
+          asset_id: r.asset_id,
+          // Six hours, as a ladder's source: a long film's 240p is read whole.
+          src_url: await presign('GET', src, 21600),
+          src_height: r.src_height ?? null,
+          key: pack,
+          put_url: await presign('PUT', pack, 21600),
+        });
+      } catch (e) {
+        await rpc('record_trickplay', { p_asset: r.asset_id, p_row: null,
+          p_note: `not handed out: ${String(e).slice(0, 120)}` }).catch(() => undefined);
       }
-      jobs.push({
-        asset_id: r.asset_id,
-        // Six hours, as a ladder's source: a long film's 240p is read whole.
-        src_url: await presign('GET', src, 21600),
-        src_height: r.src_height ?? null,
-        key: pack,
-        put_url: await presign('PUT', pack, 21600),
-      });
     }
     return json({ jobs, scope, done_url: `${SUPABASE_URL}/functions/v1/transcode` }, 200, req);
   }
