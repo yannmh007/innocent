@@ -142,7 +142,7 @@ docs/MEDIA_ENCRYPTION.md's ENC-4 note about preview pictures.
 | Phase | What | Live? |
 |---|---|---|
 | 0 | The tool and the measurement on the open films (done 20 Nov, 44668658121) | no |
-| 1 | Choose the setting from phase 0; write migration 083, the edge ops, the grant field, the job — all on the branch, tested locally (SQL dry-run rolled back as each role) | no |
+| 1 | Choose the setting from phase 0; write migration 083, the edge ops, the grant field, the job — all on the branch, tested locally (SQL dry-run rolled back as each role). DONE 20 Nov: 29d57ea5, 8fcb3b69 (TRICKPLAY TEST PASSED and MOVE TEST PASSED on live, rolled back; deno check, slice test and a local boot of transcode; tool/trickplay_job_test.py) | no |
 | **checkpoint** | **The owner sees the exact SQL, the grant field and the costs, and says go** | — |
 | 2 | Apply 083 (skill `live-db-change`), deploy transcode + request-playback (skill `edge-deploy`), prove: SQL tests, a grant with no pack unchanged | yes, additive |
 | 3 | Run the job on the branch, scope `open`: nine packs; prove each (bytes, header, a ranged read through the Worker) | yes (R2 writes, open films) |

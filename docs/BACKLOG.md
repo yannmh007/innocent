@@ -34,9 +34,17 @@ does it.
   2.5-3.5 MB per film-hour, 320 px 5.9 (q5). The films with a ladder today
   are the nine open films (1.3 h), so the whole store is ~6 MB. Chosen: 4 s,
   320 px (today's previews are 320 px), JPEG q8: 4.4 KB a picture, 4.28
-  MB per film-hour (44671051967). NEXT (phase 1, branch only): migration 083, the edge ops and
-  the grant field, the job; then THE CHECKPOINT — the owner sees the SQL
-  and says go — before anything live.
+  PHASE 1 DONE ON THE BRANCH (29d57ea5, 8fcb3b69): migration 083 (table
+  asset_trickplay; claim_trickplay / record_trickplay / trickplay_for /
+  trickplay_key, service role only; r2_refs names the packs; r2_move_switch
+  moves them) — NOT APPLIED; dry runs on live rolled back: TRICKPLAY TEST
+  PASSED (13 cases) and MOVE TEST PASSED, nothing stayed. transcode.ts
+  trick_claim / trick_done and request-playback.ts's additive `trickplay`
+  field — NOT DEPLOYED (deno check no new error, slice test, a local boot).
+  tool/trickplay_job.py (+ test) and .github/workflows/trickplay.yml (runs
+  on a push of tool/trickplay_run.env, which waits uncommitted). NEXT: THE
+  CHECKPOINT — the owner says go — then phase 2 (apply 083, deploy both
+  functions).
 - **19 Nov, on the branch for the next release: 1.64.85's weak points
   5-7** (the "first look" entry below; the streaming review §5, "Runs S1,
   S2, S3"). MEASURED FIRST, new lab flows `ladderstart` (a resume at
