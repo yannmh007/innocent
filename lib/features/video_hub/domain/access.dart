@@ -1,4 +1,5 @@
 import 'rendition.dart';
+import 'trickplay_pack.dart';
 import 'package:flutter/foundation.dart';
 
 /// What a piece of content REQUIRES of the viewer.
@@ -153,14 +154,22 @@ class PlaybackGrant {
   /// un-transcoded file all behave identically and correctly.
   final List<Rendition> renditions;
 
+  /// The seek bar's pictures made in advance, one pack beside the ladder
+  /// (docs/trickplay_plan.md), signed as a rung is. NULL IS THE NORMAL CASE
+  /// for an older server, a film not yet packed, a sealed-only film, or a
+  /// field this build does not take ([TrickplayInfo.fromJson]): the seek
+  /// bar then takes its pictures from the smallest rung, as before.
+  final TrickplayInfo? trickplay;
+
   const PlaybackGrant.granted(String this.url,
-      {this.expiresAt, this.renditions = const <Rendition>[]})
+      {this.expiresAt, this.renditions = const <Rendition>[], this.trickplay})
       : denial = null;
 
   const PlaybackGrant.denied(AccessDenial this.denial)
       : url = null,
         expiresAt = null,
-        renditions = const <Rendition>[];
+        renditions = const <Rendition>[],
+        trickplay = null;
 
   /// A grant is granted when the server handed over a URL. Full stop.
   ///

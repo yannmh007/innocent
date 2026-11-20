@@ -733,6 +733,7 @@ class StreamCacheServer {
     double? aspect,
     double? frameRate,
     String? startCacheId,
+    HlsPackSource? pack,
   }) async {
     if (rungs.isEmpty) return null;
     try {
@@ -797,6 +798,13 @@ class StreamCacheServer {
           aspect: aspect,
           frameRate: frameRate,
           startHeight: start.height);
+      // THE SEEK BAR'S PICTURES MADE IN ADVANCE ([packRange]): the pack is
+      // a source as a rung is — its signed address, its renewal, the
+      // ladder's pool, the install's header — but it has NO cache entry and
+      // no local address: its bytes are never written to the phone.
+      if (pack != null && SealedUrls.of(pack.upstream) == null) {
+        ladder.pack = _Source(upstream: pack.upstream, refresh: pack.refresh)..shared = pool;
+      }
       // A ladder registered again (a renewal, a return from Original): the
       // old pools close once their reads are done.
       _ladders.remove(ladderId)?.close();
@@ -886,6 +894,67 @@ class StreamCacheServer {
     return (film: film, startMs: idx.timesMs[i], how: cost.isEmpty ? 'phone' : cost.join('; '));
   }
 
+  /// What the seek bar's pictures took from the line: requests and bytes,
+  /// the fragments' ([previewClip]) and the pack's ([packRange]) alike —
+  /// for the trail and the lab's drags, never the player's own reads.
+  int previewRequests = 0;
+  int previewBytes = 0;
+
+  /// Whether the ladder at [ladderUrl] (its master playlist's local
+  /// address) has a pack registered ([hlsUrlFor]'s `pack`).
+  bool hasPack(String ladderUrl) => _ladderAt(ladderUrl)?.pack != null;
+
+  _Ladder? _ladderAt(String ladderUrl) {
+    final p = Uri.tryParse(ladderUrl)?.pathSegments;
+    if (p == null || p.length != 4 || p.first != 'h' || p[1] != _token) return null;
+    return _ladders[p[2]];
+  }
+
+  /// How long a pack's read may bring nothing before it is given up.
+  static Duration packStall = const Duration(seconds: 8);
+
+  /// BYTES [start, endExclusive) OF THE PACK beside the ladder at
+  /// [ladderUrl] (docs/trickplay_plan.md): one range request to the Worker
+  /// on the ladder's pool, through [_openPooled] exactly as a rung's
+  /// segment — the signed address, the install's header (StreamDoor; the
+  /// Worker enforces bound tokens, so a pack read without it is a 404),
+  /// a renewal on 403/404/410, a pause on 429.
+  ///
+  /// NEVER WRITTEN TO THE PHONE: the pack has no cache entry, and what is
+  /// read here goes only to the caller (an in-memory LRU, TrickplayPack).
+  /// Null when there is no pack, or the bytes did not all come.
+  Future<Uint8List?> packRange(String ladderUrl, int start, int endExclusive) async {
+    final src = _ladderAt(ladderUrl)?.pack;
+    if (src == null || start < 0 || endExclusive <= start) return null;
+    final want = endExclusive - start;
+    try {
+      final up = await _openPooled(src, start, endExclusive - 1);
+      if (up == null) return null;
+      previewRequests++;
+      final out = BytesBuilder(copy: false);
+      // A 200 (the whole object, for a read from 0) is cut at what was
+      // asked; a read that stalls is given up.
+      var over = false;
+      await for (final chunk in up.timeout(packStall)) {
+        final room = want - out.length;
+        if (chunk.length > room) {
+          out.add(chunk.sublist(0, room));
+          over = true;
+          break;
+        }
+        out.add(chunk);
+      }
+      previewBytes += out.length;
+      upstreamBytes += out.length;
+      if (out.length != want) return null;
+      if (!over) _readWhole(src.io);
+      return out.takeBytes();
+    } catch (e) {
+      if (kDebugMode) debugPrint('StreamCacheServer.packRange: $e');
+      return null;
+    }
+  }
+
   /// Bytes [start, end) of a film: from the phone where it has them, the
   /// rest from the Worker — not written to the cache ([previewClip]).
   ///
@@ -920,6 +989,10 @@ class StreamCacheServer {
           got += chunk.length;
         }
         upstreamBytes += got;
+        if (cost != null) {
+          previewRequests++;
+          previewBytes += got;
+        }
         final o = how;
         if (cost != null && o != null) {
           final hs = o.handshake;
@@ -3583,6 +3656,15 @@ class HlsRungSource {
   final int? bytes;
 }
 
+/// A ladder's pack of seek-bar pictures ([StreamCacheServer.packRange]):
+/// its signed address and how to renew it, as a rung's.
+class HlsPackSource {
+  const HlsPackSource({required this.upstream, required this.refresh});
+
+  final String upstream;
+  final Future<String?> Function() refresh;
+}
+
 class _Ladder {
   _Ladder(
       {required this.rungs,
@@ -3592,6 +3674,10 @@ class _Ladder {
       this.frameRate,
       this.startHeight});
   final List<_LadderRung> rungs;
+
+  /// The pack of seek-bar pictures, if the grant had one: a source with no
+  /// cache entry ([StreamCacheServer.packRange]).
+  _Source? pack;
 
   /// One pool for every rung (see [_Source.shared]), kept a minute between
   /// reads: [pool], made before the rungs are registered.

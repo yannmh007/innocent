@@ -393,6 +393,9 @@ Future<void> _playMedia(
         ));
       }
       StreamCacheServer.instance.releaseAllExcept(<String>{...ladderIds, ...keep});
+      // THE SEEK BAR'S PICTURES MADE IN ADVANCE (docs/trickplay_plan.md):
+      // the pack goes with the ladder, renewed with it like a rung.
+      final pack = grant.trickplay;
       final url = await StreamCacheServer.instance.hlsUrlFor(
         ladderId: ladderId,
         rungs: rungs,
@@ -401,6 +404,18 @@ Future<void> _playMedia(
         // The first rung's own entry: the one the warm start filled when it
         // is the copy Play chose, never the Original's.
         startCacheId: streamCacheId(titleId: content.id, assetId: assetId, height: start.height),
+        pack: pack == null
+            ? null
+            : HlsPackSource(
+                upstream: pack.url,
+                refresh: () async {
+                  final f = await renewOnce();
+                  if (!f.isGranted) return null;
+                  // The SAME pack: a pack made again since (a new ladder)
+                  // has other offsets — then none, and the fragments.
+                  final t = f.trickplay;
+                  return t != null && t.sameObjectAs(pack) ? t.url : null;
+                }),
       );
       if (url == null) return null;
       MediaKitPlayerService.armLadder(
@@ -411,6 +426,8 @@ Future<void> _playMedia(
         start: start.height,
         rungs: rates,
         fallback: () async => StreamCacheServer.instance.ladderFallback(ladderId, start.height),
+        pack: pack,
+        saving: saving,
       );
       return url;
     }

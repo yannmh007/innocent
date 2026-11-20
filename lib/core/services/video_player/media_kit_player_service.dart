@@ -12,6 +12,7 @@ import 'models/subtitle_track_info.dart';
 import 'models/video_track_info.dart';
 import '../diagnostics/playback_log.dart';
 import '../../../features/player/domain/engine_check.dart';
+import '../../../features/video_hub/domain/trickplay_pack.dart';
 import 'disk_cache_dir.dart';
 import 'error_flood.dart';
 import 'exo_engine.dart';
@@ -168,9 +169,117 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   static Future<({Uint8List? film, int startMs, String how})?> Function(Duration at,
       {bool Function(int startMs)? have})? ladderClipAt;
 
+  /// Bytes [start, end) of the pack beside the ladder at a master
+  /// playlist's local address (StreamCacheServer.packRange). Set in
+  /// main.dart, as [ladderClipAt].
+  static Future<Uint8List?> Function(String ladderUrl, int start, int end)? ladderPackRange;
+
+  /// What the seek bar's pictures have taken from the line so far, in
+  /// requests and bytes (StreamCacheServer.previewRequests/previewBytes):
+  /// read before and after a drag. Set in main.dart.
+  static ({int requests, int bytes}) Function()? previewLineCost;
+
+  /// THE SEEK BAR'S PICTURES MADE IN ADVANCE (docs/trickplay_plan.md): with
+  /// a pack beside the ladder (the grant's `trickplay`), a picture is a
+  /// slice of it — one range request, no decode of video — and the
+  /// fragments are the fallback. Off only for the device lab's `near`
+  /// (the A/B against the fragments).
+  static bool previewPack = true;
+
   /// Pictures already taken this film, by the fragment's start (ms).
   final Map<int, Uint8List> _previews = <int, Uint8List>{};
   String? _previewsFor;
+
+  /// The pack of the ladder on screen, and the ladder it is for.
+  TrickplayPack? _pack;
+  String? _packFor;
+  bool _packSaid = false;
+  bool _packGoneSaid = false;
+
+  /// Pictures handed to the seek bar so far, by where they came from: the
+  /// pack or a fragment (for the trail's drag line and the lab).
+  int packPictures = 0;
+  int fragmentPictures = 0;
+
+  /// The pack for the ladder on screen, if it has one and it can be used.
+  TrickplayPack? _packNow() {
+    if (!previewPack || !_exoActive) return null;
+    final uri = _ladderUri;
+    if (uri == null) return null;
+    if (_packFor != uri) {
+      _packFor = uri;
+      _pack?.clear();
+      _pack = null;
+      _packSaid = false;
+      _packGoneSaid = false;
+      final info = _armedLadders[uri]?.pack;
+      final read = ladderPackRange;
+      if (info != null && read != null) {
+        _pack = TrickplayPack(info, (a, b) => read(uri, a, b));
+      }
+    }
+    final p = _pack;
+    if (p == null) return null;
+    if (!p.usable) {
+      if (!_packGoneSaid) {
+        _packGoneSaid = true;
+        // Why, never where: no address, no bytes.
+        PlaybackLog.add('preview pack: not used (${p.broken}), pictures from the fragments');
+      }
+      return null;
+    }
+    if (p.isOpen && !_packSaid) {
+      _packSaid = true;
+      PlaybackLog.add('preview pack: ${p.info.count} pictures, header ${p.headerMs} ms');
+    }
+    return p;
+  }
+
+  bool get _saving => _armedLadders[_ladderUri]?.saving ?? false;
+
+  /// A drag's pictures, said in one line once the seek bar has been still
+  /// for a moment ([_noteDragPicture]).
+  Timer? _dragQuiet;
+  int _dragPack = 0, _dragFragment = 0, _dragNone = 0;
+  final List<int> _dragMs = <int>[];
+  ({int requests, int bytes})? _dragCostFrom;
+
+  void _noteDragPicture(String? source, int ms) {
+    _dragCostFrom ??= previewLineCost?.call();
+    if (source == 'pack') {
+      _dragPack++;
+      packPictures++;
+    } else if (source == 'fragment') {
+      _dragFragment++;
+      fragmentPictures++;
+    } else {
+      _dragNone++;
+    }
+    if (source != null) _dragMs.add(ms);
+    _dragQuiet?.cancel();
+    _dragQuiet = Timer(const Duration(milliseconds: 1500), _sayDrag);
+  }
+
+  void _sayDrag() {
+    final from = _dragCostFrom;
+    final now = previewLineCost?.call();
+    final ms = List<int>.of(_dragMs)..sort();
+    final src = _dragPack > 0 && _dragFragment > 0
+        ? 'mixed'
+        : _dragPack > 0
+            ? 'pack'
+            : _dragFragment > 0
+                ? 'fragment'
+                : 'none';
+    PlaybackLog.add('preview drag: $src, pictures pack $_dragPack, fragment $_dragFragment, '
+        'none $_dragNone; ms first ${_dragMs.isEmpty ? '-' : _dragMs.first}, '
+        'median ${ms.isEmpty ? '-' : ms[ms.length ~/ 2]}, slowest ${ms.isEmpty ? '-' : ms.last}; '
+        'line ${from == null || now == null ? '-' : now.requests - from.requests} requests, '
+        '${from == null || now == null ? '-' : ((now.bytes - from.bytes) / 1024).round()} KB');
+    _dragPack = _dragFragment = _dragNone = 0;
+    _dragMs.clear();
+    _dragCostFrom = null;
+  }
 
   /// THE SEEK BAR'S PICTURES AHEAD OF THE FINGER (19 Nov 2026): when the
   /// controls come up on the ladder, the pictures 10, 20 and 30 s either
@@ -190,15 +299,35 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// none is that near.
   ({Uint8List bytes, int at})? nearestPreview(int at,
       {Duration within = const Duration(seconds: 10)}) {
-    if (!previewAhead || !_exoActive || _previewsFor != _ladderUri) return null;
+    if (!previewAhead || !_exoActive) return null;
     final ms = at * 1000;
     int? best;
-    for (final k in _previews.keys) {
-      if ((k - ms).abs() > within.inMilliseconds) continue;
-      if (best == null || (k - ms).abs() < (best - ms).abs()) best = k;
+    Uint8List? bytes;
+    if (_previewsFor == _ladderUri) {
+      for (final k in _previews.keys) {
+        if ((k - ms).abs() > within.inMilliseconds) continue;
+        if (best == null || (k - ms).abs() < (best - ms).abs()) {
+          best = k;
+          bytes = _previews[k];
+        }
+      }
     }
-    if (best == null) return null;
-    return (bytes: _previews[best]!, at: best ~/ 1000);
+    // The pack's pictures held in memory, as near as a fragment's.
+    final pack = _packNow();
+    if (pack != null && pack.isOpen) {
+      final n = pack.nearestHeld(pack.indexAt(Duration(milliseconds: ms)),
+          (within.inMilliseconds ~/ pack.info.intervalMs) + 1);
+      if (n != null) {
+        final k = pack.msOf(n.$1);
+        if ((k - ms).abs() <= within.inMilliseconds &&
+            (best == null || (k - ms).abs() < (best - ms).abs())) {
+          best = k;
+          bytes = n.$2;
+        }
+      }
+    }
+    if (best == null || bytes == null) return null;
+    return (bytes: bytes, at: best ~/ 1000);
   }
 
   /// The moments either side of the film's that [prefetchPreviewsAround]
@@ -212,26 +341,59 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// background; those already taken cost nothing. Stopped by the seek
   /// bar's own first fetch (a drag has begun: its pictures come first) and
   /// by a newer call; not repeated within 15 s of the last centre.
+  ///
+  /// WITH A PACK: the pictures [packAheadMs] either side in ONE request
+  /// (some 20 at 4 s, ~90 KB) instead of six fragments; with the data
+  /// saver on, none ahead — only the picture under the finger. A pack that
+  /// fails here leaves the fragments to do it, as without one.
   void prefetchPreviewsAround(Duration at) {
     if (!previewAhead || !_exoActive) return;
     final last = _aheadAround;
     if (last != null && (last - at).abs() < const Duration(seconds: 15)) return;
     _aheadAround = at;
     final gen = ++_aheadGen;
-    unawaited(() async {
-      final clock = Stopwatch()..start();
-      var took = 0;
-      for (final off in aheadOffsetsS) {
-        if (gen != _aheadGen || !_exoActive) return;
-        final t = at + Duration(seconds: off);
-        if (t < Duration.zero || (duration > Duration.zero && t >= duration)) continue;
-        final before = _previews.length;
-        await ladderPreview(t, ahead: true);
-        if (_previews.length > before) took++;
-      }
-      PlaybackLog.add('preview ahead: around ${at.inSeconds}s, $took taken in '
-          '${clock.elapsedMilliseconds} ms');
-    }());
+    final pack = _packNow();
+    final plan = SeekPreviewSource.ahead(pack: pack, saving: _saving);
+    if (plan == PreviewAhead.none) return;
+    if (plan == PreviewAhead.packRun && pack != null) {
+      unawaited(() async {
+        final clock = Stopwatch()..start();
+        final req0 = pack.requests;
+        final bytes0 = pack.bytesRead;
+        final (a, b) = SeekPreviewSource.runAround(pack, at, reachMs: packAheadMs);
+        final took = await pack.takeRun(a, b);
+        _packNow();
+        final asked = pack.requests - req0;
+        if (asked > 0 && took == 0) {
+          // The pack could not be read: the fragments, as without one.
+          if (gen == _aheadGen && _exoActive) await _prefetchFragments(at, gen);
+          return;
+        }
+        PlaybackLog.add('preview ahead (pack): around ${at.inSeconds}s, $took taken in '
+            '${clock.elapsedMilliseconds} ms, $asked requests, '
+            '${((pack.bytesRead - bytes0) / 1024).round()} KB');
+      }());
+      return;
+    }
+    unawaited(_prefetchFragments(at, gen));
+  }
+
+  /// How far either side of the moment the pack's pictures are taken ahead.
+  static const int packAheadMs = 40000;
+
+  Future<void> _prefetchFragments(Duration at, int gen) async {
+    final clock = Stopwatch()..start();
+    var took = 0;
+    for (final off in aheadOffsetsS) {
+      if (gen != _aheadGen || !_exoActive) return;
+      final t = at + Duration(seconds: off);
+      if (t < Duration.zero || (duration > Duration.zero && t >= duration)) continue;
+      final before = _previews.length;
+      await ladderPreview(t, ahead: true);
+      if (_previews.length > before) took++;
+    }
+    PlaybackLog.add('preview ahead: around ${at.inSeconds}s, $took taken in '
+        '${clock.elapsedMilliseconds} ms');
   }
 
   /// THE SEEK BAR'S PICTURE while a ladder plays: the frame nearest [at],
@@ -240,9 +402,24 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   ///
   /// [ahead]: a picture taken before it is asked for
   /// ([prefetchPreviewsAround]); any other call stops those still to come.
+  ///
+  /// WITH A PACK ([previewPack], docs/trickplay_plan.md): picture
+  /// ⌊at / interval⌋ from it — memory, or one range request — and no
+  /// decode. A film without one, or a pack that fails, takes the fragment
+  /// as before, silently.
   Future<Uint8List?> ladderPreview(Duration at, {bool ahead = false}) async {
     if (!_exoActive) return null;
     if (!ahead) _aheadGen++;
+    if (ahead) return _fragmentPreview(at, ahead: true);
+    final clock = Stopwatch()..start();
+    final (pic, from) = await SeekPreviewSource.picture(_packNow(), at, () => _fragmentPreview(at));
+    // Said once the pack has opened (or been found wrong).
+    _packNow();
+    _noteDragPicture(from, clock.elapsedMilliseconds);
+    return pic;
+  }
+
+  Future<Uint8List?> _fragmentPreview(Duration at, {bool ahead = false}) async {
     final clipAt = ladderClipAt;
     if (clipAt == null) return null;
     if (_previewsFor != _ladderUri) {
@@ -280,15 +457,34 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// The picture already taken nearest [to], within a fragment: what a far
   /// jump shows while it lands ([ExoEngine.landing]). A drag or a swipe has
   /// just fetched it for where the finger let go; nothing is fetched here.
+  ///
+  /// With a pack, its picture of that moment counts too (one every
+  /// interval, so within an interval): the bar showed it for the moment.
   Uint8List? _landingFor(Duration to) {
-    if (_previewsFor != _ladderUri) return null;
     final ms = to.inMilliseconds;
     int? best;
-    for (final k in _previews.keys) {
-      final d = (k - ms).abs();
-      if (d <= 2000 && (best == null || d < (best - ms).abs())) best = k;
+    Uint8List? bytes;
+    if (_previewsFor == _ladderUri) {
+      for (final k in _previews.keys) {
+        final d = (k - ms).abs();
+        if (d <= 2000 && (best == null || d < (best - ms).abs())) {
+          best = k;
+          bytes = _previews[k];
+        }
+      }
     }
-    return best == null ? null : _previews[best];
+    final pack = _packNow();
+    if (pack != null && pack.isOpen) {
+      final n = pack.nearestHeld(pack.indexAt(to), 1);
+      if (n != null) {
+        final k = pack.msOf(n.$1);
+        final d = (k - ms).abs();
+        if (d <= math.max(2000, pack.info.intervalMs) && (best == null || d < (best - ms).abs())) {
+          bytes = n.$2;
+        }
+      }
+    }
+    return bytes;
   }
 
   static final Map<String, _LadderArm> _armedLadders = <String, _LadderArm>{};
@@ -329,7 +525,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       int? kbps,
       int? start,
       Map<int, int> rungs = const <int, int>{},
-      Future<String?> Function()? fallback}) {
+      Future<String?> Function()? fallback,
+      TrickplayInfo? pack,
+      bool saving = false}) {
     // A new film's ladder: the last film's files go with its ladder.
     if (!_armedLadders.containsKey(uri)) {
       _armedFiles.clear();
@@ -343,7 +541,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
           kbps: kbps,
           start: start,
           rungs: rungs,
-          fallback: fallback);
+          fallback: fallback,
+          pack: pack,
+          saving: saving);
   }
 
   /// Ladders ExoPlayer could not start on this phone: opened on libmpv from
@@ -1559,6 +1759,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     // Audit fix: cancel cached-value subscriptions BEFORE disposing
     // _player, so onDone callbacks (if any) don't fire on an
     // already-disposed instance.
+    _dragQuiet?.cancel();
+    _dragQuiet = null;
     await _positionSub?.cancel();
     await _durationSub?.cancel();
     await _playingSub?.cancel();
@@ -3191,7 +3393,9 @@ class _LadderArm {
       this.kbps,
       this.start,
       this.rungs = const <int, int>{},
-      this.fallback});
+      this.fallback,
+      this.pack,
+      this.saving = false});
   final int? target;
   final int? maxHeight;
   final int? kbps;
@@ -3200,6 +3404,12 @@ class _LadderArm {
   /// Each rung's average rate (kbps) by height, as the grant lists them.
   final Map<int, int> rungs;
   final Future<String?> Function()? fallback;
+
+  /// The grant's pack of seek-bar pictures, if any.
+  final TrickplayInfo? pack;
+
+  /// The data saver is on: no seek-bar pictures taken ahead from the pack.
+  final bool saving;
 
   /// Opened once already: every later open is a reconnect or a renewal.
   bool opened = false;
