@@ -39,14 +39,14 @@ SETTINGS = [
     (4, 224, 'jpeg', 8),
     (4, 224, 'webp', 60),
     (4, 320, 'jpeg', 5),
+    (4, 320, 'jpeg', 8),
+    (4, 288, 'jpeg', 8),
     (5, 224, 'jpeg', 5),
 ]
 
 
 def _get(url, key, body=None):
-    """JSON from [url] through curl, as test_device/probe.sh asks: the same
-    request from Python's urllib was answered 401 on the runner (run
-    44666701538), curl's never."""
+    """JSON from [url] through curl, as test_device/probe.sh asks."""
     args = ['curl', '-sS', '--fail', '--max-time', '60', url, '-H', f'apikey: {key}']
     if body is not None:
         args += ['-X', 'POST', '-H', 'Content-Type: application/json', '-d', json.dumps(body)]

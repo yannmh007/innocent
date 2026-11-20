@@ -25,6 +25,18 @@ does it.
   Push to it (fast-forward), the owner's choice of 8 Nov: a session's own
   branch starts at main, has no history in common with this one, and
   would need a force-push.
+- **20 Nov: the trick-play sprite, the owner's go-ahead ("Sprite လုပ်၊ plan
+  သေချာချ")** — the design, the order of work and the checkpoint are
+  docs/trickplay_plan.md. Phase 0 done on the branch: tool/trickplay.py
+  (the `ITP1` pack: one picture every N s, read by byte range; its test in
+  tool/check.py) and the Trick-play measure workflow, run 44668658121 on
+  the nine open films: 12 s of a runner per film-hour; 4 s at 224 px JPEG
+  2.5-3.5 MB per film-hour, 320 px 5.9 (q5). The films with a ladder today
+  are the nine open films (1.3 h), so the whole store is ~6 MB. Chosen: 4 s,
+  320 px (today's previews are 320 px), JPEG q8, measured again before the
+  checkpoint. NEXT (phase 1, branch only): migration 083, the edge ops and
+  the grant field, the job; then THE CHECKPOINT — the owner sees the SQL
+  and says go — before anything live.
 - **19 Nov, on the branch for the next release: 1.64.85's weak points
   5-7** (the "first look" entry below; the streaming review §5, "Runs S1,
   S2, S3"). MEASURED FIRST, new lab flows `ladderstart` (a resume at
