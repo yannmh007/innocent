@@ -131,6 +131,11 @@ CHECKS = [
      'stills upscaled or squashed for portrait video, a frame PUT under a key '
      'the claim did not give, or one unreadable video ending the batch for '
      'the nineteen after it (the ffmpeg half runs wherever ffmpeg is on PATH)'),
+    ('trickplay_test.py', None,
+     'a seek-bar sprite the app misreads: an offset that does not bound its '
+     'picture, a picture not at i x interval, a height squashed out of the '
+     'film\'s shape, or a pack cut short read as whole (the ffmpeg half runs '
+     'wherever ffmpeg is on PATH)'),
     ('open_films_test.py', None,
      'a test film that may not be in the catalogue: a licence other than CC '
      'BY or CC0 on Blender\'s own site (No Derivatives, Non Commercial, '
