@@ -158,17 +158,22 @@ function b64urlToBytes(s) {
 /// warm isolate goes on accepting tokens minted with the old one until it
 /// happens to be recycled. A revocation that silently does not revoke is
 /// worse than none, because you stop looking.
+///
+/// THE KEY IS KEPT, NEVER ITS PROMISE (20 Nov 2026): a promise belongs to the
+/// request that made it, and the runtime refuses to let another request
+/// await one whose request has ended (see [strayIndexes], where that cost
+/// 43-60 s of 500s). The import takes microseconds, so a request that finds
+/// no key yet derives its own.
 const keyCache = new Map();
-function signingKey(secret) {
-  let promise = keyCache.get(secret);
-  if (!promise) {
-    promise = deriveKey(secret);
-    // One live secret and one being rotated out is the whole realistic
-    // range. A bound stops a bug elsewhere turning this into a leak.
-    if (keyCache.size > 4) keyCache.clear();
-    keyCache.set(secret, promise);
-  }
-  return promise;
+async function signingKey(secret) {
+  const known = keyCache.get(secret);
+  if (known) return known;
+  const key = await deriveKey(secret);
+  // One live secret and one being rotated out is the whole realistic
+  // range. A bound stops a bug elsewhere turning this into a leak.
+  if (keyCache.size > 4) keyCache.clear();
+  keyCache.set(secret, key);
+  return key;
 }
 
 /// SHA-256 OF THE SECRET, NOT THE SECRET'S BYTES.
@@ -639,18 +644,34 @@ function straySidx(head, size) {
 }
 
 /// [straySidx] for one object, read once per isolate and remembered.
+///
+/// THE ANSWER IS KEPT, NEVER THE PROMISE (20 Nov 2026). A promise belongs to
+/// the request that made it. Kept here, the first request's bucket read was
+/// what every later request for the film's front awaited — and when that
+/// first request was cut (the phone's warm-up giving the film over to
+/// Play), the runtime refused every later await of it: "This promise was
+/// created by a request that has since ended, so it can never settle"
+/// (handle_cross_request_promise_resolution), a 500 for every front read of
+/// that rung on that isolate for 43-60 s — the start that stood still in
+/// device lab T2 44744740674 (this Worker's logs, 14:00:34-14:01:17 UTC:
+/// 75 such 500s, all the 480p rung's head). Now a request that finds no
+/// answer reads for itself (a 512 KB range, a few times at most per film
+/// and isolate), and only the answer, an array, is kept; a read that failed
+/// is not kept, so the next request tries again.
 const strayCache = new Map();
-function strayIndexes(env, key) {
-  let found = strayCache.get(key);
-  if (!found) {
-    found = (async () => {
-      const obj = await env.MEDIA.get(key, { range: { offset: 0, length: HEAD_SCAN_BYTES } });
-      if (!obj || !obj.body) return [];
-      return straySidx(new Uint8Array(await obj.arrayBuffer()), obj.size);
-    })().catch(() => []);
-    strayCache.set(key, found);
-    if (strayCache.size > 512) strayCache.delete(strayCache.keys().next().value);
+async function strayIndexes(env, key) {
+  const known = strayCache.get(key);
+  if (known) return known;
+  let found;
+  try {
+    const obj = await env.MEDIA.get(key, { range: { offset: 0, length: HEAD_SCAN_BYTES } });
+    if (!obj || !obj.body) return [];
+    found = straySidx(new Uint8Array(await obj.arrayBuffer()), obj.size);
+  } catch {
+    return [];
   }
+  strayCache.set(key, found);
+  if (strayCache.size > 512) strayCache.delete(strayCache.keys().next().value);
   return found;
 }
 

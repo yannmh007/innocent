@@ -44,6 +44,26 @@ does it.
   main with the next release, and later pushes to main do not raise them
   again (a push is compared with the commit before it). The release skill
   now says to clear red branch scans before the push.
+- **THE LONG START IS THE WORKER — PROVED 20 Nov from its own logs (the
+  owner's export of 14:00-14:02 UTC)**: at 14:00:33.511 the warm-up's probe
+  of the 480p rung (`bytes=0-8191`) ended `canceled` (Play took the film
+  over); from 14:00:34.225 to 14:01:17.776 every front read of that rung —
+  75, `bytes=0-8191` and `0-65535` — answered 500, outcome `exception`:
+  "This promise was created by a request that has since ended, so it can
+  never settle. With the handle_cross_request_promise_resolution
+  compatibility flag, a promise can only settle in the request that
+  created it", at `mendFront (index.js:406)` — `strayIndexes`, which kept
+  the first request's PENDING bucket read for every later request (19
+  Oct). 720p and the other rungs answered 206 meanwhile; at 14:01:17 the
+  rung's reads came back. FIX ON THE BRANCH, NOT LIVE (a Worker deploy is
+  a push of docs/worker to main — the owner's word first): the per-isolate
+  caches keep the ANSWER (strayIndexes: an array, a failed read not kept;
+  signingKey: the CryptoKey, the same pattern), never a promise;
+  tool/js/worker_cache_test.mjs (15 checks, in check.py; the old Worker
+  fails it); worker_gate and stream_token tests pass. To prove it after a
+  deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
+  head read) before and after, and the Worker's logs for `can never
+  settle`.
 - **The owner's first 1.64.86 report, DZQXVZT2 (20 Nov 19:25 UTC, wifi
   metered, diagnostic_reports id 10)**: THE PACK WORKS ON THE PHONE —
   Sintel `preview pack: 222 pictures, header 818 ms`; every drag `pack N,
