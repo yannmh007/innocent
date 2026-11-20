@@ -152,7 +152,7 @@ docs/MEDIA_ENCRYPTION.md's ENC-4 note about preview pictures.
 | **checkpoint** | **The owner sees the exact SQL, the grant field and the costs, and says go** | — |
 | 2 | Apply 083 (skill `live-db-change`), deploy transcode + request-playback (skill `edge-deploy`), prove: SQL tests, a grant with no pack unchanged. DONE 20 Nov: TRICKPLAY, FILES, MEDIA KEYS, FRAMES TEST PASSED on live; transcode v29, request-playback v44 at 8746f216; Playback check 44710855254 (`trickplay: none`, all else as before) | yes, additive |
 | 3 | Run the job on the branch, scope `open`: nine packs; prove each (bytes, header, a ranged read through the Worker). DONE 20 Nov: Trick-play 44723609469, nine packs, 1,201 pictures, 5.7 MB; Playback check 44725839247 read one through the Worker (header = grant, offsets to the end, a whole JPEG, edge = direct) | yes (R2 writes, open films) |
-| 4 | The app reader, its tests, Stream bench, branch Build | no |
+| 4 | The app reader, its tests, Stream bench, branch Build. ON THE BRANCH 20 Nov: 8ec30178 (reader, proxy, service, 40 tests), 3e076d37 (lab words `trick`/`near`); runs in BACKLOG §0 | no |
 | 5 | Device lab A/B `trick` against `near`, the gate, Test Lab | no |
 | 6 | The owner's release call: the app reader ships; the job's cron on main for new ladders | owner |
 | 7 | The catalogue, when the owner says `all`; then sealed films | owner |

@@ -58,7 +58,28 @@ does it.
     through the real Worker — header = grant, offsets end at the object's
     size, a picture is a whole JPEG, a run of 20 is one request, edge and
     direct paths byte-identical.
-  - NEXT, phase 4 (on the branch, no live change): the app reader. Register
+  - Phase 4, ON THE BRANCH 20 Nov (8ec30178, labs 3e076d37): the app reads
+    the pack. `PlaybackGrant.trickplay` (TrickplayInfo.fromJson: null for no
+    field, codec other than jpeg, count/interval/bytes/size <= 0, no url, a
+    sealed pack, a header that cannot fit); the pack registered with
+    StreamCacheServer beside the ladder (HlsPackSource: the ladder's pool,
+    StreamDoor's header, renewal on 403/404/410 with the same pack only) —
+    `packRange` reads it with NO cache entry: nothing written to the phone;
+    TrickplayPack (domain/trickplay_pack.dart): first read [0, max(16 KB,
+    header)), header = grant or not used, a picture or a run one range, LRU
+    2 MB, three failed reads and the fragments take over; ladderPreview /
+    prefetchPreviewsAround (+-40 s in one request, none with the data saver)
+    / nearestPreview / the jump's landing picture read it; trail `preview
+    pack: N pictures, header X ms` and one `preview drag:` line a drag.
+    Lab words `trick` / `near` (LabStream), drag costs, far drags
+    (ladderstart_summary). Tests 1839 here (40 new). Trick-play cron daily
+    (37 3 * * *) with SCOPE=all, the owner's word for this job only:
+    branch run 44734070021 "0 film(s), scope all" (the live database before
+    it: 9 assets with a ladder, all open films, all packed).
+    Runs on it: Build 44734076158, device lab T1 44734069987 (the gate and
+    `trick` vs `near` order 1), Stream bench 44734069861, Test Lab
+    44734557188 (realme and OPPO).
+  - NEXT, phase 4 (DONE above; kept for its notes): the app reader. Register
     the pack with StreamCacheServer like a rung — the Worker enforces bound
     tokens (/health bind=enforce), and a bound grant binds the pack's URL as
     it does the rungs', so the pack is read with the install's device header
