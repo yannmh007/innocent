@@ -53,9 +53,31 @@ class _BoundWorker {
         await res.close();
         return;
       }
+      if (token == 'pkhang') {
+        // A connection that died: no answer, ever (the test's timeout ends it).
+        await Future<void>.delayed(const Duration(seconds: 30));
+        return;
+      }
       if (body == null || who != device) {
         res.statusCode = 404;
         await res.close();
+        return;
+      }
+      if (token == 'pkwhole') {
+        // A server that ignores the range: the whole object, 200.
+        res.statusCode = 200;
+        res.contentLength = body.length;
+        res.add(body);
+        await res.close();
+        return;
+      }
+      if (token == 'pkstall') {
+        // The answer, the first bytes, then nothing.
+        res.statusCode = 206;
+        res.headers.set('content-range', 'bytes $a-${body.length - 1}/${body.length}');
+        res.add(body.sublist(a, a + 100));
+        await res.flush();
+        await Future<void>.delayed(const Duration(seconds: 30));
         return;
       }
       var b = m == null || m.group(2)!.isEmpty ? body.length - 1 : int.parse(m.group(2)!);
@@ -102,10 +124,13 @@ void main() {
     worker.films['r360'] = r360.bytes;
     worker.films['pk1'] = pack;
     worker.films['pk2'] = pack;
+    worker.films['pkwhole'] = pack;
+    worker.films['pkstall'] = pack;
+    worker.films['pkhang'] = pack;
     await worker.start();
     StreamDoor.allowPlainHttp = true;
     DeviceIdentity.debugCurrent = 'install-test';
-    for (final t in ['r720', 'r360', 'pk1', 'pk2', 'pk-expired']) {
+    for (final t in ['r720', 'r360', 'pk1', 'pk2', 'pk-expired', 'pkwhole', 'pkstall', 'pkhang']) {
       StreamDoor.learn(worker.url(t));
     }
   });
@@ -241,5 +266,45 @@ void main() {
         await StreamCacheServer.instance
             .packRange('http://127.0.0.1:1/h/nottoken/packfilm1/master.m3u8', 0, 100),
         isNull);
+  });
+
+  test('a server that answers 200 with the whole object: cut to what was asked', () async {
+    final master = await register('packfilm7',
+        pack: HlsPackSource(upstream: worker.url('pkwhole'), refresh: () async => null));
+    await quiet();
+    final got = await StreamCacheServer.instance.packRange(master, 0, 16384);
+    expect(got, Uint8List.sublistView(pack, 0, 16384));
+    // A 200 is taken only for a read from 0 (_openPooled): never other bytes.
+    expect(await StreamCacheServer.instance.packRange(master, 5000, 6000), isNull);
+  });
+
+  test('a read that stalls, or an answer that never comes, ends: no bytes, no hang', () async {
+    final stall = StreamCacheServer.packStall;
+    final answer = StreamCacheServer.packAnswer;
+    StreamCacheServer.packStall = const Duration(milliseconds: 600);
+    StreamCacheServer.packAnswer = const Duration(milliseconds: 1500);
+    try {
+      final slow = await register('packfilm8',
+          pack: HlsPackSource(upstream: worker.url('pkstall'), refresh: () async => null));
+      await quiet();
+      final clock = Stopwatch()..start();
+      expect(await StreamCacheServer.instance.packRange(slow, 0, 16384), isNull);
+      expect(clock.elapsed, lessThan(const Duration(seconds: 5)));
+      final hung = await register('packfilm9',
+          pack: HlsPackSource(upstream: worker.url('pkhang'), refresh: () async => null));
+      await quiet();
+      clock.reset();
+      expect(await StreamCacheServer.instance.packRange(hung, 0, 16384), isNull);
+      expect(clock.elapsed, lessThan(const Duration(seconds: 5)));
+      // The reader then falls back, rather than waiting on it for good.
+      final reader = TrickplayPack(info, (a, b) => StreamCacheServer.instance.packRange(hung, a, b));
+      final (pic, from) = await SeekPreviewSource.picture(
+          reader, const Duration(seconds: 40), () async => Uint8List.fromList(<int>[1, 2, 3]));
+      expect(from, 'fragment');
+      expect(pic, <int>[1, 2, 3]);
+    } finally {
+      StreamCacheServer.packStall = stall;
+      StreamCacheServer.packAnswer = answer;
+    }
   });
 }

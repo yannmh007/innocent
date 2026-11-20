@@ -206,7 +206,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (!previewPack || !_exoActive) return null;
     final uri = _ladderUri;
     if (uri == null) return null;
-    if (_packFor != uri) {
+    // A new film's ladder, or the same ladder armed again with another
+    // pack (a renewed grant after a new ladder): a new reader, never the
+    // old header's offsets over a new object.
+    if (_packFor != uri || !identical(_pack?.info, _armedLadders[uri]?.pack)) {
       _packFor = uri;
       _pack?.clear();
       _pack = null;
@@ -1534,11 +1537,16 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (begin != null) unawaited(_confirmStart(begin, _openGen));
   }
 
+  /// The open generation ([_openGen]) whose ladder open last took ExoPlayer:
+  /// a ladder let go meanwhile leaves the engine to it ([_leaveLadder]).
+  int _exoGen = -1;
+
   /// A ladder's master playlist, on ExoPlayer (see [playingLadder]).
   Future<void> _openLadder(String uri,
       {Duration? startAt, bool autoplay = true, bool progressive = false}) async {
     // libmpv's start check for the file before this one has nothing to check.
     _openGen++;
+    _exoGen = _openGen;
     final onMpv = _ladderOnMpv[uri];
     if (onMpv != null) {
       if (_exoActive) await _leaveLadder();
@@ -1708,7 +1716,15 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       await s.cancel();
     }
     if (gen != _openGen) {
-      PlaybackLog.add('ladder let go: a newer open has the engine - not stopped');
+      // Only a newer LADDER open has the engine; a newer libmpv open (a
+      // file, an Original) does not, and ExoPlayer would keep the old
+      // film's source and connections meanwhile (release review, 20 Nov).
+      if (_exoGen == _openGen) {
+        PlaybackLog.add('ladder let go: a newer open has the engine - not stopped');
+        return;
+      }
+      PlaybackLog.add('ladder let go: a newer open is on libmpv - ExoPlayer stopped');
+      await _exo?.stop();
       return;
     }
     await _exo?.stop();

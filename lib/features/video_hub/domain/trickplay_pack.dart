@@ -78,7 +78,8 @@ class TrickplayInfo {
     final url = raw['url'];
     if (url is! String || url.isEmpty) return null;
     if (raw['codec'] != codec) return null;
-    int? n(Object? v) => v is int ? v : (v is num && v == v.roundToDouble() ? v.toInt() : null);
+    int? n(Object? v) =>
+        v is int ? v : (v is num && v.isFinite && v == v.roundToDouble() ? v.toInt() : null);
     final bytes = n(raw['bytes']);
     final interval = n(raw['interval_ms']);
     final width = n(raw['width']);
@@ -166,6 +167,10 @@ class TrickplayPack {
   /// After this many reads in a row that failed, the pack is not used again
   /// this film: the fragments take over.
   static const int giveUpAfter = 3;
+
+  /// The longest one read may take before it counts as failed: a reader
+  /// that never answers must not hold every picture waiting on it.
+  static Duration readTimeout = const Duration(seconds: 20);
 
   TrickplayHeader? _header;
   Future<bool>? _opening;
@@ -332,7 +337,7 @@ class TrickplayPack {
     requests++;
     Uint8List? data;
     try {
-      data = await _read(start, end);
+      data = await _read(start, end).timeout(readTimeout);
     } catch (_) {
       data = null;
     }

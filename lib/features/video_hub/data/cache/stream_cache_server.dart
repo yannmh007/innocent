@@ -913,6 +913,12 @@ class StreamCacheServer {
   /// How long a pack's read may bring nothing before it is given up.
   static Duration packStall = const Duration(seconds: 8);
 
+  /// How long a pack's read may wait for its answer — a renewal and a
+  /// retry included — before it is given up: a pooled connection that died
+  /// can hang there, and a reader waiting on it would hold the seek bar's
+  /// pictures for the rest of the film (release review, 20 Nov).
+  static Duration packAnswer = const Duration(seconds: 15);
+
   /// BYTES [start, endExclusive) OF THE PACK beside the ladder at
   /// [ladderUrl] (docs/trickplay_plan.md): one range request to the Worker
   /// on the ladder's pool, through [_openPooled] exactly as a rung's
@@ -928,7 +934,7 @@ class StreamCacheServer {
     if (src == null || start < 0 || endExclusive <= start) return null;
     final want = endExclusive - start;
     try {
-      final up = await _openPooled(src, start, endExclusive - 1);
+      final up = await _openPooled(src, start, endExclusive - 1).timeout(packAnswer);
       if (up == null) return null;
       previewRequests++;
       final out = BytesBuilder(copy: false);

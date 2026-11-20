@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -275,6 +276,18 @@ void main() {
       expect(pack.usable, isFalse);
     });
 
+    test('a read that never answers counts as failed, not a hang', () async {
+      final keep = TrickplayPack.readTimeout;
+      TrickplayPack.readTimeout = const Duration(milliseconds: 300);
+      try {
+        final pack = TrickplayPack(infoFor(film), (a, b) => Completer<Uint8List?>().future);
+        expect(await pack.open(), isFalse);
+        expect(pack.usable, isTrue, reason: 'one failure is not the end');
+      } finally {
+        TrickplayPack.readTimeout = keep;
+      }
+    });
+
     test('a read that throws is a failed read, not an error', () async {
       final pack = TrickplayPack(infoFor(film), (a, b) async => throw StateError('line'));
       expect(await pack.open(), isFalse);
@@ -318,6 +331,8 @@ void main() {
         ('count', '150'),
         ('count', 1.5),
         ('count', 200000),
+        ('count', double.infinity),
+        ('bytes', double.nan),
         ('bytes', 24 + 4 * 151),
         ('seal', <String, Object?>{'v': 1}),
       ]) {
