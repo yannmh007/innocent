@@ -388,13 +388,24 @@ void main() {
       expect((pic3, from3), (null, null));
     });
 
-    test('ahead: the pack run, none with the data saver, the fragments without a pack', () {
+    test('ahead: the pack run, the fragments without a pack, NOTHING with the data saver', () {
       final pack = TrickplayPack(infoFor(film), _Served(film).read);
       expect(SeekPreviewSource.ahead(pack: pack, saving: false), PreviewAhead.packRun);
       expect(SeekPreviewSource.ahead(pack: pack, saving: true), PreviewAhead.none);
       expect(SeekPreviewSource.ahead(pack: null, saving: false), PreviewAhead.fragments);
-      expect(SeekPreviewSource.ahead(pack: null, saving: true), PreviewAhead.fragments,
-          reason: 'a film without a pack is as it was');
+      // The owner's choice of 21 Nov 2026 (B3): a film without a pack took
+      // six fragments ahead (~450 KB) each time the controls came up, data
+      // saver or not; now nothing, as with a pack.
+      expect(SeekPreviewSource.ahead(pack: null, saving: true), PreviewAhead.none,
+          reason: 'the data saver takes nothing ahead, pack or not');
+    });
+
+    test('ahead on a single file (no ladder, no fragments): the pack run or nothing', () {
+      final pack = TrickplayPack(infoFor(film), _Served(film).read);
+      expect(SeekPreviewSource.ahead(pack: pack, saving: false, fragments: false), PreviewAhead.packRun);
+      expect(SeekPreviewSource.ahead(pack: pack, saving: true, fragments: false), PreviewAhead.none);
+      expect(SeekPreviewSource.ahead(pack: null, saving: false, fragments: false), PreviewAhead.none);
+      expect(SeekPreviewSource.ahead(pack: null, saving: true, fragments: false), PreviewAhead.none);
     });
 
     test('the data saver: only the picture under the finger is read', () async {
@@ -421,6 +432,44 @@ void main() {
       final slow = TrickplayPack(infoFor(film, intervalMs: 60000), _Served(film).read);
       expect(SeekPreviewSource.runAround(slow, const Duration(minutes: 5)), (4, 6),
           reason: 'never less than one either side');
+    });
+  });
+  group('a film played as one file (FilePacks)', () {
+    TrickplayInfo info(String url) =>
+        TrickplayInfo(url: url, bytes: 9000, intervalMs: 4000, width: 320, height: 180, count: 59);
+
+    test('every copy of the film names the same pack; another film clears the last', () {
+      final arms = FilePacks();
+      final a = info('https://w/a');
+      arms.arm('http://127.0.0.1:1/c/t/hero-0', FilePackArm(pack: a, packAt: 'pack:hero'));
+      arms.arm('http://127.0.0.1:1/c/t/hero-240', FilePackArm(pack: a, packAt: 'pack:hero', saving: true));
+      expect(arms['http://127.0.0.1:1/c/t/hero-0']?.packAt, 'pack:hero');
+      expect(arms['http://127.0.0.1:1/c/t/hero-240']?.saving, isTrue);
+      expect(arms.has('http://127.0.0.1:1/c/t/hero-240'), isTrue);
+      // The next film: never Hero's pictures over its address, nor Hero's
+      // pack left armed for an address that comes back.
+      arms.arm('http://127.0.0.1:1/c/t/ed-0', FilePackArm(pack: info('https://w/b'), packAt: 'pack:ed'));
+      expect(arms['http://127.0.0.1:1/c/t/hero-0'], isNull);
+      expect(arms['http://127.0.0.1:1/c/t/hero-240'], isNull);
+      expect(arms['http://127.0.0.1:1/c/t/ed-0']?.packAt, 'pack:ed');
+    });
+
+    test('an address armed again takes the new grant\'s pack', () {
+      final arms = FilePacks();
+      arms.arm('u', FilePackArm(pack: info('https://w/old'), packAt: 'pack:ed'));
+      final fresh = info('https://w/new');
+      arms.arm('u', FilePackArm(pack: fresh, packAt: 'pack:ed'));
+      expect(identical(arms['u']?.pack, fresh), isTrue);
+    });
+
+    test('nothing for an address never armed, a null one, or after clear', () {
+      final arms = FilePacks();
+      expect(arms[null], isNull);
+      expect(arms.has(null), isFalse);
+      expect(arms['file:///sdcard/a.mp4'], isNull);
+      arms.arm('u', FilePackArm(pack: info('https://w/a'), packAt: 'pack:x'));
+      arms.clear();
+      expect(arms['u'], isNull);
     });
   });
 }

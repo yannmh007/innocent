@@ -36,6 +36,10 @@ class _BoundWorker {
   late HttpServer server;
   final List<(String, int, int, String?)> asked = <(String, int, int, String?)>[];
 
+  /// Each request's token and the phone's end of its connection (a port:
+  /// the same one is the same connection, kept).
+  final List<(String, int)> conns = <(String, int)>[];
+
   String url(String token) => 'http://127.0.0.1:${server.port}/v/$token';
 
   Future<void> start() async {
@@ -48,6 +52,7 @@ class _BoundWorker {
       final a = m == null ? 0 : int.parse(m.group(1)!);
       final body = films[token];
       asked.add((token, a, m == null || m.group(2)!.isEmpty ? -1 : int.parse(m.group(2)!), who));
+      conns.add((token, req.connectionInfo?.remotePort ?? -1));
       if (expired.contains(token)) {
         res.statusCode = 410;
         await res.close();
@@ -306,5 +311,97 @@ void main() {
       StreamCacheServer.packStall = stall;
       StreamCacheServer.packAnswer = answer;
     }
+  });
+  group('a film played as one file: its own pack (21 Nov 2026)', () {
+    HlsPackSource src(String token, {Future<String?> Function()? refresh}) =>
+        HlsPackSource(upstream: worker.url(token), refresh: refresh ?? () async => null);
+
+    test('read with the install\'s header, a range at a time; NOTHING written to the phone', () async {
+      await quiet();
+      final at = StreamCacheServer.instance.registerFilmPack(filmId: 'one1', cacheId: 'one1-0', pack: src('pk1'));
+      expect(at, isNotNull);
+      expect(StreamCacheServer.instance.hasPack(at!), isTrue);
+      worker.asked.clear();
+      final before = await _files(temp);
+      final reader = TrickplayPack(info, (a, b) => StreamCacheServer.instance.packRange(at, a, b));
+      expect(await reader.pictureAt(const Duration(seconds: 579)), pictures[144]);
+      expect(await reader.takeRun(130, 160), 31);
+      expect(packAsks().first.$2, 0, reason: 'the header first');
+      expect(packAsks().length, 3, reason: 'the header, one picture, one run');
+      expect(packAsks().map((a) => a.$4).toSet(), <String?>{'install-test'},
+          reason: 'every read of the pack names the install, as a rung\'s');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(await _files(temp), before, reason: 'no cache entry: no file made or grown');
+    });
+
+    test('its reads go out on the playing copy\'s connection, kept open by the player\'s reads', () async {
+      final film = await StreamCacheServer.instance.localUrlFor(
+          cacheId: 'one2-0', upstream: worker.url('r360'), refresh: () async => null, total: r360.bytes.length);
+      expect(film, isNotNull);
+      // The player reads the copy's front through the proxy.
+      final c = HttpClient();
+      try {
+        final req = await c.getUrl(Uri.parse(film!));
+        req.headers.set(HttpHeaders.rangeHeader, 'bytes=0-65535');
+        final res = await req.close();
+        await res.drain<void>();
+      } finally {
+        c.close(force: true);
+      }
+      await quiet();
+      final filmPorts = worker.conns.where((x) => x.$1 == 'r360').map((x) => x.$2).toSet();
+      expect(filmPorts, isNotEmpty);
+      final at = StreamCacheServer.instance.registerFilmPack(filmId: 'one2', cacheId: 'one2-0', pack: src('pk1'))!;
+      worker.conns.clear();
+      expect(await StreamCacheServer.instance.packRange(at, 0, 16384), Uint8List.sublistView(pack, 0, 16384));
+      final packPort = worker.conns.singleWhere((x) => x.$1 == 'pk1').$2;
+      expect(filmPorts.contains(packPort), isTrue,
+          reason: 'one of the copy\'s connections, not a new handshake');
+    });
+
+    test('a change of copy: the pack follows it; the copy let go, the pack goes with it', () async {
+      await quiet();
+      final at = StreamCacheServer.instance.registerFilmPack(filmId: 'one3', cacheId: 'one3-0', pack: src('pk1'))!;
+      expect(StreamCacheServer.instance.followFilmPack(at, 'one3-240'), isTrue);
+      StreamCacheServer.instance.releaseAllExcept(<String>{'one3-240'});
+      expect(StreamCacheServer.instance.hasPack(at), isTrue);
+      expect(await StreamCacheServer.instance.packRange(at, 0, 24), Uint8List.sublistView(pack, 0, 24));
+      StreamCacheServer.instance.releaseAllExcept(<String>{'another-film-0'});
+      expect(StreamCacheServer.instance.hasPack(at), isFalse);
+      expect(await StreamCacheServer.instance.packRange(at, 0, 24), isNull);
+      expect(StreamCacheServer.instance.followFilmPack(at, 'one3-0'), isFalse);
+    });
+
+    test('another film\'s pack replaces the last one\'s; a film without one clears it', () async {
+      await quiet();
+      final a = StreamCacheServer.instance.registerFilmPack(filmId: 'one4', cacheId: 'one4-0', pack: src('pk1'))!;
+      final b = StreamCacheServer.instance.registerFilmPack(filmId: 'one5', cacheId: 'one5-0', pack: src('pk2'))!;
+      expect(a, isNot(b));
+      expect(StreamCacheServer.instance.hasPack(a), isFalse);
+      expect(await StreamCacheServer.instance.packRange(a, 0, 24), isNull);
+      worker.asked.clear();
+      expect(await StreamCacheServer.instance.packRange(b, 0, 24), Uint8List.sublistView(pack, 0, 24));
+      expect(packAsks().single.$1, 'pk2');
+      StreamCacheServer.instance.clearFilmPacks();
+      expect(StreamCacheServer.instance.hasPack(b), isFalse);
+      // A ladder's master address is never a film's pack, nor the reverse.
+      expect(StreamCacheServer.instance.hasPack('pack:one5'), isFalse);
+    });
+
+    test('an expired link is renewed as a rung\'s, and read on the new one', () async {
+      await quiet();
+      var renewed = 0;
+      final at = StreamCacheServer.instance.registerFilmPack(
+          filmId: 'one6',
+          cacheId: 'one6-0',
+          pack: src('pk-expired', refresh: () async {
+            renewed++;
+            return worker.url('pk2');
+          }))!;
+      worker.asked.clear();
+      expect(await StreamCacheServer.instance.packRange(at, 100, 2100), Uint8List.sublistView(pack, 100, 2100));
+      expect(renewed, 1);
+      expect(packAsks().map((a) => a.$1).toList(), <String>['pk-expired', 'pk2']);
+    });
   });
 }

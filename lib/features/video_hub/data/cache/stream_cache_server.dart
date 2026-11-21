@@ -901,8 +901,57 @@ class StreamCacheServer {
   int previewBytes = 0;
 
   /// Whether the ladder at [ladderUrl] (its master playlist's local
-  /// address) has a pack registered ([hlsUrlFor]'s `pack`).
-  bool hasPack(String ladderUrl) => _ladderAt(ladderUrl)?.pack != null;
+  /// address) has a pack registered ([hlsUrlFor]'s `pack`), or [ladderUrl]
+  /// names a film's own pack ([registerFilmPack]).
+  bool hasPack(String ladderUrl) =>
+      _ladderAt(ladderUrl)?.pack != null || _filmPacks.containsKey(ladderUrl);
+
+  // ─── THE PACK OF A FILM PLAYED AS ONE FILE (21 Nov 2026) ─────────────
+  //
+  // A film whose original is already small has one rung (Elephants Dream,
+  // Hero: 240p only) and plays on libmpv as one file, as does any film on
+  // its Original: no ladder to hold its pack, so its seek bar had no
+  // pictures unless the viewer turned on the network previews (frames
+  // pulled out of the film itself). The pack is registered here on its
+  // own, exactly as beside a ladder: a source with its signed address, its
+  // renewal and the install's header ([_openPooled]), NO cache entry and
+  // no local address — nothing of it is written to the phone. Its reads go
+  // out on the pool of the copy playing ([followFilmPack]), which the
+  // player's own reads keep open, and on its own pool when that copy is
+  // gone.
+
+  final Map<String, _FilmPack> _filmPacks = <String, _FilmPack>{};
+
+  /// Register the pack of the film [filmId], read beside its copy
+  /// [cacheId], and get the name [packRange] reads it by (a name, not an
+  /// address anything fetches). One film's pack at a time: the last one's
+  /// goes, as does an earlier registration of the same film (a new grant,
+  /// a new renewal). Null for a sealed pack (none in v1).
+  String? registerFilmPack({required String filmId, required String cacheId, required HlsPackSource pack}) {
+    clearFilmPacks();
+    if (SealedUrls.of(pack.upstream) != null) return null;
+    final at = 'pack:$filmId';
+    _filmPacks[at] = _FilmPack(_Source(upstream: pack.upstream, refresh: pack.refresh), cacheId);
+    return at;
+  }
+
+  /// No film's own pack (the film about to play has none).
+  void clearFilmPacks() {
+    for (final p in _filmPacks.values) {
+      p.close();
+    }
+    _filmPacks.clear();
+  }
+
+  /// The film's copy changed ([cacheId] plays now): the pack registered at
+  /// [at] reads on that copy's pool from here. False when [at] is not
+  /// registered (any more).
+  bool followFilmPack(String at, String cacheId) {
+    final p = _filmPacks[at];
+    if (p == null) return false;
+    p.cacheId = cacheId;
+    return true;
+  }
 
   _Ladder? _ladderAt(String ladderUrl) {
     final p = Uri.tryParse(ladderUrl)?.pathSegments;
@@ -930,11 +979,14 @@ class StreamCacheServer {
   /// read here goes only to the caller (an in-memory LRU, TrickplayPack).
   /// Null when there is no pack, or the bytes did not all come.
   Future<Uint8List?> packRange(String ladderUrl, int start, int endExclusive) async {
-    final src = _ladderAt(ladderUrl)?.pack;
+    final film = _filmPacks[ladderUrl];
+    final src = film?.src ?? _ladderAt(ladderUrl)?.pack;
     if (src == null || start < 0 || endExclusive <= start) return null;
     final want = endExclusive - start;
+    // A film's own pack on the playing copy's pool ([registerFilmPack]).
+    final pool = (film == null ? null : _sources[film.cacheId]?.io) ?? src.io;
     try {
-      final up = await _openPooled(src, start, endExclusive - 1).timeout(packAnswer);
+      final up = await _openPooled(src, start, endExclusive - 1, pool: pool).timeout(packAnswer);
       if (up == null) return null;
       previewRequests++;
       final out = BytesBuilder(copy: false);
@@ -953,7 +1005,7 @@ class StreamCacheServer {
       previewBytes += out.length;
       upstreamBytes += out.length;
       if (out.length != want) return null;
-      if (!over) _readWhole(src.io);
+      if (!over) _readWhole(pool);
       return out.takeBytes();
     } catch (e) {
       if (kDebugMode) debugPrint('StreamCacheServer.packRange: $e');
@@ -1576,6 +1628,12 @@ class StreamCacheServer {
     _ladders.removeWhere((_, l) {
       if (l.rungs.any((r) => _sources.containsKey(r.cacheId))) return false;
       l.close(force: true);
+      return true;
+    });
+    // And a film's own pack with the copy it was read beside.
+    _filmPacks.removeWhere((_, p) {
+      if (keep.contains(p.cacheId)) return false;
+      p.close();
       return true;
     });
   }
@@ -3669,6 +3727,16 @@ class HlsPackSource {
 
   final String upstream;
   final Future<String?> Function() refresh;
+}
+
+/// A film's pack registered on its own ([StreamCacheServer.registerFilmPack]):
+/// its source (no cache entry) and the copy whose pool it reads on.
+class _FilmPack {
+  _FilmPack(this.src, this.cacheId);
+  final _Source src;
+  String cacheId;
+
+  void close() => src.close();
 }
 
 class _Ladder {

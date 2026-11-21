@@ -4057,7 +4057,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         return SeekIndicator(
           delta: indicator.delta!,
           targetPosition: indicator.target!,
-          preview: svc is MediaKitPlayerService && svc.playingLadder
+          preview: svc is MediaKitPlayerService && svc.seekPictures
               ? _LadderSwipePreview(service: svc, at: indicator.target!)
               : null,
         );
@@ -4666,9 +4666,13 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     // A FILM ON THE LADDER ENGINE has its own pictures: the smallest rung's
     // keyframe for that moment, about 75 KB the first time and nothing after
     // (MediaKitPlayerService.ladderPreview) — light enough to be on without
-    // the network switch below, as YouTube's are.
+    // the network switch below, as YouTube's are. So has a film played as
+    // one file with a pack made in advance (one rung, or its Original): a
+    // picture is ~5 KB of the pack, the header ~16 KB once a film (21 Nov
+    // 2026, the owner's choice) — on without the switch too; with the data
+    // saver on, only the picture under the finger.
     final svc = ref.read(videoPlayerServiceProvider);
-    if (svc is MediaKitPlayerService && svc.playingLadder) {
+    if (svc is MediaKitPlayerService && svc.seekPictures) {
       _loadLadderPreview(svc, seconds);
       return;
     }

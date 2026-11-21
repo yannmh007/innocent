@@ -359,8 +359,8 @@ class TrickplayPack {
 
 /// What the seek bar takes ahead of the finger when the controls come up.
 enum PreviewAhead {
-  /// Nothing: the data saver is on and the pack is there — only the
-  /// picture under the finger is read.
+  /// Nothing: the data saver is on, or there is neither a pack nor
+  /// fragments — only the picture under the finger is read.
   none,
 
   /// The pack's pictures either side of the moment, in one request.
@@ -391,12 +391,16 @@ class SeekPreviewSource {
     return (f, f == null ? null : 'fragment');
   }
 
-  /// What to take ahead: with a usable pack, its run — or nothing with the
-  /// data saver on; without one, the fragments as before (the data saver
-  /// does not change a film without a pack).
-  static PreviewAhead ahead({required TrickplayPack? pack, required bool saving}) {
-    if (pack == null || !pack.usable) return PreviewAhead.fragments;
-    return saving ? PreviewAhead.none : PreviewAhead.packRun;
+  /// What to take ahead: with a usable pack, its run; without one, the
+  /// fragments where there are any ([fragments]: false for a single file
+  /// on libmpv, which has no ladder). NOTHING AHEAD WITH THE DATA SAVER ON,
+  /// pack or not — only the picture under the finger (the owner's choice
+  /// of 21 Nov 2026: a film without a pack took six fragments, ~450 KB,
+  /// each time the controls came up).
+  static PreviewAhead ahead({required TrickplayPack? pack, required bool saving, bool fragments = true}) {
+    if (saving) return PreviewAhead.none;
+    if (pack != null && pack.usable) return PreviewAhead.packRun;
+    return fragments ? PreviewAhead.fragments : PreviewAhead.none;
   }
 
   /// The run around [at]: [reachMs] either side (40 s: some 20 pictures at
@@ -407,4 +411,35 @@ class SeekPreviewSource {
     final s = span < 1 ? 1 : span;
     return (i - s, i + s);
   }
+}
+
+/// A single file's pack (MediaKitPlayerService.armFilePack): the grant's
+/// pack, the name the proxy reads it by (StreamCacheServer.registerFilmPack)
+/// and whether the data saver is on.
+class FilePackArm {
+  const FilePackArm({required this.pack, required this.packAt, this.saving = false});
+  final TrickplayInfo pack;
+  final String packAt;
+  final bool saving;
+}
+
+/// THE PACK OF A FILM PLAYED AS ONE FILE (21 Nov 2026), by the file's local
+/// address: every copy of the film on screen names the same pack, so a
+/// change of copy keeps its reader; ANOTHER FILM'S PACK CLEARS THE LAST
+/// ONE'S — never one film's pictures over another's address.
+class FilePacks {
+  final Map<String, FilePackArm> _byUri = <String, FilePackArm>{};
+
+  /// [uri]'s seek bar reads [arm]'s pack.
+  void arm(String uri, FilePackArm arm) {
+    if (_byUri.values.any((a) => a.packAt != arm.packAt)) _byUri.clear();
+    _byUri[uri] = arm;
+  }
+
+  /// The pack armed for [uri], if any.
+  FilePackArm? operator [](String? uri) => uri == null ? null : _byUri[uri];
+
+  bool has(String? uri) => uri != null && _byUri.containsKey(uri);
+
+  void clear() => _byUri.clear();
 }

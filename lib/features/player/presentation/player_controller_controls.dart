@@ -47,12 +47,13 @@ extension PlayerControls on PlayerController {
   }
 
   /// The controls came up: the seek bar's pictures beside the film's moment
-  /// are taken before a finger reaches it, on the ladder, when the seek
-  /// bar shows pictures at all (MediaKitPlayerService.prefetchPreviewsAround).
+  /// are taken before a finger reaches it — on the ladder, or from a single
+  /// file's pack — when the seek bar shows pictures at all
+  /// (MediaKitPlayerService.prefetchPreviewsAround).
   void _previewsAhead() {
     try {
       final svc = _ref.read(videoPlayerServiceProvider);
-      if (svc is! MediaKitPlayerService || !svc.playingLadder) return;
+      if (svc is! MediaKitPlayerService || !svc.seekPictures) return;
       final s = _ref.read(playerSettingsProvider);
       if (!s.get(PlayerSetting.previewSeek) || !s.get(PlayerSetting.navSeekBarPreview)) return;
       svc.prefetchPreviewsAround(svc.position);
