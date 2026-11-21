@@ -16,6 +16,36 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **21 Nov: REFERENCE LAB — PLANNED, NOT BUILT (the owner sets up on 22
+  Nov)**. Purpose: see how MX Player's panels and menus sit against the
+  picture (how far they rise, where they anchor, width and height, what of
+  the picture stays visible, how they come in) next to Innocent's, and
+  take MX's proportions only where they are better. Never its theme,
+  colours or icons (the owner's rule, skill `ui-design` §4). With it, a
+  legibility check of Innocent's own chrome over dark, bright, busy and
+  colourful frames (needs no MX: player_layout_test over frames, here).
+  - Shape: `.github/workflows/reference-lab.yml`, `test_device/ref/`,
+    `tool/ref/` in this repo (our code only). The MX APK (the version the
+    owner uses, uploaded by the owner) and every MX screenshot live only
+    in the owner's PRIVATE repo `innocent-ref`, never in this public one:
+    add a check.py guard (no .apk, no ref output). Both apps on the same
+    emulator, sized like the owner's phone; a film made with ffmpeg
+    (black, white, grey, busy; two audio and two subtitle tracks); MX's
+    network cut by uid. Per screen: screencap + uiautomator dump → a dp
+    table, side by side, MX's boxes drawn over ours. The report is a
+    decision table (keep Innocent / take MX / the owner decides), not a
+    diff to drive to zero. Start small: the panels that rise (⋮, ♪, CC),
+    portrait and landscape; more only when the owner asks.
+  - Phase 0, a probe: which ABIs the APK carries; does it run on the
+    x86_64 Android 13 image, else 11/12 with ARM translation, else Test
+    Lab (screens only, one of the five a day) — ask the owner then.
+  - THE OWNER TO DO (told 21 Nov): (1) a private repo `innocent-ref`;
+    (2) the Claude GitHub App given access to it; (3) a fine-grained
+    token for innocent-ref only, Contents read and write, saved as the
+    Actions secret `REF_REPO_TOKEN` here; (4) the MX APK uploaded to
+    innocent-ref (every split file, if the phone gives several); (5) the
+    phone's model. Then verify: the workflow's first step prints only
+    ok / no access; add_repo innocent-ref (read) and see the APK.
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
