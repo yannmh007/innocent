@@ -164,7 +164,11 @@ function wireShellOnce() {
   $('signout').onclick = async () => {
     if (uploadsInFlight > 0 &&
         !confirm('An upload is still running. Sign out and stop it?')) return;
-    await sb.auth.signOut();
+    // THIS browser's session only. supabase-js signs out GLOBALLY by
+    // default — every session of the account, the phone app's too: on
+    // 21 Nov 2026 the owner signed out here (logout?scope=global, 18:15:32
+    // UTC) and the app, with nothing touched, showed "Sign in".
+    await sb.auth.signOut({ scope: 'local' });
   };
   $('sheet').onclick = (e) => { if (e.target === $('sheet')) $('sheet').hidden = true; };
 }
@@ -405,7 +409,9 @@ function shIdleTick() {
   if (uploadsInFlight > 0) { shLastActive = Date.now(); return; }
   if (quiet >= limit) {
     stopShell();
-    sb.auth.signOut().then(() => {
+    // Local, like the button: an idle console ends ITSELF, not the
+    // account's other sessions (the app on the owner's phone).
+    sb.auth.signOut({ scope: 'local' }).then(() => {
       say('info', 'Signed out after ' + Math.round(limit / 60000) +
         ' minutes without use. Sign in again to continue.');
     });
