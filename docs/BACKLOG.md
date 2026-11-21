@@ -16,6 +16,43 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
+  the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
+  libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
+  Test, both APKs, CDN, Release); GitHub release v1.64.87-400: arm64
+  95723176 B `bcd300a5…2bbe`, arm32 87702316 B `488c8e7b…1af0` (the
+  assets' digests); app_releases id 1 moved 16:57:39 UTC after a
+  rolled-back dry run (CDN urls, both digests and sizes, mirrors = the
+  GitHub release, notes_en / notes_mm: single-quality films and Original
+  get the seek bar's pictures; the first drag sooner; nothing ahead with
+  the data saver). Both Workers rebuilt (stream 16:26:02, console
+  16:26:24; worker code unchanged — note: they also rebuilt at 07:08 for
+  f4bc4fd3, which touched no docs/**: Workers Builds rebuild on any push
+  to main). Static analysis on main 44924513301 green (main's red of 20
+  Nov not raised again); Playback check on main 44924847586 green;
+  transport check 44927401267 (dispatched 16:57:46, after the row moved)
+  green — the APK on the CDN answers, its bytes and SHA-256 the row's.
+  Ships:
+  B1-B4, the sign-in renewal for MFA accounts, the trail fix, the Semgrep
+  fixes, the Worker cache test. Left out: the lab hooks, the Google
+  nonce, test_device/**. Edge functions unchanged (shims stay at
+  a6d68c93). The tree: 39 files against f4bc4fd3; flutter test 1861 on
+  it, 1865 on the branch; the gate U4 44913341833 and Test Lab
+  44913341838 on the final code (e5774a33).
+  FOR THE NEXT RELEASE (the reviews' non-blocking points, left out so the
+  tested code is the shipped code): MediaKitPlayerService.dispose() does
+  not cancel the header timer; a ladder film moved to its Original and
+  back reads its pack's header again (16 KB); _renewRefused should
+  forgetRefused() in its finally (a nested refused read leaves the flag
+  for one more exchange at the next resume); a non-admin can enrol a TOTP
+  factor through the auth API, and then a deletion on another phone
+  would be renewed into a new account here (rare, deliberate) — closing
+  it means MFA enrolment for admins only (the owner's call); the Android
+  plugin's fallback sheet lists every account on the phone. THE OWNER TO
+  CONFIRM ON THE PHONE: update, open the app once (it learns the account
+  has MFA), sign out of the console and in again (Google + code), reopen
+  the app — still signed in; the edge logs then show a Dart refresh 400
+  and an id_token 200 a moment later.
 - **21 Nov: "SIGNED OUT AFTER AN UPDATE" — NOT THE UPDATE (the owner's
   question before 1.64.87)**. Edge logs: on 14 Nov the console signed in
   with Google and completed MFA (TOTP verify 08:11:53 UTC); at 08:16:20 the
