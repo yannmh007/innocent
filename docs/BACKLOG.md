@@ -57,8 +57,26 @@ does it.
   device-cloud.yml pin change): realme 16 PASS 1 SKIP, OPPO 16 PASS 1
   SKIP, no crash; the header read ahead at +5 s on both, the first drag
   1187 -> 674 ms (realme) and 1480 -> 408 (OPPO). U2's first attempt met
-  Maven Central's 429 (re-run). Device lab U3 (8228a952): the gate on the
-  final code and B1 on Elephants Dream — see the checkpoint report.
+  Maven Central's 429 (re-run). THE GATE on the final code, device lab U3
+  44896555838 (8228a952): attempt 1's genres and jumps met the emulator's
+  lost network ("No internet connection", "the film never started" — the
+  other flows passed); attempt 2: genres 37/37, jumps 15/15, gestures
+  27/27 and 19/19, player audit 52 and 52, no crash. B1 ON ELEPHANTS
+  DREAM (libmpv, one rung): every drag from the pack (24 of 24 a line),
+  its own picture median 109 ms plain / 184 weak (p90 374 / 598), far
+  drags 357 / 546 ms, ~10-15 KB a drag, no stop in the start's 30 s; the
+  header read while playing took 1.2-2.2 s there (libmpv's own download
+  fills the line) — well before any drag; with the pack unread (`near`,
+  as 1.64.86) the film has no seek-bar pictures at all. Release tree
+  (worktree at origin/main): diff with the branch only the exclusions
+  and the version; check.py, analyze (no error or warning), flutter test
+  1847 pass; the pinned Semgrep against origin/main 0 new ERROR; no red
+  branch scan since 1.64.86. RELEASE REVIEW (reviewer): ship, nothing
+  blocking. FOR THE NEXT RELEASE (non-blocking, left out so the tested
+  code is the shipped code): MediaKitPlayerService.dispose() does not
+  cancel the header timer (stop() does, and the screen always stops
+  first); a ladder film moved to its Original and back reads its pack's
+  header again (16 KB; pictures right).
 - **1.64.86 IS OUT (20 Nov, the owner's "Release လုပ်ပါ")**: main a6d68c93
   (pushed 16:30 UTC after the libmpv jar came whole 3 of 3), Build
   44774072388 green (Analyze, Test, both APKs, CDN, Release); GitHub
