@@ -1,1 +1,1 @@
-relay: 308 connections (0 refused), 253.2 MB to the emulator, 300.1 KB from it
+relay: 977 connections (0 refused), 645.3 MB to the emulator, 973.4 KB from it
