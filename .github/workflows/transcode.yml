@@ -54,7 +54,8 @@ jobs:
     timeout-minutes: 330
     permissions:
       contents: read
-      # Only to start the next run of this workflow after a ladder (below).
+      # Only to start the next run of this workflow after a ladder, and
+      # Trick-play for its seek-bar pictures (both below).
       actions: write
 
     steps:
@@ -184,7 +185,10 @@ jobs:
           # The media seal's part of the job (docs/MEDIA_ENCRYPTION.md §7):
           # read from the file by tool/transcode_seal.py, never printed.
           export JOB_FILE=/tmp/job.json
-          bash tool/transcode.sh
+          # What the script prints is kept on the runner as well, for the
+          # step that starts the seek bar's pictures (below). The log shows
+          # the same lines: no address, no key.
+          bash tool/transcode.sh | tee /tmp/ladder.log
 
       - name: Say so when it did not work
         if: failure() && steps.claim.outputs.job == 'yes'
@@ -206,6 +210,43 @@ jobs:
           PY
           curl -fsS -X POST "$(python3 -c "import json;print(json.load(open('/tmp/job.json'))['done_url'])")" \
             -H 'Content-Type: application/json' -d @/tmp/fail.json || true
+
+      # THE SEEK BAR'S PICTURES FOLLOW THE LADDER (the owner's word of 21 Nov
+      # 2026). A new ladder used to wait for Trick-play's daily schedule —
+      # up to a day of a seek bar without its pictures. A run on main that
+      # recorded a rung starts Trick-play on main now. That job claims every
+      # film whose pack is missing or stale (claim_trickplay: made from a
+      # smallest rung of other bytes), so one start serves several ladders;
+      # its concurrency queues a start behind a running one and never
+      # cancels it, and the daily schedule stays as the net. Main only: a
+      # branch run is a test, and Trick-play's scope is main's.
+      #
+      # Counted from what tool/transcode.sh printed: a rung is a line
+      # `NNNp -> N MB, N kbps`, and after it every report (one a rung, one
+      # at the end, the `ladder:` line follows that) carries every rung so
+      # far. So a rung, and fewer `report failed` lines than reports after
+      # it, means the database has a rung from this run.
+      - name: Start the seek bar's pictures
+        if: always() && steps.claim.outputs.job == 'yes' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -u
+          log=/tmp/ladder.log
+          rungs=$(grep -cE '^[0-9]+p -> [0-9]+ MB, [0-9]+ kbps$' "$log" 2>/dev/null || true)
+          failed=$(grep -c '^report failed' "$log" 2>/dev/null || true)
+          finished=$(grep -c '^ladder:$' "$log" 2>/dev/null || true)
+          rungs=${rungs:-0}; failed=${failed:-0}; finished=${finished:-0}
+          reports=$(( rungs + finished ))
+          if [ "$rungs" -gt 0 ] && [ "$failed" -lt "$reports" ]; then
+            if gh workflow run trickplay.yml --repo "$GITHUB_REPOSITORY" --ref main; then
+              echo "trick-play requested: $rungs rung(s) recorded" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "could not request trick-play (its daily schedule will make the pack)" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "no rung recorded by this run: no trick-play ($rungs rung(s), $failed of $reports report(s) failed)"
+          fi
 
       # ONE LADDER PER RUN, SO ASK FOR THE NEXT RUN NOW. Two videos queued
       # together used to be one ladder now and one whenever the schedule next
