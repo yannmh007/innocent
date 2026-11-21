@@ -44,6 +44,51 @@ does it.
   main with the next release, and later pushes to main do not raise them
   again (a push is compared with the commit before it). The release skill
   now says to clear red branch scans before the push.
+- **THE LONG START IS THE WORKER — PROVED 20 Nov from its own logs (the
+  owner's export of 14:00-14:02 UTC)**: at 14:00:33.511 the warm-up's probe
+  of the 480p rung (`bytes=0-8191`) ended `canceled` (Play took the film
+  over); from 14:00:34.225 to 14:01:17.776 every front read of that rung —
+  75, `bytes=0-8191` and `0-65535` — answered 500, outcome `exception`:
+  "This promise was created by a request that has since ended, so it can
+  never settle. With the handle_cross_request_promise_resolution
+  compatibility flag, a promise can only settle in the request that
+  created it", at `mendFront (index.js:406)` — `strayIndexes`, which kept
+  the first request's PENDING bucket read for every later request (19
+  Oct). 720p and the other rungs answered 206 meanwhile; at 14:01:17 the
+  rung's reads came back. The second long start the same (export of
+  14:16-14:18): 91 such 500s, 14:16:09-14:17:17, the 480p rung only. 166
+  in all, every one this message at mendFront. FIX ON THE BRANCH, NOT LIVE (a Worker deploy is
+  a push of docs/worker to main — the owner's word first): the per-isolate
+  caches keep the ANSWER (strayIndexes: an array, a failed read not kept;
+  signingKey: the CryptoKey, the same pattern), never a promise;
+  tool/js/worker_cache_test.mjs (15 checks, in check.py; the old Worker
+  fails it); worker_gate and stream_token tests pass. THE OWNER'S GO TO
+  DEPLOY: "Worker deploy လုပ်ပါ" (20 Nov) — after device lab T4
+  44805958041 (START_PAGE 3, the race on purpose, 12 passes) has measured
+  the Worker before it (its first attempt met Maven Central's 429 at the
+  APK build; re-run). T4 BEFORE THE FIX (21 Nov 03:54-04:07 UTC, Play 3 s
+  after the page, 12 passes): the race met in 4 of 12 — pass 9 a 19.9 s
+  start (7 head reads cut, `480.m3u8 not served` 6 times), passes 6 and 7
+  8.1 s and 6.1 s (2 cuts each), pass 3 one cut; first picture median
+  plain 4265 ms (p90 12994), weak 4696 ms (p90 6928). To prove it after a
+  deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
+  head read) before and after, and the Worker's logs for `can never
+  settle`.
+- **The owner's first 1.64.86 report, DZQXVZT2 (20 Nov 19:25 UTC, wifi
+  metered, diagnostic_reports id 10)**: THE PACK WORKS ON THE PHONE —
+  Sintel `preview pack: 222 pictures, header 818 ms`; every drag `pack N,
+  fragment 0` (11 drags, 1-122 pictures each); a picture from memory 2-9
+  ms, from the line 270-470 ms; a drag's first picture 1.1 s when the
+  header and the picture went one after the other (no pictures ahead yet);
+  runs ahead 6-21 pictures, 1 request, 0.4-1.3 s. A resume at 249 s: first
+  frame 1846 ms. Two "pictures" of 3.3 s and 7.1 s came AFTER `player
+  teardown done` (never shown) — the 7.1 s one behind a far jump whose new
+  connection took 2.7 s (`exo picture after seek 4286 ms`, `conn new 2668
+  ms`). The drag line counted its line cost from the first ANSWER and
+  counted pictures after the film closed: fixed on the branch (the cost
+  from the first ask; a picture after its film closed is not a drag's).
+  The first start after the update read the library once (`stamp moved or
+  old, scanned`), by design: the stamp's kind changed.
 - **Work branch `claude/extract-github-release-oteqr5`** holds everything
   not yet live (main is a6d68c93, app 1.64.86; on the branch only: the lab
   hooks, the Google nonce, test_device/results, 4993cb65's scan fixes).
