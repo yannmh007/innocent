@@ -70,7 +70,18 @@ does it.
   after the page, 12 passes): the race met in 4 of 12 — pass 9 a 19.9 s
   start (7 head reads cut, `480.m3u8 not served` 6 times), passes 6 and 7
   8.1 s and 6.1 s (2 cuts each), pass 3 one cut; first picture median
-  plain 4265 ms (p90 12994), weak 4696 ms (p90 6928). To prove it after a
+  plain 4265 ms (p90 12994), weak 4696 ms (p90 6928).
+  THE WORKER FIX IS LIVE (21 Nov): main fbaf697d (docs/worker and this
+  file only: no app Build), innocent-stream rebuilt 04:24:03 UTC (console
+  04:24:31), its deployed code carries the fix (no pending promise kept);
+  Playback check 44866137861 and transport check 44866140754 on main
+  green. T5 44866328935 AFTER (T4's config, 04:35-04:48 UTC, the tap 0.6-
+  2.1 s after the warm-up registered — the race window): 0 cuts in 12
+  passes, no long start; first picture plain 4265 -> 3507 ms (p90 12994 ->
+  4370), weak 4696 -> 4729 (p90 6928 -> 6313). Left: the Worker's logs
+  for 04:34-04:49 UTC should hold no `can never settle` (the owner's
+  export). The test and check.py line reach main with the next release.
+  Rule: .claude/rules/worker.md. To prove it after a
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
   settle`.
