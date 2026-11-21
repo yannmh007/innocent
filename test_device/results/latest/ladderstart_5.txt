@@ -1,113 +1,115 @@
-11-20 15:21:44.733 LAB ladderstart begin pass=5 line=plain start=fix
-11-20 15:21:45.818 LAB device kind=DeviceKind.phone sw=411.0
-11-20 15:21:45.845 LAB    0.0 LAB jump rule spare on (the build's own)
-11-20 15:21:47.180 LAB    1.3 LAB start rule fix: resume on the warmed rung true, warm at the resume point true, previews ahead true, pack true
-11-20 15:21:52.634 LAB    6.8 LAB title: page Sintel, 4 s
-11-20 15:21:55.746 LAB cpu app 46% · 10.4fps · 1.raster 33% | pool-thread 7% | .innocent.media 3% | RenderThread 2%
-11-20 15:21:56.711 LAB   10.9 LAB title: opening Sintel at 579 s start=fix
-11-20 15:21:56.717 LAB   10.9 play server granted in 0 ms (asked ahead), 4 rungs
-11-20 15:21:56.717 LAB   10.9 play rung 480p 912 kbps (choice auto, measured - kbps)
-11-20 15:21:56.718 LAB hls start +0 ms: register
-11-20 15:21:56.723 LAB   10.9 stream lanes=6 peak=window
-11-20 15:21:56.844 LAB   11.0 stream cache: a new film, sealed
-11-20 15:21:56.864 LAB hls start +145 ms: rungs registered
-11-20 15:21:56.864 LAB hls start +146 ms: 480p head asked
-11-20 15:21:56.865 LAB   11.0 play through the ladder on ExoPlayer
-11-20 15:21:56.866 LAB   11.0 play: opening the player
-11-20 15:21:57.085 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-11-20 15:21:57.392 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-11-20 15:21:57.471 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-11-20 15:21:57.561 LAB   11.7 hwdec -> auto
-11-20 15:21:57.566 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-11-20 15:21:57.607 LAB   11.8 open ladder (exo) start=579s autoplay=true rung=auto first=480
-11-20 15:21:57.713 LAB   11.9 wakelock playing=true bg=false priv=false pos=0ms
-11-20 15:21:57.713 LAB   11.9 open ok
-11-20 15:21:57.788 LAB hls start +1069 ms: master asked
-11-20 15:21:57.834 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-11-20 15:21:58.203 LAB   12.4 stream index 0.0 MB at 0.0 MB
-11-20 15:21:58.204 LAB hls start +1485 ms: 480p length checked
-11-20 15:21:58.205 LAB hls start +1486 ms: 480p head/init asked
-11-20 15:21:58.216 LAB engine update ok DONE 2025.11.12 -> 2026.10.26
-11-20 15:21:58.547 LAB   12.7 fg stream: watching
-11-20 15:21:58.553 LAB hls start +1834 ms: 480p index
-11-20 15:21:58.553 LAB   12.7 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
-11-20 15:21:58.556 LAB hls start +1837 ms: master served
-11-20 15:21:58.558 LAB hls start +1839 ms: 480p playlist asked
-11-20 15:21:58.559 LAB   12.7 hls: 480p playlist, 444 segments
-11-20 15:21:58.559 LAB hls start +1840 ms: 360p head asked
-11-20 15:21:58.559 LAB hls start +1841 ms: 720p head asked
-11-20 15:21:58.563 LAB hls start +1845 ms: 480p playlist served
-11-20 15:21:58.602 LAB   12.8 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
-11-20 15:21:58.615 LAB hls start +1896 ms: 480p head/init asked
-11-20 15:21:58.627 LAB   12.8 hls jump: answer 338 ms, first byte 342 ms, segment 422 ms (65536 B); conn kept 0 ms, wait 338 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
-11-20 15:21:58.628 LAB hls start +1909 ms: 480p head/init in
-11-20 15:21:58.633 LAB hls start +1914 ms: 480p head/init in
-11-20 15:21:58.643 LAB hls start +1925 ms: 480p segment asked
-11-20 15:21:58.792 LAB   12.9 exo rung 480p 1000 kbps
-11-20 15:21:59.219 LAB   13.4 stream index 0.0 MB at 0.0 MB
-11-20 15:21:59.220 LAB hls start +2501 ms: 360p head/init asked
-11-20 15:21:59.386 LAB hls start +2667 ms: 720p head/init asked
-11-20 15:21:59.545 LAB   13.7 hls jump: answer 419 ms, first byte 421 ms, segment 901 ms (286547 B); conn kept 0 ms, wait 419 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other never, last whole on it 0.0 s ago
-11-20 15:21:59.551 LAB hls start +2832 ms: 480p segment in
-11-20 15:21:59.551 LAB   13.7 hls start (ms): rungs registered 145, 480p head asked 146, master asked 1069, 480p length checked 1485, 480p head/init asked 1486, 480p index 1834, master served 1837, 480p playlist asked 1839, 360p head asked 1840, 720p head asked 1841, 480p playlist served 1845, 480p head/init in 1909, 480p segment asked 1925, 360p head/init asked 2501, 720p head/init asked 2667, 480p segment in 2832
-11-20 15:21:59.567 LAB hls start +2848 ms: 480p segment asked
-11-20 15:21:59.726 LAB   13.9 first frame 2721 ms
-11-20 15:22:00.262 LAB hls start +3544 ms: 720p index
-11-20 15:22:00.263 LAB   14.4 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
-11-20 15:22:00.717 LAB   14.9 hls jump: answer 786 ms, first byte 795 ms, segment 1330 ms (65536 B); conn kept 0 ms, wait 786 ms, before 0 ms, tries 1; no read cut, pool 1, reading, the other reading, last whole on it 0.8 s ago
-11-20 15:22:00.717 LAB hls start +3998 ms: 720p head/init in
-11-20 15:22:00.810 LAB hls start +4091 ms: 360p index
-11-20 15:22:00.810 LAB   15.0 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
-11-20 15:22:00.820 LAB hls start +4101 ms: 480p segment in
-11-20 15:22:00.933 LAB hls start +4215 ms: 480p segment asked
-11-20 15:22:00.959 LAB   15.1 hls jump: answer 1446 ms, first byte 1534 ms, segment 1695 ms (65536 B); conn new 686 ms (dns 48, tcp 307, tls 331), wait 760 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
-11-20 15:22:00.959 LAB hls start +4241 ms: 360p head/init in
-11-20 15:22:01.117 LAB   15.3 line 2720 kbps, in a read
-11-20 15:22:01.382 LAB hls start +4657 ms: 480p segment in
-11-20 15:22:01.392 LAB hls start +4674 ms: 480p segment asked
-11-20 15:22:01.550 LAB hls start +4831 ms: 480p segment in
-11-20 15:22:01.568 LAB hls start +4849 ms: 480p segment asked
-11-20 15:22:01.758 LAB hls start +5040 ms: 480p segment in
-11-20 15:22:01.813 LAB hls start +5095 ms: 480p segment asked
-11-20 15:22:01.972 LAB hls start +5254 ms: 480p segment in
-11-20 15:22:01.980 LAB hls start +5261 ms: 480p segment asked
-11-20 15:22:02.070 LAB hls start +5351 ms: 480p segment in
-11-20 15:22:02.103 LAB hls start +5384 ms: 480p segment asked
-11-20 15:22:02.277 LAB   16.4 line 5223 kbps, a read
-11-20 15:22:02.277 LAB   16.4 measured 5223 kbps
-11-20 15:22:03.066 LAB hls start +6347 ms: 480p segment in
-11-20 15:22:03.195 LAB hls start +6477 ms: 480p segment asked
-11-20 15:22:03.559 LAB hls start +6840 ms: 480p segment in
-11-20 15:22:03.569 LAB hls start +6850 ms: 480p segment asked
-11-20 15:22:04.084 LAB hls start +7365 ms: 480p segment in
-11-20 15:22:04.108 LAB hls start +7389 ms: 480p segment asked
-11-20 15:22:04.617 LAB hls start +7898 ms: 480p segment in
-11-20 15:22:04.689 LAB hls start +7970 ms: 480p segment asked
-11-20 15:22:04.829 LAB hls start +8111 ms: 480p segment in
-11-20 15:22:04.837 LAB hls start +8118 ms: 480p segment asked
-11-20 15:22:05.031 LAB hls start +8312 ms: 480p segment in
-11-20 15:22:05.043 LAB hls start +8325 ms: 480p segment asked
-11-20 15:22:05.046 LAB   19.2 rebuffer start (ahead 20073 ms)
-11-20 15:22:05.052 LAB   19.2 rebuffer end 6 ms
-11-20 15:22:05.215 LAB hls start +8496 ms: 480p segment in
-11-20 15:22:05.299 LAB   19.5 line 6566 kbps, a read
-11-20 15:22:05.300 LAB   19.5 measured 6566 kbps
-11-20 15:22:05.777 LAB cpu app 62% · 9.5fps · 1.raster 40% | .innocent.media 9% | DartWorker 2% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HeapTaskDaemon 1%
-11-20 15:22:05.853 LAB   20.0 hls: 720p playlist, 444 segments
-11-20 15:22:07.411 LAB   21.6 hls jump: answer 507 ms, first byte 508 ms, segment 1378 ms (516718 B); conn kept 0 ms, wait 507 ms, before 0 ms, tries 1; no read cut, pool 2, open, the other reading, last whole on it 0.8 s ago
-11-20 15:22:07.861 LAB   22.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-11-20 15:22:09.215 LAB   23.4 measured 6271 kbps
-11-20 15:22:12.745 LAB   26.9 measured 5231 kbps
-11-20 15:22:15.769 LAB cpu app 53% · 13.1fps · 1.raster 27% | .innocent.media 9% | MediaCodec_loop 4% | DartWorker 3% | ExoPlayer:Playb 3% | HwBinder:8823 2%
-11-20 15:22:16.175 LAB   30.3 measured 5945 kbps
-11-20 15:22:19.790 LAB   33.9 measured 5524 kbps
-11-20 15:22:23.274 LAB   37.4 measured 5431 kbps
-11-20 15:22:25.765 LAB cpu app 50% · 14.5fps · 1.raster 28% | .innocent.media 7% | MediaCodec_loop 4% | DartWorker 2% | ExoPlayer:Playb 2% | HwBinder:8823 2%
-11-20 15:22:29.060 LAB   43.2 exo rung 720p 2000 kbps
-11-20 15:22:29.972 LAB   44.1 rebuffer start (ahead 53936 ms)
-11-20 15:22:30.028 LAB   44.2 rebuffer end 56 ms
-11-20 15:22:35.785 LAB cpu app 41% · 13.4fps · 1.raster 30% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:8823 2% | ExoPlayer:Playb 2%
-11-20 15:22:37.441 LAB   51.6 rebuffer start (ahead 47133 ms)
-11-20 15:22:37.464 LAB   51.6 rebuffer end 23 ms
-11-20 15:22:42.233 LAB   56.4 LAB ladderstart done
-11-20 15:22:44.942 LAB ladderstart end pass=5 line=plain start=fix
+11-21 03:58:14.236 LAB ladderstart begin pass=5 line=plain start=fix
+11-21 03:58:15.770 LAB device kind=DeviceKind.phone sw=411.0
+11-21 03:58:15.831 LAB    0.0 LAB jump rule spare on (the build's own)
+11-21 03:58:16.900 LAB    1.1 LAB start rule fix: resume on the warmed rung true, warm at the resume point true, previews ahead true, pack true
+11-21 03:58:22.055 LAB    6.2 LAB title: page Sintel, 3 s
+11-21 03:58:23.523 LAB    7.7 stream lanes=6 peak=window
+11-21 03:58:23.805 LAB    8.0 stream cache: a new film, sealed
+11-21 03:58:24.017 LAB engine update ok ALREADY_UP_TO_DATE 2026.10.26 -> 2026.10.26
+11-21 03:58:25.061 LAB    9.2 LAB title: opening Sintel at 579 s start=fix
+11-21 03:58:25.063 LAB    9.2 play server granted in 0 ms (asked ahead), 4 rungs
+11-21 03:58:25.064 LAB    9.2 play rung 480p 912 kbps (choice auto, measured - kbps)
+11-21 03:58:25.065 LAB hls start +0 ms: register
+11-21 03:58:25.069 LAB    9.2 stream lanes=6 peak=window
+11-21 03:58:25.251 LAB    9.4 stream cache: a new film, sealed
+11-21 03:58:25.348 LAB hls start +283 ms: rungs registered
+11-21 03:58:25.350 LAB hls start +285 ms: 480p head asked
+11-21 03:58:25.351 LAB    9.5 play through the ladder on ExoPlayer
+11-21 03:58:25.352 LAB    9.5 play: opening the player
+11-21 03:58:25.525 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+11-21 03:58:25.724 LAB cpu app 43% · 12.1fps · 1.raster 29% | pool-thread 7% | .innocent.media 4% | RenderThread 1%
+11-21 03:58:25.897 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+11-21 03:58:25.936 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+11-21 03:58:25.986 LAB   10.2 hwdec -> auto
+11-21 03:58:25.997 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+11-21 03:58:26.068 LAB hls start +1002 ms: 480p length checked
+11-21 03:58:26.075 LAB   10.2 open ladder (exo) start=579s autoplay=true rung=auto first=480
+11-21 03:58:26.093 LAB   10.3 wakelock playing=true bg=false priv=false pos=0ms
+11-21 03:58:26.093 LAB   10.3 open ok
+11-21 03:58:26.144 LAB hls start +1079 ms: master asked
+11-21 03:58:26.314 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+11-21 03:58:26.610 LAB hls start +1544 ms: 480p head/init asked
+11-21 03:58:27.215 LAB   11.4 fg stream: watching
+11-21 03:58:27.266 LAB hls start +2201 ms: 480p index
+11-21 03:58:27.272 LAB   11.4 hls: 480p index, 444 segments, average 912, peak 2s 1591, 10s 1224, 20s 1174 kbps
+11-21 03:58:27.273 LAB hls start +2207 ms: master served
+11-21 03:58:27.291 LAB hls start +2226 ms: 480p playlist asked
+11-21 03:58:27.294 LAB   11.5 hls: 480p playlist, 444 segments
+11-21 03:58:27.294 LAB hls start +2229 ms: 360p head asked
+11-21 03:58:27.294 LAB hls start +2229 ms: 720p head asked
+11-21 03:58:27.304 LAB hls start +2239 ms: 480p playlist served
+11-21 03:58:27.472 LAB   11.6 hls jump: answer 603 ms, first byte 607 ms, segment 861 ms (65536 B); conn new 154 ms (dns 4, tcp 62, tls 88), wait 449 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+11-21 03:58:27.472 LAB hls start +2406 ms: 480p head/init in
+11-21 03:58:27.554 LAB   11.7 exo tracks 480,720,360,240 selected=4 adaptive=true peaks=1174,2168,745,394 kbps
+11-21 03:58:27.950 LAB   12.1 stream index 0.0 MB at 0.0 MB
+11-21 03:58:27.951 LAB hls start +2886 ms: 480p head/init asked
+11-21 03:58:27.968 LAB hls start +2903 ms: 480p head/init in
+11-21 03:58:27.996 LAB hls start +2930 ms: 480p segment asked
+11-21 03:58:28.073 LAB hls start +3007 ms: 360p head/init asked
+11-21 03:58:28.090 LAB   12.3 exo rung 480p 1000 kbps
+11-21 03:58:28.163 LAB   12.3 stream index 0.0 MB at 0.0 MB
+11-21 03:58:28.164 LAB hls start +3099 ms: 720p head/init asked
+11-21 03:58:28.765 LAB hls start +3699 ms: 720p index
+11-21 03:58:28.765 LAB   12.9 hls: 720p index, 444 segments, average 1683, peak 2s 3052, 10s 2317, 20s 2212 kbps
+11-21 03:58:28.941 LAB   13.1 hls jump: answer 545 ms, first byte 550 ms, segment 772 ms (65536 B); conn kept 0 ms, wait 545 ms, before 0 ms, tries 1; no read cut, pool 1, reading, the other reading, last whole on it 0.6 s ago
+11-21 03:58:28.943 LAB hls start +3878 ms: 720p head/init in
+11-21 03:58:29.115 LAB   13.3 hls jump: answer 445 ms, first byte 446 ms, segment 1109 ms (286547 B); conn kept 0 ms, wait 445 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other never, last whole on it 0.5 s ago
+11-21 03:58:29.115 LAB hls start +4050 ms: 480p segment in
+11-21 03:58:29.115 LAB   13.3 hls start (ms): rungs registered 283, 480p head asked 285, 480p length checked 1002, master asked 1079, 480p head/init asked 1544, 480p index 2201, master served 2207, 480p playlist asked 2226, 360p head asked 2229, 720p head asked 2229, 480p playlist served 2239, 480p head/init in 2406, 480p segment asked 2930, 360p head/init asked 3007, 720p head/init asked 3099, 720p index 3699, 720p head/init in 3878, 480p segment in 4050
+11-21 03:58:29.257 LAB   13.4 first frame 3780 ms
+11-21 03:58:29.262 LAB hls start +4197 ms: 480p segment asked
+11-21 03:58:29.622 LAB hls start +4557 ms: 360p index
+11-21 03:58:29.623 LAB   13.8 hls: 360p index, 444 segments, average 578, peak 2s 976, 10s 754, 20s 725 kbps
+11-21 03:58:29.924 LAB   14.1 hls jump: answer 1190 ms, first byte 1245 ms, segment 1850 ms (65536 B); conn new 271 ms (dns 56, tcp 102, tls 111), wait 919 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+11-21 03:58:29.924 LAB hls start +4858 ms: 360p head/init in
+11-21 03:58:29.940 LAB hls start +4874 ms: 480p segment in
+11-21 03:58:29.944 LAB hls start +4878 ms: 480p segment asked
+11-21 03:58:30.044 LAB hls start +4978 ms: 480p segment in
+11-21 03:58:30.058 LAB hls start +4993 ms: 480p segment asked
+11-21 03:58:30.136 LAB hls start +5071 ms: 480p segment in
+11-21 03:58:30.140 LAB hls start +5075 ms: 480p segment asked
+11-21 03:58:30.446 LAB   14.6 line 5371 kbps, in a read
+11-21 03:58:30.488 LAB hls start +5423 ms: 480p segment cut
+11-21 03:58:30.490 LAB hls start +5424 ms: 480p segment asked
+11-21 03:58:30.654 LAB hls start +5589 ms: 480p segment in
+11-21 03:58:30.691 LAB hls start +5626 ms: 480p segment asked
+11-21 03:58:30.779 LAB hls start +5714 ms: 480p segment in
+11-21 03:58:30.795 LAB hls start +5730 ms: 480p segment asked
+11-21 03:58:30.861 LAB   15.0 line 6938 kbps, a read
+11-21 03:58:30.861 LAB   15.0 measured 6938 kbps
+11-21 03:58:31.762 LAB hls start +6697 ms: 480p segment in
+11-21 03:58:31.784 LAB hls start +6718 ms: 720p playlist asked
+11-21 03:58:31.784 LAB   16.0 hls: 720p playlist, 444 segments
+11-21 03:58:31.785 LAB hls start +6719 ms: 720p playlist served
+11-21 03:58:31.866 LAB hls start +6801 ms: 720p head/init asked
+11-21 03:58:31.959 LAB hls start +6894 ms: 720p head/init in
+11-21 03:58:31.966 LAB hls start +6901 ms: 720p segment asked
+11-21 03:58:33.396 LAB   17.6 hls jump: answer 382 ms, first byte 413 ms, segment 1426 ms (582568 B); conn kept 1 ms, wait 381 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other reading, last whole on it 1.1 s ago
+11-21 03:58:33.398 LAB hls start +8333 ms: 720p segment in
+11-21 03:58:33.487 LAB hls start +8421 ms: 720p segment asked
+11-21 03:58:33.985 LAB hls start +8920 ms: 720p segment in
+11-21 03:58:34.082 LAB hls start +9017 ms: 720p segment asked
+11-21 03:58:34.910 LAB hls start +9845 ms: 720p segment in
+11-21 03:58:34.968 LAB hls start +9903 ms: 720p segment asked
+11-21 03:58:35.658 LAB cpu app 63% · 10.8fps · 1.raster 43% | .innocent.media 9% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | DartWorker 2% | HwBinder:8316 1%
+11-21 03:58:35.770 LAB   19.9 line 4949 kbps, a read
+11-21 03:58:35.770 LAB   19.9 measured 4949 kbps
+11-21 03:58:37.053 LAB hls start +11988 ms: 720p segment in
+11-21 03:58:37.362 LAB   21.5 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+11-21 03:58:40.016 LAB   24.2 measured 4743 kbps
+11-21 03:58:43.603 LAB   27.8 measured 5254 kbps
+11-21 03:58:43.717 LAB   27.9 exo rung 720p 2000 kbps
+11-21 03:58:45.162 LAB   29.3 rebuffer start (ahead 26601 ms)
+11-21 03:58:45.172 LAB   29.3 rebuffer end 10 ms
+11-21 03:58:45.637 LAB cpu app 52% · 16.1fps · 1.raster 29% | .innocent.media 9% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | DartWorker 2% | HwBinder:8316 2%
+11-21 03:58:47.214 LAB   31.4 measured 5389 kbps
+11-21 03:58:49.662 LAB   33.8 line 3674 kbps, in a read
+11-21 03:58:50.891 LAB   35.1 line 5189 kbps, a read
+11-21 03:58:50.891 LAB   35.1 measured 5189 kbps
+11-21 03:58:54.157 LAB   38.3 measured 6129 kbps
+11-21 03:58:55.656 LAB cpu app 50% · 16.2fps · 1.raster 27% | .innocent.media 9% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | DartWorker 2% | HwBinder:8316 2%
+11-21 03:58:57.913 LAB   42.1 measured 5144 kbps
+11-21 03:59:00.960 LAB   45.1 measured 6143 kbps
+11-21 03:59:05.643 LAB cpu app 47% · 16.6fps · 1.raster 28% | .innocent.media 7% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | DartWorker 2% | HwBinder:8316 2%
+11-21 03:59:10.471 LAB   54.6 LAB ladderstart done
+11-21 03:59:13.499 LAB ladderstart end pass=5 line=plain start=fix
