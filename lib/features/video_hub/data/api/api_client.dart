@@ -34,7 +34,14 @@ class ApiClient {
   /// token would fire six refreshes, five of which race and lose - and on
   /// rotating-refresh-token setups the losers invalidate the winner, signing
   /// the user out mid-session.
-  Future<void>? _refreshInFlight;
+  ///
+  /// It hands every caller the refresh's OWN answer. It used to hand a caller
+  /// who joined one "is a token still stored?", which is true when Auth was
+  /// down and the tokens were kept: that caller retried its stale token and
+  /// went up `unauthenticated`, and the account cleared the session — the
+  /// outage sign-out [_send] guards against, met by the second of two
+  /// requests at a start (the release review, 21 Nov 2026).
+  Future<bool>? _refreshInFlight;
 
   Future<Map<String, String>> _headers({
     required bool authenticated,
@@ -313,22 +320,10 @@ class ApiClient {
     }
   }
 
-  Future<bool> _refreshSession() {
-    final inFlight = _refreshInFlight;
-    if (inFlight != null) {
-      return inFlight.then((_) async {
-        final token = await _session.accessToken();
-        return token != null && token.isNotEmpty;
+  Future<bool> _refreshSession() =>
+      _refreshInFlight ??= _doRefresh().whenComplete(() {
+        _refreshInFlight = null;
       });
-    }
-
-    final completer = Completer<void>();
-    _refreshInFlight = completer.future;
-    return _doRefresh().whenComplete(() {
-      _refreshInFlight = null;
-      if (!completer.isCompleted) completer.complete();
-    });
-  }
 
   Future<bool> _doRefresh() async {
     final refresh = await _session.refreshToken();
