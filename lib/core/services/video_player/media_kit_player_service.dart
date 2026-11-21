@@ -275,26 +275,50 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// — when the finger came before any picture ahead. Now the header is
   /// read [packHeaderAfter] after the first picture ([readPackHeaderSoon]),
   /// one request of ~16 KB once a film, unless the data saver is on (then
-  /// a drag's own reads only). Off only for the device lab's `trick` (the
-  /// A/B against `hdr`).
+  /// a drag's own reads only). Device lab U1 44881023891: the first drag's
+  /// first picture 1540 -> 858 ms on the weak line, 1221 -> 596 plain, in
+  /// every pair. Off only for the lab's `trick` (the A/B against `hdr`).
   static bool packHeaderEarly = true;
   static Duration packHeaderAfter = const Duration(seconds: 5);
+
+  /// ON THE LADDER, NOT WHILE THE START IS STILL THIN: the read waits,
+  /// checking every [packHeaderRecheck], until ExoPlayer holds
+  /// [packHeaderAhead] of film — at most [packHeaderLatest] after the first
+  /// picture. U1's one weak-line stop beside the read (pass 15: 171 ms in
+  /// hand as it began, the line's) said to keep the start's bytes first.
+  static Duration packHeaderAhead = const Duration(seconds: 8);
+  static Duration packHeaderRecheck = const Duration(seconds: 2);
+  static Duration packHeaderLatest = const Duration(seconds: 30);
   Timer? _headerSoon;
 
   /// The film's first picture is on screen: its pack's header in
-  /// [packHeaderAfter], if this open is still the one playing then.
+  /// [packHeaderAfter], if this open is still the one playing then (see
+  /// [packHeaderAhead]).
   void readPackHeaderSoon() {
     _headerSoon?.cancel();
     if (!packHeaderEarly) return;
     final gen = _openGen;
-    _headerSoon = Timer(packHeaderAfter, () {
-      if (gen == _openGen) unawaited(readPackHeaderAhead());
-    });
+    final since = Stopwatch()..start();
+    void at(Duration wait) {
+      _headerSoon = Timer(wait, () {
+        if (gen != _openGen) return;
+        final ahead = ladderAheadMs;
+        final thin = ahead != null && ahead < packHeaderAhead.inMilliseconds;
+        if (thin && since.elapsed + packHeaderRecheck <= packHeaderLatest) {
+          at(packHeaderRecheck);
+          return;
+        }
+        unawaited(readPackHeaderAhead(
+            note: 'at +${since.elapsed.inSeconds} s, ${ahead == null ? 'one file' : 'ahead $ahead ms'}'));
+      });
+    }
+
+    at(packHeaderAfter);
   }
 
   /// The pack of the film on screen opened now (its header read), if it
   /// has one not open yet and the data saver is off.
-  Future<void> readPackHeaderAhead() async {
+  Future<void> readPackHeaderAhead({String note = ''}) async {
     if (!packHeaderEarly || _saving) return;
     final p = _packNow();
     if (p == null || p.isOpen) return;
@@ -303,9 +327,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (playing == null || _playingKey != playing) return;
     // `preview pack: N pictures, header X ms`, once.
     _packNow();
+    final why = note.isEmpty ? '' : ' ($note)';
     PlaybackLog.add(ok
-        ? 'preview pack header ahead: ${p.headerMs} ms'
-        : 'preview pack header ahead: not read${p.usable ? '' : ' (${p.broken})'}');
+        ? 'preview pack header ahead: ${p.headerMs} ms$why'
+        : 'preview pack header ahead: not read${p.usable ? '' : ' (${p.broken})'}$why');
   }
 
   bool get _saving {
