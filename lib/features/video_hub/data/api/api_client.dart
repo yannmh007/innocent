@@ -317,7 +317,7 @@ class ApiClient {
         // (SessionStore.refusedProvider): one the SERVER ended — Supabase
         // ends an account's sessions below aal2 whenever it completes MFA —
         // can be renewed with Google, once.
-        SessionStore.refusedProvider = SessionStore.providerOf(await _session.accessToken());
+        SessionStore.noteRefused(await _session.accessToken());
         await _session.clear();
         return false;
       }

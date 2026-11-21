@@ -72,19 +72,20 @@ final _refused = _json(400, {
   'msg': 'Invalid Refresh Token: Refresh Token Not Found',
 });
 
-final _newSession = {
-  'access_token': 'renewed-access',
-  'refresh_token': 'renewed-refresh',
-  'expires_in': 3600,
-  'user': {'id': 'u1', 'email': 'someone@example.com', 'user_metadata': <String, dynamic>{}},
-};
+Map<String, dynamic> _newSession(String userId) => {
+      'access_token': 'renewed-access',
+      'refresh_token': 'renewed-refresh',
+      'expires_in': 3600,
+      'user': {'id': userId, 'email': 'someone@example.com', 'user_metadata': <String, dynamic>{}},
+    };
 
 /// The auth server in miniature: refresh refused, a user call without a
 /// live token refused, an ID token exchanged for [_newSession] (or
 /// [exchangeStatus]).
 class _Auth {
-  _Auth({this.exchangeStatus = 200});
+  _Auth({this.exchangeStatus = 200, this.userId = 'u1'});
   final int exchangeStatus;
+  final String userId;
   final List<String> seen = <String>[];
   Map<String, dynamic>? exchanged;
 
@@ -94,11 +95,11 @@ class _Auth {
     if (req.url.path.endsWith('/token') && grant == 'refresh_token') return _refused;
     if (req.url.path.endsWith('/token') && grant == 'id_token') {
       exchanged = jsonDecode(req.body) as Map<String, dynamic>;
-      return exchangeStatus == 200 ? _json(200, _newSession) : _json(exchangeStatus, {'msg': 'down'});
+      return exchangeStatus == 200 ? _json(200, _newSession(userId)) : _json(exchangeStatus, {'msg': 'down'});
     }
     if (req.url.path.endsWith('/logout')) return _json(204, <String, dynamic>{});
     if (req.headers['Authorization'] == 'Bearer renewed-access') {
-      return req.url.path.endsWith('/user') ? _json(200, _newSession['user']!) : _json(200, <Object>[]);
+      return req.url.path.endsWith('/user') ? _json(200, _newSession(userId)['user']!) : _json(200, <Object>[]);
     }
     return _json(401, {'msg': 'no session'});
   });
@@ -108,7 +109,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    SessionStore.refusedProvider = null;
+    SessionStore.forgetRefused();
   });
 
   test('the console\'s MFA ended the Google session: renewed once, without a tap — still signed in', () async {
@@ -202,6 +203,17 @@ void main() {
     expect(asked, 1, reason: 'the refusal is renewed once, never again and again');
   });
 
+  test('Google gives ANOTHER account than the one the server ended: not signed in, its session ended', () async {
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final auth = _Auth(userId: 'someone-else');
+    final repo = ApiAccountRepository(ApiClient(session: s, httpClient: auth.client), session: s,
+        silentGoogleIdToken: () async => 'google-id-token');
+    expect(await repo.currentUser(), isNull,
+        reason: 'another account would inherit the first one\'s downloads, unasked');
+    expect(s.access, isNull);
+    expect(auth.seen, contains('/auth/v1/logout'));
+  });
+
   test('the exchange fails (the auth server down): signed out, nothing thrown', () async {
     final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth(exchangeStatus: 503).client),
@@ -224,5 +236,7 @@ void main() {
     expect(SessionStore.providerOf('not-a-token'), isNull);
     expect(SessionStore.providerOf('a.%%%.c'), isNull);
     expect(SessionStore.providerOf(null), isNull);
+    expect(SessionStore.userOf(_token(['google'])), 'u1');
+    expect(SessionStore.userOf('a.%%%.c'), isNull);
   });
 }

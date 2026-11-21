@@ -54,7 +54,7 @@ class ApiAccountRepository implements AccountRepository {
       // Unauthenticated means the session is gone: report signed out —
       // after one silent renewal if it was Google's ([_renewRefused]).
       if (e.kind == ApiErrorKind.unauthenticated) {
-        SessionStore.refusedProvider ??= SessionStore.providerOf(token);
+        if (SessionStore.refusedProvider == null) SessionStore.noteRefused(token);
         await _session.clear();
         return _renewRefused();
       }
@@ -116,7 +116,7 @@ class ApiAccountRepository implements AccountRepository {
       throw const ApiException(ApiErrorKind.server, message: 'bad session');
     }
     await _session.saveFromAuthResponse(body);
-    SessionStore.refusedProvider = null;
+    SessionStore.forgetRefused();
     final user = body['user'];
     if (user is Map<String, dynamic>) return _userFrom(user);
 
@@ -289,7 +289,8 @@ class ApiAccountRepository implements AccountRepository {
   /// failure. Never on a fresh install: nothing was refused.
   Future<AuthUser?> _renewRefused() async {
     final was = SessionStore.refusedProvider;
-    SessionStore.refusedProvider = null;
+    final who = SessionStore.refusedUserId;
+    SessionStore.forgetRefused();
     if (was != 'google' || !BackendConfig.googleEnabled) return null;
     try {
       final idToken = await (_silentGoogleIdToken ?? _lightweightGoogleIdToken)();
@@ -298,6 +299,20 @@ class ApiAccountRepository implements AccountRepository {
         return null;
       }
       final user = await _exchangeGoogle(idToken);
+      // THE SAME ACCOUNT OR NONE. Another one (the account sheet, two
+      // accounts on the phone) would be signed in without being asked for,
+      // and would inherit this one's downloads; its session is ended at
+      // once and the start is a signed-out one, as before.
+      if (who != null && user.id != who) {
+        try {
+          await _api.postJson('/auth/v1/logout');
+        } on ApiException {
+          // Best effort: the tokens go below either way.
+        }
+        await _session.clear();
+        PlaybackLog.add('account: the server ended the Google session; Google gave another account, signed out');
+        return null;
+      }
       PlaybackLog.add('account: the server ended the Google session; renewed with Google');
       return user;
     } catch (e) {
@@ -334,7 +349,7 @@ class ApiAccountRepository implements AccountRepository {
     }
     // The account is gone: so is its session here, and Google's memory of
     // which account this app last used — and nothing is renewed.
-    SessionStore.refusedProvider = null;
+    SessionStore.forgetRefused();
     await _session.clear();
     try {
       await GoogleSignIn.instance.signOut();
@@ -371,7 +386,7 @@ class ApiAccountRepository implements AccountRepository {
     }
 
     // The viewer's own: never renewed ([_renewRefused]).
-    SessionStore.refusedProvider = null;
+    SessionStore.forgetRefused();
     await _session.clear();
   }
 

@@ -154,26 +154,52 @@ class SessionStore {
   /// the app had read and sent its stored refresh token.
   static String? refusedProvider;
 
-  /// The sign-in provider named in an access token's claims (`google`,
-  /// `phone`…), or null when it cannot be read. The token is only decoded —
-  /// its signature is the server's business, and nothing here trusts it for
-  /// more than which way to offer a renewal.
-  static String? providerOf(String? accessToken) {
+  /// And whose it was (the token's `sub`): a renewal signs in that account
+  /// again or none — never another one, which would inherit its downloads.
+  static String? refusedUserId;
+
+  /// [refusedProvider] and [refusedUserId] from the session being cleared.
+  static void noteRefused(String? accessToken) {
+    refusedProvider = providerOf(accessToken);
+    refusedUserId = userOf(accessToken);
+  }
+
+  /// Nothing left to renew (a sign-in, the viewer's own sign-out).
+  static void forgetRefused() {
+    refusedProvider = null;
+    refusedUserId = null;
+  }
+
+  /// The user id (`sub`) an access token names, or null.
+  static String? userOf(String? accessToken) {
+    final c = _claims(accessToken);
+    final sub = c?['sub'];
+    return sub is String && sub.isNotEmpty ? sub : null;
+  }
+
+  static Map<String, dynamic>? _claims(String? accessToken) {
     if (accessToken == null) return null;
     final parts = accessToken.split('.');
     if (parts.length != 3) return null;
     try {
       final claims = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-      if (claims is! Map<String, dynamic>) return null;
-      final meta = claims['app_metadata'];
-      if (meta is! Map<String, dynamic>) return null;
-      final providers = meta['providers'];
-      if (providers is List && providers.contains('google')) return 'google';
-      final p = meta['provider'];
-      return p is String && p.isNotEmpty ? p : null;
+      return claims is Map<String, dynamic> ? claims : null;
     } catch (_) {
       return null;
     }
+  }
+
+  /// The sign-in provider named in an access token's claims (`google`,
+  /// `phone`…), or null when it cannot be read. The token is only decoded —
+  /// its signature is the server's business, and nothing here trusts it for
+  /// more than which way to offer a renewal.
+  static String? providerOf(String? accessToken) {
+    final meta = _claims(accessToken)?['app_metadata'];
+    if (meta is! Map<String, dynamic>) return null;
+    final providers = meta['providers'];
+    if (providers is List && providers.contains('google')) return 'google';
+    final p = meta['provider'];
+    return p is String && p.isNotEmpty ? p : null;
   }
 
   /// Reads whatever the auth endpoint returned and keeps the parts that matter.
