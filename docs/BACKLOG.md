@@ -16,6 +16,49 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **21 Nov: TRICK-PLAY FOLLOWS TRANSCODE (LIVE) and 1.64.87's candidate
+  (on the branch, at the release checkpoint)**.
+  TASK A, LIVE (the owner's word; main f4bc4fd3, transcode.yml only): a
+  Transcode run on main that recorded a rung dispatches trickplay.yml on
+  main (rungs counted from what tool/transcode.sh printed, kept by tee;
+  the script unchanged); Trick-play's concurrency queues, never cancels;
+  the daily 03:37 schedule stays as the net. Main Build 44878780740 green
+  (nothing published), Static analysis 44878780745. PROVED on Elephants
+  Dream (open film): queue_transcode 07:08:45 UTC (dry run rolled back
+  first), Transcode 44878856181 re-recorded the 240p rung (23,107,898 ->
+  23,115,462 B: an older ffmpeg pin and script), Trick-play 44878915223
+  dispatched 07:09:31, a NEW pack 07:10:07 (163 pictures, 678,794 B), the
+  old one in r2_trash (purge 28 Nov); trickplay_for serves the new one;
+  Playback check 44879184335 read it through the Worker (header = grant,
+  offsets, a whole JPEG, 20 in one request, edge = direct). Queue to pack:
+  82 s, where it was up to a day. NOTE: staleness is by the smallest
+  rung's bytes, so a film re-made by the same script and pin (Hero, 6 Nov)
+  keeps its pack — right, the file is the same.
+  ON THE BRANCH FOR 1.64.87: B1 (c86b380d) a film played as one file —
+  one rung (Elephants Dream, Hero) or its Original — reads its pack:
+  StreamCacheServer.registerFilmPack (no cache entry, the install's
+  header, the renewal, the playing copy's pool), armed per copy address
+  (FilePacks: one film at a time); shown without the network-preview
+  switch (the owner's choice); nothing ahead with the data saver. B2
+  (c86b380d, 8904dfe6) the pack's header read 5 s after the first
+  picture, on the ladder once 8 s are in hand (at most 30 s): device lab
+  U1 44881023891 (hdr first) the first drag's first picture weak 1540 ->
+  858 ms (12 of 12 pairs), plain 1221 -> 596 (4 of 4); U2 44887248209
+  (trick first, the 8 s rule) weak 1464 -> 822 (12 of 12), A/A 156 ms;
+  near_ms / stop_ms no different; +1 request, 16 KB a playback; the hdr
+  passes' start stops all came BEFORE the read. B3 (the owner's choice):
+  nothing ahead with the data saver, pack or not. B4 (d26fae6e) the
+  actions on Node 24: checkout v5.1.0, setup-java v5.7.0, cache v5.1.0,
+  setup-android v4.0.4 (each action.yml read at its SHA). PROVED: flutter
+  test 1851 here, the new socket tests 3 of 3 under load; Build 44881033416
+  and 44887255541 (Node 24 pins), Stream bench 44881023893 and
+  44887248249, Static analysis green; TEST LAB 44887248300 (489b3b88 —
+  lib/ and android/ final; the day's tests 1-2, started by the
+  device-cloud.yml pin change): realme 16 PASS 1 SKIP, OPPO 16 PASS 1
+  SKIP, no crash; the header read ahead at +5 s on both, the first drag
+  1187 -> 674 ms (realme) and 1480 -> 408 (OPPO). U2's first attempt met
+  Maven Central's 429 (re-run). Device lab U3 (8228a952): the gate on the
+  final code and B1 on Elephants Dream — see the checkpoint report.
 - **1.64.86 IS OUT (20 Nov, the owner's "Release လုပ်ပါ")**: main a6d68c93
   (pushed 16:30 UTC after the libmpv jar came whole 3 of 3), Build
   44774072388 green (Analyze, Test, both APKs, CDN, Release); GitHub
@@ -88,17 +131,6 @@ does it.
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
   settle`.
-- **NEXT, OFFERED TO THE OWNER 21 Nov (waiting for the word "Trick-play ကို
-  transcode နောက် ဆက်လုပ်ပါ")**: a new upload gets its ladder at once (the
-  edge function kicks Transcode; the */5 schedule backs it) but its
-  seek-bar pack only at the daily 03:37 UTC schedule — up to 24 h. Chain
-  it: transcode.yml (already `actions: write`, already re-kicks itself
-  with `gh workflow run`) dispatches trickplay.yml on main when its run
-  recorded a ladder; the daily schedule stays as the net. Also open: a
-  film whose original is already small gets one rung (Elephants Dream,
-  Hero: 240p only, tool/transcode.sh skips a rung not smaller than the
-  source) and plays the Original on libmpv, where the app does not read
-  the pack — reading it there is an app change for the next release.
 - **The owner's first 1.64.86 report, DZQXVZT2 (20 Nov 19:25 UTC, wifi
   metered, diagnostic_reports id 10)**: THE PACK WORKS ON THE PHONE —
   Sintel `preview pack: 222 pictures, header 818 ms`; every drag `pack N,
@@ -198,9 +230,9 @@ does it.
     read ends (packAnswer 15 s, a read at most 20 s), the pack reader made
     again for another pack on the same ladder, `_leaveLadder` stops
     ExoPlayer when the newer open is libmpv, a non-finite number is no
-    pack. LEFT TO THE OWNER: with the data saver on, a film WITHOUT a pack
-    still takes its six fragments ahead (~450 KB each time the controls
-    come up; as the 19 Nov build does).
+    pack. DECIDED 21 Nov (the owner, B3): with the data saver on, nothing
+    is taken ahead, pack or not (it was six fragments, ~450 KB, each time
+    the controls came up).
   - FOUND 20 Nov (T2): TWO STARTS STOOD STILL 46.5 s and 72.8 s (pass 1
     trick, pass 8 near — not the pack): Play tapped 1.3-1.8 s after the
     warm-up registered the 480p rung, its head read still on the line; the
