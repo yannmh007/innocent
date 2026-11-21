@@ -550,10 +550,18 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         }
         await Future<void>.delayed(const Duration(milliseconds: 250));
       }
-      if (svc is! MediaKitPlayerService || !svc.playingLadder) {
-        if (drags.isNotEmpty) PlaybackLog.add('LAB drag: not on the ladder, none made');
+      if (svc is! MediaKitPlayerService || !svc.seekPictures) {
+        if (drags.isNotEmpty) PlaybackLog.add('LAB drag: no seek-bar pictures here (no ladder, no pack), none made');
         return;
       }
+      // What the seek bar's pictures took before the first drag: the pack's
+      // header read while the film played (`hdr`), or nothing.
+      {
+        final c = MediaKitPlayerService.previewLineCost?.call() ?? (requests: 0, bytes: 0);
+        PlaybackLog.add('LAB preview cost before drags requests=${c.requests} bytes=${c.bytes} '
+            'engine=${svc.playingLadder ? 'exo' : 'mpv'}');
+      }
+      final wait = await LabStream.dragWait();
       const step = Duration(milliseconds: 150);
       var i = 0;
       for (final (by, over) in drags) {
@@ -573,7 +581,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // moment taken ahead, when the build does), the finger reaches the
         // bar a moment later.
         svc.prefetchPreviewsAround(svc.position);
-        await Future<void>.delayed(const Duration(seconds: 3));
+        await Future<void>.delayed(wait);
         if (!mounted) return;
         final cost1 = cost();
         final loader = LadderPreviewLoader((at) async {
@@ -633,10 +641,16 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             'requests=${cost2.requests - cost0.requests} bytes=${cost2.bytes - cost0.bytes} '
             'ahead_requests=${cost1.requests - cost0.requests} ahead_bytes=${cost1.bytes - cost0.bytes} '
             'word=${plan.word ?? '-'} ahead=${MediaKitPlayerService.previewAhead} '
-            'packon=${MediaKitPlayerService.previewPack}');
+            'packon=${MediaKitPlayerService.previewPack} hdr=${MediaKitPlayerService.packHeaderEarly} '
+            'wait_ms=${wait.inMilliseconds}');
         await Future<void>.delayed(const Duration(seconds: 2));
       }
     } finally {
+      // The whole playback's cost on the line: the seek bar's pictures, and
+      // everything the proxy fetched (the film's own bytes included).
+      final c = MediaKitPlayerService.previewLineCost?.call() ?? (requests: 0, bytes: 0);
+      PlaybackLog.add('LAB preview cost total requests=${c.requests} bytes=${c.bytes} '
+          'upstream_requests=${StreamCacheServer.upstreamRequests} upstream_bytes=${StreamCacheServer.upstreamBytes}');
       PlaybackLog.add('LAB ladderstart done');
     }
   }

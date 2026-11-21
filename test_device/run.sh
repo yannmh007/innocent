@@ -653,6 +653,9 @@ for flow in $FLOWS; do
       if [ -n "$seed" ]; then adb shell "echo $seed > $d/lab_throughput"; fi
       # The seek bar's drags only in a pass that names a preview word.
       case "$word" in *+*) if [ -n "${START_DRAGS:-}" ]; then adb shell "echo '$START_DRAGS' > $d/lab_drags"; fi ;; esac
+      # START_DRAG_WAIT ms from the controls coming up to the finger (3000
+      # unset; 0 a drag at once, the pack's header unread unless `hdr`).
+      if [ -n "${START_DRAG_WAIT:-}" ]; then adb shell "echo ${START_DRAG_WAIT} > $d/lab_drag_wait"; fi
       log "ladderstart pass $p ($lk, $word): the test film at ${START_AT:-579} s after ${START_PAGE:-4} s on its page; line $how"
       adb shell log -p i -t flutter "LAB ladderstart begin pass=$p line=$lk start=$word" >/dev/null 2>&1 || true
       adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
@@ -683,7 +686,7 @@ for flow in $FLOWS; do
     log "ladderstart: $(cat "$OUT/relay.txt" 2>/dev/null || echo 'relay: no counts')"
     python3 test_device/ladderstart_summary.py "$OUT" | tee "$OUT/ladderstart_summary.txt" | while read -r line; do log "$line"; done
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
-    adb shell rm -f "$d/lab_stream_url" "$d/lab_start_at" "$d/lab_start_page" "$d/lab_start" "$d/lab_drags" "$d/lab_throughput" >/dev/null 2>&1 || true
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_start_at" "$d/lab_start_page" "$d/lab_start" "$d/lab_drags" "$d/lab_drag_wait" "$d/lab_throughput" >/dev/null 2>&1 || true
     log "flow $flow done"
     continue
     ;;

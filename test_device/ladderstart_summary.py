@@ -152,8 +152,20 @@ def analyse(rows):
         mm = re.match(r'LAB drag (\d+)/(\d+) (.*)$', m)
         if mm:
             kv = dict(x.split('=', 1) for x in mm.group(3).split() if '=' in x)
+            kv['i'] = mm.group(1)
             drags.append(kv)
     out['drags'] = drags
+    # What the seek bar's pictures cost the playback (21 Nov): before the
+    # first drag (the pack's header read while the film played, or none),
+    # and in all, with everything the proxy fetched.
+    for key, pat in (('cost_before', r'^LAB preview cost before drags (.*)$'),
+                     ('cost_total', r'^LAB preview cost total (.*)$')):
+        _, mm = first(rows, pat)
+        out[key] = None if mm is None else {k: int(v) for k, v in
+                                             (x.split('=', 1) for x in mm.group(1).split() if '=' in x)
+                                             if v.lstrip('-').isdigit()}
+    _, mm = first(rows, r'^preview pack header ahead: (\d+) ms')
+    out['header_ahead_ms'] = int(mm.group(1)) if mm else None
     previews = []
     for t, m in rows:
         mm = re.match(r'preview at (\d+)s: (\d+) KB, (\d+) ms \(bytes (\d+) ms, (.*); picture (\d+) ms\)', m)
@@ -288,17 +300,13 @@ def main():
     def ints(sel, k):
         return [int(d[k]) for d in sel if d.get(k, '-1') not in ('-1', None)]
 
-    def size_of(d):
-        by = abs(int(d.get('by', '0')))
-        return 'short' if by <= 30 else ('long' if by <= 120 else 'far')
-
     for (lk, pword), xs in sorted(pgroups.items()):
         ds = [d for a in xs for d in a['drags']]
         pv = [v for a in xs for v in a['previews']]
         if not ds and not pv:
             continue
-        for size in ('short', 'long', 'far', 'all'):
-            sel = [d for d in ds if size == 'all' or size_of(d) == size]
+        for size in SIZES:
+            sel = [d for d in ds if in_size(d, size)]
             if not sel:
                 continue
             stop = ints(sel, 'stop_ms')
@@ -319,6 +327,21 @@ def main():
                   f'a drag: {fmt(med(reqs))} requests, {fmt(med(kb))} KB median '
                   f'(mean {fmt(statistics.mean(reqs) if reqs else None)}, {fmt(statistics.mean(kb) if kb else None)}); '
                   f'fetches {fmt(statistics.mean(fetched))}')
+        cb = [a['cost_before'] for a in xs if a.get('cost_before')]
+        ct = [a['cost_total'] for a in xs if a.get('cost_total')]
+        if cb or ct:
+            ahead_ms = [a['header_ahead_ms'] for a in xs if a.get('header_ahead_ms') is not None]
+            print(f'ladderstart {lk} previews {pword}, a playback: before the first drag '
+                  f'{fmt(med([c.get("requests", 0) for c in cb]))} requests, '
+                  f'{fmt(med([c.get("bytes", 0) / 1024 for c in cb]))} KB median; in all (the drags too) '
+                  f'{fmt(med([c.get("requests", 0) for c in ct]))} requests, '
+                  f'{fmt(med([c.get("bytes", 0) / 1024 for c in ct]))} KB; the proxy in all '
+                  f'{fmt(med([c.get("upstream_requests", 0) for c in ct]))} requests, '
+                  f'{fmt(med([c.get("upstream_bytes", 0) / 1048576 for c in ct]))} MB; '
+                  f'header read while playing in {len(ahead_ms)} of {len(xs)} passes '
+                  f'(median {fmt(med(ahead_ms))} ms); the start\'s 30 s: stops '
+                  f'{sum(len(a.get("stops") or []) for a in xs)} in {len(xs)} passes '
+                  f'({sum(sum(a.get("stops") or []) for a in xs)} ms)')
         hdr = [a['pack_header_ms'] for a in xs if a.get('pack_header_ms') is not None]
         runs = [r for a in xs for r in a.get('pack_ahead', [])]
         unused = [u for a in xs for u in a.get('pack_unused', [])]
@@ -348,20 +371,32 @@ def main():
         print(line)
 
 
+# Drag sizes: short (30 s of film or less), long (to 120 s), far (further:
+# a part never seen), all — and `first`, each pass's first drag (21 Nov: a
+# film's first drag is the one that meets its pack's header unread).
+SIZES = ('first', 'short', 'long', 'far', 'all')
+
+
+def in_size(d, size):
+    by = abs(int(d.get('by', '0')))
+    if size == 'all':
+        return True
+    if size == 'first':
+        return d.get('i') == '1'
+    return size == ('short' if by <= 30 else ('long' if by <= 120 else 'far'))
+
+
 def drag_pairs(passes):
     """Neighbouring passes of two preview words, per line and drag size:
-    the difference of each pass's median near_ms and stop_ms (x minus y).
-    Two words of one build (`a`, `b`) are the drags' A/A."""
+    the difference of each pass's median first_ms, near_ms and stop_ms (x
+    minus y). Two words of one build (`a`, `b`) are the drags' A/A."""
     pw = lambda w: w.split('@')[0].split('+')[1] if '+' in w.split('@')[0] else '-'
     out = []
     for lk in sorted({l for p, l, w, a in passes}):
         seq = [(pw(w), a) for p, l, w, a in passes if l == lk and a is not None and a['drags']]
-        for size in ('short', 'long', 'far', 'all'):
+        for size in SIZES:
             def m(a, k):
-                sel = [d for d in a['drags']
-                       if size == 'all' or ((abs(int(d.get('by', '0'))) <= 30 and size == 'short')
-                                            or (30 < abs(int(d.get('by', '0'))) <= 120 and size == 'long')
-                                            or (abs(int(d.get('by', '0'))) > 120 and size == 'far'))]
+                sel = [d for d in a['drags'] if in_size(d, size)]
                 v = [int(d[k]) for d in sel if d.get(k, '-1') != '-1']
                 return med(v)
             pairs = {}
@@ -371,7 +406,7 @@ def drag_pairs(passes):
                 if w1 != w2:
                     x, y = sorted((w1, w2))
                     ax, ay = (a1, a2) if w1 == x else (a2, a1)
-                    for k in ('near_ms', 'stop_ms'):
+                    for k in ('first_ms', 'near_ms', 'stop_ms'):
                         if m(ax, k) is not None and m(ay, k) is not None:
                             pairs.setdefault((x, y, k), []).append(m(ax, k) - m(ay, k))
                     i += 2

@@ -126,8 +126,11 @@ class LabStream {
   /// `base` as 1.64.85 (one fetch at a time, none ahead, no pack); `near`
   /// the fragments with the pictures ahead and the nearest shown at once
   /// (19 Nov), the pack left unread ([MediaKitPlayerService.previewPack]
-  /// off); `trick` the pack (20 Nov, docs/trickplay_plan.md) — anything
-  /// else the build's own: `fix+trick`, `fix+near`.
+  /// off); `trick` the pack (20 Nov, docs/trickplay_plan.md) as 1.64.86
+  /// read it — its header at the first picture asked — and `hdr` the pack
+  /// with its header read 5 s after the film's first picture (21 Nov,
+  /// [MediaKitPlayerService.packHeaderEarly]); anything else the build's
+  /// own: `fix+trick`, `fix+near`, `a+a` / `a+b` (an A/A).
   static void applyStartRule(String? pass) {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
     final parts = (pass ?? '').split('+');
@@ -135,12 +138,28 @@ class LabStream {
     final preview = parts.length > 1 ? parts[1] : null;
     MediaKitPlayerService.previewAhead = preview != 'base';
     MediaKitPlayerService.previewPack = preview != 'base' && preview != 'near';
+    MediaKitPlayerService.packHeaderEarly = preview != 'base' && preview != 'near' && preview != 'trick';
     MediaKitPlayerService.startOnResume = word != 'base';
     StreamCacheServer.warmAtResume = word != 'base';
     PlaybackLog.add('LAB start rule ${word ?? '-'}: resume on the warmed rung '
         '${MediaKitPlayerService.startOnResume}, warm at the resume point '
         '${StreamCacheServer.warmAtResume}, previews ahead ${MediaKitPlayerService.previewAhead}, '
-        'pack ${MediaKitPlayerService.previewPack}');
+        'pack ${MediaKitPlayerService.previewPack}, header early ${MediaKitPlayerService.packHeaderEarly}');
+  }
+
+  /// How long after the controls come up the finger reaches the seek bar
+  /// in the lab's drags (`lab_drag_wait`, ms; 3000 when the lab wrote
+  /// none). 0 is a viewer who drags at once: the pictures ahead are still
+  /// on their way, and a film's first drag meets its pack's header unread
+  /// unless it was read while the film played (`hdr`).
+  static Future<Duration> dragWait() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return const Duration(seconds: 3);
+    try {
+      final ms = int.tryParse(((await _read('lab_drag_wait')) ?? '').trim());
+      return Duration(milliseconds: ms == null || ms < 0 ? 3000 : ms);
+    } catch (_) {
+      return const Duration(seconds: 3);
+    }
   }
 
   /// The seek bar's drags (`lab_drags`): "+60/1.5 -30/1 …", each a move of
