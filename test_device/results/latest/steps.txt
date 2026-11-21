@@ -1,167 +1,166 @@
-[07:52:13] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[07:52:13] install
-[07:52:28] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[07:52:28] network: eth0 has qdisc clsact
-[07:52:28] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[07:52:54] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[07:52:54] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[07:52:54] library: pushing 24 files
-[07:53:24] library: MediaStore lists 24 videos
-[07:53:24] cold start
+[09:57:05] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[09:57:05] install
+[09:57:19] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[09:57:19] network: eth0 has qdisc clsact
+[09:57:19] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[09:57:46] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[09:57:46] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[09:57:46] library: pushing 24 files
+[09:58:16] library: MediaStore lists 24 videos
+[09:58:16] cold start
 Status: ok
-TotalTime: 4026
-WaitTime: 4042
-[07:53:39] flow ladderstart
-[07:53:39] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[07:53:46] ladderstart: the line under a 900kbit cap measured 735 kbps (600000 bytes)
-[07:53:46] ladderstart pass 1 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:03:27] ladderstart pass 1 (weak, fix+hdr): 49 start marks, 2 drags
-[08:03:28] ladderstart pass 2 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:04:40] ladderstart pass 2 (weak, fix+trick): 49 start marks, 2 drags
-[08:04:41] ladderstart pass 3 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:05:52] ladderstart pass 3 (weak, fix+hdr): 49 start marks, 2 drags
-[08:05:53] ladderstart pass 4 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:07:05] ladderstart pass 4 (weak, fix+trick): 49 start marks, 2 drags
-[08:07:06] ladderstart pass 5 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:08:23] ladderstart pass 5 (weak, fix+hdr): 49 start marks, 2 drags
-[08:08:24] ladderstart pass 6 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:09:36] ladderstart pass 6 (weak, fix+trick): 49 start marks, 2 drags
-[08:09:37] ladderstart pass 7 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:10:48] ladderstart pass 7 (weak, fix+hdr): 49 start marks, 2 drags
-[08:10:49] ladderstart pass 8 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:12:06] ladderstart pass 8 (weak, fix+trick): 49 start marks, 2 drags
-[08:12:07] ladderstart pass 9 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:13:19] ladderstart pass 9 (weak, fix+hdr): 49 start marks, 2 drags
-[08:13:20] ladderstart pass 10 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:14:37] ladderstart pass 10 (weak, fix+trick): 49 start marks, 2 drags
-[08:14:38] ladderstart pass 11 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:15:50] ladderstart pass 11 (weak, fix+hdr): 49 start marks, 2 drags
-[08:15:51] ladderstart pass 12 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:17:03] ladderstart pass 12 (weak, fix+trick): 49 start marks, 2 drags
-[08:17:04] ladderstart pass 13 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:18:16] ladderstart pass 13 (weak, fix+hdr): 49 start marks, 2 drags
-[08:18:17] ladderstart pass 14 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:19:30] ladderstart pass 14 (weak, fix+trick): 49 start marks, 2 drags
-[08:19:31] ladderstart pass 15 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:20:48] ladderstart pass 15 (weak, fix+hdr): 49 start marks, 2 drags
-[08:20:49] ladderstart pass 16 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:22:01] ladderstart pass 16 (weak, fix+trick): 49 start marks, 2 drags
-[08:22:02] ladderstart pass 17 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:23:19] ladderstart pass 17 (weak, fix+hdr): 49 start marks, 2 drags
-[08:23:20] ladderstart pass 18 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:24:32] ladderstart pass 18 (weak, fix+trick): 49 start marks, 2 drags
-[08:24:33] ladderstart pass 19 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:25:45] ladderstart pass 19 (weak, fix+hdr): 49 start marks, 2 drags
-[08:25:46] ladderstart pass 20 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:26:58] ladderstart pass 20 (weak, fix+trick): 49 start marks, 2 drags
-[08:26:59] ladderstart pass 21 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:28:12] ladderstart pass 21 (weak, fix+hdr): 49 start marks, 2 drags
-[08:28:13] ladderstart pass 22 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:29:25] ladderstart pass 22 (weak, fix+trick): 49 start marks, 2 drags
-[08:29:26] ladderstart pass 23 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:30:37] ladderstart pass 23 (weak, fix+hdr): 49 start marks, 2 drags
-[08:30:38] ladderstart pass 24 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[08:31:56] ladderstart pass 24 (weak, fix+trick): 49 start marks, 2 drags
-[08:31:57] ladderstart pass 25 (plain, fix+hdr): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:33:10] ladderstart pass 25 (plain, fix+hdr): 49 start marks, 2 drags
-[08:33:11] ladderstart pass 26 (plain, fix+trick): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:34:23] ladderstart pass 26 (plain, fix+trick): 49 start marks, 2 drags
-[08:34:24] ladderstart pass 27 (plain, fix+hdr): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:35:36] ladderstart pass 27 (plain, fix+hdr): 49 start marks, 2 drags
-[08:35:37] ladderstart pass 28 (plain, fix+trick): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:36:50] ladderstart pass 28 (plain, fix+trick): 49 start marks, 2 drags
-[08:36:51] ladderstart pass 29 (plain, fix+hdr): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:38:03] ladderstart pass 29 (plain, fix+hdr): 49 start marks, 2 drags
-[08:38:04] ladderstart pass 30 (plain, fix+trick): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:39:17] ladderstart pass 30 (plain, fix+trick): 49 start marks, 2 drags
-[08:39:18] ladderstart pass 31 (plain, fix+hdr): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:40:30] ladderstart pass 31 (plain, fix+hdr): 49 start marks, 2 drags
-[08:40:31] ladderstart pass 32 (plain, fix+trick): the test film at 579 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[08:41:44] ladderstart pass 32 (plain, fix+trick): 49 start marks, 2 drags
-[08:41:44] ladderstart: the line passed Sent 647895492 bytes 433863 pkt (dropped 948
-[08:41:46] ladderstart: relay: 977 connections (0 refused), 645.3 MB to the emulator, 973.4 KB from it
-[08:41:46] ladderstart pass 1 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 35, register 35, start index 1538, master 1541, start playlist 1553, 1st seg index 1538, 1st seg asked 1593, 1st seg in 3393, picture 3287; other indexes: 360p index 5023, 720p index 4093; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 2 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 6, register 9, start index 1234, master 1235, start playlist 1251, 1st seg index 1234, 1st seg asked 1396, 1st seg in 3311, picture 3090; other indexes: 360p index 3583, 720p index 3648; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 3 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 1146, master 1378, start playlist 1392, 1st seg index 1146, 1st seg asked 1493, 1st seg in 3319, picture 2992; other indexes: 360p index 2972, 720p index 3760; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 4 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 5, register 5, start index 1027, master 1030, start playlist 1036, 1st seg index 1027, 1st seg asked 1090, 1st seg in 3431, picture 2686; other indexes: 360p index 3449, 720p index 2759; 30 s: stops 0 (0 ms), 480p+ 79 %, rungs 480>360, first change +23.7 s to 360p
-[08:41:46] ladderstart pass 5 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 1, start index 1038, master 1439, start playlist 1480, 1st seg index 1038, 1st seg asked 1583, 1st seg in 5113, picture 4158; other indexes: 240p index 7386, 360p index 4054, 720p index 3304; 30 s: stops 0 (0 ms), 480p+ 11 %, rungs 480>360>240>360, first change +3.4 s to 360p
-[08:41:46] ladderstart pass 6 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 5, register 40, start index 1246, master 1432, start playlist 1499, 1st seg index 1246, 1st seg asked 1590, 1st seg in 3350, picture 2985; other indexes: 360p index 3965, 720p index 3089; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 7 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 5, start index 983, master 1066, start playlist 1071, 1st seg index 983, 1st seg asked 1195, 1st seg in 2813, picture 2815; other indexes: 240p index 8471, 360p index 3323, 720p index 5336; 30 s: stops 0 (0 ms), 480p+ 85 %, rungs 480>360>480, first change +12.8 s to 360p
-[08:41:46] ladderstart pass 8 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 7, register 8, start index 1133, master 1135, start playlist 1151, 1st seg index 1133, 1st seg asked 1185, 1st seg in 3086, picture 2784; other indexes: 360p index 3206, 720p index 3211; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 9 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 2, start index 1309, master 1312, start playlist 1319, 1st seg index 1309, 1st seg asked 1369, 1st seg in 3753, picture 3054; other indexes: 240p index 6179, 360p index 3747, 720p index 3744; 30 s: stops 0 (0 ms), 480p+ 65 %, rungs 480>360>480, first change +5.1 s to 360p
-[08:41:46] ladderstart pass 10 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 2, start index 1417, master 1420, start playlist 1436, 1st seg index 1417, 1st seg asked 1493, 1st seg in 5636, picture 4390; other indexes: 240p index 7700, 360p index 3489, 720p index 3145; 30 s: stops 0 (0 ms), 480p+ 35 %, rungs 480>360>240>360>480, first change +3.5 s to 360p
-[08:41:46] ladderstart pass 11 (weak, fix+hdr): start 480p, first segment 480p; ms from the tap: grant 1, register 1, start index 953, master 964, start playlist 983, 1st seg index 953, 1st seg asked 1070, 1st seg in 2840, picture 2764; other indexes: 360p index 3092, 720p index 3720; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 12 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 2, start index 1297, master 1299, start playlist 1306, 1st seg index 1297, 1st seg asked 1368, 1st seg in 4464, picture 3549; other indexes: 240p index 9824, 360p index 2802, 720p index 3036; 30 s: stops 0 (0 ms), 480p+ 58 %, rungs 480>360>480, first change +5.6 s to 360p
-[08:41:46] ladderstart pass 13 (weak, fix+hdr): start 480p, first segment 480p; ms from the tap: grant 2, register 3, start index 1558, master 1561, start playlist 1570, 1st seg index 1558, 1st seg asked 1744, 1st seg in 3556, picture 2911; other indexes: 360p index 3730, 720p index 4804; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 14 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 2, register 2, start index 1368, master 1432, start playlist 1467, 1st seg index 1368, 1st seg asked 1573, 1st seg in 4037, picture 3459; other indexes: 240p index 11084, 360p index 3315, 720p index 2903; 30 s: stops 0 (0 ms), 480p+ 58 %, rungs 480>360>480, first change +7.6 s to 360p
-[08:41:46] ladderstart pass 15 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 9, register 9, start index 1318, master 1319, start playlist 1329, 1st seg index 1318, 1st seg asked 1414, 1st seg in 6333, picture 4249; other indexes: 240p index 9454, 360p index 3730, 720p index 3549; 30 s: stops 1 (1852 ms), 480p+ 34 %, rungs 480>240>360>480, first change +5.9 s to 240p
-[08:41:46] ladderstart pass 16 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 4, start index 1129, master 1135, start playlist 1150, 1st seg index 1129, 1st seg asked 1192, 1st seg in 3281, picture 2728; other indexes: 360p index 2994, 720p index 3279; 30 s: stops 0 (0 ms), 480p+ 93 %, rungs 480>360, first change +27.9 s to 360p
-[08:41:46] ladderstart pass 17 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 71, register 74, start index 1406, master 1408, start playlist 1416, 1st seg index 1406, 1st seg asked 1512, 1st seg in 6088, picture 4770; other indexes: 240p index 8625, 360p index 3417, 720p index 3753; 30 s: stops 0 (0 ms), 480p+ 14 %, rungs 480>360>240>360>480, first change +3.6 s to 360p
-[08:41:46] ladderstart pass 18 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 2, register 4, start index 1053, master 1262, start playlist 1321, 1st seg index 1053, 1st seg asked 1431, 1st seg in 3512, picture 3295; other indexes: 360p index 3069, 720p index 2862; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 19 (weak, fix+hdr): start 480p, first segment 480p; ms from the tap: grant 4, register 4, start index 1160, master 1167, start playlist 1184, 1st seg index 1160, 1st seg asked 1279, 1st seg in 3731, picture 2802; other indexes: 240p index 5978, 360p index 3545, 720p index 3334; 30 s: stops 0 (0 ms), 480p+ 65 %, rungs 480>360>480, first change +5.3 s to 360p
-[08:41:46] ladderstart pass 20 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 7, register 8, start index 1155, master 1158, start playlist 1175, 1st seg index 1155, 1st seg asked 1249, 1st seg in 3074, picture 3043; other indexes: 360p index 3075, 720p index 2802; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 21 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 1488, master 1491, start playlist 1506, 1st seg index 1488, 1st seg asked 1719, 1st seg in 3232, picture 3110; other indexes: 360p index 3662, 720p index 4293; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 22 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 2, start index 1435, master 1438, start playlist 1447, 1st seg index 1435, 1st seg asked 1508, 1st seg in 3266, picture 3002; other indexes: 360p index 3569, 720p index 2860; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 23 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 46, register 48, start index 1415, master 1417, start playlist 1459, 1st seg index 1415, 1st seg asked 1568, 1st seg in 4879, picture 3889; other indexes: 240p index 9057, 360p index 3238, 720p index 2836; 30 s: stops 0 (0 ms), 480p+ 58 %, rungs 480>360>480, first change +5.7 s to 360p
-[08:41:46] ladderstart pass 24 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 5, register 6, start index 1353, master 1356, start playlist 1367, 1st seg index 1353, 1st seg asked 1434, 1st seg in 5154, picture 4278; other indexes: 240p index 7446, 360p index 3103, 720p index 3417; 30 s: stops 0 (0 ms), 480p+ 11 %, rungs 480>360>240>360, first change +3.2 s to 360p
-[08:41:46] ladderstart pass 25 (plain, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 2, start index 1008, master 1229, start playlist 1248, 1st seg index 1008, 1st seg asked 1389, 1st seg in 3562, picture 3109; other indexes: 240p index 5466, 360p index 2566, 720p index 2511; 30 s: stops 0 (0 ms), 480p+ 31 %, rungs 480>360>480>720, first change +5.4 s to 360p
-[08:41:46] ladderstart pass 26 (plain, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 5, start index 1463, master 1472, start playlist 1484, 1st seg index 1463, 1st seg asked 1559, 1st seg in 2717, picture 2537; other indexes: 360p index 3292, 720p index 3241; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480>720, first change +29.9 s to 720p
-[08:41:46] ladderstart pass 27 (plain, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 6, register 6, start index 929, master 1054, start playlist 1069, 1st seg index 929, 1st seg asked 1265, 1st seg in 2336, picture 2484; other indexes: 360p index 2632, 720p index 2229; 30 s: stops 1 (330 ms), 480p+ 100 %, rungs 480>720, first change +29.5 s to 720p
-[08:41:46] ladderstart pass 28 (plain, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 4, start index 916, master 922, start playlist 986, 1st seg index 916, 1st seg asked 1083, 1st seg in 2785, picture 2163; other indexes: 360p index 2304, 720p index 3238; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480>720, first change +15.6 s to 720p
-[08:41:46] ladderstart pass 29 (plain, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 6, register 7, start index 1121, master 1347, start playlist 1372, 1st seg index 1121, 1st seg asked 1485, 1st seg in 3413, picture 2737; other indexes: 360p index 2873, 720p index 3608; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480>720, first change +15.1 s to 720p
-[08:41:46] ladderstart pass 30 (plain, fix+trick): start 480p, first segment 480p; ms from the tap: grant 2, register 2, start index 955, master 961, start playlist 977, 1st seg index 955, 1st seg asked 1079, 1st seg in 2538, picture 2839; other indexes: 360p index 2372, 720p index 2209; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480>720, first change +29.2 s to 720p
-[08:41:46] ladderstart pass 31 (plain, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 893, master 901, start playlist 910, 1st seg index 893, 1st seg asked 994, 1st seg in 2471, picture 2320; other indexes: 360p index 2176, 720p index 2044; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
-[08:41:46] ladderstart pass 32 (plain, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 2, start index 917, master 920, start playlist 927, 1st seg index 917, 1st seg asked 1010, 1st seg in 3071, picture 2825; other indexes: 360p index 2079, 720p index 2055; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480>720, first change +17.0 s to 720p
-[08:41:46] 
-[08:41:46] ladderstart plain fix, 8 passes: first picture median 2637 ms, p90 2920 ms (each 3109,2537,2484,2163,2737,2839,2320,2825); stops in 30 s 1 in 1 passes, 330 ms; 480p+ mean 91 %; step medians: grant 2, register 3, start index 942, master 1007, start playlist 1028, 1st seg index 942, 1st seg asked 1174, 1st seg in 2751, picture 2637
-[08:41:46] ladderstart weak fix, 24 passes: first picture median 3072 ms, p90 4269 ms (each 3287,3090,2992,2686,4158,2985,2815,2784,3054,4390,2764,3549,2911,3459,4249,2728,4770,3295,2802,3043,3110,3002,3889,4278); stops in 30 s 1 in 1 passes, 1852 ms; 480p+ mean 74 %; step medians: grant 2, register 4, start index 1272, master 1337, start playlist 1348, 1st seg index 1272, 1st seg asked 1433, 1st seg in 3472, picture 3072
-[08:41:46] ladderstart plain drags, previews hdr, first: 4 (src pack 4); first picture median 596 ms, p90 599; one within 10 s median 302 ms, p90 430; its own picture median 496 ms, p90 623, never 0; a drag: 4 requests, 61 KB median (mean 4, 61); fetches 6
-[08:41:46] ladderstart plain drags, previews hdr, long: 4 (src pack 4); first picture median 596 ms, p90 599; one within 10 s median 302 ms, p90 430; its own picture median 496 ms, p90 623, never 0; a drag: 4 requests, 61 KB median (mean 4, 61); fetches 6
-[08:41:46] ladderstart plain drags, previews hdr, far: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 448 ms, p90 558; its own picture median 426 ms, p90 534, never 0; a drag: 5 requests, 15 KB median (mean 5, 16); fetches 6
-[08:41:46] ladderstart plain drags, previews hdr, all: 8 (src pack 8); first picture median 276 ms, p90 598; one within 10 s median 387 ms, p90 510; its own picture median 426 ms, p90 607, never 0; a drag: 4 requests, 40 KB median (mean 4, 38); fetches 6
-[08:41:46] ladderstart plain previews hdr, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 9 requests, 91 KB; the proxy in all 30 requests, 17 MB; header read while playing in 4 of 4 passes (median 551 ms); the start's 30 s: stops 1 in 4 passes (330 ms)
-[08:41:46] ladderstart plain previews hdr: pack opened in 4 of 4 passes, header median 551 ms; runs ahead 4, median 596 ms, 21 pictures, 54 KB
-[08:41:46] ladderstart plain drags, previews trick, first: 4 (src pack 4); first picture median 1221 ms, p90 1400; one within 10 s median 176 ms, p90 434; its own picture median 429 ms, p90 645, never 0; a drag: 4 requests, 76 KB median (mean 4, 76); fetches 4
-[08:41:46] ladderstart plain drags, previews trick, long: 4 (src pack 4); first picture median 1221 ms, p90 1400; one within 10 s median 176 ms, p90 434; its own picture median 429 ms, p90 645, never 0; a drag: 4 requests, 76 KB median (mean 4, 76); fetches 4
-[08:41:46] ladderstart plain drags, previews trick, far: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 387 ms, p90 600; its own picture median 352 ms, p90 564, never 0; a drag: 4 requests, 16 KB median (mean 4, 16); fetches 5
-[08:41:46] ladderstart plain drags, previews trick, all: 8 (src pack 8); first picture median 513 ms, p90 1330; one within 10 s median 314 ms, p90 548; its own picture median 397 ms, p90 656, never 0; a drag: 4 requests, 46 KB median (mean 4, 46); fetches 4
-[08:41:46] ladderstart plain previews trick, a playback: before the first drag 0 requests, 0 KB median; in all (the drags too) 8 requests, 92 KB; the proxy in all 31 requests, 19 MB; header read while playing in 0 of 4 passes (median - ms); the start's 30 s: stops 0 in 4 passes (0 ms)
-[08:41:46] ladderstart plain previews trick: pack opened in 4 of 4 passes, header median 695 ms; runs ahead 4, median 1228 ms, 21 pictures, 70 KB
-[08:41:46] ladderstart weak drags, previews hdr, first: 12 (src pack 12); first picture median 858 ms, p90 1095; one within 10 s median 432 ms, p90 696; its own picture median 436 ms, p90 869, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 4
-[08:41:46] ladderstart weak drags, previews hdr, long: 12 (src pack 12); first picture median 858 ms, p90 1095; one within 10 s median 432 ms, p90 696; its own picture median 436 ms, p90 869, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 4
-[08:41:46] ladderstart weak drags, previews hdr, far: 12 (src pack 12); first picture median 0 ms, p90 0; one within 10 s median 631 ms, p90 866; its own picture median 593 ms, p90 782, never 0; a drag: 4 requests, 18 KB median (mean 4, 15); fetches 5
-[08:41:46] ladderstart weak drags, previews hdr, all: 24 (src pack 24); first picture median 384 ms, p90 1042; one within 10 s median 588 ms, p90 774; its own picture median 584 ms, p90 851, never 0; a drag: 4 requests, 38 KB median (mean 4, 38); fetches 5
-[08:41:46] ladderstart weak previews hdr, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 8 requests, 92 KB; the proxy in all 19 requests, 12 MB; header read while playing in 12 of 12 passes (median 746 ms); the start's 30 s: stops 1 in 12 passes (1852 ms)
-[08:41:46] ladderstart weak previews hdr: pack opened in 12 of 12 passes, header median 746 ms; runs ahead 12, median 865 ms, 21 pictures, 54 KB
-[08:41:46] ladderstart weak drags, previews trick, first: 12 (src pack 12); first picture median 1540 ms, p90 1978; one within 10 s median 416 ms, p90 799; its own picture median 616 ms, p90 918, never 0; a drag: 3 requests, 71 KB median (mean 3, 72); fetches 2
-[08:41:46] ladderstart weak drags, previews trick, long: 12 (src pack 12); first picture median 1540 ms, p90 1978; one within 10 s median 416 ms, p90 799; its own picture median 616 ms, p90 918, never 0; a drag: 3 requests, 71 KB median (mean 3, 72); fetches 2
-[08:41:46] ladderstart weak drags, previews trick, far: 12 (src pack 12); first picture median 0 ms, p90 1; one within 10 s median 542 ms, p90 768; its own picture median 530 ms, p90 765, never 0; a drag: 4 requests, 13 KB median (mean 4, 13); fetches 5
-[08:41:46] ladderstart weak drags, previews trick, all: 24 (src pack 24); first picture median 687 ms, p90 1838; one within 10 s median 479 ms, p90 818; its own picture median 546 ms, p90 904, never 0; a drag: 4 requests, 45 KB median (mean 4, 43); fetches 4
-[08:41:46] ladderstart weak previews trick, a playback: before the first drag 0 requests, 0 KB median; in all (the drags too) 7 requests, 86 KB; the proxy in all 18 requests, 12 MB; header read while playing in 0 of 12 passes (median - ms); the start's 30 s: stops 0 in 12 passes (0 ms)
-[08:41:46] ladderstart weak previews trick: pack opened in 12 of 12 passes, header median 732 ms; runs ahead 12, median 1545 ms, 21 pictures, 70 KB
-[08:41:46] ladderstart plain drags first: hdr minus trick, first_ms, 4 pairs: median -625 ms, hdr sooner in 4 of 4
-[08:41:46] ladderstart plain drags first: hdr minus trick, near_ms, 4 pairs: median 194 ms, hdr sooner in 1 of 4
-[08:41:46] ladderstart plain drags first: hdr minus trick, stop_ms, 4 pairs: median 44 ms, hdr sooner in 2 of 4
-[08:41:46] ladderstart plain drags long: hdr minus trick, first_ms, 4 pairs: median -625 ms, hdr sooner in 4 of 4
-[08:41:46] ladderstart plain drags long: hdr minus trick, near_ms, 4 pairs: median 194 ms, hdr sooner in 1 of 4
-[08:41:46] ladderstart plain drags long: hdr minus trick, stop_ms, 4 pairs: median 44 ms, hdr sooner in 2 of 4
-[08:41:46] ladderstart plain drags far: hdr minus trick, first_ms, 4 pairs: median 0 ms, hdr sooner in 0 of 4
-[08:41:46] ladderstart plain drags far: hdr minus trick, near_ms, 4 pairs: median 32 ms, hdr sooner in 1 of 4
-[08:41:46] ladderstart plain drags far: hdr minus trick, stop_ms, 4 pairs: median 45 ms, hdr sooner in 1 of 4
-[08:41:46] ladderstart plain drags all: hdr minus trick, first_ms, 4 pairs: median -312 ms, hdr sooner in 4 of 4
-[08:41:46] ladderstart plain drags all: hdr minus trick, near_ms, 4 pairs: median 70 ms, hdr sooner in 2 of 4
-[08:41:46] ladderstart plain drags all: hdr minus trick, stop_ms, 4 pairs: median -5 ms, hdr sooner in 2 of 4
-[08:41:46] ladderstart weak drags first: hdr minus trick, first_ms, 12 pairs: median -620 ms, hdr sooner in 12 of 12
-[08:41:46] ladderstart weak drags first: hdr minus trick, near_ms, 12 pairs: median 12 ms, hdr sooner in 6 of 12
-[08:41:46] ladderstart weak drags first: hdr minus trick, stop_ms, 12 pairs: median -68 ms, hdr sooner in 7 of 12
-[08:41:46] ladderstart weak drags long: hdr minus trick, first_ms, 12 pairs: median -620 ms, hdr sooner in 12 of 12
-[08:41:46] ladderstart weak drags long: hdr minus trick, near_ms, 12 pairs: median 12 ms, hdr sooner in 6 of 12
-[08:41:46] ladderstart weak drags long: hdr minus trick, stop_ms, 12 pairs: median -68 ms, hdr sooner in 7 of 12
-[08:41:46] ladderstart weak drags far: hdr minus trick, first_ms, 12 pairs: median 0 ms, hdr sooner in 2 of 12
-[08:41:46] ladderstart weak drags far: hdr minus trick, near_ms, 12 pairs: median 118 ms, hdr sooner in 4 of 12
-[08:41:46] ladderstart weak drags far: hdr minus trick, stop_ms, 12 pairs: median 87 ms, hdr sooner in 4 of 12
-[08:41:46] ladderstart weak drags all: hdr minus trick, first_ms, 12 pairs: median -310 ms, hdr sooner in 12 of 12
-[08:41:46] ladderstart weak drags all: hdr minus trick, near_ms, 12 pairs: median 71 ms, hdr sooner in 5 of 12
-[08:41:46] ladderstart weak drags all: hdr minus trick, stop_ms, 12 pairs: median -14 ms, hdr sooner in 6 of 12
-[08:41:46] flow ladderstart done
-[08:41:51] done
+TotalTime: 2384
+WaitTime: 2390
+[09:58:28] flow ladderstart
+[09:58:29] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
+[09:58:35] ladderstart: the line under a 900kbit cap measured 785 kbps (600000 bytes)
+[09:58:36] ladderstart pass 1 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[09:59:47] ladderstart pass 1 (weak, fix+trick): 49 start marks, 2 drags
+[09:59:48] ladderstart pass 2 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:00:59] ladderstart pass 2 (weak, fix+hdr): 49 start marks, 2 drags
+[10:01:00] ladderstart pass 3 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:02:11] ladderstart pass 3 (weak, fix+trick): 49 start marks, 2 drags
+[10:02:13] ladderstart pass 4 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:03:24] ladderstart pass 4 (weak, fix+hdr): 49 start marks, 2 drags
+[10:03:25] ladderstart pass 5 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:04:36] ladderstart pass 5 (weak, fix+trick): 49 start marks, 2 drags
+[10:04:37] ladderstart pass 6 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:05:49] ladderstart pass 6 (weak, fix+hdr): 49 start marks, 2 drags
+[10:05:50] ladderstart pass 7 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:07:01] ladderstart pass 7 (weak, fix+trick): 49 start marks, 2 drags
+[10:07:02] ladderstart pass 8 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:08:18] ladderstart pass 8 (weak, fix+hdr): 49 start marks, 2 drags
+[10:08:19] ladderstart pass 9 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:09:31] ladderstart pass 9 (weak, fix+trick): 49 start marks, 2 drags
+[10:09:32] ladderstart pass 10 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:10:48] ladderstart pass 10 (weak, fix+hdr): 49 start marks, 2 drags
+[10:10:49] ladderstart pass 11 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:12:00] ladderstart pass 11 (weak, fix+trick): 49 start marks, 2 drags
+[10:12:01] ladderstart pass 12 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:13:12] ladderstart pass 12 (weak, fix+hdr): 49 start marks, 2 drags
+[10:13:13] ladderstart pass 13 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:14:24] ladderstart pass 13 (weak, fix+trick): 49 start marks, 2 drags
+[10:14:25] ladderstart pass 14 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:15:36] ladderstart pass 14 (weak, fix+hdr): 49 start marks, 2 drags
+[10:15:37] ladderstart pass 15 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:16:48] ladderstart pass 15 (weak, fix+trick): 49 start marks, 2 drags
+[10:16:50] ladderstart pass 16 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:18:02] ladderstart pass 16 (weak, fix+hdr): 49 start marks, 2 drags
+[10:18:03] ladderstart pass 17 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:19:14] ladderstart pass 17 (weak, fix+trick): 49 start marks, 2 drags
+[10:19:15] ladderstart pass 18 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:20:27] ladderstart pass 18 (weak, fix+hdr): 49 start marks, 2 drags
+[10:20:28] ladderstart pass 19 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:21:40] ladderstart pass 19 (weak, fix+trick): 49 start marks, 2 drags
+[10:21:41] ladderstart pass 20 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:22:53] ladderstart pass 20 (weak, fix+hdr): 49 start marks, 2 drags
+[10:22:54] ladderstart pass 21 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:24:06] ladderstart pass 21 (weak, fix+trick): 49 start marks, 2 drags
+[10:24:07] ladderstart pass 22 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:25:18] ladderstart pass 22 (weak, fix+hdr): 49 start marks, 2 drags
+[10:25:19] ladderstart pass 23 (weak, fix+trick): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:26:31] ladderstart pass 23 (weak, fix+trick): 49 start marks, 2 drags
+[10:26:32] ladderstart pass 24 (weak, fix+hdr): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:27:44] ladderstart pass 24 (weak, fix+hdr): 49 start marks, 2 drags
+[10:27:45] ladderstart pass 25 (weak, fix+a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:28:57] ladderstart pass 25 (weak, fix+a): 49 start marks, 2 drags
+[10:28:58] ladderstart pass 26 (weak, fix+b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:30:10] ladderstart pass 26 (weak, fix+b): 49 start marks, 2 drags
+[10:30:12] ladderstart pass 27 (weak, fix+a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:31:25] ladderstart pass 27 (weak, fix+a): 49 start marks, 2 drags
+[10:31:26] ladderstart pass 28 (weak, fix+b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:32:37] ladderstart pass 28 (weak, fix+b): 49 start marks, 2 drags
+[10:32:39] ladderstart pass 29 (weak, fix+a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:33:50] ladderstart pass 29 (weak, fix+a): 49 start marks, 2 drags
+[10:33:51] ladderstart pass 30 (weak, fix+b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:35:03] ladderstart pass 30 (weak, fix+b): 49 start marks, 2 drags
+[10:35:04] ladderstart pass 31 (weak, fix+a): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:36:16] ladderstart pass 31 (weak, fix+a): 49 start marks, 2 drags
+[10:36:17] ladderstart pass 32 (weak, fix+b): the test film at 579 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
+[10:37:34] ladderstart pass 32 (weak, fix+b): 49 start marks, 2 drags
+[10:37:34] ladderstart: the line passed Sent 573824793 bytes 384372 pkt (dropped 1243
+[10:37:35] ladderstart: relay: 902 connections (0 refused), 569.2 MB to the emulator, 869.7 KB from it
+[10:37:35] ladderstart pass 1 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 5, register 5, start index 1964, master 1969, start playlist 1988, 1st seg index 1964, 1st seg asked 2212, 1st seg in 3404, picture 3868; other indexes: 360p index 4798, 720p index 6135; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 2 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 12, register 12, start index 1318, master 1321, start playlist 1328, 1st seg index 1318, 1st seg asked 1369, 1st seg in 3930, picture 2812; other indexes: 360p index 3550, 720p index 3274; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 3 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 8, register 8, start index 919, master 1016, start playlist 1061, 1st seg index 919, 1st seg asked 1158, 1st seg in 2886, picture 2706; other indexes: 240p index 6131, 360p index 3778, 720p index 2569; 30 s: stops 0 (0 ms), 480p+ 46 %, rungs 480>360>480, first change +7.0 s to 360p
+[10:37:35] ladderstart pass 4 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 875, master 881, start playlist 911, 1st seg index 875, 1st seg asked 972, 1st seg in 4350, picture 3302; other indexes: 240p index 5974, 360p index 2791, 720p index 2852; 30 s: stops 1 (546 ms), 480p+ 15 %, rungs 480>360>240>360>480, first change +3.3 s to 360p
+[10:37:35] ladderstart pass 5 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 25, register 26, start index 1817, master 1818, start playlist 1825, 1st seg index 1817, 1st seg asked 2061, 1st seg in 3851, picture 3259; other indexes: 360p index 3468, 720p index 4249; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 6 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 35, register 36, start index 1049, master 1053, start playlist 1060, 1st seg index 1049, 1st seg asked 1110, 1st seg in 2924, picture 2588; other indexes: 360p index 2608, 720p index 3034; 30 s: stops 0 (0 ms), 480p+ 92 %, rungs 480>360>480, first change +27.1 s to 360p
+[10:37:35] ladderstart pass 7 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 7, register 9, start index 896, master 897, start playlist 903, 1st seg index 896, 1st seg asked 951, 1st seg in 2760, picture 2414; other indexes: 360p index 2670, 720p index 2481; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 8 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 12, start index 1181, master 1185, start playlist 1201, 1st seg index 1181, 1st seg asked 1262, 1st seg in 3010, picture 2845; other indexes: 360p index 3168, 720p index 2798; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 9 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 1, register 1, start index 1305, master 1335, start playlist 1368, 1st seg index 1305, 1st seg asked 1457, 1st seg in 3179, picture 2962; other indexes: 360p index 3623, 720p index 3525; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 10 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 56, register 63, start index 1208, master 1211, start playlist 1221, 1st seg index 1208, 1st seg asked 1254, 1st seg in 4536, picture 3276; other indexes: 240p index 8242, 360p index 4190, 720p index 3441; 30 s: stops 1 (1681 ms), 480p+ 46 %, rungs 480>240>360>480, first change +5.6 s to 240p
+[10:37:35] ladderstart pass 11 (weak, fix+trick): start 480p, first segment 480p; ms from the tap: grant 4, register 5, start index 951, master 953, start playlist 958, 1st seg index 951, 1st seg asked 1047, 1st seg in 2900, picture 2540; other indexes: 360p index 2648, 720p index 2517; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 12 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 58, register 62, start index 1122, master 1149, start playlist 1171, 1st seg index 1122, 1st seg asked 1248, 1st seg in 3022, picture 2895; other indexes: 360p index 3009, 720p index 3011; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 13 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 2, start index 988, master 993, start playlist 1026, 1st seg index 988, 1st seg asked 1072, 1st seg in 3099, picture 2901; other indexes: 360p index 2786, 720p index 2676; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 14 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 2, start index 1138, master 1143, start playlist 1194, 1st seg index 1138, 1st seg asked 1353, 1st seg in 3764, picture 2878; other indexes: 360p index 3131, 720p index 3480; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 15 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 27, register 28, start index 1431, master 1434, start playlist 1447, 1st seg index 1431, 1st seg asked 1487, 1st seg in 3832, picture 3087; other indexes: 360p index 2995, 720p index 3587; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 16 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 4, start index 1113, master 1130, start playlist 1154, 1st seg index 1113, 1st seg asked 1235, 1st seg in 4032, picture 2994; other indexes: 240p index 5896, 360p index 3238, 720p index 3300; 30 s: stops 0 (0 ms), 480p+ 32 %, rungs 480>360>240>480, first change +3.3 s to 360p
+[10:37:35] ladderstart pass 17 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 8, register 9, start index 1167, master 1213, start playlist 1236, 1st seg index 1167, 1st seg asked 1452, 1st seg in 3789, picture 3104; other indexes: 360p index 3908, 720p index 2960; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 18 (weak, fix+hdr): start 480p, first segment 480p; ms from the tap: grant 2, register 2, start index 929, master 933, start playlist 947, 1st seg index 929, 1st seg asked 1022, 1st seg in 2799, picture 2530; other indexes: 360p index 2621, 720p index 2916; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 19 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 8, register 8, start index 1106, master 1116, start playlist 1139, 1st seg index 1106, 1st seg asked 1192, 1st seg in 3267, picture 2826; other indexes: 360p index 3041, 720p index 3277; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 20 (weak, fix+hdr): start 480p, first segment 480p; ms from the tap: grant 3, register 3, start index 940, master 942, start playlist 950, 1st seg index 940, 1st seg asked 1037, 1st seg in 3531, picture 2573; other indexes: 360p index 2580, 720p index 2321; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 21 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 5, register 6, start index 1158, master 1158, start playlist 1182, 1st seg index 1158, 1st seg asked 1215, 1st seg in 3112, picture 2722; other indexes: 360p index 2999, 720p index 3357; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 22 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 992, master 995, start playlist 1004, 1st seg index 992, 1st seg asked 1068, 1st seg in 3018, picture 2555; other indexes: 240p index 11393, 360p index 2580, 720p index 2447; 30 s: stops 0 (0 ms), 480p+ 37 %, rungs 480>360, first change +11.1 s to 360p
+[10:37:35] ladderstart pass 23 (weak, fix+trick): start 480p warmed, first segment 480p; ms from the tap: grant 2, register 3, start index 981, master 984, start playlist 995, 1st seg index 981, 1st seg asked 1061, 1st seg in 5064, picture 4055; other indexes: 240p index 7638, 360p index 2947, 720p index 3221; 30 s: stops 1 (550 ms), 480p+ 36 %, rungs 480>360>240>360>480, first change +3.3 s to 360p
+[10:37:35] ladderstart pass 24 (weak, fix+hdr): start 480p warmed, first segment 480p; ms from the tap: grant 4, register 4, start index 1004, master 1007, start playlist 1027, 1st seg index 1004, 1st seg asked 1074, 1st seg in 2790, picture 2528; other indexes: 360p index 3027, 720p index 2988; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 25 (weak, fix+a): start 480p warmed, first segment 480p; ms from the tap: grant 5, register 6, start index 1052, master 1052, start playlist 1059, 1st seg index 1052, 1st seg asked 1107, 1st seg in 3117, picture 2557; other indexes: 360p index 2942, 720p index 2633; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 26 (weak, fix+b): start 480p, first segment 480p; ms from the tap: grant 14, register 19, start index 1230, master 1234, start playlist 1245, 1st seg index 1230, 1st seg asked 1317, 1st seg in 3042, picture 2725; other indexes: 360p index 3192, 720p index 3039; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 27 (weak, fix+a): start 480p warmed, first segment 480p; ms from the tap: grant 8, register 10, start index 1036, master 1049, start playlist 1069, 1st seg index 1036, 1st seg asked 1129, 1st seg in 3048, picture 2861; other indexes: 240p index 5845, 360p index 3186, 720p index 3248; 30 s: stops 0 (0 ms), 480p+ 65 %, rungs 480>360>480, first change +5.2 s to 360p
+[10:37:35] ladderstart pass 28 (weak, fix+b): start 480p, first segment 480p; ms from the tap: grant 5, register 6, start index 1178, master 1181, start playlist 1187, 1st seg index 1178, 1st seg asked 1218, 1st seg in 3915, picture 3056; other indexes: 240p index 7015, 360p index 2662, 720p index 3165; 30 s: stops 0 (0 ms), 480p+ 38 %, rungs 480>360>480>360, first change +5.1 s to 360p
+[10:37:35] ladderstart pass 29 (weak, fix+a): start 480p warmed, first segment 480p; ms from the tap: grant 10, register 13, start index 887, master 889, start playlist 898, 1st seg index 887, 1st seg asked 935, 1st seg in 3153, picture 2634; other indexes: 360p index 2347, 720p index 2899; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 30 (weak, fix+b): start 480p, first segment 480p; ms from the tap: grant 1, register 1, start index 902, master 905, start playlist 917, 1st seg index 902, 1st seg asked 954, 1st seg in 2907, picture 2696; other indexes: 360p index 2695, 720p index 2459; 30 s: stops 0 (0 ms), 480p+ 73 %, rungs 480>360>480, first change +18.9 s to 360p
+[10:37:35] ladderstart pass 31 (weak, fix+a): start 480p warmed, first segment 480p; ms from the tap: grant 15, register 16, start index 988, master 991, start playlist 1018, 1st seg index 988, 1st seg asked 1075, 1st seg in 2855, picture 2606; other indexes: 360p index 3200, 720p index 2837; 30 s: stops 0 (0 ms), 480p+ 100 %, rungs 480, first change none
+[10:37:35] ladderstart pass 32 (weak, fix+b): start 480p warmed, first segment 480p; ms from the tap: grant 12, register 12, start index 1082, master 1085, start playlist 1094, 1st seg index 1082, 1st seg asked 1152, 1st seg in 5200, picture 3836; other indexes: 240p index 7386, 360p index 3508, 720p index 2966; 30 s: stops 0 (0 ms), 480p+ 22 %, rungs 480>360>240>360>480, first change +3.5 s to 360p
+[10:37:35] 
+[10:37:35] ladderstart weak fix, 32 passes: first picture median 2836 ms, p90 3299 ms (each 3868,2812,2706,3302,3259,2588,2414,2845,2962,3276,2540,2895,2901,2878,3087,2994,3104,2530,2826,2573,2722,2555,4055,2528,2557,2725,2861,3056,2634,2696,2606,3836); stops in 30 s 3 in 3 passes, 2777 ms; 480p+ mean 81 %; step medians: grant 5, register 7, start index 1067, master 1069, start playlist 1082, 1st seg index 1067, 1st seg asked 1155, 1st seg in 3135, picture 2836
+[10:37:35] ladderstart weak drags, previews a, first: 4 (src pack 4); first picture median 821 ms, p90 869; one within 10 s median 363 ms, p90 454; its own picture median 394 ms, p90 690, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 5
+[10:37:35] ladderstart weak drags, previews a, long: 4 (src pack 4); first picture median 821 ms, p90 869; one within 10 s median 363 ms, p90 454; its own picture median 394 ms, p90 690, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 5
+[10:37:35] ladderstart weak drags, previews a, far: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 635 ms, p90 669; its own picture median 623 ms, p90 644, never 0; a drag: 4 requests, 15 KB median (mean 4, 15); fetches 5
+[10:37:35] ladderstart weak drags, previews a, all: 8 (src pack 8); first picture median 407 ms, p90 844; one within 10 s median 537 ms, p90 661; its own picture median 590 ms, p90 698, never 0; a drag: 4 requests, 39 KB median (mean 4, 38); fetches 5
+[10:37:35] ladderstart weak previews a, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 8 requests, 92 KB; the proxy in all 18 requests, 12 MB; header read while playing in 4 of 4 passes (median 711 ms); the start's 30 s: stops 0 in 4 passes (0 ms)
+[10:37:35] ladderstart weak previews a: pack opened in 4 of 4 passes, header median 711 ms; runs ahead 4, median 822 ms, 21 pictures, 54 KB
+[10:37:35] ladderstart weak drags, previews b, first: 4 (src pack 4); first picture median 976 ms, p90 1556; one within 10 s median 514 ms, p90 621; its own picture median 575 ms, p90 803, never 0; a drag: 3 requests, 58 KB median (mean 3, 58); fetches 4
+[10:37:35] ladderstart weak drags, previews b, long: 4 (src pack 4); first picture median 976 ms, p90 1556; one within 10 s median 514 ms, p90 621; its own picture median 575 ms, p90 803, never 0; a drag: 3 requests, 58 KB median (mean 3, 58); fetches 4
+[10:37:35] ladderstart weak drags, previews b, far: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 654 ms, p90 793; its own picture median 636 ms, p90 772, never 0; a drag: 4 requests, 18 KB median (mean 4, 17); fetches 5
+[10:37:35] ladderstart weak drags, previews b, all: 8 (src pack 8); first picture median 394 ms, p90 1292; one within 10 s median 552 ms, p90 793; its own picture median 575 ms, p90 813, never 0; a drag: 4 requests, 36 KB median (mean 4, 38); fetches 4
+[10:37:35] ladderstart weak previews b, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 8 requests, 92 KB; the proxy in all 22 requests, 14 MB; header read while playing in 4 of 4 passes (median 628 ms); the start's 30 s: stops 0 in 4 passes (0 ms)
+[10:37:35] ladderstart weak previews b: pack opened in 4 of 4 passes, header median 628 ms; runs ahead 4, median 976 ms, 21 pictures, 54 KB
+[10:37:35] ladderstart weak drags, previews hdr, first: 12 (src pack 12); first picture median 822 ms, p90 882; one within 10 s median 399 ms, p90 563; its own picture median 428 ms, p90 550, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 4
+[10:37:35] ladderstart weak drags, previews hdr, long: 12 (src pack 12); first picture median 822 ms, p90 882; one within 10 s median 399 ms, p90 563; its own picture median 428 ms, p90 550, never 0; a drag: 3 requests, 60 KB median (mean 3, 60); fetches 4
+[10:37:36] ladderstart weak drags, previews hdr, far: 12 (src pack 12); first picture median 0 ms, p90 0; one within 10 s median 670 ms, p90 886; its own picture median 655 ms, p90 821, never 0; a drag: 4 requests, 18 KB median (mean 4, 16); fetches 5
+[10:37:36] ladderstart weak drags, previews hdr, all: 24 (src pack 24); first picture median 366 ms, p90 871; one within 10 s median 554 ms, p90 835; its own picture median 534 ms, p90 814, never 0; a drag: 4 requests, 39 KB median (mean 4, 38); fetches 5
+[10:37:36] ladderstart weak previews hdr, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 8 requests, 94 KB; the proxy in all 19 requests, 12 MB; header read while playing in 12 of 12 passes (median 638 ms); the start's 30 s: stops 2 in 12 passes (2227 ms)
+[10:37:36] ladderstart weak previews hdr: pack opened in 12 of 12 passes, header median 638 ms; runs ahead 12, median 825 ms, 21 pictures, 54 KB
+[10:37:36] ladderstart weak drags, previews trick, first: 12 (src pack 12); first picture median 1464 ms, p90 1758; one within 10 s median 422 ms, p90 698; its own picture median 618 ms, p90 1102, never 0; a drag: 3 requests, 71 KB median (mean 3, 71); fetches 2
+[10:37:36] ladderstart weak drags, previews trick, long: 12 (src pack 12); first picture median 1464 ms, p90 1758; one within 10 s median 422 ms, p90 698; its own picture median 618 ms, p90 1102, never 0; a drag: 3 requests, 71 KB median (mean 3, 71); fetches 2
+[10:37:36] ladderstart weak drags, previews trick, far: 12 (src pack 12); first picture median 0 ms, p90 0; one within 10 s median 696 ms, p90 810; its own picture median 681 ms, p90 784, never 0; a drag: 4 requests, 18 KB median (mean 4, 15); fetches 5
+[10:37:36] ladderstart weak drags, previews trick, all: 24 (src pack 24); first picture median 670 ms, p90 1634; one within 10 s median 556 ms, p90 809; its own picture median 681 ms, p90 868, never 0; a drag: 4 requests, 45 KB median (mean 4, 43); fetches 4
+[10:37:36] ladderstart weak previews trick, a playback: before the first drag 0 requests, 0 KB median; in all (the drags too) 7 requests, 88 KB; the proxy in all 17 requests, 12 MB; header read while playing in 0 of 12 passes (median - ms); the start's 30 s: stops 1 in 12 passes (550 ms)
+[10:37:36] ladderstart weak previews trick: pack opened in 12 of 12 passes, header median 658 ms; runs ahead 12, median 1464 ms, 21 pictures, 70 KB
+[10:37:36] ladderstart weak drags first: a minus b, first_ms, 4 pairs: median -156 ms, a sooner in 3 of 4
+[10:37:36] ladderstart weak drags first: a minus b, near_ms, 4 pairs: median -153 ms, a sooner in 3 of 4
+[10:37:36] ladderstart weak drags first: a minus b, stop_ms, 4 pairs: median -138 ms, a sooner in 4 of 4
+[10:37:36] ladderstart weak drags first: hdr minus trick, first_ms, 12 pairs: median -698 ms, hdr sooner in 12 of 12
+[10:37:36] ladderstart weak drags first: hdr minus trick, near_ms, 12 pairs: median 0 ms, hdr sooner in 6 of 12
+[10:37:36] ladderstart weak drags first: hdr minus trick, stop_ms, 12 pairs: median -38 ms, hdr sooner in 7 of 12
+[10:37:36] ladderstart weak drags long: a minus b, first_ms, 4 pairs: median -156 ms, a sooner in 3 of 4
+[10:37:36] ladderstart weak drags long: a minus b, near_ms, 4 pairs: median -153 ms, a sooner in 3 of 4
+[10:37:36] ladderstart weak drags long: a minus b, stop_ms, 4 pairs: median -138 ms, a sooner in 4 of 4
+[10:37:36] ladderstart weak drags long: hdr minus trick, first_ms, 12 pairs: median -698 ms, hdr sooner in 12 of 12
+[10:37:36] ladderstart weak drags long: hdr minus trick, near_ms, 12 pairs: median 0 ms, hdr sooner in 6 of 12
+[10:37:36] ladderstart weak drags long: hdr minus trick, stop_ms, 12 pairs: median -38 ms, hdr sooner in 7 of 12
+[10:37:36] ladderstart weak drags far: a minus b, first_ms, 4 pairs: median 0 ms, a sooner in 0 of 4
+[10:37:36] ladderstart weak drags far: a minus b, near_ms, 4 pairs: median -10 ms, a sooner in 2 of 4
+[10:37:36] ladderstart weak drags far: a minus b, stop_ms, 4 pairs: median -4 ms, a sooner in 2 of 4
+[10:37:36] ladderstart weak drags far: hdr minus trick, first_ms, 12 pairs: median 0 ms, hdr sooner in 0 of 12
+[10:37:36] ladderstart weak drags far: hdr minus trick, near_ms, 12 pairs: median 57 ms, hdr sooner in 4 of 12
+[10:37:36] ladderstart weak drags far: hdr minus trick, stop_ms, 12 pairs: median 22 ms, hdr sooner in 6 of 12
+[10:37:36] ladderstart weak drags all: a minus b, first_ms, 4 pairs: median -78 ms, a sooner in 3 of 4
+[10:37:36] ladderstart weak drags all: a minus b, near_ms, 4 pairs: median -30 ms, a sooner in 2 of 4
+[10:37:36] ladderstart weak drags all: a minus b, stop_ms, 4 pairs: median -32 ms, a sooner in 2 of 4
+[10:37:36] ladderstart weak drags all: hdr minus trick, first_ms, 12 pairs: median -350 ms, hdr sooner in 12 of 12
+[10:37:36] ladderstart weak drags all: hdr minus trick, near_ms, 12 pairs: median 46 ms, hdr sooner in 5 of 12
+[10:37:36] ladderstart weak drags all: hdr minus trick, stop_ms, 12 pairs: median -56 ms, hdr sooner in 8 of 12
+[10:37:36] flow ladderstart done
+[10:37:40] done
