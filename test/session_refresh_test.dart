@@ -50,6 +50,13 @@ Future<void> _bothServed(int Function() served) async {
   }
 }
 
+/// The Keystore failing to read the refresh token (a store that throws).
+class _UnreadableRefresh extends _MemSession {
+  _UnreadableRefresh({super.access, super.refresh});
+  @override
+  Future<String?> refreshToken() async => throw StateError('keystore');
+}
+
 http.Response _json(int status, Object body) =>
     http.Response(jsonEncode(body), status,
         headers: {'content-type': 'application/json'});
@@ -250,6 +257,19 @@ void main() {
     }
     expect(refreshes, 1);
     expect(s.clears, 1);
+  });
+
+  test('a session store that cannot be read: unreachable, nothing cleared', () async {
+    final s = _UnreadableRefresh(access: 'old', refresh: 'r1');
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async => _json(401, {'msg': 'expired'})),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
+    expect(s.clears, 0);
   });
 
   test('a refresh token Auth rejects does end the session', () async {

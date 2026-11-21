@@ -198,8 +198,14 @@ class ApiClient {
       // ApiAccountRepository.currentUser cleared the session [_doRefresh]
       // had just kept — a minute of Auth trouble signed out everyone whose
       // token had expired (found 21 Nov). Unreachable, it is a retry.
-      final again = await _session.refreshToken();
-      if (again != null && again.isNotEmpty) {
+      var kept = true;
+      try {
+        final again = await _session.refreshToken();
+        kept = again != null && again.isNotEmpty;
+      } catch (_) {
+        // A store that cannot be read is no verdict on the session either.
+      }
+      if (kept) {
         throw const ApiException(
           ApiErrorKind.network,
           message: 'auth unreachable',
@@ -326,9 +332,11 @@ class ApiClient {
       });
 
   Future<bool> _doRefresh() async {
-    final refresh = await _session.refreshToken();
-    if (refresh == null || refresh.isEmpty) return false;
     try {
+      // Inside the try: a store that cannot be read is "could not refresh"
+      // for every caller who joined, not an error none of them can place.
+      final refresh = await _session.refreshToken();
+      if (refresh == null || refresh.isEmpty) return false;
       final response = await _http
           .post(
             _uri('/auth/v1/token', <String, String>{
