@@ -78,9 +78,12 @@ does it.
   green. T5 44866328935 AFTER (T4's config, 04:35-04:48 UTC, the tap 0.6-
   2.1 s after the warm-up registered — the race window): 0 cuts in 12
   passes, no long start; first picture plain 4265 -> 3507 ms (p90 12994 ->
-  4370), weak 4696 -> 4729 (p90 6928 -> 6313). Left: the Worker's logs
-  for 04:34-04:49 UTC should hold no `can never settle` (the owner's
-  export). The test and check.py line reach main with the next release.
+  4370), weak 4696 -> 4729 (p90 6928 -> 6313). THE WORKER'S LOGS AGREE
+  (the owner's export, 04:35:01-04:48:01 UTC, 448 events): 0 exceptions,
+  0 `can never settle`, 221 answers 206; 3 requests `canceled` — the
+  warm-up's cuts that used to start the 500s — and nothing after them;
+  the 480p rung's front reads (22 probes, 14 heads) all served. (The
+  dashboard's filter offered no `exception` value for the window: none.) The test and check.py line reach main with the next release.
   Rule: .claude/rules/worker.md. To prove it after a
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
