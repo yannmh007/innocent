@@ -20,7 +20,8 @@ phone (Flutter app)
  └─ crash reports ──► Sentry (only when SENTRY_DSN is set)
 console.innocentplayer.com ─► console Worker (assets) ─► studio function
 GitHub runners, every 5 min ─► claim jobs in Postgres: ingest, transcode,
-   frames, seek-bar packs (083, not yet live), daily DB backup, R2 bin,
+   frames, seek-bar packs (083; started by a Transcode run that recorded a
+   rung, daily 03:37 as the net), daily DB backup, R2 bin,
    off-site copies ─► R2 + off-site bucket
 ```
 

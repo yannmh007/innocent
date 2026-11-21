@@ -156,6 +156,8 @@ docs/MEDIA_ENCRYPTION.md's ENC-4 note about preview pictures.
 | 5 | Device lab A/B `trick` against `near`, the gate, Test Lab | no |
 | 6 | The owner's release call: the app reader ships; the job's cron on main for new ladders. DONE 20 Nov: 1.64.86 (main a6d68c93); the cron `37 3 * * *` with SCOPE=all (the owner's word for this job); shims at a6d68c93 (transcode v30, request-playback v45) | owner |
 | 7 | The catalogue, when the owner says `all`; then sealed films | owner |
+| 8 | (21 Nov) A new ladder's pack within minutes, not up to a day: a Transcode run on main that recorded a rung dispatches trickplay.yml on main (the owner's word; f4bc4fd3). PROVED on Elephants Dream: queued 07:08:45 UTC, Transcode 44878856181 recorded the 240p rung again (other bytes: an older ffmpeg pin and script), Trick-play 44878915223 started 07:09:31 and recorded a new pack 07:10:07, the old one to the bin; trickplay_for serves the new one; Playback check 44879184335 read it through the Worker. A film re-made by the same script and pin gives the same bytes: its pack stays (staleness is by the smallest rung's bytes), which is right | yes |
+| 9 | (21 Nov, on the branch) A film played as one file — one rung (Elephants Dream, Hero), or its Original — reads its pack too (StreamCacheServer.registerFilmPack: no cache entry, the install's header, the playing copy's pool); the header read 5 s after the first picture (B2, under A/B); nothing ahead with the data saver, pack or not (the owner's B3) | next release |
 
 ## Costs
 
