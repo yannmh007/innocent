@@ -114,6 +114,9 @@ paths:
   timeout included. The console now signs out `scope: 'local'`
   (docs/studio/shell.js, checked by console_smoke.mjs). An Auth outage
   during a refresh is a retry, never a sign-out (ApiClient._send throws
-  `network` while the tokens are kept).
+  `network` while the tokens are kept), for EVERY caller: a request that
+  joins a refresh in flight gets that refresh's answer, not "a token is
+  still stored" (the release review's finding, 21 Nov: two requests at a
+  start, the second signed the user out). Test two callers at once.
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).
