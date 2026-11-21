@@ -63,6 +63,19 @@ for (const f of files.filter((x) => x.endsWith('.js') && !x.includes('/vendor/')
 const missing = imports.filter(([, target]) => !files.includes(target));
 check(`every relative import resolves inside the bundle (${imports.length} imports)` +
   (missing.length ? ': missing ' + missing.map(([f, t]) => f + ' -> ' + t).join(', ') : ''), missing.length === 0 && imports.length >= 5);
+// Every sign-out ends THIS browser's session only: supabase-js signs out
+// GLOBALLY by default, which ended the phone app's session too (21 Nov 2026,
+// logout?scope=global). The idle timeout signs out as well; the smoke test
+// clicks only the button.
+const signOuts = [];
+for (const f of files.filter((x) => x.endsWith('.js') && !x.includes('/vendor/'))) {
+  const src = readFileSync(join(out, f), 'utf8');
+  for (const m of src.matchAll(/\.signOut\(([^)]*)\)/g)) signOuts.push([f, m[1]]);
+}
+const global = signOuts.filter(([, args]) => !/scope:\s*'local'/.test(args));
+check(`every console sign-out is scope 'local' (${signOuts.length})` +
+  (global.length ? ': ' + global.map(([f, a]) => f + ' signOut(' + a + ')').join(', ') : ''),
+  signOuts.length >= 2 && global.length === 0);
 check('/ goes to the console', readFileSync(join(out, '_redirects'), 'utf8').trim() === '/ /studio/ 302');
 
 // ── the policy ──────────────────────────────────────────────────────────
