@@ -118,6 +118,12 @@ Both run only on non-main branches, started by pushing their config file.
   a run is one.
   Count the day's tests before a push (cloud.env's dated comments since
   07:00 UTC): a sixth is refused, and the run is wasted (19 Nov).
+- **A push of the lab workflows themselves starts the labs.** device-lab.yml
+  and device-cloud.yml are in their own `paths:`, so a change to either (an
+  action pin bumped, 21 Nov: run 44887248300) starts the device lab with
+  whatever config.env holds and Test Lab with whatever cloud.env holds —
+  two of the day's five tests. Push such a change with the config you
+  mean to run, and count it in cloud.env's next dated comment.
 - `MEDIA_SEAL=` empty for the release build; `MODE=stream` plays Sintel.
 - `STREAM_AUTOJUMPS` (shares of the film): jumps in Auto after the checks,
   measured as on the emulator; the app then closes at 330 s, not 240. The

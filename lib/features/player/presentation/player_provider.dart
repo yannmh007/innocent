@@ -2347,6 +2347,14 @@ class PlayerController extends StateNotifier<PlayerState> {
         engineName: ladder ? 'ladder' : 'mpv',
       );
       if (ladder) qoe.rung(player.ladderRung);
+      // The seek bar's pack header, read while the film plays (B2), when the
+      // seek bar shows pictures at all.
+      final s = _ref.read(playerSettingsProvider);
+      if (player is MediaKitPlayerService &&
+          s.get(PlayerSetting.previewSeek) &&
+          s.get(PlayerSetting.navSeekBarPreview)) {
+        player.readPackHeaderSoon();
+      }
     }
     if (started != null) {
       PlaybackLog.add('first frame ${DateTime.now().difference(started).inMilliseconds} ms');

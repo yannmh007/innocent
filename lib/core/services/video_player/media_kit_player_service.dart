@@ -201,24 +201,55 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   int packPictures = 0;
   int fragmentPictures = 0;
 
-  /// The pack for the ladder on screen, if it has one and it can be used.
+  /// Where the pack of the film on screen is read ([ladderPackRange]) and
+  /// which pack it is: the ladder's, on the ladder; the one armed for the
+  /// single file playing ([armFilePack]) — on libmpv, or a film's Original
+  /// on ExoPlayer; none for anything else (a file on the phone).
+  (String?, TrickplayInfo?) _packSource() {
+    if (_exoActive) {
+      final uri = _ladderUri;
+      if (uri == null) return (null, null);
+      if (ExoEngine.isLadder(uri)) return (uri, _armedLadders[uri]?.pack);
+      final f = _armedFilePacks[uri];
+      return (f?.packAt, f?.pack);
+    }
+    final f = _armedFilePacks[_fileUri];
+    return (f?.packAt, f?.pack);
+  }
+
+  /// The single file on libmpv has a pack armed ([armFilePack]).
+  bool get _onFilePack => !_exoActive && _armedFilePacks.has(_fileUri);
+
+  /// What plays now, for a picture's answer to know its film is still on
+  /// screen: the ladder or file on ExoPlayer, the file on libmpv.
+  String? get _playingKey => _exoActive ? _ladderUri : _fileUri;
+
+  /// THE SEEK BAR'S PICTURES COME FROM HERE ([ladderPreview],
+  /// [nearestPreview]): on the ladder engine (its pack, else the smallest
+  /// rung's fragments), and for a single file on libmpv while it has a pack
+  /// that can still be read (21 Nov 2026). Otherwise the player screen's own
+  /// way — frames of the file itself — as before.
+  bool get seekPictures => _exoActive || (previewPack && _onFilePack && _packNow() != null);
+
+  /// The pack for the ladder or file on screen, if it has one and it can be
+  /// used.
   TrickplayPack? _packNow() {
-    if (!previewPack || !_exoActive) return null;
-    final uri = _ladderUri;
-    if (uri == null) return null;
-    // A new film's ladder, or the same ladder armed again with another
-    // pack (a renewed grant after a new ladder): a new reader, never the
-    // old header's offsets over a new object.
-    if (_packFor != uri || !identical(_pack?.info, _armedLadders[uri]?.pack)) {
-      _packFor = uri;
+    if (!previewPack) return null;
+    final (at, info) = _packSource();
+    if (at == null) return null;
+    // A new film's pack, or the same film armed again with another pack (a
+    // renewed grant after a new ladder): a new reader, never the old
+    // header's offsets over a new object. The copies of one film share
+    // their pack's name ([armFilePack]): a change of copy keeps the reader.
+    if (_packFor != at || !identical(_pack?.info, info)) {
+      _packFor = at;
       _pack?.clear();
       _pack = null;
       _packSaid = false;
       _packGoneSaid = false;
-      final info = _armedLadders[uri]?.pack;
       final read = ladderPackRange;
       if (info != null && read != null) {
-        _pack = TrickplayPack(info, (a, b) => read(uri, a, b));
+        _pack = TrickplayPack(info, (a, b) => read(at, a, b));
       }
     }
     final p = _pack;
@@ -238,7 +269,76 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     return p;
   }
 
-  bool get _saving => _armedLadders[_ladderUri]?.saving ?? false;
+  /// THE PACK'S HEADER READ WHILE THE FILM PLAYS (21 Nov 2026): a film's
+  /// first drag waited for the header and its picture one after the other
+  /// — 1.1 s on the owner's phone (1.64.86 report DZQXVZT2, header 818 ms)
+  /// — when the finger came before any picture ahead. Now the header is
+  /// read [packHeaderAfter] after the first picture ([readPackHeaderSoon]),
+  /// one request of ~16 KB once a film, unless the data saver is on (then
+  /// a drag's own reads only). Device lab U1 44881023891: the first drag's
+  /// first picture 1540 -> 858 ms on the weak line, 1221 -> 596 plain, in
+  /// every pair. Off only for the lab's `trick` (the A/B against `hdr`).
+  static bool packHeaderEarly = true;
+  static Duration packHeaderAfter = const Duration(seconds: 5);
+
+  /// ON THE LADDER, NOT WHILE THE START IS STILL THIN: the read waits,
+  /// checking every [packHeaderRecheck], until ExoPlayer holds
+  /// [packHeaderAhead] of film — at most [packHeaderLatest] after the first
+  /// picture. U1's one weak-line stop beside the read (pass 15: 171 ms in
+  /// hand as it began, the line's) said to keep the start's bytes first.
+  static Duration packHeaderAhead = const Duration(seconds: 8);
+  static Duration packHeaderRecheck = const Duration(seconds: 2);
+  static Duration packHeaderLatest = const Duration(seconds: 30);
+  Timer? _headerSoon;
+
+  /// The film's first picture is on screen: its pack's header in
+  /// [packHeaderAfter], if this open is still the one playing then (see
+  /// [packHeaderAhead]).
+  void readPackHeaderSoon() {
+    _headerSoon?.cancel();
+    if (!packHeaderEarly) return;
+    final gen = _openGen;
+    final since = Stopwatch()..start();
+    void at(Duration wait) {
+      _headerSoon = Timer(wait, () {
+        if (gen != _openGen) return;
+        final ahead = ladderAheadMs;
+        final thin = ahead != null && ahead < packHeaderAhead.inMilliseconds;
+        if (thin && since.elapsed + packHeaderRecheck <= packHeaderLatest) {
+          at(packHeaderRecheck);
+          return;
+        }
+        unawaited(readPackHeaderAhead(
+            note: 'at +${since.elapsed.inSeconds} s, ${ahead == null ? 'one file' : 'ahead $ahead ms'}'));
+      });
+    }
+
+    at(packHeaderAfter);
+  }
+
+  /// The pack of the film on screen opened now (its header read), if it
+  /// has one not open yet and the data saver is off.
+  Future<void> readPackHeaderAhead({String note = ''}) async {
+    if (!packHeaderEarly || _saving) return;
+    final p = _packNow();
+    if (p == null || p.isOpen) return;
+    final playing = _playingKey;
+    final ok = await p.open();
+    if (playing == null || _playingKey != playing) return;
+    // `preview pack: N pictures, header X ms`, once.
+    _packNow();
+    final why = note.isEmpty ? '' : ' ($note)';
+    PlaybackLog.add(ok
+        ? 'preview pack header ahead: ${p.headerMs} ms$why'
+        : 'preview pack header ahead: not read${p.usable ? '' : ' (${p.broken})'}$why');
+  }
+
+  bool get _saving {
+    final (at, _) = _packSource();
+    final file = _armedFilePacks[_playingKey];
+    if (file != null && file.packAt == at) return file.saving;
+    return _armedLadders[_ladderUri]?.saving ?? false;
+  }
 
   /// A drag's pictures, said in one line once the seek bar has been still
   /// for a moment ([_noteDragPicture]).
@@ -302,11 +402,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// none is that near.
   ({Uint8List bytes, int at})? nearestPreview(int at,
       {Duration within = const Duration(seconds: 10)}) {
-    if (!previewAhead || !_exoActive) return null;
+    if (!previewAhead || !(_exoActive || _onFilePack)) return null;
     final ms = at * 1000;
     int? best;
     Uint8List? bytes;
-    if (_previewsFor == _ladderUri) {
+    if (_exoActive && _previewsFor == _ladderUri) {
       for (final k in _previews.keys) {
         if ((k - ms).abs() > within.inMilliseconds) continue;
         if (best == null || (k - ms).abs() < (best - ms).abs()) {
@@ -350,13 +450,14 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// saver on, none ahead — only the picture under the finger. A pack that
   /// fails here leaves the fragments to do it, as without one.
   void prefetchPreviewsAround(Duration at) {
-    if (!previewAhead || !_exoActive) return;
+    if (!previewAhead || !(_exoActive || _onFilePack)) return;
     final last = _aheadAround;
     if (last != null && (last - at).abs() < const Duration(seconds: 15)) return;
     _aheadAround = at;
     final gen = ++_aheadGen;
     final pack = _packNow();
-    final plan = SeekPreviewSource.ahead(pack: pack, saving: _saving);
+    // A single file on libmpv has no fragments to fall back on.
+    final plan = SeekPreviewSource.ahead(pack: pack, saving: _saving, fragments: _exoActive);
     if (plan == PreviewAhead.none) return;
     if (plan == PreviewAhead.packRun && pack != null) {
       unawaited(() async {
@@ -411,14 +512,29 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// decode. A film without one, or a pack that fails, takes the fragment
   /// as before, silently.
   Future<Uint8List?> ladderPreview(Duration at, {bool ahead = false}) async {
-    if (!_exoActive) return null;
+    // A single file on libmpv: its pack's pictures only, no fragments.
+    final onFile = !_exoActive;
+    if (onFile && !_onFilePack) return null;
     if (!ahead) _aheadGen++;
-    if (ahead) return _fragmentPreview(at, ahead: true);
+    if (ahead) return onFile ? null : _fragmentPreview(at, ahead: true);
     final clock = Stopwatch()..start();
-    final (pic, from) = await SeekPreviewSource.picture(_packNow(), at, () => _fragmentPreview(at));
+    // The drag's line cost counted from its first ask, not its first
+    // answer (the owner's 1.64.86 report DZQXVZT2, 20 Nov: a drag's own
+    // read fell outside its line and a later run ahead inside it).
+    _dragCostFrom ??= previewLineCost?.call();
+    final playing = _playingKey;
+    final (pic, from) = await SeekPreviewSource.picture(
+        _packNow(), at, onFile ? () async => null : () => _fragmentPreview(at));
     // Said once the pack has opened (or been found wrong).
     _packNow();
-    _noteDragPicture(from, clock.elapsedMilliseconds);
+    // A picture that came after its film closed was never shown: not a
+    // drag's picture (the same report: 3.3 s and 7.1 s "pictures", each
+    // after `player teardown done`).
+    if (playing != null && _playingKey == playing) {
+      _noteDragPicture(from, clock.elapsedMilliseconds);
+    } else if (!(_dragQuiet?.isActive ?? false) && _dragPack + _dragFragment + _dragNone == 0) {
+      _dragCostFrom = null;
+    }
     return pic;
   }
 
@@ -507,6 +623,30 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     _armedFiles[uri] = true;
   }
 
+  /// THE PACK OF A FILM PLAYED AS ONE FILE (21 Nov 2026): by the file's
+  /// local address, the pack its seek bar reads ([armFilePack]).
+  static final FilePacks _armedFilePacks = FilePacks();
+
+  /// The file open on libmpv now (null on the ladder engine, or stopped).
+  String? _fileUri;
+
+  /// The seek bar's pictures for [uri] — one copy of a film through the
+  /// proxy, on libmpv or (its Original) on ExoPlayer — come from the pack
+  /// registered at [packAt] (StreamCacheServer.registerFilmPack): a film
+  /// with one rung, or on its Original, has no ladder to hold one. The
+  /// copies of one film name the same pack, so a change of copy keeps the
+  /// reader (its header and pictures, read once); another film's pack
+  /// clears the last one's, as does the next film's ladder ([armLadder]).
+  /// [saving]: the data saver — no pictures taken ahead, only the one
+  /// under the finger.
+  static void armFilePack(String uri,
+      {required TrickplayInfo pack, required String packAt, bool saving = false}) {
+    _armedFilePacks.arm(uri, FilePackArm(pack: pack, packAt: packAt, saving: saving));
+  }
+
+  /// No pack for the film about to play as one file: the last film's go.
+  static void clearFilePacks() => _armedFilePacks.clear();
+
   /// The ladder itself on screen (HLS on ExoPlayer), not a single file there
   /// and not libmpv: only then can a rung be steered to.
   bool get playingRungs => _exoActive && _ladderUri != null && ExoEngine.isLadder(_ladderUri!);
@@ -535,6 +675,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (!_armedLadders.containsKey(uri)) {
       _armedFiles.clear();
       _filesOnMpv.clear();
+      _armedFilePacks.clear();
     }
     _armedLadders
       ..clear()
@@ -1453,6 +1594,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     // have written that 650 s against the new film.
     _position = Duration.zero;
     _duration = Duration.zero;
+    // The file whose pack, if any, the seek bar reads ([armFilePack]).
+    _fileUri = uri;
     // v1.61 — the single most valuable breadcrumb there is. The process has
     // been dying during playback, and the scheme of what is being opened
     // (file / adb / content / http) is the first thing that separates the
@@ -1839,10 +1982,12 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   @override
   Future<void> stop() async {
+    _headerSoon?.cancel();
     if (_exoActive) {
       await _leaveLadder();
       return;
     }
+    _fileUri = null;
     await _player.stop();
   }
 

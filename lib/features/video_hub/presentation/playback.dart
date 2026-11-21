@@ -364,6 +364,45 @@ Future<void> _playMedia(
     }
 
     final label = titleOverride ?? content.displayTitle(s.locale.languageCode);
+
+    // THE SEEK BAR'S PICTURES MADE IN ADVANCE (docs/trickplay_plan.md): the
+    // grant's pack, read through the proxy as a rung is — its signed
+    // address, the install's header, renewed with the rungs — the SAME pack
+    // only: one made again since (a new ladder) has other offsets, and then
+    // none, and the seek bar as it was.
+    final pack = grant.trickplay;
+    HlsPackSource? packSource() => pack == null
+        ? null
+        : HlsPackSource(
+            upstream: pack.url,
+            refresh: () async {
+              final f = await renewOnce();
+              if (!f.isGranted) return null;
+              final t = f.trickplay;
+              return t != null && t.sameObjectAs(pack) ? t.url : null;
+            });
+
+    // AND BESIDE A FILM PLAYED AS ONE FILE (21 Nov 2026): a film whose
+    // original is small has one rung and plays on libmpv (Elephants Dream,
+    // Hero), as does any film on its Original — no ladder to hold the pack.
+    // Registered on its own (no cache entry, nothing written to the phone)
+    // and armed for each copy's local address as it opens.
+    String? filePackAt;
+    void armFilePack(String fileUrl, String copyId) {
+      final src = packSource();
+      if (pack == null || src == null) {
+        StreamCacheServer.instance.clearFilmPacks();
+        MediaKitPlayerService.clearFilePacks();
+        return;
+      }
+      final at = filePackAt;
+      if (at == null || !StreamCacheServer.instance.followFilmPack(at, copyId)) {
+        filePackAt = StreamCacheServer.instance.registerFilmPack(filmId: ladderId, cacheId: copyId, pack: src);
+      }
+      final now = filePackAt;
+      if (now != null) MediaKitPlayerService.armFilePack(fileUrl, pack: pack, packAt: now, saving: saving);
+    }
+
     Future<String?> registerLadder(
         {int? target, Set<String> keep = const <String>{}, Rendition? startRung}) async {
       final start = startRung ?? chosen;
@@ -393,9 +432,7 @@ Future<void> _playMedia(
         ));
       }
       StreamCacheServer.instance.releaseAllExcept(<String>{...ladderIds, ...keep});
-      // THE SEEK BAR'S PICTURES MADE IN ADVANCE (docs/trickplay_plan.md):
-      // the pack goes with the ladder, renewed with it like a rung.
-      final pack = grant.trickplay;
+      // The pack goes with the ladder, renewed with it like a rung.
       final url = await StreamCacheServer.instance.hlsUrlFor(
         ladderId: ladderId,
         rungs: rungs,
@@ -404,18 +441,7 @@ Future<void> _playMedia(
         // The first rung's own entry: the one the warm start filled when it
         // is the copy Play chose, never the Original's.
         startCacheId: streamCacheId(titleId: content.id, assetId: assetId, height: start.height),
-        pack: pack == null
-            ? null
-            : HlsPackSource(
-                upstream: pack.url,
-                refresh: () async {
-                  final f = await renewOnce();
-                  if (!f.isGranted) return null;
-                  // The SAME pack: a pack made again since (a new ladder)
-                  // has other offsets — then none, and the fragments.
-                  final t = f.trickplay;
-                  return t != null && t.sameObjectAs(pack) ? t.url : null;
-                }),
+        pack: packSource(),
       );
       if (url == null) return null;
       MediaKitPlayerService.armLadder(
@@ -480,6 +506,8 @@ Future<void> _playMedia(
       StreamCacheServer.instance.playAsFile(cacheId);
       MediaKitPlayerService.armExoFile(localUrl);
     }
+    // One file through the proxy: its seek bar's pictures from the pack.
+    if (ladderUrl == null && localUrl != null) armFilePack(localUrl, cacheId);
     // A SEALED COPY IS NEVER PLAYED FROM ITS REMOTE ADDRESS: without the
     // proxy's unseal gateway its bytes are noise (docs/MEDIA_ENCRYPTION.md).
     if (localUrl == null && SealedUrls.of(playUrl) != null) {
@@ -765,6 +793,8 @@ Future<void> _playMedia(
         }
       }
       if (nextLocal == null && SealedUrls.of(freshUrl) != null) return null;
+      // The new copy's seek bar reads the film's pack as the last one did.
+      if (nextLocal != null) armFilePack(nextLocal, nextId);
       playingHeight = again?.height;
       playingId = nextId;
       playingUrl = nextLocal ?? freshUrl;

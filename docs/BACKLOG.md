@@ -16,6 +16,91 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **21 Nov: "SIGNED OUT AFTER AN UPDATE" — NOT THE UPDATE (the owner's
+  question before 1.64.87)**. Edge logs: on 14 Nov the console signed in
+  with Google and completed MFA (TOTP verify 08:11:53 UTC); at 08:16:20 the
+  phone app sent its STORED refresh token (so the update had kept the
+  session) and the auth server refused it (400), then /auth/v1/user 401,
+  and the app signed out. Supabase Auth deletes every session of an
+  account below aal2 each time it completes MFA anywhere (mfa.go,
+  InvalidateSessionsWithAALLessThan, every verify, no setting); the app's
+  Google session is aal1. From then no app auth request until the owner's
+  Google sign-in at 07:29 UTC today; auth.sessions holds only the console's
+  aal2 session (14 Nov) and today's app session. FIX ON THE BRANCH
+  (2e904fcb, a8999901 and the MFA-only commit): a refused GOOGLE session
+  of an account with a verified MFA factor (remembered from the user's
+  `factors`) is renewed once without a tap (attemptLightweightAuthentication
+  + the button's id-token exchange); the same user id or none (another
+  account: its session ended, `scope=local`); never a phone account, an
+  account without MFA (deleted or signed out elsewhere: an exchange would
+  sign up a new account), the viewer's own sign-out or deletion (flags
+  cleared after the tokens), twice, or nested. Review: blocking finding
+  (the ghost account after a deletion elsewhere) fixed by the MFA-only
+  rule; admins (the MFA accounts) cannot delete theirs from the app. To
+  see it work on the owner's phone: after updating, sign in to the console
+  again (Google + code) and reopen the app — still signed in; the edge
+  logs then show a Dart refresh 400 followed by an id_token 200.
+- **21 Nov: TRICK-PLAY FOLLOWS TRANSCODE (LIVE) and 1.64.87's candidate
+  (on the branch, at the release checkpoint)**.
+  TASK A, LIVE (the owner's word; main f4bc4fd3, transcode.yml only): a
+  Transcode run on main that recorded a rung dispatches trickplay.yml on
+  main (rungs counted from what tool/transcode.sh printed, kept by tee;
+  the script unchanged); Trick-play's concurrency queues, never cancels;
+  the daily 03:37 schedule stays as the net. Main Build 44878780740 green
+  (nothing published), Static analysis 44878780745. PROVED on Elephants
+  Dream (open film): queue_transcode 07:08:45 UTC (dry run rolled back
+  first), Transcode 44878856181 re-recorded the 240p rung (23,107,898 ->
+  23,115,462 B: an older ffmpeg pin and script), Trick-play 44878915223
+  dispatched 07:09:31, a NEW pack 07:10:07 (163 pictures, 678,794 B), the
+  old one in r2_trash (purge 28 Nov); trickplay_for serves the new one;
+  Playback check 44879184335 read it through the Worker (header = grant,
+  offsets, a whole JPEG, 20 in one request, edge = direct). Queue to pack:
+  82 s, where it was up to a day. NOTE: staleness is by the smallest
+  rung's bytes, so a film re-made by the same script and pin (Hero, 6 Nov)
+  keeps its pack — right, the file is the same.
+  ON THE BRANCH FOR 1.64.87: B1 (c86b380d) a film played as one file —
+  one rung (Elephants Dream, Hero) or its Original — reads its pack:
+  StreamCacheServer.registerFilmPack (no cache entry, the install's
+  header, the renewal, the playing copy's pool), armed per copy address
+  (FilePacks: one film at a time); shown without the network-preview
+  switch (the owner's choice); nothing ahead with the data saver. B2
+  (c86b380d, 8904dfe6) the pack's header read 5 s after the first
+  picture, on the ladder once 8 s are in hand (at most 30 s): device lab
+  U1 44881023891 (hdr first) the first drag's first picture weak 1540 ->
+  858 ms (12 of 12 pairs), plain 1221 -> 596 (4 of 4); U2 44887248209
+  (trick first, the 8 s rule) weak 1464 -> 822 (12 of 12), A/A 156 ms;
+  near_ms / stop_ms no different; +1 request, 16 KB a playback; the hdr
+  passes' start stops all came BEFORE the read. B3 (the owner's choice):
+  nothing ahead with the data saver, pack or not. B4 (d26fae6e) the
+  actions on Node 24: checkout v5.1.0, setup-java v5.7.0, cache v5.1.0,
+  setup-android v4.0.4 (each action.yml read at its SHA). PROVED: flutter
+  test 1851 here, the new socket tests 3 of 3 under load; Build 44881033416
+  and 44887255541 (Node 24 pins), Stream bench 44881023893 and
+  44887248249, Static analysis green; TEST LAB 44887248300 (489b3b88 —
+  lib/ and android/ final; the day's tests 1-2, started by the
+  device-cloud.yml pin change): realme 16 PASS 1 SKIP, OPPO 16 PASS 1
+  SKIP, no crash; the header read ahead at +5 s on both, the first drag
+  1187 -> 674 ms (realme) and 1480 -> 408 (OPPO). U2's first attempt met
+  Maven Central's 429 (re-run). THE GATE on the final code, device lab U3
+  44896555838 (8228a952): attempt 1's genres and jumps met the emulator's
+  lost network ("No internet connection", "the film never started" — the
+  other flows passed); attempt 2: genres 37/37, jumps 15/15, gestures
+  27/27 and 19/19, player audit 52 and 52, no crash. B1 ON ELEPHANTS
+  DREAM (libmpv, one rung): every drag from the pack (24 of 24 a line),
+  its own picture median 109 ms plain / 184 weak (p90 374 / 598), far
+  drags 357 / 546 ms, ~10-15 KB a drag, no stop in the start's 30 s; the
+  header read while playing took 1.2-2.2 s there (libmpv's own download
+  fills the line) — well before any drag; with the pack unread (`near`,
+  as 1.64.86) the film has no seek-bar pictures at all. Release tree
+  (worktree at origin/main): diff with the branch only the exclusions
+  and the version; check.py, analyze (no error or warning), flutter test
+  1847 pass; the pinned Semgrep against origin/main 0 new ERROR; no red
+  branch scan since 1.64.86. RELEASE REVIEW (reviewer): ship, nothing
+  blocking. FOR THE NEXT RELEASE (non-blocking, left out so the tested
+  code is the shipped code): MediaKitPlayerService.dispose() does not
+  cancel the header timer (stop() does, and the screen always stops
+  first); a ladder film moved to its Original and back reads its pack's
+  header again (16 KB; pictures right).
 - **1.64.86 IS OUT (20 Nov, the owner's "Release လုပ်ပါ")**: main a6d68c93
   (pushed 16:30 UTC after the libmpv jar came whole 3 of 3), Build
   44774072388 green (Analyze, Test, both APKs, CDN, Release); GitHub
@@ -78,9 +163,12 @@ does it.
   green. T5 44866328935 AFTER (T4's config, 04:35-04:48 UTC, the tap 0.6-
   2.1 s after the warm-up registered — the race window): 0 cuts in 12
   passes, no long start; first picture plain 4265 -> 3507 ms (p90 12994 ->
-  4370), weak 4696 -> 4729 (p90 6928 -> 6313). Left: the Worker's logs
-  for 04:34-04:49 UTC should hold no `can never settle` (the owner's
-  export). The test and check.py line reach main with the next release.
+  4370), weak 4696 -> 4729 (p90 6928 -> 6313). THE WORKER'S LOGS AGREE
+  (the owner's export, 04:35:01-04:48:01 UTC, 448 events): 0 exceptions,
+  0 `can never settle`, 221 answers 206; 3 requests `canceled` — the
+  warm-up's cuts that used to start the 500s — and nothing after them;
+  the 480p rung's front reads (22 probes, 14 heads) all served. (The
+  dashboard's filter offered no `exception` value for the window: none.) The test and check.py line reach main with the next release.
   Rule: .claude/rules/worker.md. To prove it after a
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
@@ -184,9 +272,9 @@ does it.
     read ends (packAnswer 15 s, a read at most 20 s), the pack reader made
     again for another pack on the same ladder, `_leaveLadder` stops
     ExoPlayer when the newer open is libmpv, a non-finite number is no
-    pack. LEFT TO THE OWNER: with the data saver on, a film WITHOUT a pack
-    still takes its six fragments ahead (~450 KB each time the controls
-    come up; as the 19 Nov build does).
+    pack. DECIDED 21 Nov (the owner, B3): with the data saver on, nothing
+    is taken ahead, pack or not (it was six fragments, ~450 KB, each time
+    the controls came up).
   - FOUND 20 Nov (T2): TWO STARTS STOOD STILL 46.5 s and 72.8 s (pass 1
     trick, pass 8 near — not the pack): Play tapped 1.3-1.8 s after the
     warm-up registered the 480p rung, its head read still on the line; the

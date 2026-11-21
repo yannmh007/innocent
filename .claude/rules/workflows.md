@@ -26,6 +26,17 @@ paths:
   soon is started by dispatch (as ingest and transcode are); a schedule is
   for daily work and alarms only. To prove a house step now, dispatch the
   workflow on main by hand.
+- **A job that should follow another is started by it**, on main only:
+  Transcode dispatches Trick-play when its run recorded a rung (21 Nov
+  2026, the owner's word; the daily schedule stays as the net). A branch
+  run is a test and dispatches nothing.
+- **Renewing an action's pin** (21 Nov 2026, Node 20 deprecated):
+  `git ls-remote --tags https://github.com/<owner>/<action>` gives each
+  tag's commit (a `^{}` line is an annotated tag's commit: pin that); fetch
+  that SHA into a bare repo (`git fetch --depth 1 <url> <sha>`) and read
+  its `action.yml` — `runs.using` (node24) and `inputs`, against every
+  `with:` key this repository passes. Then the branch Build, the device lab
+  and Test Lab on the new pins before a release.
 - `tool/check.py` runs `workflow_yaml.py` and `security_invariants.py` over
   these files; Semgrep runs on push and fails on new findings (a JWT-shaped
   literal counts, even a fake one: build it at run time).

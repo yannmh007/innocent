@@ -84,5 +84,23 @@ paths:
   looked like smoothness (7 Nov). Playback telemetry must cover both
   engines; `play_summary` (PlaybackQoe) is the per-playback truth, and a
   new playback event kind needs its row in `event_kinds` (migration 080).
+- **"Signed out after an update" is not the update until the auth logs
+  say so.** The session lives in the Keystore (SessionStore) and an update
+  keeps it. Supabase Auth DELETES every session of an account below aal2
+  each time that account completes MFA anywhere (the auth server's
+  mfa.go, InvalidateSessionsWithAALLessThan; no setting turns it off): the
+  owner's console sign-in is Google + MFA, so it ends the phone app's
+  Google session (aal1), and the app's next refresh is refused (400). Why:
+  14 Nov 2026, MFA 08:11:53 UTC, the app's refresh refused 08:16:20, the
+  owner asked to sign in again "after the update" (found 21 Nov from
+  edge_logs: `/auth/v1/token grant_type=refresh_token` 400 from Dart). How:
+  read edge_logs for the account's `/auth/v1/*` around the moment (a
+  refresh attempt means the stored session survived); the app now renews
+  a refused Google session of an account WITH MFA once without a tap, the
+  same user or none (ApiAccountRepository._renewRefused,
+  test/google_session_renewal_test.dart), never one the viewer ended, and
+  never an account without MFA: its refusal can be a deletion elsewhere,
+  and an ID-token exchange then signs up a new account (the release
+  review's blocking finding, 21 Nov).
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).

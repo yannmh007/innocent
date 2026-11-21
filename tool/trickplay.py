@@ -101,6 +101,9 @@ def make(src, interval_s, width, codec='jpeg', quality=None):
         else:
             args += ['-c:v', 'libwebp', '-quality', str(quality if quality is not None else 60)]
         args.append(os.path.join(work, f'p_%06d.{ext}'))
+        # A list of arguments, no shell: each value is one argv element (a path, or a
+        # presigned address from our own edge function), never parsed by a shell.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         subprocess.run(args, check=True)
         names = sorted(f for f in os.listdir(work) if f.endswith('.' + ext))
         pictures = []

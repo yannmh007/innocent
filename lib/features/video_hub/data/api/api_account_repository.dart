@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/services/diagnostics/playback_log.dart';
 import '../../domain/access.dart';
 import '../../domain/account.dart';
 import '../../domain/account_repository.dart';
@@ -24,25 +25,46 @@ import 'session_store.dart';
 /// caches or infers it. If the server says nothing is active, nothing is
 /// active, whatever the device happens to believe.
 class ApiAccountRepository implements AccountRepository {
-  ApiAccountRepository(this._api, {SessionStore session = const SessionStore()})
-      : _session = session;
+  ApiAccountRepository(this._api,
+      {SessionStore session = const SessionStore(), Future<String?> Function()? silentGoogleIdToken})
+      : _session = session,
+        _silentGoogleIdToken = silentGoogleIdToken;
 
   final ApiClient _api;
   final SessionStore _session;
 
+  /// A Google ID token got WITHOUT a tap, or null ([_renewRefused]); the
+  /// plugin's lightweight sign-in unless a test gives another.
+  final Future<String?> Function()? _silentGoogleIdToken;
+
   @override
   Future<AuthUser?> currentUser() async {
     final token = await _session.accessToken();
-    if (token == null || token.isEmpty) return null;
+    // No token: signed out — unless the server ended it a moment ago (a
+    // refresh refused, another request first), then renewed once.
+    if (token == null || token.isEmpty) return _renewRefused();
     try {
       final body = await _api.getJson('/auth/v1/user');
       if (body is! Map<String, dynamic>) return null;
-      return _userFrom(body);
+      final user = _userFrom(body);
+      // An account with a verified MFA factor is the one kind whose
+      // sessions the auth server ends from elsewhere ([_renewRefused]).
+      final factors = body['factors'];
+      final mfa = factors is List &&
+          factors.any((f) => f is Map<String, dynamic> && f['status'] == 'verified');
+      try {
+        await _session.rememberMfaUser(mfa ? user.id : null);
+      } catch (_) {
+        // A mark that could not be written costs one renewal, never the user.
+      }
+      return user;
     } on ApiException catch (e) {
-      // Unauthenticated means the session is gone: report signed out.
+      // Unauthenticated means the session is gone: report signed out —
+      // after one silent renewal if it was Google's ([_renewRefused]).
       if (e.kind == ApiErrorKind.unauthenticated) {
+        if (SessionStore.refusedProvider == null) SessionStore.noteRefused(token);
         await _session.clear();
-        return null;
+        return _renewRefused();
       }
       // A NETWORK failure is not a sign-out. Rethrowing here would log the
       // user out every time they open the app in a tunnel.
@@ -102,6 +124,7 @@ class ApiAccountRepository implements AccountRepository {
       throw const ApiException(ApiErrorKind.server, message: 'bad session');
     }
     await _session.saveFromAuthResponse(body);
+    SessionStore.forgetRefused();
     final user = body['user'];
     if (user is Map<String, dynamic>) return _userFrom(user);
 
@@ -219,6 +242,13 @@ class ApiAccountRepository implements AccountRepository {
     // POST /auth/v1/token?grant_type=id_token with the provider and token.
     // Unauthenticated by definition - this request is what creates the
     // session, so there is none to send.
+    return _exchangeGoogle(idToken);
+  }
+
+  /// The ID token exchanged for a session, as the official client does it:
+  /// POST /auth/v1/token?grant_type=id_token. Shared by the button and the
+  /// silent renewal ([_renewRefused]), so both send the same body.
+  Future<AuthUser> _exchangeGoogle(String idToken) async {
     final body = await _api.postJson(
       '/auth/v1/token',
       query: const <String, String>{'grant_type': 'id_token'},
@@ -226,6 +256,79 @@ class ApiAccountRepository implements AccountRepository {
       authenticated: false,
     );
     return _adoptSession(body);
+  }
+
+  /// THE SERVER ENDED A GOOGLE SESSION THE VIEWER DID NOT END (21 Nov
+  /// 2026; see SessionStore.refusedProvider): renewed ONCE with Google,
+  /// without a tap — the plugin's lightweight sign-in, which on Android
+  /// signs the remembered account in at once (Credential Manager's
+  /// auto-select) and only when it cannot, offers the account sheet. Null —
+  /// signed out, as before — for anything else: no refused session, a
+  /// phone one, the viewer's own sign-out, no remembered account, any
+  /// failure. Never on a fresh install: nothing was refused.
+  Future<AuthUser?> _renewRefused() async {
+    if (_renewing) return null;
+    final was = SessionStore.refusedProvider;
+    final who = SessionStore.refusedUserId;
+    SessionStore.forgetRefused();
+    if (was != 'google' || who == null || !BackendConfig.googleEnabled) return null;
+    // ONLY AN ACCOUNT WITH MFA: the auth server ends its sessions when it
+    // completes MFA elsewhere, the case this is for. Any other refusal — the
+    // account deleted or signed out on another phone — is the signed-out
+    // start it always was: an ID token exchanged for a deleted account would
+    // sign up a new one nobody asked for (and admins, the accounts with MFA,
+    // cannot delete theirs from the app).
+    String? mfa;
+    try {
+      mfa = await _session.mfaUser();
+    } catch (_) {
+      mfa = null;
+    }
+    if (mfa != who) return null;
+    _renewing = true;
+    try {
+      final idToken = await (_silentGoogleIdToken ?? _lightweightGoogleIdToken)();
+      if (idToken == null || idToken.isEmpty) {
+        PlaybackLog.add('account: the server ended the Google session; no silent sign-in, signed out');
+        return null;
+      }
+      final user = await _exchangeGoogle(idToken);
+      // THE SAME ACCOUNT OR NONE. Another one (the account sheet, two
+      // accounts on the phone) would be signed in without being asked for,
+      // and would inherit this one's downloads; its session is ended at
+      // once and the start is a signed-out one, as before.
+      if (user.id != who) {
+        try {
+          // Local: that account's sessions elsewhere are not this app's to end.
+          await _api.postJson('/auth/v1/logout', query: const <String, String>{'scope': 'local'});
+        } on ApiException {
+          // Best effort: the tokens go below either way.
+        }
+        await _session.clear();
+        PlaybackLog.add('account: the server ended the Google session; Google gave another account, signed out');
+        return null;
+      }
+      PlaybackLog.add('account: the server ended the Google session; renewed with Google');
+      return user;
+    } catch (e) {
+      // Never the description: a kind is enough, and the trail is shared.
+      PlaybackLog.add('account: the server ended the Google session; renewal failed (${e.runtimeType})');
+      return null;
+    } finally {
+      _renewing = false;
+    }
+  }
+
+  /// A renewal on its way: a nested one (the exchange's own user read) is
+  /// never started.
+  bool _renewing = false;
+
+  static Future<String?> _lightweightGoogleIdToken() async {
+    await _ensureGoogleReady();
+    final attempt = GoogleSignIn.instance.attemptLightweightAuthentication();
+    if (attempt == null) return null;
+    final account = await attempt;
+    return account?.authentication.idToken;
   }
 
   @override
@@ -246,8 +349,12 @@ class ApiAccountRepository implements AccountRepository {
       throw AccountDeletionRefused(known.contains(e.code) ? e.code! : 'failed');
     }
     // The account is gone: so is its session here, and Google's memory of
-    // which account this app last used.
+    // which account this app last used — and nothing is renewed: the flag
+    // and the mark go AFTER the tokens, so a refresh refused in between
+    // cannot set the flag again.
     await _session.clear();
+    SessionStore.forgetRefused();
+    await _session.rememberMfaUser(null);
     try {
       await GoogleSignIn.instance.signOut();
     } catch (_) {
@@ -283,6 +390,10 @@ class ApiAccountRepository implements AccountRepository {
     }
 
     await _session.clear();
+    // The viewer's own: never renewed ([_renewRefused]) — cleared AFTER
+    // the tokens (a refresh refused in between would set it again).
+    SessionStore.forgetRefused();
+    await _session.rememberMfaUser(null);
   }
 
   @override

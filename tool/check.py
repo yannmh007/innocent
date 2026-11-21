@@ -291,6 +291,13 @@ def main() -> int:
          'a check meant only to watch that refuses a paying phone\'s film '
          'instead, an "enforce" that lets a copied link play anywhere, or a '
          'film a shared cache goes on serving after its link expired'),
+        ('worker_cache_test.mjs',
+         'the Worker\'s per-isolate caches keep answers, never a request\'s '
+         'promise',
+         'a request cut by the phone (a warm-up giving its film over to Play) '
+         'leaving a promise every later request awaits and the runtime '
+         'refuses — every front read of that rung a 500 for up to a minute, '
+         'a start that stands still (20 Nov, device lab T2)'),
         ('delete_account_test.mjs',
          'deleting an account: who, how fresh, what is kept',
          'an account erased by a session left open on a lent phone, the '

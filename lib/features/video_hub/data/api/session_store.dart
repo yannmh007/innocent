@@ -42,6 +42,13 @@ class SessionStore {
   static const String _kRefresh = 'vh_session_refresh';
   static const String _kExpiry = 'vh_session_expiry';
 
+  /// The id of the account signed in here when it has a verified MFA
+  /// factor (read from the user's `factors`), kept across a refusal — see
+  /// [refusedProvider]: only such an account has its sessions ended by the
+  /// auth server this way. Not cleared by [clear]; cleared by the viewer's
+  /// own sign-out and deletion.
+  static const String _kMfaUser = 'vh_session_mfa_user';
+
   static const FlutterSecureStorage _secure = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
@@ -135,6 +142,85 @@ class SessionStore {
     await _delete(_kAccess);
     await _delete(_kRefresh);
     await _delete(_kExpiry);
+  }
+
+  /// The signed-in account has a verified MFA factor ([userId]), or not
+  /// (null). Written only when it changes.
+  Future<void> rememberMfaUser(String? userId) async {
+    final now = await _read(_kMfaUser);
+    if (now == userId) return;
+    if (userId == null) {
+      await _delete(_kMfaUser);
+    } else {
+      await _write(_kMfaUser, userId);
+    }
+  }
+
+  Future<String?> mfaUser() => _read(_kMfaUser);
+
+  /// THE SERVER ENDED THIS SESSION, NOT THE VIEWER (21 Nov 2026): the
+  /// provider of a session whose refresh the auth server refused (400/401),
+  /// set just before the tokens are cleared, for ApiAccountRepository to
+  /// renew a Google one ONCE. Process memory only, and cleared by the
+  /// viewer's own sign-out or account deletion and by any sign-in: a
+  /// session the viewer ended is never brought back.
+  ///
+  /// Why it exists: Supabase Auth deletes every session of an account below
+  /// aal2 each time that account completes MFA anywhere
+  /// (InvalidateSessionsWithAALLessThan in the auth server's mfa.go). The
+  /// owner's console sign-in is Google + MFA; the app's Google session is
+  /// aal1. On 14 Nov the console's MFA at 08:11:53 UTC ended the phone's
+  /// session, its refresh at 08:16:20 was refused (400) and the app — just
+  /// updated — asked to sign in again. The update itself kept the session:
+  /// the app had read and sent its stored refresh token.
+  static String? refusedProvider;
+
+  /// And whose it was (the token's `sub`): a renewal signs in that account
+  /// again or none — never another one, which would inherit its downloads.
+  static String? refusedUserId;
+
+  /// [refusedProvider] and [refusedUserId] from the session being cleared.
+  static void noteRefused(String? accessToken) {
+    refusedProvider = providerOf(accessToken);
+    refusedUserId = userOf(accessToken);
+  }
+
+  /// Nothing left to renew (a sign-in, the viewer's own sign-out).
+  static void forgetRefused() {
+    refusedProvider = null;
+    refusedUserId = null;
+  }
+
+  /// The user id (`sub`) an access token names, or null.
+  static String? userOf(String? accessToken) {
+    final c = _claims(accessToken);
+    final sub = c?['sub'];
+    return sub is String && sub.isNotEmpty ? sub : null;
+  }
+
+  static Map<String, dynamic>? _claims(String? accessToken) {
+    if (accessToken == null) return null;
+    final parts = accessToken.split('.');
+    if (parts.length != 3) return null;
+    try {
+      final claims = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      return claims is Map<String, dynamic> ? claims : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The sign-in provider named in an access token's claims (`google`,
+  /// `phone`…), or null when it cannot be read. The token is only decoded —
+  /// its signature is the server's business, and nothing here trusts it for
+  /// more than which way to offer a renewal.
+  static String? providerOf(String? accessToken) {
+    final meta = _claims(accessToken)?['app_metadata'];
+    if (meta is! Map<String, dynamic>) return null;
+    final providers = meta['providers'];
+    if (providers is List && providers.contains('google')) return 'google';
+    final p = meta['provider'];
+    return p is String && p.isNotEmpty ? p : null;
   }
 
   /// Reads whatever the auth endpoint returned and keeps the parts that matter.

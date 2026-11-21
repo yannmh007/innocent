@@ -35,6 +35,9 @@ QUALITY = 8
 
 
 def _curl(args):
+    # A list of arguments, no shell: each value is one argv element (a path, or a
+    # presigned address from our own edge function), never parsed by a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     p = subprocess.run(['curl', '-sS', '--fail', '--retry', '2'] + args, capture_output=True, text=True)
     if p.returncode != 0:
         # curl's own message names the URL: never printed.
@@ -78,6 +81,9 @@ def run_job(job, done_url, secret, work):
     except RuntimeError as e:
         done(done_url, secret, asset, note=f'the rung could not be read ({e})')
         return f'{asset}: the rung could not be read'
+    # A list of arguments, no shell: each value is one argv element (a path, or a
+    # presigned address from our own edge function), never parsed by a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     p = subprocess.run([sys.executable, os.path.join(HERE, 'trickplay.py'), src, out,
                         '--interval', str(INTERVAL_S), '--width', str(WIDTH), '--codec', CODEC,
                         '--quality', str(QUALITY), '--report'], capture_output=True, text=True)

@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
       - name: Ask for a free title's playback
@@ -40,8 +40,13 @@ jobs:
           set -euo pipefail
           id="$TITLE_INPUT"
           case "$id" in ''|*[!0-9a-f-]*) [ -z "$id" ] || { echo "not a title id"; exit 1; } ;; esac
-          [ -n "$id" ] || id=$(curl -sS "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
-            -H "apikey: $SB_KEY" | python3 -c "import json,sys;r=json.load(sys.stdin);print(r[0]['id'] if r else '')")
+          # The answer to a file, then read: never a download piped into an
+          # interpreter (Semgrep's gha-curl-pipe-shell, 20 Nov).
+          if [ -z "$id" ]; then
+            curl -sS -o /tmp/titles.json "$SB_URL/rest/v1/titles?select=id&access_tier=eq.free&published=eq.true&limit=1" \
+              -H "apikey: $SB_KEY"
+            id=$(python3 -c "import json;r=json.load(open('/tmp/titles.json'));print(r[0]['id'] if r else '')")
+          fi
           if [ -z "$id" ]; then echo "no free published title"; exit 1; fi
           echo "$id" > /tmp/title_id
           code=$(curl -sS -o /tmp/p.json -w '%{http_code}' -X POST "$SB_URL/functions/v1/request-playback" \
