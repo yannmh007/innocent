@@ -1,0 +1,35 @@
+  LAB check: the film never started
+  LAB check summary pass=0 fail=0
+LAB jump rule spare on (the build's own)
+hls start +0 ms: register
+hls start +120 ms: rungs registered
+hls start +120 ms: 360p head asked
+play through the ladder on ExoPlayer
+open ladder (exo) start=0s autoplay=true rung=auto first=360
+hls start +872 ms: master asked
+hls start +8878 ms: master served
+hls start +8916 ms: 360p playlist asked
+hls start +18443 ms: 360p length checked
+exo load error 360.m3u8 type=4 HttpDataSourceException
+hls: a segment read stalled 8 s, ended
+hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+hls: 360p playlist, 299 segments
+exo tracks 360,240 selected=2 adaptive=true peaks=682,366 kbps
+exo rung 360p 600 kbps
+hls: a segment read stalled 8 s, ended
+hls: a segment read stalled 8 s, ended
+hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+hls: a segment read stalled 8 s, ended
+hls: a segment read stalled 8 s, ended
+LAB away: home
+lifecycle hidden mounted=true
+lifecycle paused mounted=true
+hls: a segment read stalled 8 s, ended
+LAB away: back
+lifecycle detached mounted=true
+lifecycle resumed mounted=true
+lifecycle inactive mounted=true
+lifecycle resumed mounted=true
+hls: a segment read stalled 8 s, ended
+hls: a segment read stalled 8 s, ended
+hls: a segment read stalled 8 s, ended
