@@ -1,89 +1,36 @@
-[12:06:03] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[12:06:03] install
-[12:06:22] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[12:06:22] network: eth0 has qdisc clsact
-[12:06:22] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[12:06:48] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[12:06:48] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[12:06:48] library: pushing 24 files
-[12:07:20] library: MediaStore lists 24 videos
-[12:07:20] cold start
+[14:35:57] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[14:35:57] install
+[14:36:16] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[14:36:16] network: eth0 has qdisc clsact
+[14:36:16] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[14:36:42] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[14:36:42] nav bar: navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2337][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[14:36:42] library: pushing 24 files
+[14:37:12] library: MediaStore lists 24 videos
+[14:37:12] cold start
 Status: ok
-TotalTime: 3436
-WaitTime: 3453
-[12:07:34] flow genres
-[12:08:50] flow genres exit 0
-[12:09:00] flow jumps
-[12:09:01] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[12:13:09] flow jumps done
-[12:13:09] flow gestures
-[12:13:12] rotation asked 0, now 0
-[12:14:26] flow gestures exit 0
-[12:14:32] stacked taps at 918,1200: 4 taps in 521 ms
-[12:14:43] flow gestures_land
-[12:14:45] rotation asked 1, now 90
-[12:15:30] flow gestures_land exit 0
-[12:15:41] flow layout_portrait
-[12:15:43] rotation asked 0, now 0
-[12:16:27] flow layout_portrait exit 0
-[12:16:39] flow player_audit
-[12:17:50] flow player_audit exit 0
-[12:18:01] flow layout_landscape
-[12:18:03] rotation asked 1, now 90
-[12:18:21] flow layout_landscape exit 0
-[12:18:32] flow player_audit_land
-[12:19:23] flow player_audit_land exit 0
-[12:19:34] flow ladderstart
-[12:19:35] line: this user's HTTPS through the relay on 47126, shaped on lo (delay 60ms each way, loss 0.5%)
-[12:19:41] ladderstart: the line under a 900kbit cap measured 760 kbps (600000 bytes)
-[12:19:43] ladderstart pass 1 (plain, fix+hdr): the test film at 60 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[12:21:26] ladderstart pass 1 (plain, fix+hdr): 0 start marks, 6 drags
-[12:21:27] ladderstart pass 2 (weak, fix+hdr): the test film at 60 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[12:23:09] ladderstart pass 2 (weak, fix+hdr): 0 start marks, 6 drags
-[12:23:10] ladderstart pass 3 (plain, fix+hdr): the test film at 60 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[12:24:52] ladderstart pass 3 (plain, fix+hdr): 0 start marks, 6 drags
-[12:24:54] ladderstart pass 4 (weak, fix+hdr): the test film at 60 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[12:26:36] ladderstart pass 4 (weak, fix+hdr): 0 start marks, 6 drags
-[12:26:37] ladderstart pass 5 (plain, fix+hdr): the test film at 60 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[12:28:19] ladderstart pass 5 (plain, fix+hdr): 0 start marks, 6 drags
-[12:28:20] ladderstart pass 6 (weak, fix+hdr): the test film at 60 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[12:30:02] ladderstart pass 6 (weak, fix+hdr): 0 start marks, 6 drags
-[12:30:04] ladderstart pass 7 (plain, fix+hdr): the test film at 60 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[12:31:46] ladderstart pass 7 (plain, fix+hdr): 0 start marks, 6 drags
-[12:31:47] ladderstart pass 8 (weak, fix+hdr): the test film at 60 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[12:33:29] ladderstart pass 8 (weak, fix+hdr): 0 start marks, 6 drags
-[12:33:31] ladderstart pass 9 (plain, fix+near): the test film at 60 s after 4 s on its page; line 16mbit, 30ms each way, no loss
-[12:34:33] ladderstart pass 9 (plain, fix+near): 0 start marks, 0 drags
-[12:34:34] ladderstart pass 10 (weak, fix+near): the test film at 60 s after 4 s on its page; line 4mbit, 60ms each way, loss 0.5%
-[12:35:36] ladderstart pass 10 (weak, fix+near): 0 start marks, 0 drags
-[12:35:36] ladderstart: the line passed Sent 261229947 bytes 175459 pkt (dropped 497
-[12:35:37] ladderstart: relay: 398 connections (0 refused), 252.9 MB to the emulator, 481.7 KB from it
-[12:35:37] ladderstart pass 1 (plain, fix+hdr): start 240p warmed, first segment ?p; ms from the tap: grant 4, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 2075; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 2 (weak, fix+hdr): start 240p warmed, first segment ?p; ms from the tap: grant 34, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 2619; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 3 (plain, fix+hdr): start 240p warmed, first segment ?p; ms from the tap: grant 11, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1590; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 4 (weak, fix+hdr): start 240p, first segment ?p; ms from the tap: grant 9, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 2904; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 5 (plain, fix+hdr): start 240p, first segment ?p; ms from the tap: grant 2, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1292; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 6 (weak, fix+hdr): start 240p warmed, first segment ?p; ms from the tap: grant 3, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 2681; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 7 (plain, fix+hdr): start 240p warmed, first segment ?p; ms from the tap: grant 18, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1265; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 8 (weak, fix+hdr): start 240p, first segment ?p; ms from the tap: grant 11, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 3231; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 9 (plain, fix+near): start 240p, first segment ?p; ms from the tap: grant 3, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1433; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] ladderstart pass 10 (weak, fix+near): start 240p warmed, first segment ?p; ms from the tap: grant 4, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1890; other indexes: none; 30 s: stops 0 (0 ms), 480p+ 0 %, rungs , first change none
-[12:35:37] 
-[12:35:37] ladderstart plain fix, 5 passes: first picture median 1433 ms, p90 1881 ms (each 2075,1590,1292,1265,1433); stops in 30 s 0 in 0 passes, 0 ms; 480p+ mean 0 %; step medians: grant 4, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 1433
-[12:35:37] ladderstart weak fix, 5 passes: first picture median 2681 ms, p90 3100 ms (each 2619,2904,2681,3231,1890); stops in 30 s 0 in 0 passes, 0 ms; 480p+ mean 0 %; step medians: grant 9, register -, start index -, master -, start playlist -, 1st seg index -, 1st seg asked -, 1st seg in -, picture 2681
-[12:35:37] ladderstart plain drags, previews hdr, first: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 0 ms, p90 0; its own picture median 0 ms, p90 0, never 0; a drag: 1 requests, 105 KB median (mean 1, 105); fetches 3
-[12:35:37] ladderstart plain drags, previews hdr, short: 8 (src pack 8); first picture median 0 ms, p90 0; one within 10 s median 0 ms, p90 0; its own picture median 0 ms, p90 0, never 0; a drag: 0 requests, 52 KB median (mean 0, 52); fetches 4
-[12:35:37] ladderstart plain drags, previews hdr, long: 8 (src pack 8); first picture median 0 ms, p90 1; one within 10 s median 134 ms, p90 339; its own picture median 126 ms, p90 339, never 0; a drag: 2 requests, 6 KB median (mean 2, 6); fetches 6
-[12:35:37] ladderstart plain drags, previews hdr, far: 8 (src pack 8); first picture median 0 ms, p90 0; one within 10 s median 374 ms, p90 414; its own picture median 357 ms, p90 405, never 0; a drag: 4 requests, 15 KB median (mean 4, 15); fetches 8
-[12:35:37] ladderstart plain drags, previews hdr, all: 24 (src pack 24); first picture median 0 ms, p90 0; one within 10 s median 118 ms, p90 389; its own picture median 109 ms, p90 374, never 0; a drag: 2 requests, 11 KB median (mean 2, 25); fetches 6
-[12:35:37] ladderstart plain previews hdr, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 14 requests, 164 KB; the proxy in all 75 requests, 8 MB; header read while playing in 4 of 4 passes (median 1202 ms); the start's 30 s: stops 0 in 4 passes (0 ms)
-[12:35:37] ladderstart plain previews hdr: pack opened in 4 of 4 passes, header median 1202 ms; runs ahead 8, median 498 ms, 12 pictures, 54 KB
-[12:35:37] ladderstart weak drags, previews hdr, first: 4 (src pack 4); first picture median 0 ms, p90 0; one within 10 s median 0 ms, p90 0; its own picture median 0 ms, p90 0, never 0; a drag: 1 requests, 105 KB median (mean 1, 105); fetches 3
-[12:35:37] ladderstart weak drags, previews hdr, short: 8 (src pack 8); first picture median 0 ms, p90 0; one within 10 s median 0 ms, p90 0; its own picture median 0 ms, p90 0, never 0; a drag: 0 requests, 52 KB median (mean 0, 52); fetches 4
-[12:35:37] ladderstart weak drags, previews hdr, long: 8 (src pack 8); first picture median 0 ms, p90 0; one within 10 s median 200 ms, p90 512; its own picture median 190 ms, p90 493, never 0; a drag: 2 requests, 7 KB median (mean 2, 7); fetches 6
-[12:35:37] ladderstart weak drags, previews hdr, far: 8 (src pack 8); first picture median 0 ms, p90 1; one within 10 s median 567 ms, p90 660; its own picture median 546 ms, p90 655, never 0; a drag: 4 requests, 13 KB median (mean 4, 13); fetches 8
-[12:35:37] ladderstart weak drags, previews hdr, all: 24 (src pack 24); first picture median 0 ms, p90 0; one within 10 s median 187 ms, p90 608; its own picture median 184 ms, p90 598, never 0; a drag: 2 requests, 10 KB median (mean 2, 24); fetches 6
-[12:35:37] ladderstart weak previews hdr, a playback: before the first drag 1 requests, 16 KB median; in all (the drags too) 13 requests, 161 KB; the proxy in all 65 requests, 8 MB; header read while playing in 4 of 4 passes (median 2200 ms); the start's 30 s: stops 0 in 4 passes (0 ms)
-[12:35:37] ladderstart weak previews hdr: pack opened in 4 of 4 passes, header median 2200 ms; runs ahead 8, median 682 ms, 12 pictures, 56 KB
-[12:35:37] flow ladderstart done
-[12:35:42] done
+TotalTime: 2439
+WaitTime: 2451
+[14:37:25] flow genres
+[14:38:31] flow genres exit 0
+[14:38:40] flow jumps
+[14:38:40] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
+[14:42:47] flow jumps done
+[14:42:47] flow gestures
+[14:42:49] rotation asked 0, now 0
+[14:43:57] flow gestures exit 0
+[14:44:03] stacked taps at 918,1200: 4 taps in 417 ms
+[14:44:14] flow gestures_land
+[14:44:36] rotation asked 1, now 0
+[14:45:16] flow gestures_land exit 0
+[14:45:25] flow layout_portrait
+[14:45:27] rotation asked 0, now 0
+[14:46:08] flow layout_portrait exit 0
+[14:46:20] flow player_audit
+[14:47:27] flow player_audit exit 0
+[14:47:36] flow layout_landscape
+[14:47:59] rotation asked 1, now 0
+[14:48:16] flow layout_landscape exit 0
+[14:48:25] flow player_audit_land
+[14:49:15] flow player_audit_land exit 0
+[14:49:29] done

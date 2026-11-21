@@ -1,40 +1,40 @@
-Load: 2.47 / 2.8 / 2.96
-CPU usage from 282488ms to 17729ms ago (2026-11-21 12:30:54.895 to 2026-11-21 12:35:19.654):
-  13% 386/android.hardware.graphics.composer3-service.ranchu: 0.4% user + 12% kernel / faults: 1 minor
-  2.8% 398/surfaceflinger: 1.2% user + 1.5% kernel / faults: 342 minor
-  1.6% 355/android.hardware.sensors-service.multihal: 0.4% user + 1.1% kernel
-  1.4% 519/system_server: 0.9% user + 0.5% kernel / faults: 26549 minor
-  1.1% 411/adbd: 0.3% user + 0.8% kernel / faults: 256196 minor
-  1% 339/android.hardware.audio.service: 0.1% user + 0.9% kernel / faults: 15 minor
-  1% 16968/kworker/1:2-virtio_vsock: 0% user + 1% kernel
-  0.7% 11330/kworker/1:1-virtio_vsock: 0% user + 0.7% kernel
-  0.5% 395/audioserver: 0.4% user + 0.1% kernel / faults: 138 minor
-  0.5% 23/ksoftirqd/1: 0% user + 0.5% kernel
-  0.4% 14/rcu_preempt: 0% user + 0.4% kernel
-  0.3% 837/com.android.systemui: 0.1% user + 0.2% kernel / faults: 5025 minor
-  0.3% 53/kworker/u4:2-loop6: 0% user + 0.3% kernel
-  0.3% 15587/kworker/u4:1-phy1: 0% user + 0.3% kernel
-  0.2% 131/logd: 0% user + 0.2% kernel / faults: 186 minor
-  0.2% 158/android.hardware.security.keymint-service: 0.2% user + 0% kernel
-  0.2% 317/dhcpclient: 0% user + 0.2% kernel
-  0.2% 1095/com.google.android.apps.nexuslauncher: 0% user + 0.1% kernel / faults: 1167 minor
-  0.1% 1802/com.google.android.googlequicksearchbox:search: 0.1% user + 0% kernel / faults: 8116 minor
-  0.1% 839/com.google.android.permissioncontroller: 0.1% user + 0% kernel / faults: 8717 minor 24 major
-  0.1% 344/android.hardware.graphics.allocator@3.0-service.ranchu: 0% user + 0.1% kernel
-  0.1% 450/logcat: 0% user + 0.1% kernel
-  0% 54/kworker/0:2-events: 0% user + 0% kernel
-  0% 464/installd: 0% user + 0% kernel / faults: 29 minor
-  0% 8036/kworker/u4:3-phy1: 0% user + 0% kernel
-  0% 156/keystore2: 0% user + 0% kernel / faults: 107 minor
-  0% 5575/com.google.android.gms: 0% user + 0% kernel / faults: 4323 minor 29 major
-  0% 389/android.hardware.power-service.example: 0% user + 0% kernel
-  0% 333/netd: 0% user + 0% kernel / faults: 1731 minor
-  0% 346/android.hardware.media.c2@1.0-service-goldfish: 0% user + 0% kernel / faults: 14126 minor
-  0% 5468/com.google.android.gms.persistent: 0% user + 0% kernel / faults: 1156 minor
-  0% 134/servicemanager: 0% user + 0% kernel / faults: 3 minor
-  0% 187/jbd2/dm-40-8: 0% user + 0% kernel
-  0% 1115/android.hardware.biometrics.fingerprint-service.ranchu: 0% user + 0% kernel
-  0% 1638/com.google.android.as: 0% user + 0% kernel / faults: 719 minor
-  0% 1005/com.android.networkstack.process: 0% user + 0% kernel / faults: 817 minor
-  0% 4452/logcat: 0% user + 0% kernel
-  0% 1056/com.android.phone: 0% user + 0% kernel / faults: 168 minor
+Load: 1.36 / 4.07 / 3.1
+CPU usage from 515643ms to 215616ms ago (2026-11-21 14:40:48.366 to 2026-11-21 14:45:48.393):
+  9.1% 386/android.hardware.graphics.composer3-service.ranchu: 0.1% user + 9% kernel / faults: 3 minor
+  5% 522/system_server: 3.1% user + 1.9% kernel / faults: 169329 minor
+  3.5% 350/android.hardware.media.c2@1.0-service-goldfish: 0.2% user + 3.3% kernel / faults: 3226 minor 1 major
+  1.4% 417/adbd: 0.4% user + 1% kernel / faults: 453572 minor
+  0.8% 401/surfaceflinger: 0.3% user + 0.5% kernel / faults: 450 minor
+  0.7% 5615/com.google.android.gms.persistent: 0.5% user + 0.2% kernel / faults: 43553 minor
+  0.6% 838/com.android.systemui: 0.3% user + 0.2% kernel / faults: 14544 minor 6 major
+  0.5% 361/android.hardware.sensors-service.multihal: 0.2% user + 0.3% kernel
+  0.5% 36/kworker/1:1-events: 0% user + 0.5% kernel
+  0.5% 459/logcat: 0% user + 0.4% kernel
+  0.4% 482/media.swcodec: 0.2% user + 0.1% kernel / faults: 27182 minor
+  0.3% 853/com.google.android.permissioncontroller: 0.2% user + 0.1% kernel / faults: 22426 minor 9228 major
+  0.3% 5613/com.google.android.gms: 0.2% user + 0.1% kernel / faults: 26367 minor
+  0.3% 397/audioserver: 0.2% user + 0.1% kernel / faults: 63 minor
+  0.3% 3697/com.google.android.googlequicksearchbox:search: 0.1% user + 0.1% kernel / faults: 28608 minor
+  0.2% 54/kworker/1:2-kdmflush/254:40: 0% user + 0.2% kernel
+  0.2% 4638/com.google.android.apps.nexuslauncher: 0.1% user + 0.1% kernel / faults: 10451 minor 1 major
+  0.2% 130/logd: 0% user + 0.1% kernel / faults: 723 minor
+  0.2% 341/android.hardware.audio.service: 0% user + 0.2% kernel / faults: 15 minor
+  0.2% 163/kworker/0:3-rcu_gp: 0% user + 0.2% kernel
+  0.1% 8/kworker/u4:0-ext4-rsv-conversion: 0% user + 0.1% kernel
+  0.1% 1609/com.google.android.as: 0.1% user + 0% kernel / faults: 14743 minor 1 major
+  0.1% 348/android.hardware.graphics.allocator@3.0-service.ranchu: 0% user + 0.1% kernel / faults: 4 minor
+  0.1% 1525/com.google.android.inputmethod.latin: 0% user + 0% kernel / faults: 8566 minor
+  0.1% 7112/kworker/u4:3-phy1: 0% user + 0.1% kernel
+  0% 14/rcu_preempt: 0% user + 0% kernel
+  0% 1606/com.google.android.providers.media.module: 0% user + 0% kernel / faults: 1952 minor
+  0% 1617/com.google.android.googlequicksearchbox:interactor: 0% user + 0% kernel / faults: 4000 minor
+  0% 334/statsd: 0% user + 0% kernel / faults: 187 minor
+  0% 4406/com.google.android.apps.messaging: 0% user + 0% kernel / faults: 6546 minor 3221 major
+  0% 188/jbd2/dm-40-8: 0% user + 0% kernel
+  0% 4611/logcat: 0% user + 0% kernel
+  0% 472/media.metrics: 0% user + 0% kernel / faults: 275 minor
+  0% 132/servicemanager: 0% user + 0% kernel / faults: 12 minor
+  0% 1055/com.android.phone: 0% user + 0% kernel / faults: 1860 minor
+  0% 1/init: 0% user + 0% kernel / faults: 379 minor
+  0% 131/lmkd: 0% user + 0% kernel
+  0% 411/kworker/1:2H-kverityd: 0% user + 0% kernel
