@@ -313,7 +313,11 @@ class ApiClient {
         // The refresh token is dead too (Auth answers 400 for a revoked,
         // reused or unknown one). Clear everything: a half-session where
         // requests fail forever is worse than an honest signed-out state the
-        // user can act on.
+        // user can act on. Which kind of session it was is kept a moment
+        // (SessionStore.refusedProvider): one the SERVER ended — Supabase
+        // ends an account's sessions below aal2 whenever it completes MFA —
+        // can be renewed with Google, once.
+        SessionStore.refusedProvider = SessionStore.providerOf(await _session.accessToken());
         await _session.clear();
         return false;
       }

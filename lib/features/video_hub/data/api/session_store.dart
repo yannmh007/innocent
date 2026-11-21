@@ -137,6 +137,45 @@ class SessionStore {
     await _delete(_kExpiry);
   }
 
+  /// THE SERVER ENDED THIS SESSION, NOT THE VIEWER (21 Nov 2026): the
+  /// provider of a session whose refresh the auth server refused (400/401),
+  /// set just before the tokens are cleared, for ApiAccountRepository to
+  /// renew a Google one ONCE. Process memory only, and cleared by the
+  /// viewer's own sign-out or account deletion and by any sign-in: a
+  /// session the viewer ended is never brought back.
+  ///
+  /// Why it exists: Supabase Auth deletes every session of an account below
+  /// aal2 each time that account completes MFA anywhere
+  /// (InvalidateSessionsWithAALLessThan in the auth server's mfa.go). The
+  /// owner's console sign-in is Google + MFA; the app's Google session is
+  /// aal1. On 14 Nov the console's MFA at 08:11:53 UTC ended the phone's
+  /// session, its refresh at 08:16:20 was refused (400) and the app — just
+  /// updated — asked to sign in again. The update itself kept the session:
+  /// the app had read and sent its stored refresh token.
+  static String? refusedProvider;
+
+  /// The sign-in provider named in an access token's claims (`google`,
+  /// `phone`…), or null when it cannot be read. The token is only decoded —
+  /// its signature is the server's business, and nothing here trusts it for
+  /// more than which way to offer a renewal.
+  static String? providerOf(String? accessToken) {
+    if (accessToken == null) return null;
+    final parts = accessToken.split('.');
+    if (parts.length != 3) return null;
+    try {
+      final claims = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      if (claims is! Map<String, dynamic>) return null;
+      final meta = claims['app_metadata'];
+      if (meta is! Map<String, dynamic>) return null;
+      final providers = meta['providers'];
+      if (providers is List && providers.contains('google')) return 'google';
+      final p = meta['provider'];
+      return p is String && p.isNotEmpty ? p : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Reads whatever the auth endpoint returned and keeps the parts that matter.
   ///
   /// Tolerant of shape: a session body that is missing `expires_in` is stored
