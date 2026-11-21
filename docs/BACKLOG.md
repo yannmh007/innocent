@@ -66,7 +66,11 @@ does it.
   DEPLOY: "Worker deploy လုပ်ပါ" (20 Nov) — after device lab T4
   44805958041 (START_PAGE 3, the race on purpose, 12 passes) has measured
   the Worker before it (its first attempt met Maven Central's 429 at the
-  APK build; re-run). To prove it after a
+  APK build; re-run). T4 BEFORE THE FIX (21 Nov 03:54-04:07 UTC, Play 3 s
+  after the page, 12 passes): the race met in 4 of 12 — pass 9 a 19.9 s
+  start (7 head reads cut, `480.m3u8 not served` 6 times), passes 6 and 7
+  8.1 s and 6.1 s (2 cuts each), pass 3 one cut; first picture median
+  plain 4265 ms (p90 12994), weak 4696 ms (p90 6928). To prove it after a
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
   settle`.
