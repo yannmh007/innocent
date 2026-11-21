@@ -55,12 +55,18 @@ does it.
   created it", at `mendFront (index.js:406)` — `strayIndexes`, which kept
   the first request's PENDING bucket read for every later request (19
   Oct). 720p and the other rungs answered 206 meanwhile; at 14:01:17 the
-  rung's reads came back. FIX ON THE BRANCH, NOT LIVE (a Worker deploy is
+  rung's reads came back. The second long start the same (export of
+  14:16-14:18): 91 such 500s, 14:16:09-14:17:17, the 480p rung only. 166
+  in all, every one this message at mendFront. FIX ON THE BRANCH, NOT LIVE (a Worker deploy is
   a push of docs/worker to main — the owner's word first): the per-isolate
   caches keep the ANSWER (strayIndexes: an array, a failed read not kept;
   signingKey: the CryptoKey, the same pattern), never a promise;
   tool/js/worker_cache_test.mjs (15 checks, in check.py; the old Worker
-  fails it); worker_gate and stream_token tests pass. To prove it after a
+  fails it); worker_gate and stream_token tests pass. THE OWNER'S GO TO
+  DEPLOY: "Worker deploy လုပ်ပါ" (20 Nov) — after device lab T4
+  44805958041 (START_PAGE 3, the race on purpose, 12 passes) has measured
+  the Worker before it (its first attempt met Maven Central's 429 at the
+  APK build; re-run). To prove it after a
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
   settle`.
