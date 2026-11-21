@@ -42,6 +42,13 @@ class SessionStore {
   static const String _kRefresh = 'vh_session_refresh';
   static const String _kExpiry = 'vh_session_expiry';
 
+  /// The id of the account signed in here when it has a verified MFA
+  /// factor (read from the user's `factors`), kept across a refusal — see
+  /// [refusedProvider]: only such an account has its sessions ended by the
+  /// auth server this way. Not cleared by [clear]; cleared by the viewer's
+  /// own sign-out and deletion.
+  static const String _kMfaUser = 'vh_session_mfa_user';
+
   static const FlutterSecureStorage _secure = FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
@@ -136,6 +143,20 @@ class SessionStore {
     await _delete(_kRefresh);
     await _delete(_kExpiry);
   }
+
+  /// The signed-in account has a verified MFA factor ([userId]), or not
+  /// (null). Written only when it changes.
+  Future<void> rememberMfaUser(String? userId) async {
+    final now = await _read(_kMfaUser);
+    if (now == userId) return;
+    if (userId == null) {
+      await _delete(_kMfaUser);
+    } else {
+      await _write(_kMfaUser, userId);
+    }
+  }
+
+  Future<String?> mfaUser() => _read(_kMfaUser);
 
   /// THE SERVER ENDED THIS SESSION, NOT THE VIEWER (21 Nov 2026): the
   /// provider of a session whose refresh the auth server refused (400/401),

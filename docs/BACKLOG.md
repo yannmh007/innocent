@@ -16,6 +16,30 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **21 Nov: "SIGNED OUT AFTER AN UPDATE" — NOT THE UPDATE (the owner's
+  question before 1.64.87)**. Edge logs: on 14 Nov the console signed in
+  with Google and completed MFA (TOTP verify 08:11:53 UTC); at 08:16:20 the
+  phone app sent its STORED refresh token (so the update had kept the
+  session) and the auth server refused it (400), then /auth/v1/user 401,
+  and the app signed out. Supabase Auth deletes every session of an
+  account below aal2 each time it completes MFA anywhere (mfa.go,
+  InvalidateSessionsWithAALLessThan, every verify, no setting); the app's
+  Google session is aal1. From then no app auth request until the owner's
+  Google sign-in at 07:29 UTC today; auth.sessions holds only the console's
+  aal2 session (14 Nov) and today's app session. FIX ON THE BRANCH
+  (2e904fcb, a8999901 and the MFA-only commit): a refused GOOGLE session
+  of an account with a verified MFA factor (remembered from the user's
+  `factors`) is renewed once without a tap (attemptLightweightAuthentication
+  + the button's id-token exchange); the same user id or none (another
+  account: its session ended, `scope=local`); never a phone account, an
+  account without MFA (deleted or signed out elsewhere: an exchange would
+  sign up a new account), the viewer's own sign-out or deletion (flags
+  cleared after the tokens), twice, or nested. Review: blocking finding
+  (the ghost account after a deletion elsewhere) fixed by the MFA-only
+  rule; admins (the MFA accounts) cannot delete theirs from the app. To
+  see it work on the owner's phone: after updating, sign in to the console
+  again (Google + code) and reopen the app — still signed in; the edge
+  logs then show a Dart refresh 400 followed by an id_token 200.
 - **21 Nov: TRICK-PLAY FOLLOWS TRANSCODE (LIVE) and 1.64.87's candidate
   (on the branch, at the release checkpoint)**.
   TASK A, LIVE (the owner's word; main f4bc4fd3, transcode.yml only): a

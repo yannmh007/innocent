@@ -96,8 +96,11 @@ paths:
   edge_logs: `/auth/v1/token grant_type=refresh_token` 400 from Dart). How:
   read edge_logs for the account's `/auth/v1/*` around the moment (a
   refresh attempt means the stored session survived); the app now renews
-  a refused Google session once without a tap
-  (ApiAccountRepository._renewRefused, test/google_session_renewal_test.dart)
-  and never one the viewer ended.
+  a refused Google session of an account WITH MFA once without a tap, the
+  same user or none (ApiAccountRepository._renewRefused,
+  test/google_session_renewal_test.dart), never one the viewer ended, and
+  never an account without MFA: its refusal can be a deletion elsewhere,
+  and an ID-token exchange then signs up a new account (the release
+  review's blocking finding, 21 Nov).
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).

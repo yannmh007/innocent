@@ -20,11 +20,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Tokens in memory, so the test sees exactly what was kept or thrown away.
 class _MemSession extends SessionStore {
-  _MemSession({this.access, this.refresh, this.expired = false});
+  _MemSession({this.access, this.refresh, this.expired = false, this.mfa});
   String? access;
   String? refresh;
   bool expired;
   int clears = 0;
+
+  /// The account with a verified MFA factor, as SessionStore keeps it.
+  String? mfa;
+
+  @override
+  Future<void> rememberMfaUser(String? userId) async => mfa = userId;
+  @override
+  Future<String?> mfaUser() async => mfa;
 
   @override
   Future<String?> accessToken() async => access;
@@ -113,7 +121,7 @@ void main() {
   });
 
   test('the console\'s MFA ended the Google session: renewed once, without a tap — still signed in', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     final auth = _Auth();
     var asked = 0;
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: auth.client), session: s,
@@ -133,7 +141,7 @@ void main() {
   });
 
   test('refused by another request first (the token already gone): renewed all the same', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     final auth = _Auth();
     final client = ApiClient(session: s, httpClient: auth.client);
     var asked = 0;
@@ -162,7 +170,7 @@ void main() {
   });
 
   test('the viewer\'s own sign-out is never undone', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     var asked = 0;
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth().client), session: s,
         silentGoogleIdToken: () async {
@@ -175,6 +183,7 @@ void main() {
     expect(await repo.currentUser(), isNull);
     expect(asked, 0);
     expect(SessionStore.refusedProvider, isNull);
+    expect(s.mfa, isNull, reason: 'the mark goes with the viewer\'s own sign-out');
   });
 
   test('a fresh install, or a plain signed-out start, never asks Google', () async {
@@ -191,7 +200,7 @@ void main() {
   });
 
   test('no account Google can sign in silently: signed out, and asked once only', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     var asked = 0;
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth().client), session: s,
         silentGoogleIdToken: () async {
@@ -204,7 +213,7 @@ void main() {
   });
 
   test('Google gives ANOTHER account than the one the server ended: not signed in, its session ended', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     final auth = _Auth(userId: 'someone-else');
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: auth.client), session: s,
         silentGoogleIdToken: () async => 'google-id-token');
@@ -215,7 +224,7 @@ void main() {
   });
 
   test('the exchange fails (the auth server down): signed out, nothing thrown', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth(exchangeStatus: 503).client),
         session: s, silentGoogleIdToken: () async => 'google-id-token');
     expect(await repo.currentUser(), isNull);
@@ -223,10 +232,86 @@ void main() {
   });
 
   test('a silent sign-in that throws is a signed-out start, not a crash', () async {
-    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
     final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth().client), session: s,
         silentGoogleIdToken: () async => throw StateError('no Play services'));
     expect(await repo.currentUser(), isNull);
+  });
+
+  test('an ordinary account (no MFA) refused — deleted or signed out on another phone — is never renewed', () async {
+    // An ID token exchanged for a deleted account would sign up a new one.
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true);
+    final auth = _Auth();
+    var asked = 0;
+    final repo = ApiAccountRepository(ApiClient(session: s, httpClient: auth.client), session: s,
+        silentGoogleIdToken: () async {
+      asked++;
+      return 'google-id-token';
+    });
+    expect(await repo.currentUser(), isNull);
+    expect(asked, 0);
+    expect(auth.exchanged, isNull, reason: 'no exchange, so no account made');
+  });
+
+  test('the MFA mark comes from the user\'s own factors, and goes when they do', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    var factors = <Object>[
+      {'id': 'f1', 'factor_type': 'totp', 'status': 'verified'},
+    ];
+    final client = ApiClient(
+        session: s,
+        httpClient: MockClient((req) async => _json(200, {
+              'id': 'u1',
+              'app_metadata': {'provider': 'google'},
+              'factors': factors,
+            })));
+    final repo = ApiAccountRepository(client, session: s, silentGoogleIdToken: () async => null);
+    expect((await repo.currentUser())?.id, 'u1');
+    expect(s.mfa, 'u1');
+    factors = <Object>[
+      {'id': 'f2', 'factor_type': 'totp', 'status': 'unverified'},
+    ];
+    await repo.currentUser();
+    expect(s.mfa, isNull, reason: 'an unverified factor is no MFA');
+  });
+
+  test('deleting the account here: nothing renewed after it, the mark gone', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1', mfa: 'u1');
+    var asked = 0;
+    final client = ApiClient(
+        session: s,
+        httpClient: MockClient((req) async =>
+            req.url.path.endsWith('/delete-account') ? _json(200, {'ok': true}) : _json(401, {'msg': 'gone'})));
+    final repo = ApiAccountRepository(client, session: s, silentGoogleIdToken: () async {
+      asked++;
+      return 'google-id-token';
+    });
+    SessionStore.noteRefused(_token(['google']));
+    await repo.deleteAccount(expectUserId: 'u1');
+    expect(SessionStore.refusedProvider, isNull);
+    expect(s.mfa, isNull);
+    expect(await repo.currentUser(), isNull);
+    expect(asked, 0);
+  });
+
+  test('an exchange whose user must be read again, and refused: one exchange, never a loop', () async {
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', expired: true, mfa: 'u1');
+    var exchanges = 0;
+    final client = ApiClient(
+        session: s,
+        httpClient: MockClient((req) async {
+          final grant = req.url.queryParameters['grant_type'];
+          if (grant == 'refresh_token') return _refused;
+          if (grant == 'id_token') {
+            exchanges++;
+            // A session with no user in it: the user is read, and refused.
+            return _json(200, {'access_token': _token(['google']), 'refresh_token': 'r9', 'expires_in': 3600});
+          }
+          return _json(401, {'msg': 'no session'});
+        }));
+    final repo = ApiAccountRepository(client, session: s, silentGoogleIdToken: () async => 'google-id-token');
+    expect(await repo.currentUser(), isNull);
+    expect(exchanges, 1);
   });
 
   test('the provider read from a token\'s claims; anything unreadable is none', () {
