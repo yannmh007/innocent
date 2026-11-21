@@ -139,6 +139,22 @@ bottom row `lock | ⏮ ⏯ ⏭ | screen-mode PiP`; ⋮ = "Video display" tiles +
 the shortcuts checklist. Do not invent a new layout to look modern; make
 this one precise.
 
+**MX is a reference for proportions and behaviour, never for looks** (the
+owner, 21 Nov 2026: Innocent aims at a global standard and takes nothing
+from MX but its reasoning).
+- Take from MX: how far a panel or sheet rises and where it anchors, its
+  width and height against the screen, how much of the picture stays
+  visible and how the controls give way, how it comes in and goes, the
+  proportions of its spacing.
+- Never take: its theme, colours, icons, images, animations or brand.
+- Where Innocent's choice is better (the frosted glass, 12 Nov; the 55 %
+  portrait panel) it stays. Take MX's only where it answers something
+  Innocent lacks, and the owner decides each one.
+- Colour is tested against the film, not against MX: the player plays any
+  video, so every icon, label and panel must read over a dark, a bright, a
+  busy and a colourful frame — at least 3:1 for icons and controls, 4.5:1
+  for text. Measuring MX: BACKLOG §0, "Reference lab".
+
 ## 5. Prove it (every UI change)
 1. `test/player_layout_test.dart` with `PLAYER_SHOTS=<dir>`, the scenes the
    change touches, `LANGS=my,en,th SCALES=1.0,1.3`: no overflow anywhere.
