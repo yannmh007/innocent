@@ -88,6 +88,17 @@ does it.
   deploy: device lab with START_PAGE 1-2 s (Play inside the warm-up's
   head read) before and after, and the Worker's logs for `can never
   settle`.
+- **NEXT, OFFERED TO THE OWNER 21 Nov (waiting for the word "Trick-play ကို
+  transcode နောက် ဆက်လုပ်ပါ")**: a new upload gets its ladder at once (the
+  edge function kicks Transcode; the */5 schedule backs it) but its
+  seek-bar pack only at the daily 03:37 UTC schedule — up to 24 h. Chain
+  it: transcode.yml (already `actions: write`, already re-kicks itself
+  with `gh workflow run`) dispatches trickplay.yml on main when its run
+  recorded a ladder; the daily schedule stays as the net. Also open: a
+  film whose original is already small gets one rung (Elephants Dream,
+  Hero: 240p only, tool/transcode.sh skips a rung not smaller than the
+  source) and plays the Original on libmpv, where the app does not read
+  the pack — reading it there is an app change for the next release.
 - **The owner's first 1.64.86 report, DZQXVZT2 (20 Nov 19:25 UTC, wifi
   metered, diagnostic_reports id 10)**: THE PACK WORKS ON THE PHONE —
   Sintel `preview pack: 222 pictures, header 818 ms`; every drag `pack N,
