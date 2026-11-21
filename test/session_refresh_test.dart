@@ -114,6 +114,49 @@ void main() {
     expect(s.clears, 0);
   });
 
+  test('a 403 session_not_found asks the refresh; refused, the session is cleared and the call unauthenticated', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    final seen = <String>[];
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async {
+        seen.add(req.url.path);
+        if (req.url.path.endsWith('/token')) {
+          return _json(400, {'error_code': 'refresh_token_not_found', 'msg': 'Invalid Refresh Token: Refresh Token Not Found'});
+        }
+        return _json(403, {
+          'code': 403,
+          'error_code': 'session_not_found',
+          'msg': 'Session from session_id claim in JWT does not exist',
+        });
+      }),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => e.kind, 'kind', ApiErrorKind.unauthenticated)),
+    );
+    expect(seen, <String>['/auth/v1/user', '/auth/v1/token']);
+    expect(s.access, isNull);
+    expect(s.clears, 1);
+  });
+
+  test('a 403 session_not_found while Auth is down: the tokens kept for the next try', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async {
+        if (req.url.path.endsWith('/token')) return http.Response('bad gateway', 502);
+        return _json(403, {'code': 403, 'error_code': 'session_not_found', 'msg': 'gone'});
+      }),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
+    expect(s.clears, 0);
+    expect(s.access, 'live');
+  });
+
   test('Auth being down does not throw the session away', () async {
     final s = _MemSession(access: 'old', refresh: 'r1');
     final client = ApiClient(
@@ -123,7 +166,13 @@ void main() {
         return _json(401, {'msg': 'expired'});
       }),
     );
-    await expectLater(client.getJson('/auth/v1/user'), throwsA(isA<ApiException>()));
+    // Unreachable, not unauthenticated: the account layer clears a session
+    // on `unauthenticated`, which is what signed people out during an Auth
+    // outage (21 Nov).
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
     expect(s.clears, 0);
     expect(s.refresh, 'r1');
   });

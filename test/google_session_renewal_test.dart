@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:innocent/features/video_hub/data/api/api_account_repository.dart';
+import 'package:innocent/features/video_hub/data/api/api_exception.dart';
 import 'package:innocent/features/video_hub/data/api/api_client.dart';
 import 'package:innocent/features/video_hub/data/api/session_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -91,9 +92,13 @@ Map<String, dynamic> _newSession(String userId) => {
 /// live token refused, an ID token exchanged for [_newSession] (or
 /// [exchangeStatus]).
 class _Auth {
-  _Auth({this.exchangeStatus = 200, this.userId = 'u1'});
+  _Auth({this.exchangeStatus = 200, this.userId = 'u1', this.liveTokenGone = false});
   final int exchangeStatus;
   final String userId;
+
+  /// The token still has its hour, its session is gone: /auth/v1/user
+  /// answers 403 `session_not_found` (the owner's phone, 21 Nov 18:16).
+  final bool liveTokenGone;
   final List<String> seen = <String>[];
   Map<String, dynamic>? exchanged;
 
@@ -106,6 +111,16 @@ class _Auth {
       return exchangeStatus == 200 ? _json(200, _newSession(userId)) : _json(exchangeStatus, {'msg': 'down'});
     }
     if (req.url.path.endsWith('/logout')) return _json(204, <String, dynamic>{});
+    if (liveTokenGone &&
+        req.url.path.endsWith('/user') &&
+        (req.headers['Authorization'] ?? '').startsWith('Bearer ') &&
+        req.headers['Authorization'] != 'Bearer renewed-access') {
+      return _json(403, {
+        'code': 403,
+        'error_code': 'session_not_found',
+        'msg': 'Session from session_id claim in JWT does not exist',
+      });
+    }
     if (req.headers['Authorization'] == 'Bearer renewed-access') {
       return req.url.path.endsWith('/user') ? _json(200, _newSession(userId)['user']!) : _json(200, <Object>[]);
     }
@@ -138,6 +153,65 @@ void main() {
     expect(auth.exchanged?['id_token'], 'google-id-token');
     expect(auth.seen.first, '/auth/v1/token refresh_token');
     expect(SessionStore.refusedProvider, isNull);
+  });
+
+  test('THE OWNER\'S PHONE, 21 Nov: a token with its hour left, its session gone (403 session_not_found) — renewed', () async {
+    // Not expired: no refresh before the call. The 403 must still lead to
+    // the refresh, its refusal, and the renewal — it led to "Sign in".
+    final s = _MemSession(access: _token(['google']), refresh: 'r1', mfa: 'u1');
+    final auth = _Auth(liveTokenGone: true);
+    var asked = 0;
+    final repo = ApiAccountRepository(ApiClient(session: s, httpClient: auth.client), session: s,
+        silentGoogleIdToken: () async {
+      asked++;
+      return 'google-id-token';
+    });
+    final user = await repo.currentUser();
+    expect(user?.id, 'u1');
+    expect(asked, 1);
+    expect(auth.seen.take(3).toList(), <String>['/auth/v1/user', '/auth/v1/token refresh_token', '/auth/v1/token id_token']);
+    expect(s.access, 'renewed-access');
+  });
+
+  test('Auth down while the token is stale: still signed in (offline), the session kept, Google never asked', () async {
+    // Found 21 Nov on the way: [ApiClient] kept the tokens when the refresh
+    // got a 502, then the stale 401 went up as `unauthenticated` and
+    // currentUser cleared the session anyway.
+    for (final gone in <bool>[false, true]) {
+      final s = _MemSession(access: _token(['google']), refresh: 'r1', mfa: 'u1');
+      var asked = 0;
+      final client = ApiClient(
+        session: s,
+        httpClient: MockClient((req) async {
+          if (req.url.path.endsWith('/token')) return http.Response('bad gateway', 502);
+          return gone
+              ? _json(403, {'code': 403, 'error_code': 'session_not_found', 'msg': 'gone'})
+              : _json(401, {'msg': 'expired'});
+        }),
+      );
+      final repo = ApiAccountRepository(client, session: s, silentGoogleIdToken: () async {
+        asked++;
+        return 'google-id-token';
+      });
+      await expectLater(repo.currentUser(), throwsA(predicate(isUnreachableError)), reason: 'gone=$gone');
+      expect(s.access, isNotNull, reason: 'gone=$gone');
+      expect(s.refresh, 'r1');
+      expect(asked, 0);
+      expect(SessionStore.refusedProvider, isNull);
+    }
+  });
+
+  test('the same 403 for an account without MFA: an honest sign-out, the dead tokens gone', () async {
+    final s = _MemSession(access: _token(['google']), refresh: 'r1');
+    var asked = 0;
+    final repo = ApiAccountRepository(ApiClient(session: s, httpClient: _Auth(liveTokenGone: true).client),
+        session: s, silentGoogleIdToken: () async {
+      asked++;
+      return 'google-id-token';
+    });
+    expect(await repo.currentUser(), isNull);
+    expect(asked, 0);
+    expect(s.access, isNull, reason: 'not kept to answer 403 at every start');
   });
 
   test('refused by another request first (the token already gone): renewed all the same', () async {
@@ -310,6 +384,9 @@ void main() {
           return _json(401, {'msg': 'no session'});
         }));
     final repo = ApiAccountRepository(client, session: s, silentGoogleIdToken: () async => 'google-id-token');
+    expect(await repo.currentUser(), isNull);
+    expect(exchanges, 1);
+    // And nothing left over for the next start (a resume) to exchange again.
     expect(await repo.currentUser(), isNull);
     expect(exchanges, 1);
   });

@@ -173,6 +173,31 @@ class ApiClient {
           allowRefresh: false,
         );
       }
+      // THE REFRESH WAS REFUSED AND THE SESSION CLEARED ([_doRefresh]): the
+      // server ended it. Said as what it is — unauthenticated — whatever
+      // status this answer carried (a 403 `session_not_found`), so the
+      // account reads a sign-out it can renew, not a refusal of the user.
+      final left = await _session.accessToken();
+      if (left == null || left.isEmpty) {
+        throw const ApiException(
+          ApiErrorKind.unauthenticated,
+          code: 'session_ended',
+          statusCode: 401,
+        );
+      }
+      // THE REFRESH COULD NOT BE ASKED (Auth 5xx, a 429, offline) and the
+      // tokens are kept for the next try. This answer is no verdict on the
+      // session then: decoded, a stale 401 went up as `unauthenticated` and
+      // ApiAccountRepository.currentUser cleared the session [_doRefresh]
+      // had just kept — a minute of Auth trouble signed out everyone whose
+      // token had expired (found 21 Nov). Unreachable, it is a retry.
+      final again = await _session.refreshToken();
+      if (again != null && again.isNotEmpty) {
+        throw const ApiException(
+          ApiErrorKind.network,
+          message: 'auth unreachable',
+        );
+      }
     }
 
     return _decode(response);
@@ -201,9 +226,21 @@ class ApiClient {
         if (code == 'bad_jwt' || code == 'PGRST301' || code == 'PGRST303') {
           return true;
         }
+        // A LIVE TOKEN WHOSE SESSION IS GONE (21 Nov 2026, the owner's
+        // phone): Supabase Auth deleted the session — the account completed
+        // MFA in the console at 18:16:19 UTC — while the access token still
+        // had most of its hour, and every /auth/v1/user answered 403
+        // `session_not_found` ("Session from session_id claim in JWT does
+        // not exist"). Read as a refusal, the app showed "Sign in" and never
+        // asked the refresh token, so nothing could renew it. The refresh is
+        // what says whether the session lives: refused, it is cleared and
+        // renewed where that is allowed (ApiAccountRepository._renewRefused).
+        if (code == 'session_not_found' || code == 'session_expired') return true;
         final msg = '${decoded['msg'] ?? decoded['message'] ?? ''}'
             .toLowerCase();
-        return msg.contains('token is expired') || msg.contains('jwt expired');
+        return msg.contains('token is expired') ||
+            msg.contains('jwt expired') ||
+            msg.contains('session_id claim in jwt does not exist');
       }
     } catch (_) {
       // Not JSON: a gateway's page, not Auth's verdict on the token.

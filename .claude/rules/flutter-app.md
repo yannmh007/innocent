@@ -101,6 +101,19 @@ paths:
   test/google_session_renewal_test.dart), never one the viewer ended, and
   never an account without MFA: its refusal can be a deletion elsewhere,
   and an ID-token exchange then signs up a new account (the release
-  review's blocking finding, 21 Nov).
+  review's blocking finding, 21 Nov). A SESSION CAN DIE WHILE ITS TOKEN
+  LIVES: within the access token's hour, /auth/v1/user answers 403
+  `session_not_found`, not 401, and the refresh is never asked unless that
+  403 counts as stale (ApiClient._isStaleToken). 1.64.87 handled only the
+  expired-token shape of 14 Nov, and the owner's test the same evening
+  (MFA 18:16:19 UTC, /user 403 from 18:16:45) still showed "Sign in". Test
+  every shape the server answers, not the one the logs showed first. And
+  read the WHOLE /auth/v1 trail, not only the cause you expect: that
+  evening the console's Sign out had gone first, `logout?scope=global`
+  (18:15:32) — supabase-js signs out every session by default, idle
+  timeout included. The console now signs out `scope: 'local'`
+  (docs/studio/shell.js, checked by console_smoke.mjs). An Auth outage
+  during a refresh is a retry, never a sign-out (ApiClient._send throws
+  `network` while the tokens are kept).
 - No owner name, location or personal contact in the app (the takedown
   address is the one public contact).
