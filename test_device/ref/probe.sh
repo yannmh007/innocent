@@ -451,7 +451,8 @@ panels() {
   open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
   inn_software_decoding
 
-  local app w h idx n k rot tries got total=0 orient b0 b1 b2 b3 b4 b5 b6 b7
+  local app w h idx n k rot tries got total=0 orient b0 b1 b2 b3 b4 b5 b6 b7 ax ay bx by xy
+  local TILES=()
   for app in mx inn; do
     for o in port land; do
       if [ "$o" = port ]; then
@@ -494,19 +495,48 @@ panels() {
               [ "$tries" = 2 ] && grab "$app" "${app}_${o}_${f}_${sc}_nocontrols"
               continue
             fi
+            # Innocent sideways: its ⋮ lies past the end of its own
+            # accessibility root, which stops 96 dp short of the screen on
+            # this phone (run 44999637142), so the tree has three buttons.
+            # It sits one step right of HW, as the row is spaced.
+            if [ "$app" = inn ] && [ "${#BTNS[@]}" = 3 ]; then
+              read -r ax ay <<< "${BTNS[0]}"; read -r bx by <<< "${BTNS[1]}"
+              BTNS=("$((2 * ax - bx)) $ay" "${BTNS[@]}")
+              note "$app $o $f $sc: ⋮ is not in the tree; tapped one step right of HW"
+            fi
             if [ "$sc" = controls ]; then
               grab "$app" "${app}_${o}_${f}_controls"
               break
             fi
             case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
-            if [ -z "${BTNS[$idx]:-}" ]; then
-              note "$app $o $f $sc: not in the top bar (it has ${#BTNS[@]} buttons)"
-              grab "$app" "${app}_${o}_${f}_${sc}_notinbar"
-              break
-            fi
             cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
-            # shellcheck disable=SC2086
-            adb shell input tap ${BTNS[$idx]}
+            if [ -z "${BTNS[$idx]:-}" ]; then
+              # MX upright keeps only HW and ⋮ in its top bar; ♪ and CC are
+              # the first two buttons of its ⋮ panel (run 44999637142).
+              if [ "$app" = mx ] && [ -n "${BTNS[0]:-}" ]; then
+                # shellcheck disable=SC2086
+                adb shell input tap ${BTNS[0]}
+                for k in 1 2 3 4 5 6; do
+                  sleep 1
+                  quick_tree "$app" "$OUT/raw/quick.xml"
+                  [ "$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE" || echo 0)" -ge 3 ] && break
+                done
+                mapfile -t TILES < <(UI tiles "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE")
+                if [ "$sc" = audio ]; then xy=${TILES[0]:-}; else xy=${TILES[1]:-}; fi
+                [ -n "$xy" ] || { note "$app $o $f $sc: not in the top bar, and ⋮ held no button for it"; break; }
+                note "$app $o $f $sc: not in the top bar; opened from ⋮"
+                cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
+                # shellcheck disable=SC2086
+                adb shell input tap $xy
+              else
+                note "$app $o $f $sc: not in the top bar (it has ${#BTNS[@]} buttons)"
+                grab "$app" "${app}_${o}_${f}_${sc}_notinbar"
+                break
+              fi
+            else
+              # shellcheck disable=SC2086
+              adb shell input tap ${BTNS[$idx]}
+            fi
             # The panel can take seconds to come under translation (run
             # 44994060537: MX's ⋮ came after the screen was taken).
             n=0

@@ -22,6 +22,8 @@ log carries nothing of that app's (its words stay in innocent-ref).
                                       uiautomator never finds MX's player
                                       idle (run 44990303466)
   ui.py added BASE PANEL PACKAGE      how many nodes the panel's tree adds
+  ui.py tiles BASE PANEL PACKAGE      "x y" of the panel's own buttons, top
+                                      row first, left to right
   ui.py topbar DUMP PACKAGE W H DPI   "x y" of the top bar's last four
                                       buttons, rightmost first: ⋮, HW, CC, ♪
 """
@@ -244,6 +246,38 @@ def topbar(dump, package, w, h, dpi):
         print('%d %d' % c)
 
 
+def added(base, panel, package):
+    """How many nodes of PACKAGE the panel's tree has that the controls'
+    had not (a whole-screen scrim left out): a panel opened, or not."""
+    print(len(_added(base, panel, package)))
+
+
+def _added(base, panel, package):
+    def key(n):
+        return (n.get('class'), n.get('resource-id'), n.get('bounds'))
+    before = {key(n) for n in nodes(base)}
+    out = []
+    for n in nodes(panel):
+        if n.get('package') != package or key(n) in before:
+            continue
+        m = re.match(r'\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]', n.get('bounds', ''))
+        if not m:
+            continue
+        x1, y1, x2, y2 = map(int, m.groups())
+        if x2 <= x1 or y2 <= y1 or (x1 <= 0 and y1 <= 0 and x2 >= 1000 and y2 >= 1000):
+            continue
+        out.append(n)
+    return out
+
+
+def tiles(base, panel, package):
+    """The panel's own buttons, top row first, left to right: "x y" each."""
+    cs = sorted({centre(n) for n in _added(base, panel, package)
+                 if n.get('clickable') == 'true' and centre(n)}, key=lambda c: (c[1] // 40, c[0]))
+    for c in cs:
+        print('%d %d' % c)
+
+
 def main(argv):
     if len(argv) == 4 and argv[0] == 'splits':
         splits(argv[1], int(argv[2]), argv[3])
@@ -255,6 +289,8 @@ def main(argv):
         hier(argv[1], argv[2], argv[3])
     elif len(argv) == 4 and argv[0] == 'added':
         added(argv[1], argv[2], argv[3])
+    elif len(argv) == 4 and argv[0] == 'tiles':
+        tiles(argv[1], argv[2], argv[3])
     elif len(argv) == 6 and argv[0] == 'topbar':
         topbar(argv[1], argv[2], int(argv[3]), int(argv[4]), int(argv[5]))
     else:

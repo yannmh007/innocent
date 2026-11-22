@@ -9,9 +9,12 @@ and display.txt ("W H DPI" of the portrait screen). For each panel screen
 it sets the dump beside the same app's controls dump and measures LAYOUT
 AND BEHAVIOUR ONLY, never colour (skill ui-design §4):
 
-  panel       the box of everything the panel added (its nodes not in the
-              controls dump, scrims of the whole screen left out), each edge
-              snapped to the screen's within SNAP_DP
+  panel       the box of what the panel added (its nodes not in the
+              controls dump, scrims of the whole screen left out: the node
+              holding the most of the others and what sits around it),
+              each edge snapped to the screen's or the window's within
+              SNAP_DP. Innocent's: its glass read from its own screenshot
+              over the white frame (its semantics hold only the content)
   anchor      which screen edges it holds to: bottom, right, ...
   w_pct h_pct its width and height against the screen
   rise_pct    how far up the screen its top is, from the bottom
@@ -98,7 +101,43 @@ def picture(w, h):
     return (0, (h - ph) / 2, w, (h + ph) / 2)
 
 
-def measure(base, panel, pkg, w, h, dp):
+def own_surface(png, port, w, h, cb, dp):
+    """Innocent's panel surface from its OWN screenshot over the white frame
+    (never MX's): its semantics give the content, not the glass around it,
+    and its tree is clipped 96 dp short of this phone's screen (run
+    44999637142). From inside the content, walk out until the glass gives
+    way to the dimmed picture. None when it cannot be read."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    try:
+        im = Image.open(png).convert('L')
+    except OSError:
+        return None
+    if im.size != (w, h):
+        return None
+    px = im.load()
+    if port:
+        x, y = w // 2, min(h - 1, cb[1] + int(8 * dp))
+        ref = px[x, y]
+        while y > 0 and abs(px[x, y - 1] - ref) <= 30:
+            y -= 1
+        return (0, y, w, h)
+    y = min(h - 1, (cb[1] + cb[3]) // 2)
+    x = min(w - 1, cb[0] + int(8 * dp))
+    ref = px[x, y]
+    while x > 0 and abs(px[x - 1, y] - ref) <= 30:
+        x -= 1
+    top = min(h - 1, cb[1] + int(8 * dp))
+    xx = min(w - 1, x + int(40 * dp))
+    ref = px[xx, top]
+    while top > 0 and abs(px[xx, top - 1] - ref) <= 30:
+        top -= 1
+    return (x, top, w, h)
+
+
+def measure(base, panel, pkg, w, h, dp, shot=None):
     snap = SNAP_DP * dp
     full = 0.9 * w * h
     before = {key(n) for n in base}
@@ -119,6 +158,9 @@ def measure(base, panel, pkg, w, h, dp):
     added = [n for n in added if n is best or
              (area(n['box']) <= area(cb) and inside(n['box'], grow))]
     x1, y1, x2, y2 = union([n['box'] for n in added])
+    surface = own_surface(shot, h > w, w, h, (x1, y1, x2, y2), dp) if shot else None
+    if surface:
+        x1, y1, x2, y2 = surface
     # The app's window can stop short of the screen (the navigation bar's
     # strip): an edge on the window's edge is on the screen's.
     win = next((n['box'] for n in panel if n['pkg'] == pkg), (0, 0, w, h))
@@ -183,7 +225,10 @@ def main(argv):
                     p = os.path.join(src, '%s_%s_%s_%s.xml' % (app, orient, frame, screen))
                     if not base or not os.path.exists(p):
                         continue
-                    m = measure(base, nodes(p), pkg, w, h, dp)
+                    shot = None
+                    if app == 'inn':
+                        shot = os.path.join(src, 'inn_%s_white_%s.png' % (orient, screen))
+                    m = measure(base, nodes(p), pkg, w, h, dp, shot)
                     if m:
                         res['%s %s %s %s' % (app, screen, orient, frame)] = m
     os.makedirs(out, exist_ok=True)

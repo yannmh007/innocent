@@ -282,11 +282,12 @@ jobs:
         run: |
           out="$RUNNER_TEMP/ref_out"
           [ -f "$out/display.txt" ] || { echo "no panels were taken"; exit 0; }
-          python3 -I tool/ref/measure.py "$out" "$out/measure" "$MX_PACKAGE"
-          { echo '### Panels, measured (dp and screen %; no colour)'; echo '```';
-            cat "$out/measure/measures.tsv"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install --quiet pillow==12.3.0
+          # Pillow for Innocent's own glass, read off its own screenshot.
+          "$RUNNER_TEMP/venv/bin/python" -I tool/ref/measure.py "$out" "$out/measure" "$MX_PACKAGE"
+          { echo '### Panels, measured (dp and screen %; no colour)'; echo '```';
+            cat "$out/measure/measures.tsv"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           "$RUNNER_TEMP/venv/bin/python" -I tool/ref/compare.py "$out" "$out/measure/measures.json" "$out/compare"
 
       - name: Keep the run in innocent-ref
