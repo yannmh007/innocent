@@ -84,13 +84,20 @@ does it.
   - Phase 0, a probe: which ABIs the APK carries; does it run on the
     x86_64 Android 13 image, else 11/12 with ARM translation, else Test
     Lab (screens only, one of the five a day) — ask the owner then.
-  - THE OWNER TO DO (told 21 Nov): (1) a private repo `innocent-ref`;
-    (2) the Claude GitHub App given access to it; (3) a fine-grained
-    token for innocent-ref only, Contents read and write, saved as the
-    Actions secret `REF_REPO_TOKEN` here; (4) the MX APK uploaded to
-    innocent-ref (every split file, if the phone gives several); (5) the
-    phone's model. Then verify: the workflow's first step prints only
-    ok / no access; add_repo innocent-ref (read) and see the APK.
+  - 22 Nov, DONE BY THE OWNER: the private repo `innocent-ref` (list_repos:
+    private, the Claude app can reach it); the fine-grained token saved as
+    the Actions secret `REF_REPO_TOKEN` (innocent-ref only, Contents read
+    and write, 90 days — renew by about 20 Feb 2027). MX on the owner's
+    phone: 3.4.3 from the Play Store. The owner asked Claude to fetch that
+    version rather than upload it. The emulator to match the owner's
+    phone: 1080×2316 at 450 dpi (≈384×823 dp, the default display; ask for
+    a screenshot if Screen zoom was changed).
+  - 22 Nov, MODE=fetch built (`reference-lab.yml`, `test_device/ref/
+    fetch.sh`): apkeep from APKPure, kept as innocent-ref's release
+    `mx-3.4.3` only if it verifies and shares the signer of the oldest
+    release APKPure lists (APKMirror, the second source, is unreachable
+    from the session). security_invariants 16 fails on any app binary
+    tracked here (.gitignore already drops *.apk, not .xapk/.apkm).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,

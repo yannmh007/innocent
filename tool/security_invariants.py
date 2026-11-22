@@ -8,7 +8,7 @@ those look wrong in review and none of them fail any other check.
 
 Each rule below is a property of the ARCHITECTURE, not of a line of code.
 """
-import os, re, sys
+import os, re, subprocess, sys
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else '.'
 FEATURE = os.path.join(ROOT, 'lib/features/video_hub')
@@ -421,6 +421,10 @@ CRED_ALLOWED = {
     # pin, so the Python and the edge function derive the same backup key. Made
     # from a key anyone can write down; it opens nothing.
     '138cd64bae9bf39faf2071a0abdc3921568565bbd5c867078d11f586fd3f62c0',
+    # SHA-256 of EFF's apkeep 1.1.0 linux x86_64 binary, which
+    # .github/workflows/reference-lab.yml checks before running it. The
+    # digest of a public release file; not a key.
+    'badd7ad9fa7d2f32abe01eaf33b7ff086361a95bbc000a33bf44b630d4bf2140',
 }
 
 CRED_EXTS = ('.md', '.ts', '.js', '.mjs', '.html', '.yml', '.yaml', '.sh',
@@ -930,6 +934,22 @@ if os.path.isdir(CACHE):
         fails.append(
             'THE STREAM CACHE IS NOT SEALED: stream_cache_store.dart no longer '
             'ciphers new runs (OfflineCrypto.transform, s<offset>.bin).')
+
+# --- 16. no app binary in this public repository ----------------------------
+# The reference lab (reference-lab.yml) handles another company's app, MX
+# Player; its APK and its screenshots live only in the owner's private
+# repository innocent-ref. An APK committed here would publish someone
+# else's app (and ours is shipped by build.yml, never committed).
+try:
+    _tracked = subprocess.run(['git', 'ls-files', '-z'], cwd=ROOT, capture_output=True,
+                              check=True).stdout.decode('utf-8', 'replace').split('\0')
+except (OSError, subprocess.CalledProcessError):
+    _tracked = []
+for _rel in _tracked:
+    if _rel.lower().endswith(('.apk', '.apks', '.xapk', '.apkm', '.aab')):
+        fails.append(
+            'AN APP BINARY IS IN THE PUBLIC REPOSITORY: %s. MX files belong in '
+            'the private innocent-ref (reference-lab.yml); our APKs in releases.' % _rel)
 
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:

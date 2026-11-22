@@ -1,0 +1,101 @@
+# Reference lab: how MX Player's panels and menus sit against the picture,
+# next to Innocent's — proportions and behaviour only, never MX's looks
+# (skill ui-design §4; the plan is BACKLOG §0, "Reference lab").
+#
+# THIS REPOSITORY IS PUBLIC. Nothing of MX's — its APK, its screenshots — is
+# committed here or kept as an artifact of a run here. It is kept in the
+# owner's PRIVATE repository yannmh007/innocent-ref, reached with the Actions
+# secret REF_REPO_TOKEN (a fine-grained token for that repository only,
+# Contents read and write); a step refuses it if that repository is not
+# private. tool/security_invariants.py (16) fails on any app binary here.
+#
+# MODE in test_device/ref/ref.env:
+#   fetch  MX Player at the version on the owner's phone (MX_VERSION), from
+#          APKPure through EFF's apkeep: the Play Store needs an account and
+#          APKMirror refuses scripts. APKPure has been caught repackaging
+#          apps (apkeep's USAGE-apkpure.md), so the file is kept only if
+#          every APK in it verifies and is signed by the certificate of the
+#          OLDEST release APKPure lists (a repackaged app cannot carry MX's
+#          signature, and an old release has had years to be caught), and by
+#          MX_CERT when a second source gives one. Kept as the release
+#          mx-<version> of innocent-ref, with what was checked in its notes.
+#          It only ever runs in the lab's throwaway emulator, never on a
+#          phone. The token is in the steps that talk to innocent-ref only,
+#          never in the one that runs the download tool.
+#
+# HOW TO RUN: push a change under test_device/ref/ on a branch (not main).
+
+name: Reference lab
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - 'test_device/ref/**'
+      - '.github/workflows/reference-lab.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reference-lab-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REF_REPO: yannmh007/innocent-ref
+  # EFF's apkeep 1.1.0, the linux x86_64 binary of its GitHub release.
+  APKEEP_URL: https://github.com/EFForg/apkeep/releases/download/1.1.0/apkeep-x86_64-unknown-linux-gnu
+  APKEEP_SHA256: badd7ad9fa7d2f32abe01eaf33b7ff086361a95bbc000a33bf44b630d4bf2140
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: test_device/ref
+
+      - name: What this run does
+        run: |
+          set -a; . test_device/ref/ref.env; set +a
+          case "${MODE:-}" in
+            fetch) ;;
+            *) echo "MODE=${MODE:-} is not built yet (fetch only)" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1 ;;
+          esac
+          [[ "$MX_PACKAGE" =~ ^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$ ]] || { echo "bad MX_PACKAGE"; exit 1; }
+          [[ "$MX_VERSION" =~ ^[0-9][0-9A-Za-z._-]{0,30}$ ]] || { echo "bad MX_VERSION"; exit 1; }
+          [[ -z "${MX_CERT:-}" || "$MX_CERT" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || { echo "bad MX_CERT"; exit 1; }
+          { echo "MX_PACKAGE=$MX_PACKAGE"; echo "MX_VERSION=$MX_VERSION"; echo "MX_CERT=${MX_CERT:-}"; } >> "$GITHUB_ENV"
+          echo "### Reference lab: fetch $MX_PACKAGE $MX_VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Can the lab reach innocent-ref?
+        id: reach
+        env:
+          GH_TOKEN: ${{ secrets.REF_REPO_TOKEN }}
+        run: bash test_device/ref/fetch.sh reach
+
+      - name: apkeep, checked
+        if: steps.reach.outputs.kept != '1'
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/apkeep" "$APKEEP_URL"
+          echo "$APKEEP_SHA256  $RUNNER_TEMP/apkeep" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/apkeep"
+
+      - name: Get MX and check it (no token here)
+        if: steps.reach.outputs.kept != '1'
+        env:
+          APKEEP: ${{ runner.temp }}/apkeep
+        run: bash test_device/ref/fetch.sh get
+
+      - name: Keep it in innocent-ref
+        if: steps.reach.outputs.kept != '1'
+        env:
+          GH_TOKEN: ${{ secrets.REF_REPO_TOKEN }}
+        run: bash test_device/ref/fetch.sh keep
