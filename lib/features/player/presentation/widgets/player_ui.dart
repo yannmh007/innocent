@@ -53,18 +53,29 @@ class PlayerUi {
   static bool _probed = false;
 
   /// THE SHADE (the owner, 22 Nov 2026, after the reference lab: "as MX —
-  /// it disturbs the film less while it plays than the misted glass"). A
-  /// panel or sheet no longer dims the whole picture or blurs it: the film
-  /// stays sharp and bright everywhere but where the menu's words are, and
-  /// there a shade of [surface] rises from nothing, [shadeFade] dp before
-  /// the menu begins, to [shadeText] where its words start and [shadeEnd]
-  /// at the far edge. Innocent's own colour and stops, never MX's: chosen
-  /// so every word reads over a white, a busy and a colourful frame
-  /// (test/player_legibility_test.dart).
-  static const double shadeFade = 56;
-  static const double shadeEdge = 0.55;
-  static const double shadeText = 0.84;
-  static const double shadeEnd = 0.92;
+  /// it disturbs the film less while it plays than the misted glass"; and
+  /// again: "MX's is more see-through, the film behind shows; ours is still
+  /// heavier"). A panel or sheet neither blurs nor dims the picture as a
+  /// whole. Behind it a shade of [surface] lets [shadeSeeThrough] of the
+  /// film show through — 40 %, as much as MX lets through its panels
+  /// (measured over a white and a black frame, grey levels only: run
+  /// 45019756405) — and before its edge the shade thins out over
+  /// [shadeFade] dp, to [shadeMid] at [shadeMidAt] dp before the edge and
+  /// to nothing at the far end, as MX's does. Innocent's colour, MX's
+  /// see-through. The words and icons on it carry [shadeInk], a soft dark
+  /// halo, so they still read over a white, a busy or a colourful frame
+  /// (test/player_legibility_test.dart: 4.5:1 for text, 3:1 for icons).
+  static const double shadeSeeThrough = 0.40;
+  static const double shadeFade = 360;
+  static const double shadeMidAt = 160;
+  static const double shadeMid = 0.20;
+  static const List<Shadow> shadeInk = <Shadow>[
+    // Tight, then soft: the first two keep a dark rim round every stroke,
+    // the last a quiet ground under a word.
+    Shadow(color: Color(0xFF000000), blurRadius: 1),
+    Shadow(color: Color(0xE6000000), blurRadius: 3),
+    Shadow(color: Color(0x80000000), blurRadius: 10),
+  ];
 
   /// How far a panel or sheet reaches from its edge: as MX's (one square,
   /// the screen's short side — 384 dp, 46.6 % of the owner's 823 dp
@@ -85,6 +96,10 @@ class PlayerUi {
 
   /// A tile, card or chip on a menu: a light film over the glass.
   static const Color raised = Color(0x1FFFFFFF);
+
+  /// The disc under a tile's icon on the see-through shade: darker than
+  /// the shade, so the icon keeps its ground over a bright film.
+  static const Color tileDisc = Color(0x4D000000);
 
   static const Color hairline = Color(0x1AFFFFFF);
   static const Color textPrimary = Color(0xEBFFFFFF);
@@ -522,7 +537,10 @@ class PanelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colour = selected ? PlayerUi.accent : PlayerUi.textPrimary;
+    // The choice is marked by a white ✓ and a heavier white title, not by
+    // blue: on the see-through shade, over a bright film, the blue title
+    // read 1.3:1 and the blue ✓ 1.4:1 (the legibility test, 22 Nov 2026).
+    const colour = PlayerUi.textPrimary;
     return Semantics(
       selected: selected,
       child: InkWell(
@@ -539,19 +557,22 @@ class PanelRow extends StatelessWidget {
                     width: 22,
                     child: selected
                         ? const Icon(Icons.check_rounded,
-                            size: 22, color: PlayerUi.accent)
+                            size: 22,
+                            color: PlayerUi.textPrimary,
+                            shadows: PlayerUi.shadeInk)
                         : null,
                   )
                 else if (icon != null)
                   Icon(icon,
                       size: 22,
-                      color:
-                          selected ? PlayerUi.accent : PlayerUi.textSecondary),
+                      color: PlayerUi.textPrimary),
                 if (choice || icon != null) const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     title,
-                    style: PlayerUi.rowTitle.copyWith(color: colour),
+                    style: PlayerUi.rowTitle.copyWith(
+                        color: colour,
+                        fontWeight: selected ? FontWeight.w600 : null),
                   ),
                 ),
                 if (value != null) ...[
@@ -569,7 +590,9 @@ class PanelRow extends StatelessWidget {
                 if (selected && !choice) ...[
                   const SizedBox(width: 12),
                   const Icon(Icons.check_rounded,
-                      size: 22, color: PlayerUi.accent),
+                      size: 22,
+                      color: PlayerUi.textPrimary,
+                      shadows: PlayerUi.shadeInk),
                 ] else if (chevron) ...[
                   const SizedBox(width: 8),
                   const Icon(Icons.chevron_right_rounded,
@@ -670,8 +693,12 @@ class PanelTile extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color:
-                          selected ? PlayerUi.accentContainer : PlayerUi.raised,
+                      // A dark tonal disc: on the see-through shade a light
+                      // one lifted the ground under a white icon over a
+                      // bright film to 2.9:1 (22 Nov 2026).
+                      color: selected
+                          ? PlayerUi.accentContainer
+                          : PlayerUi.tileDisc,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(icon,
@@ -947,13 +974,13 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
   }
 }
 
-/// The shade behind a panel or sheet ([PlayerUi.shadeFade]): [PlayerUi.surface]
-/// rising from nothing a little before the menu's edge (above it upright,
-/// left of it sideways) to [PlayerUi.shadeText] where the words start and
-/// [PlayerUi.shadeEnd] at the screen's edge. No blur, no edge, no corners:
-/// the film stays sharp; only behind the words is it darkened. The fade
-/// before the edge is drawn outside the menu's box and takes no taps (a tap
-/// there closes the menu, as anywhere off it). Ink draws on it.
+/// The shade behind a panel or sheet ([PlayerUi.shadeSeeThrough]): within
+/// the menu, [PlayerUi.surface] letting 40 % of the film through; before
+/// its edge (above it upright, left of it sideways) thinning out over
+/// [PlayerUi.shadeFade] dp to nothing. No blur, no edge, no corners: the film
+/// stays sharp. The fade before the edge is drawn outside the menu's box and
+/// takes no taps (a tap there closes the menu, as anywhere off it). Words
+/// and icons on it carry [PlayerUi.shadeInk]. Ink draws on it.
 class PlayerShade extends StatelessWidget {
   const PlayerShade({super.key, required this.sideways, required this.child});
 
@@ -967,8 +994,7 @@ class PlayerShade extends StatelessWidget {
       const fade = PlayerUi.shadeFade;
       final reach = (sideways ? c.maxWidth : c.maxHeight);
       final length = (reach.isFinite ? reach : 400.0) + fade;
-      // Where the words start: the header sits some 20 dp into the menu.
-      final words = ((fade + 20) / length).clamp(0.0, 1.0);
+      const full = 1 - PlayerUi.shadeSeeThrough;
       return Stack(
         clipBehavior: Clip.none,
         children: [
@@ -985,18 +1011,34 @@ class PlayerShade extends StatelessWidget {
                     end: sideways ? Alignment.centerRight : Alignment.bottomCenter,
                     colors: [
                       PlayerUi.surface.withValues(alpha: 0),
-                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeEdge),
-                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeText),
-                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeEnd),
+                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeMid),
+                      PlayerUi.surface.withValues(alpha: full),
+                      PlayerUi.surface.withValues(alpha: full),
                     ],
-                    stops: [0, fade / length, words, 1],
+                    stops: [
+                      0,
+                      (fade - PlayerUi.shadeMidAt) / length,
+                      fade / length,
+                      1,
+                    ],
                   ),
                 ),
               ),
             ),
           ),
           Positioned.fill(
-            child: Material(type: MaterialType.transparency, child: child),
+            child: Material(
+              type: MaterialType.transparency,
+              // The halo on every word and icon of the menu: the film shows
+              // through the shade, so a word may sit on white.
+              child: DefaultTextStyle.merge(
+                style: const TextStyle(shadows: PlayerUi.shadeInk),
+                child: IconTheme.merge(
+                  data: const IconThemeData(shadows: PlayerUi.shadeInk),
+                  child: child,
+                ),
+              ),
+            ),
           ),
         ],
       );

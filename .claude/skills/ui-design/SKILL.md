@@ -16,10 +16,14 @@ on a phone. The player's building blocks live in
 2. **One layer at a time, and the film stays the film.** An open panel
    or sheet sits on THE SHADE (the owner, 22 Nov 2026, after the
    reference lab: "as MX — it disturbs the film less while it plays than
-   the misted glass"): no blur, no dim over the picture; only behind the
-   words a shade of `#1C1C1E` rises from nothing, 56 dp before the menu's
-   edge, to 84 % where the words start and 92 % at the screen's edge
-   (`PlayerShade`). The controls under it hide (11 Nov: the clock, ♪,
+   the misted glass"; and: "MX's lets more of the film through"): no
+   blur, no dim over the picture; the menu's shade of `#1C1C1E` lets 40 %
+   of the film through — as much as MX's (measured over a white and a
+   black frame, grey levels only) — and thins out over 360 dp before its
+   edge (`PlayerShade`). Its words and icons carry a dark halo
+   (`PlayerUi.shadeInk`); a choice is a white ✓ and a heavier white title
+   (blue read 1.3:1 over a bright film); a tile's icon sits on a dark disc.
+   The controls under it hide (11 Nov: the clock, ♪,
    "Default" and the seek bar showed through a translucent ⋮). Upright,
    the film's subtitle goes over the open panel, as MX lifts its own. A
    dialog keeps frosted glass over a dimmed picture (12 Nov).
@@ -35,14 +39,14 @@ on a phone. The player's building blocks live in
 | | value |
 |---|---|
 | behind a panel or sheet | nothing: the picture is not dimmed (22 Nov) |
-| panel, sheet | **the shade** (`PlayerShade`): `#1C1C1E` from 0 (56 dp before the edge) through 55 % at the edge and 84 % at the words to 92 %; no blur, edge or corners |
+| panel, sheet | **the shade** (`PlayerShade`): `#1C1C1E` at 60 % within the menu (40 % of the film shows, as MX's), 20 % at 160 dp before its edge, 0 at 360 dp; no blur, edge or corners; words and icons with `PlayerUi.shadeInk` (black rim 1 + 3, a soft 10); tile discs black 30 % |
 | scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |
 | surface of a dialog or card | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
 | reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side — upright that tall, sideways that wide (≤ 440) plus the navigation strip |
 | raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
 | hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
-| selected | accent text/icon; container accent 16 % |
+| selected | on the shade: a white ✓ and a w600 white title (22 Nov); a tile: accent icon on accent 16 % |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
 | spacing | 4 dp grid; panel padding 24 (20 under 360 dp: MX keeps panel content ~26 dp in, the owner chose it 22 Nov); section gap 20 |
 | rows | min 52 dp, icon 22 dp, gap 16 |
