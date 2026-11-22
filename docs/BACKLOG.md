@@ -203,7 +203,12 @@ does it.
     subtitle no longer keeps the controls' lift under an open menu (it sat
     across the panel's rows). LEGIBILITY (the test, owner's phone): every
     word and icon of CC and ♪ passes on all five frames; ⋮ all but four
-    12 sp tile labels over a pure white film (3.7-4.3:1).
+    12 sp tile labels over a pure white film (3.7-4.3:1). PROVED, run
+    45038350235 (the build of 4bc44dde): the film shows through as through
+    MX's within 1-2 points everywhere, and the panel over a white frame is
+    the same grey (102 of 255 both). Sideways the subtitle sits at the
+    picture's foot and may touch a long panel's last row, as MX's would
+    (MX does not move it sideways).
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
