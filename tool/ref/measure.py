@@ -76,6 +76,12 @@ def inter(a, b):
     return (max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3]))
 
 
+def inside(b, c):
+    """b's centre within c."""
+    x, y = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
+    return c[0] <= x <= c[2] and c[1] <= y <= c[3]
+
+
 def union(boxes):
     return (min(b[0] for b in boxes), min(b[1] for b in boxes),
             max(b[2] for b in boxes), max(b[3] for b in boxes))
@@ -99,30 +105,27 @@ def measure(base, panel, pkg, w, h, dp):
     added = [n for n in panel if n['pkg'] == pkg and key(n) not in before and area(n['box']) < full]
     if not added:
         return None
-    # The panel: the largest thing it added and whatever touches it or sits
-    # within 24 dp of it, grown until nothing more joins. A prompt the app
-    # showed on one open and not the other, away from the panel, stays out.
-    near = 24 * dp
-    added.sort(key=lambda n: -area(n['box']))
-    core = [added[0]]
-    cur = added[0]['box']
-    grew = True
-    while grew:
-        grew = False
-        for n in added:
-            if n in core:
-                continue
-            b = n['box']
-            if b[0] <= cur[2] + near and b[2] >= cur[0] - near and b[1] <= cur[3] + near and b[3] >= cur[1] - near:
-                core.append(n)
-                cur = union([cur, b])
-                grew = True
-    added = core
+    # The panel: the added node that holds the most of the others (its
+    # container; a bare touch area beside it holds none), with what sits
+    # inside or just around it and is no bigger (a header above a list).
+    # A prompt the app showed on one open and not the other stays out.
+    def holds(c):
+        return sum(1 for n in added if n is not c and inside(n['box'], c['box']))
+    best = max(added, key=lambda c: (holds(c), -area(c['box'])))
+    if holds(best) == 0:
+        best = max(added, key=lambda c: area(c['box']))
+    cb = best['box']
+    grow = (cb[0] - 24 * dp, cb[1] - 72 * dp, cb[2] + 24 * dp, cb[3] + 72 * dp)
+    added = [n for n in added if n is best or
+             (area(n['box']) <= area(cb) and inside(n['box'], grow))]
     x1, y1, x2, y2 = union([n['box'] for n in added])
-    x1 = 0 if x1 <= snap else x1
-    y1 = 0 if y1 <= snap else y1
-    x2 = w if w - x2 <= snap else x2
-    y2 = h if h - y2 <= snap else y2
+    # The app's window can stop short of the screen (the navigation bar's
+    # strip): an edge on the window's edge is on the screen's.
+    win = next((n['box'] for n in panel if n['pkg'] == pkg), (0, 0, w, h))
+    x1 = 0 if x1 <= max(snap, win[0] + snap) else x1
+    y1 = 0 if y1 <= max(snap, win[1] + snap) else y1
+    x2 = w if x2 >= min(w - snap, win[2] - snap) else x2
+    y2 = h if y2 >= min(h - snap, win[3] - snap) else y2
     box = (x1, y1, x2, y2)
     anchor = [e for e, on in (('top', y1 == 0), ('bottom', y2 == h),
                               ('left', x1 == 0), ('right', x2 == w)) if on]

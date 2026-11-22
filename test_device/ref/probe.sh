@@ -448,7 +448,7 @@ panels() {
   open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
   inn_software_decoding
 
-  local app w h idx n tries got total=0 orient
+  local app w h idx n k rot tries got total=0 orient
   for app in mx inn; do
     for o in port land; do
       if [ "$o" = port ]; then
@@ -470,8 +470,22 @@ panels() {
             if [ "$app" = mx ]; then open_film mx "$dir/ref_$sc.mp4"; else open_film inn "$dir/innocent_lab_play.mp4"; fi
             # Innocent's lab build pushes the player ~3 s after a cold start.
             if [ "$app" = mx ]; then sleep 6; else sleep 9; fi
+            # Paused, both keep their controls up once shown (Innocent's
+            # Phase 42, after MX): no race with the auto-hide while a tree
+            # is read (Innocent's took longer than its 4 s, run 44994060537).
+            adb shell input keyevent KEYCODE_MEDIA_PAUSE
+            sleep 1
+            # Which way the app turned itself (upright films upright).
+            rot=$(adb shell dumpsys input | grep -m1 -oE 'SurfaceOrientation: [0-9]' | awk '{print $2}' | tr -d '\r')
+            if [ "$((${rot:-0} % 2))" = 1 ]; then w=$ph; h=$pw; else w=$pw; h=$ph; fi
+            if { [ "$o" = port ] && [ "$w" -gt "$h" ]; } || { [ "$o" = land ] && [ "$w" -lt "$h" ]; }; then
+              note "$app $o $f $sc: the app turned itself the other way (rotation ${rot:-?})"
+              grab "$app" "${app}_${o}_${f}_${sc}_turned"
+              break
+            fi
             if ! ensure_controls "$app" "$w" "$h"; then
               note "$app $o $f $sc: the controls never came up (try $tries)"
+              [ "$tries" = 2 ] && grab "$app" "${app}_${o}_${f}_${sc}_nocontrols"
               continue
             fi
             if [ "$sc" = controls ]; then
@@ -479,11 +493,21 @@ panels() {
               break
             fi
             case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
+            cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
             # shellcheck disable=SC2086
             adb shell input tap ${BTNS[$idx]}
-            sleep 1.5
+            # The panel can take seconds to come under translation (run
+            # 44994060537: MX's ⋮ came after the screen was taken).
+            n=0
+            for k in 1 2 3 4 5 6; do
+              sleep 1
+              quick_tree "$app" "$OUT/raw/quick.xml"
+              n=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$app")" || echo 0)
+              [ "${n:-0}" -ge 3 ] && break
+            done
+            sleep 1
             grab "$app" "${app}_${o}_${f}_${sc}"
-            n=$(UI added "$OUT/raw/quick.xml" "$OUT/${app}_${o}_${f}_${sc}.xml" "$(pkg_of "$app")" || echo 0)
+            n=$(UI added "$OUT/raw/before.xml" "$OUT/${app}_${o}_${f}_${sc}.xml" "$(pkg_of "$app")" || echo 0)
             note "$app $o $f $sc: the panel added $n nodes (try $tries)"
             [ "${n:-0}" -ge 3 ] && { got=$((got + 1)); break; }
           done

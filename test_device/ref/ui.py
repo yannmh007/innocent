@@ -195,46 +195,53 @@ def hier(top, windows, package):
 
 def topbar(dump, package, w, h, dpi):
     dp = dpi / 160
+    ns = [n for n in nodes(dump) if n.get('package') == package]
+
+    def box(n):
+        m = re.match(r'\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]', n.get('bounds', ''))
+        return tuple(map(int, m.groups())) if m else None
+
+    # An AndroidX toolbar's menu: its buttons are what sits inside it. (A
+    # row of shortcuts below a toolbar is drawn moved down by a translation
+    # the view dump does not show, so by place alone it read as the top
+    # row: run 44994060537.)
+    menus = [box(n) for n in ns if (n.get('class') or '').endswith('ActionMenuView') and box(n)]
+    if menus:
+        mb = menus[0]
+        inmenu = []
+        for n in ns:
+            c, b = centre(n), box(n)
+            # The menu's own buttons fill its height.
+            if n.get('clickable') == 'true' and c and b and b != mb \
+                    and mb[0] <= c[0] <= mb[2] and mb[1] <= c[1] <= mb[3] \
+                    and b[3] - b[1] >= 0.8 * (mb[3] - mb[1]):
+                inmenu.append(b)
+        # A button, not something clickable inside a button.
+        outer = [b for b in inmenu if not any(o != b and o[0] <= b[0] and o[1] <= b[1]
+                                              and o[2] >= b[2] and o[3] >= b[3] for o in inmenu)]
+        row = sorted({((b[0] + b[2]) // 2, (b[1] + b[3]) // 2) for b in outer}, key=lambda c: -c[0])
+        if len(row) >= 4:
+            for c in row[:4]:
+                print('%d %d' % c)
+            return
     cands = []
-    for n in nodes(dump):
-        if n.get('package') != package or n.get('clickable') != 'true':
+    for n in ns:
+        if n.get('clickable') != 'true':
             continue
-        c = centre(n)
-        if not c or c[1] > 0.25 * h:
+        c, b = centre(n), box(n)
+        if not c or not b or c[1] > 0.25 * h or c[0] < 0.45 * w:
             continue
-        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds', ''))
-        bw, bh = int(m.group(3)) - int(m.group(1)), int(m.group(4)) - int(m.group(2))
         # A button, not a bar: under 140 dp each way.
-        if bw > 140 * dp or bh > 140 * dp:
+        if b[2] - b[0] > 140 * dp or b[3] - b[1] > 140 * dp:
             continue
         cands.append(c)
     if not cands:
         return
-    # The top bar is the topmost row of buttons.
+    # The top bar is the topmost row of buttons on the right.
     y0 = min(c[1] for c in cands)
     row = sorted({c for c in cands if c[1] - y0 <= 24 * dp}, key=lambda c: -c[0])
     for c in row[:4]:
         print('%d %d' % c)
-
-
-def added(base, panel, package):
-    """How many nodes of PACKAGE the panel's tree has that the controls'
-    had not (a whole-screen scrim left out): a panel opened, or not."""
-    def key(n):
-        return (n.get('class'), n.get('resource-id'), n.get('bounds'))
-    before = {key(n) for n in nodes(base)}
-    n_new = 0
-    for n in nodes(panel):
-        if n.get('package') != package or key(n) in before:
-            continue
-        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds', ''))
-        if not m:
-            continue
-        x1, y1, x2, y2 = map(int, m.groups())
-        if x1 <= 0 and y1 <= 0 and x2 >= 1000 and y2 >= 1000:
-            continue
-        n_new += 1
-    print(n_new)
 
 
 def main(argv):
