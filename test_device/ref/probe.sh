@@ -351,6 +351,11 @@ install_inn() {
   for p in READ_EXTERNAL_STORAGE READ_MEDIA_VIDEO POST_NOTIFICATIONS; do
     adb shell pm grant "$INN_PACKAGE" "android.permission.$p" >/dev/null 2>&1 || true
   done
+  # "All files access", which the app declares: with READ_EXTERNAL_STORAGE
+  # alone Android 11 refused it the lab's films ("Permission denied", every
+  # open of run 45030566139; two in 45019756405).
+  adb shell appops set --uid "$INN_PACKAGE" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 \
+    || adb shell appops set "$INN_PACKAGE" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
 }
 
 # A film handed over as a file manager does: $1 mx|inn, $2 its path.
