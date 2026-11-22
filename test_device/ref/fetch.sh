@@ -1,0 +1,159 @@
+#!/usr/bin/env bash
+# Reference lab, MODE=fetch — .github/workflows/reference-lab.yml says why
+# each check is here. MX Player at MX_VERSION from APKPure (EFF's apkeep),
+# kept as the release mx-<version> of the PRIVATE repository REF_REPO, and
+# only if it is MX's own signed build.
+#
+#   fetch.sh reach   needs GH_TOKEN: the repository is reachable and private;
+#                    writes kept=1 to GITHUB_OUTPUT when the release exists
+#   fetch.sh get     no token: list, download, unpack, check
+#   fetch.sh keep    needs GH_TOKEN: create the release from what get checked
+#
+# In: MX_PACKAGE MX_VERSION REF_REPO APKEEP, MX_CERT (optional: the signer's
+# SHA-256 or SHA-1 from a second source). State between the steps lives in
+# $RUNNER_TEMP/mx. Nothing of MX's is written into the repository checkout.
+set -euo pipefail
+
+SUM="${GITHUB_STEP_SUMMARY:-/dev/null}"
+say() { printf '%s\n' "$*"; printf -- '- %s\n' "$*" >> "$SUM"; }
+W="${RUNNER_TEMP:-/tmp}/mx"
+TAG="mx-$MX_VERSION"
+
+reach() {
+  [ -n "${GH_TOKEN:-}" ] || { say "innocent-ref: the secret REF_REPO_TOKEN is not set"; exit 1; }
+  local priv
+  priv=$(gh api "repos/$REF_REPO" --jq .private 2>/dev/null) \
+    || { say "innocent-ref: no access (the token, the repository it names, or its expiry)"; exit 1; }
+  [ "$priv" = true ] || { say "innocent-ref is NOT private: nothing of MX's may go there"; exit 1; }
+  say "innocent-ref: ok, private"
+  if gh release view "$TAG" --repo "$REF_REPO" >/dev/null 2>&1; then
+    say "$TAG is already kept in innocent-ref: nothing to fetch"
+    echo "kept=1" >> "${GITHUB_OUTPUT:-/dev/null}"
+  fi
+}
+
+BT=""
+tools() {
+  BT=$(ls -d "${ANDROID_HOME:?}"/build-tools/*/ | sort -V | tail -1)
+  [ -x "${BT}aapt2" ] && [ -x "${BT}apksigner" ] || { say "no aapt2/apksigner in $BT"; exit 1; }
+}
+
+# One download: $1 a name, $2 the version, $3 the ABI asked of APKPure.
+download() {
+  mkdir -p "$W/$1/x"
+  "$APKEEP" -a "$MX_PACKAGE@$2" -d apk-pure -o "acknowledge_dangers=true,arch=$3" "$W/$1" 2>&1 \
+    | tr '\r' '\n' | grep -E 'Downloading|downloaded|Skipping|error' | tail -3 || true
+  local f
+  f=$(find "$W/$1" -maxdepth 1 -type f \( -name '*.apk' -o -name '*.xapk' \) | head -1)
+  [ -n "$f" ] || { say "download failed: $MX_PACKAGE $2 for $3"; exit 1; }
+  echo "$f" > "$W/$1.file"
+  case "$f" in
+    *.xapk) unzip -q -o "$f" '*.apk' -d "$W/$1/x" ;;
+    *)      cp "$f" "$W/$1/x/" ;;
+  esac
+}
+
+# The base APK of a download: the package's own file in an XAPK, base.apk,
+# or the only APK.
+base_of() {
+  local d="$W/$1/x"
+  for c in "$d/$MX_PACKAGE.apk" "$d/base.apk"; do [ -f "$c" ] && { echo "$c"; return; }; done
+  ls -S "$d"/*.apk | head -1
+}
+# These print nothing on failure (never exit): the checks below say why.
+digest() { { "${BT}apksigner" verify --print-certs "$1" 2>/dev/null || true; } | sed -n "s/^Signer #1 certificate $2 digest: //p" | head -1; }
+signer() { { "${BT}apksigner" verify --print-certs "$1" 2>/dev/null || true; } | sed -n 's/^Signer #1 certificate DN: //p' | head -1; }
+abis()   { for a in "$W/$1"/x/*.apk; do unzip -Z1 "$a" 2>/dev/null | sed -n 's#^lib/\([^/]*\)/.*#\1#p'; done | sort -u | tr '\n' ' '; }
+badge()  { { "${BT}aapt2" dump badging "$1" 2>/dev/null || true; } | sed -n '1p' | sed -n "s/.* $2='\([^']*\)'.*/\1/p"; }
+
+get() {
+  tools
+  rm -rf "$W"; mkdir -p "$W"
+  "$APKEEP" -l -a "$MX_PACKAGE" > "$W/versions.txt" 2>&1 || true
+  { sed -n 's/^| //p' "$W/versions.txt" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep -v '^$' || true; } \
+    | sort -uV > "$W/vers"
+  local n; n=$(wc -l < "$W/vers")
+  [ "$n" -gt 0 ] || { say "APKPure lists no version of $MX_PACKAGE ($(head -c 200 "$W/versions.txt" | tr '\n' ' '))"; exit 1; }
+  say "APKPure lists $n version(s) of $MX_PACKAGE, $(head -1 "$W/vers") to $(tail -1 "$W/vers")"
+  grep -qxF "$MX_VERSION" "$W/vers" \
+    || { say "NOT FOUND: $MX_VERSION is not among them; the newest are $(tail -6 "$W/vers" | tr '\n' ' ')"; exit 1; }
+  local oldest; oldest=$(head -1 "$W/vers")
+
+  download x86_64 "$MX_VERSION" x86_64
+  download arm64 "$MX_VERSION" arm64-v8a
+  [ "$oldest" != "$MX_VERSION" ] && download anchor "$oldest" arm64-v8a
+
+  # It is the app and the version asked for.
+  local b pkg ver code
+  b=$(base_of arm64)
+  pkg=$({ "${BT}aapt2" dump badging "$b" 2>/dev/null || true; } | sed -n "1s/^package: name='\([^']*\)'.*/\1/p")
+  ver=$(badge "$b" versionName); code=$(badge "$b" versionCode)
+  [ "$pkg" = "$MX_PACKAGE" ] && [ "$ver" = "$MX_VERSION" ] \
+    || { say "WRONG FILE: the base APK says package '$pkg' version '$ver'"; exit 1; }
+
+  # Every APK verifies, and all are signed by one certificate.
+  local cert cert1 dn set a c
+  cert=$(digest "$b" SHA-256); cert1=$(digest "$b" SHA-1); dn=$(signer "$b")
+  [ -n "$cert" ] || { say "THE BASE APK DOES NOT VERIFY (apksigner)"; exit 1; }
+  for set in x86_64 arm64; do
+    for a in "$W/$set"/x/*.apk; do
+      c=$(digest "$a" SHA-256)
+      [ "$c" = "$cert" ] || { say "A DIFFERENT OR BROKEN SIGNATURE: $(basename "$a") in the $set download"; exit 1; }
+    done
+  done
+
+  # Anchored: the oldest release APKPure lists, and/or a second source.
+  local anchored="" old="none older listed"
+  if [ -d "$W/anchor" ]; then
+    c=$(digest "$(base_of anchor)" SHA-256)
+    [ "$c" = "$cert" ] || { say "SIGNER DIFFERS FROM $oldest, the oldest release listed: not MX's build, not kept"; exit 1; }
+    anchored=1; old="yes, $oldest"
+  fi
+  local second="not given"
+  if [ -n "${MX_CERT:-}" ]; then
+    { [ "$MX_CERT" = "$cert" ] || [ "$MX_CERT" = "$cert1" ]; } \
+      || { say "SIGNER DIFFERS FROM MX_CERT (the second source): not kept"; exit 1; }
+    anchored=1; second="yes"
+  fi
+  [ -n "$anchored" ] || { say "NO ANCHOR: no older release listed and no MX_CERT; not kept"; exit 1; }
+
+  local same="no"
+  cmp -s "$(cat "$W/x86_64.file")" "$(cat "$W/arm64.file")" && same="yes: APKPure has one build for both"
+  cat > "$W/notes.md" <<EOF
+MX Player $MX_VERSION ($MX_PACKAGE, versionCode $code), kept for the reference lab of yannmh007/innocent.
+Research only: it runs in the lab's throwaway emulator. Never install it on a phone.
+
+- Source: APKPure, through EFF's apkeep 1.1.0 (run ${GITHUB_RUN_ID:-local})
+- Signed by: $dn
+- Signer SHA-256: $cert
+- Same signer as the oldest release APKPure lists: $old
+- Same signer as the second source (MX_CERT): $second
+- The x86_64 download, native code for: $(abis x86_64)
+- The arm64-v8a download, native code for: $(abis arm64)
+- The two downloads are the same file: $same
+EOF
+  sed -n '4,$p' "$W/notes.md" | sed 's/^- //' | while IFS= read -r l; do say "$l"; done
+  echo "$same" > "$W/same"
+}
+
+keep() {
+  local out="$W/out" f ext
+  mkdir -p "$out"
+  f=$(cat "$W/x86_64.file"); ext="${f##*.}"
+  if [ "$(cut -c1-3 "$W/same")" = yes ]; then
+    cp "$f" "$out/mx-$MX_VERSION.$ext"
+  else
+    cp "$f" "$out/mx-$MX_VERSION-x86_64.$ext"
+    f=$(cat "$W/arm64.file"); cp "$f" "$out/mx-$MX_VERSION-arm64-v8a.${f##*.}"
+  fi
+  gh release create "$TAG" --repo "$REF_REPO" --title "MX Player $MX_VERSION" \
+    --notes-file "$W/notes.md" "$out"/* >/dev/null
+  say "kept: the release $TAG of innocent-ref, $(ls "$out" | tr '\n' ' ')($(du -sh "$out" | cut -f1))"
+}
+
+case "${1:-}" in
+  reach) reach ;;
+  get)   get ;;
+  keep)  keep ;;
+  *) echo "usage: fetch.sh reach|get|keep" >&2; exit 2 ;;
+esac
