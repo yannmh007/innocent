@@ -104,42 +104,45 @@ def picture(w, h):
 
 
 def own_surface(png, port, w, h, cb, dp):
-    """Innocent's panel surface from its OWN screenshot over the white frame
-    (never MX's): its semantics give the content, not the glass around it,
-    and its tree is clipped 96 dp short of this phone's screen (run
-    44999637142). From inside the content, walk out until the glass gives
-    way to the dimmed picture. None when it cannot be read."""
+    """Innocent's panel from its OWN screenshots over the white and the
+    black frame (never MX's colours): its semantics give the content, not
+    the shade around it, and its tree is clipped 96 dp short of this
+    phone's screen (run 44999637142). Along a line from the screen's edge
+    inward, how much of the film shows through (grey levels: white minus
+    black); the panel's edge is where that stops falling — the shade is
+    even within the panel and thins out before it. None when it cannot be
+    read. `png` is the white frame's file; the black one is beside it."""
     try:
         from PIL import Image
     except ImportError:
         return None
     try:
-        im = Image.open(png).convert('L')
+        wi = Image.open(png).convert('L')
+        bi = Image.open(png.replace('_white_', '_black_')).convert('L')
     except OSError:
         return None
-    if im.size != (w, h):
+    if wi.size != (w, h) or bi.size != (w, h):
         return None
-    px = im.load()
+    wp, bp = wi.load(), bi.load()
+    step = max(1, int(dp))
     if port:
-        # Near the right edge: clear of the drag handle (centre) and the
-        # title (left), inside the corner's curve.
-        x, y = w - int(24 * dp), min(h - 1, cb[1] + int(8 * dp))
-        ref = px[x, y]
-        while y > 0 and abs(px[x, y - 1] - ref) <= 30:
-            y -= 1
-        return (0, y, w, h)
-    y = min(h - 1, (cb[1] + cb[3]) // 2)
-    x = min(w - 1, cb[0] + int(8 * dp))
-    ref = px[x, y]
-    while x > 0 and abs(px[x - 1, y] - ref) <= 30:
-        x -= 1
-    # Just inside the left edge, clear of the title's letters.
-    top = min(h - 1, cb[1] + int(8 * dp))
-    xx = min(w - 1, x + int(6 * dp))
-    ref = px[xx, top]
-    while top > 0 and abs(px[xx, top - 1] - ref) <= 30:
-        top -= 1
-    return (x, top, w, h)
+        x = w - int(10 * dp)
+        line = [(x, y) for y in range(h - 1 - int(80 * dp), 0, -step)]
+    else:
+        y = h - int(12 * dp)
+        line = [(x, y) for x in range(w - 1 - int(80 * dp), 0, -step)]
+    see = [wp[p] - bp[p] for p in line]
+    if not see:
+        return None
+    inside = sorted(see[:20])[len(see[:20]) // 2]
+    edge = None
+    for i, v in enumerate(see):
+        if v > inside + 6:
+            edge = line[i]
+            break
+    if edge is None:
+        return None
+    return (0, edge[1], w, h) if port else (edge[0], 0, w, h)
 
 
 def measure(base, panel, pkg, w, h, dp, shot=None):

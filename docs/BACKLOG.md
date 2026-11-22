@@ -194,10 +194,16 @@ does it.
     Innocent's shade let 9-15 % through. Now (player_ui.dart): 40 % within,
     20 % → 0 over 360 dp before the edge; words and icons with a dark halo;
     a choice a white ✓ and a heavier white title (blue read 1.3:1); tile
-    icons on a dark disc. LEGIBILITY on it (the test, owner's phone): every
-    icon passes on every frame (≥ 5.3:1); words pass over black, grey and
-    colour, and over white or busy film some drop to 3.1-4.4:1 (the 4.5
-    bar) — the price of MX's see-through; the owner to judge on the phone.
+    icons on a dark disc. PROVED on the emulator, run 45035203039: the
+    film shows through Innocent's shade as through MX's, 40 % within the
+    panel and 70-88 % before it, within 1-3 points at every place measured
+    (the lab also gives Innocent All files access now: run 45030566139's
+    films were refused). Then: the shade black, not #1C1C1E (at the same
+    see-through the grey left words 15 % less contrast); sideways the
+    subtitle no longer keeps the controls' lift under an open menu (it sat
+    across the panel's rows). LEGIBILITY (the test, owner's phone): every
+    word and icon of CC and ♪ passes on all five frames; ⋮ all but four
+    12 sp tile labels over a pure white film (3.7-4.3:1).
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
