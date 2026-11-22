@@ -61,8 +61,9 @@ does it.
   of an MFA account is undone on a phone whose Google account still
   allows the app (RUNBOOK: ban instead); a session time-box, if one is
   ever set, likewise.
-- **21 Nov: REFERENCE LAB — 22 Nov: PHASE 0 AND PHASE 1 DONE; PANEL
-  PADDING TAKEN FROM MX (24 dp); UPRIGHT HEIGHT ASKED (46.6 % or 55 %)**. Purpose: see how MX Player's panels and menus sit against the
+- **21 Nov: REFERENCE LAB — 22 Nov: PHASE 0 AND PHASE 1 DONE; THE OWNER
+  TOOK MX'S WAY: padding 24 dp, MX's reach, the shade for the glass, the
+  subtitle over an upright panel (on the branch, not released)**. Purpose: see how MX Player's panels and menus sit against the
   picture (how far they rise, where they anchor, width and height, what of
   the picture stays visible, how they come in) next to Innocent's, and
   take MX's proportions only where they are better. Never its theme,
@@ -148,6 +149,22 @@ does it.
     panel's top) so it stays readable; sideways it leaves it at the bottom.
     Innocent leaves it where it was: upright under the glass, sideways
     centred and half under the panel.
+  - 22 Nov (evening), THE OWNER: "as MX — it disturbs the film less while
+    it plays than the clear background". Done on the branch (player_ui.dart,
+    player_screen.dart; skill ui-design §1-§4 rewritten): (1) MX's reach
+    for every panel and sheet, PlayerUi.panelExtent = the screen's short
+    side, ≤ 46.6 % of the long side (upright 384 dp tall, sideways 384 dp
+    wide + the navigation strip; it was ≤ 55 % / 46 %); (2) THE SHADE for
+    the frosted glass: no blur, no 40 % dim over the picture; #1C1C1E from
+    0 (56 dp before the edge) to 55 % at it, 84 % where the words start,
+    92 % at the screen's edge — our stops, measured over the film, never
+    MX's; dialogs keep the glass; (3) upright, the film's subtitle is laid
+    above an open panel or sheet (PlayerUi.openSheets counts the sheets).
+    Proof: flutter test 1873; player_layout_test 1062 without an overflow;
+    the legibility test: every panel word passes over black, white, grey,
+    busy and colour on the shade, but the selected track's accent label
+    (3.2-3.7:1, as before) and its ✓ sideways over white (2.7-2.9:1).
+    The reference lab's run on this build: see ref.env.
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
@@ -166,9 +183,9 @@ does it.
     An upright film puts upright controls on the picture too: not yet
     measured. (3) test/support/player_harness.dart calls the owner's phone
     411×882 dp (2.625); BACKLOG's 22 Nov reading is 450 dpi, 384×823.
-  - NEXT: the owner's answers on the upright height (46.6 % as MX, or the
-    55 % cap) and on lifting the subtitle above an upright panel; the legibility fixes (a stronger gradient sideways, the
-    selected label — Innocent's own, never MX's colours); the
+  - NEXT: the owner's look at the shade on the phone (a release when the
+    owner says); the legibility fixes (a stronger gradient behind the
+    sideways controls, the selected label — Innocent's own colours); the
     accessibility root. More panels only if asked. A rerun: ref.env
     MODE=panels (~30 min; ~50 when lib/ changed and the lab APK rebuilds).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
