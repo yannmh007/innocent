@@ -375,14 +375,17 @@ quick_tree() {
 # The controls up, checked in the tree rather than assumed: a tap on the
 # picture shows them when hidden and HIDES them when up (run 44991688519:
 # MX's were still up twelve seconds after the open, and the lab's tap put
-# them away). Leaves the top bar's buttons in BTNS; false if never up.
+# them away). Leaves the top bar's buttons in BTNS, rightmost first (⋮, HW,
+# CC, ♪ where the app has them there); false if never up.
 BTNS=()
 ensure_controls() {
   local i
   for i in 1 2 3 4; do
     quick_tree "$1" "$OUT/raw/quick.xml"
     mapfile -t BTNS < <(UI topbar "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$2" "$3" "$PROBE_DPI")
-    [ "${#BTNS[@]}" -ge 4 ] && return 0
+    # Up: at least ⋮ and HW (upright, MX keeps only those two in its top
+    # bar, run 44997097342).
+    [ "${#BTNS[@]}" -ge 2 ] && return 0
     adb shell input tap $(($2 / 2)) $(($3 / 2))
     sleep 0.7
   done
@@ -448,7 +451,7 @@ panels() {
   open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
   inn_software_decoding
 
-  local app w h idx n k rot tries got total=0 orient
+  local app w h idx n k rot tries got total=0 orient b0 b1 b2 b3 b4 b5 b6 b7
   for app in mx inn; do
     for o in port land; do
       if [ "$o" = port ]; then
@@ -475,11 +478,14 @@ panels() {
             # is read (Innocent's took longer than its 4 s, run 44994060537).
             adb shell input keyevent KEYCODE_MEDIA_PAUSE
             sleep 1
-            # Which way the app turned itself (upright films upright).
-            rot=$(adb shell dumpsys input | grep -m1 -oE 'SurfaceOrientation: [0-9]' | awk '{print $2}' | tr -d '\r')
-            if [ "$((${rot:-0} % 2))" = 1 ]; then w=$ph; h=$pw; else w=$pw; h=$ph; fi
+            # Which way the screen is, from a screenshot's own size (the
+            # input's SurfaceOrientation read 0 sideways, run 44997097342).
+            rot=$(adb exec-out screencap -p 2>/dev/null | head -c 24 | od -An -tu1 -j16 -N8 | tr -s ' ' | sed 's/^ //')
+            read -r b0 b1 b2 b3 b4 b5 b6 b7 <<< "${rot:-0 0 0 0 0 0 0 0}"
+            w=$(( (b0 << 24) + (b1 << 16) + (b2 << 8) + b3 )); h=$(( (b4 << 24) + (b5 << 16) + (b6 << 8) + b7 ))
+            [ "$w" -gt 0 ] && [ "$h" -gt 0 ] || { if [ "$o" = port ]; then w=$pw; h=$ph; else w=$ph; h=$pw; fi; }
             if { [ "$o" = port ] && [ "$w" -gt "$h" ]; } || { [ "$o" = land ] && [ "$w" -lt "$h" ]; }; then
-              note "$app $o $f $sc: the app turned itself the other way (rotation ${rot:-?})"
+              note "$app $o $f $sc: the app turned itself the other way (${w}x${h})"
               grab "$app" "${app}_${o}_${f}_${sc}_turned"
               break
             fi
@@ -493,6 +499,11 @@ panels() {
               break
             fi
             case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
+            if [ -z "${BTNS[$idx]:-}" ]; then
+              note "$app $o $f $sc: not in the top bar (it has ${#BTNS[@]} buttons)"
+              grab "$app" "${app}_${o}_${f}_${sc}_notinbar"
+              break
+            fi
             cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
             # shellcheck disable=SC2086
             adb shell input tap ${BTNS[$idx]}

@@ -220,7 +220,7 @@ def topbar(dump, package, w, h, dpi):
         outer = [b for b in inmenu if not any(o != b and o[0] <= b[0] and o[1] <= b[1]
                                               and o[2] >= b[2] and o[3] >= b[3] for o in inmenu)]
         row = sorted({((b[0] + b[2]) // 2, (b[1] + b[3]) // 2) for b in outer}, key=lambda c: -c[0])
-        if len(row) >= 4:
+        if len(row) >= 2:
             for c in row[:4]:
                 print('%d %d' % c)
             return
