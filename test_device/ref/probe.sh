@@ -30,6 +30,8 @@ W="$T/mx"            # the XAPK and its APKs
 OUT="$T/ref_out"     # what goes to innocent-ref, and nowhere else
 FILM="$T/film/ref_measure.mp4"      # black first
 FILM_W="$T/film/ref_measure_w.mp4"  # white first
+FILM_P="$T/film/ref_measure_p.mp4"  # upright (720x1280), black first
+FILM_PW="$T/film/ref_measure_pw.mp4" # upright, white first
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UI() { python3 -I "$HERE/ui.py" "$@"; }
 note() { printf '%s\n' "$*" >> "$OUT/probe.txt"; }
@@ -98,16 +100,21 @@ film() {
   # 140 s at 1280x720: black 0-40, white 40-80, grey 80-100, busy (a fine
   # black-and-white texture) 100-120, colourful 120-140. Two audio tracks.
   # And the same film white first (FILM_W): each panel is taken over black
-  # and over white within the first 40 s of a fresh open.
-  local first second out
-  for first in black white; do
-    if [ "$first" = black ]; then second=white; out="$FILM"; else second=black; out="$FILM_W"; fi
+  # and over white within the first 40 s of a fresh open. And both again
+  # upright, 720x1280 (FILM_P, FILM_PW): each app turns itself upright for
+  # an upright film, as a phone's own video does. Turning MX upright from
+  # outside (wm set-fix-to-user-rotation) squeezed its controls into a band
+  # across the middle (run 44991688519): not how it looks on a phone.
+  local first second out size
+  for out in "$FILM" "$FILM_W" "$FILM_P" "$FILM_PW"; do
+    case "$out" in "$FILM"|"$FILM_P") first=black; second=white ;; *) first=white; second=black ;; esac
+    case "$out" in "$FILM"|"$FILM_W") size=1280x720 ;; *) size=720x1280 ;; esac
     ffmpeg -loglevel error -y \
-      -t 40 -f lavfi -i "color=c=$first:s=1280x720:r=24" \
-      -t 40 -f lavfi -i "color=c=$second:s=1280x720:r=24" \
-      -t 20 -f lavfi -i "color=c=0x808080:s=1280x720:r=24" \
-      -t 20 -f lavfi -i "cellauto=s=1280x720:r=24:rule=30:start_full=1:random_fill_ratio=0.5" \
-      -t 20 -f lavfi -i "testsrc2=s=1280x720:r=24" \
+      -t 40 -f lavfi -i "color=c=$first:s=$size:r=24" \
+      -t 40 -f lavfi -i "color=c=$second:s=$size:r=24" \
+      -t 20 -f lavfi -i "color=c=0x808080:s=$size:r=24" \
+      -t 20 -f lavfi -i "cellauto=s=$size:r=24:rule=30:start_full=1:random_fill_ratio=0.5" \
+      -t 20 -f lavfi -i "testsrc2=s=$size:r=24" \
       -t 140 -f lavfi -i "sine=frequency=440:sample_rate=48000" \
       -t 140 -f lavfi -i "sine=frequency=660:sample_rate=48000" \
       -i "$d/sub0.srt" -i "$d/sub1.srt" \
@@ -353,97 +360,149 @@ open_film() {
   adb shell am start -W -a android.intent.action.VIEW -t video/mp4 -d "file://$2" -n "$comp" >/dev/null 2>&1 || true
 }
 
+# A quick tree for a check: MX's from dumpsys (its view tree only),
+# Innocent's from uiautomator.
+quick_tree() {
+  mkdir -p "$OUT/raw"
+  if [ "$1" = mx ]; then
+    adb shell dumpsys activity top > "$OUT/raw/quick.top.txt" 2>/dev/null || true
+    UI hier "$OUT/raw/quick.top.txt" /dev/null "$MX_PACKAGE" > "$2" || true
+  else
+    dump "$2" || echo '<hierarchy/>' > "$2"
+  fi
+}
+
+# The controls up, checked in the tree rather than assumed: a tap on the
+# picture shows them when hidden and HIDES them when up (run 44991688519:
+# MX's were still up twelve seconds after the open, and the lab's tap put
+# them away). Leaves the top bar's buttons in BTNS; false if never up.
+BTNS=()
+ensure_controls() {
+  local i
+  for i in 1 2 3 4; do
+    quick_tree "$1" "$OUT/raw/quick.xml"
+    mapfile -t BTNS < <(UI topbar "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$2" "$3" "$PROBE_DPI")
+    [ "${#BTNS[@]}" -ge 4 ] && return 0
+    adb shell input tap $(($2 / 2)) $(($3 / 2))
+    sleep 0.7
+  done
+  return 1
+}
+
+# Innocent decodes in software here: on this image libmpv's hardware decoder
+# (the emulator's goldfish H.264) stalled and the player gave up ("Playback
+# failed", run 44991688519). The lab sets the app's own Development switch
+# (Settings, Development, disable hardware acceleration) in its preferences.
+inn_software_decoding() {
+  local f=/data/data/$INN_PACKAGE/shared_prefs/FlutterSharedPreferences.xml x="$OUT/raw/inn_prefs.xml" uid
+  mkdir -p "$OUT/raw"
+  adb shell am force-stop "$INN_PACKAGE"
+  adb shell "cat $f" > "$x" 2>/dev/null || true
+  grep -q '<map' "$x" || printf "<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n</map>\n" > "$x"
+  grep -q 'pref_player_devDisableHwAccel' "$x" \
+    || sed -i 's#</map>#    <boolean name="flutter.pref_player_devDisableHwAccel" value="true" />\n</map>#' "$x"
+  sed -i 's#\(name="flutter.pref_player_devDisableHwAccel" value="\)false"#\1true"#' "$x"
+  uid=$(adb shell stat -c %u "/data/data/$INN_PACKAGE" | tr -d '\r')
+  adb push "$x" /data/local/tmp/inn_prefs.xml >/dev/null
+  adb shell "mkdir -p /data/data/$INN_PACKAGE/shared_prefs && cp /data/local/tmp/inn_prefs.xml $f && chown $uid:$uid /data/data/$INN_PACKAGE/shared_prefs $f && chmod 660 $f && restorecon -R /data/data/$INN_PACKAGE/shared_prefs" >/dev/null 2>&1 || true
+  adb shell "cat $f" > "$x.after" 2>/dev/null || true
+  say "Innocent: software decoding set for the lab ($(grep -c 'devDisableHwAccel" value="true' "$x.after" || true) of 1)"
+}
+
 # PHASE 1: the panels that rise (⋮, ♪, CC) of both apps, upright and
 # sideways, over a black and a white frame. Each screen from a fresh open of
 # its own copy of the film (neither app resumes or asks), so the frame is
-# the film's first 40 s and the controls' state is known: shown at the open,
-# hidden again by the wait, shown by one tap on the picture. The top bar's
-# buttons are found by place (the last four, rightmost first: ⋮, HW, CC, ♪;
-# both apps keep that order, ui-design §4), never by MX's names.
+# the film's first 40 s. Upright: an upright film (720x1280), each app
+# turning itself as it does for a phone's own video. Sideways: the wide film
+# with the lab holding the screen sideways. The top bar's buttons are found
+# by place (the last four, rightmost first: ⋮, HW, CC, ♪; both apps keep
+# that order, ui-design §4), never by MX's names; the controls are checked
+# up in the tree before each tap.
 panels() {
-  rm -rf "$OUT"; mkdir -p "$OUT"
+  rm -rf "$OUT"; mkdir -p "$OUT/raw"
   setup_device
   install_mx || { kill "$LOGCAT" 2>/dev/null || true; return 0; }
   install_inn || { kill "$LOGCAT" 2>/dev/null || true; return 0; }
   local pw=${PROBE_SIZE%x*} ph=${PROBE_SIZE#*x}
   echo "$pw $ph $PROBE_DPI" > "$OUT/display.txt"
 
-  local o f sc dir
-  adb push "$FILM" /sdcard/Movies/ref_black.mp4 >/dev/null
-  adb push "$FILM_W" /sdcard/Movies/ref_white.mp4 >/dev/null
-  adb shell "mkdir -p /sdcard/Movies/ref_warm && cp /sdcard/Movies/ref_black.mp4 /sdcard/Movies/ref_warm/innocent_lab_play.mp4"
+  local o f sc dir src
+  adb push "$FILM" /sdcard/Movies/ref_land_black.mp4 >/dev/null
+  adb push "$FILM_W" /sdcard/Movies/ref_land_white.mp4 >/dev/null
+  adb push "$FILM_P" /sdcard/Movies/ref_port_black.mp4 >/dev/null
+  adb push "$FILM_PW" /sdcard/Movies/ref_port_white.mp4 >/dev/null
+  adb shell "mkdir -p /sdcard/Movies/ref_warm && cp /sdcard/Movies/ref_land_black.mp4 /sdcard/Movies/ref_warm/innocent_lab_play.mp4"
   for o in port land; do for f in black white; do for sc in controls more audio cc; do
-    dir=/sdcard/Movies/ref_${o}_${f}_${sc}
-    adb shell "mkdir -p $dir && cp /sdcard/Movies/ref_$f.mp4 $dir/innocent_lab_play.mp4 && cp /sdcard/Movies/ref_$f.mp4 $dir/ref_$sc.mp4"
+    dir=/sdcard/Movies/ref_${o}_${f}_${sc}; src=/sdcard/Movies/ref_${o}_${f}.mp4
+    adb shell "mkdir -p $dir && cp $src $dir/innocent_lab_play.mp4 && cp $src $dir/ref_$sc.mp4"
   done; done; done
   adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
-  resolve_mx /sdcard/Movies/ref_black.mp4 || { kill "$LOGCAT" 2>/dev/null || true; say "PANELS: no MX player activity"; return 0; }
-
-  # The orientation is the lab's, whatever each app asks for (MX turns a
-  # wide film sideways by itself: run 44990303466).
-  adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
+  resolve_mx /sdcard/Movies/ref_land_black.mp4 || { kill "$LOGCAT" 2>/dev/null || true; say "PANELS: no MX player activity"; return 0; }
   adb shell settings put system accelerometer_rotation 0 >/dev/null 2>&1 || true
   adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
 
   # One open of each first: MX's one-time font cache for subtitles, the
-  # Innocent lab build's start; a screen of each for the record.
-  open_film mx /sdcard/Movies/ref_black.mp4; sleep 25; grab mx warm_mx; adb shell am force-stop "$MX_PACKAGE"
-  open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn; adb shell am force-stop "$INN_PACKAGE"
+  # Innocent lab build's start (which writes its preferences); a screen of
+  # each for the record.
+  open_film mx /sdcard/Movies/ref_land_black.mp4; sleep 25; grab mx warm_mx; adb shell am force-stop "$MX_PACKAGE"
+  open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
+  inn_software_decoding
 
-  local app w h rot idx xy n tries got total=0 base orient
+  local app w h idx n tries got total=0 orient
   for app in mx inn; do
     for o in port land; do
-      if [ "$o" = port ]; then w=$pw; h=$ph; rot=0; else w=$ph; h=$pw; rot=1; fi
-      adb shell settings put system user_rotation "$rot" >/dev/null 2>&1 || true
+      if [ "$o" = port ]; then
+        w=$pw; h=$ph
+        adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
+        adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+      else
+        w=$ph; h=$pw
+        adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
+        adb shell settings put system user_rotation 1 >/dev/null 2>&1 || true
+      fi
       sleep 2
       for f in black white; do
-        local btns=()
         got=0
         for sc in controls more audio cc; do
           dir=/sdcard/Movies/ref_${o}_${f}_${sc}
           for tries in 1 2; do
             adb shell am force-stop "$(pkg_of "$app")"
             if [ "$app" = mx ]; then open_film mx "$dir/ref_$sc.mp4"; else open_film inn "$dir/innocent_lab_play.mp4"; fi
-            # The controls shown at the open hide again (MX after a few
-            # seconds, Innocent 4 s after its first frame, which comes ~5 s
-            # after a cold start of the lab build).
-            if [ "$app" = mx ]; then sleep $((9 + tries * 3)); else sleep $((12 + tries * 3)); fi
-            adb shell input tap $((w / 2)) $((h / 2))
-            sleep 0.8
-            base="$OUT/${app}_${o}_${f}_controls.xml"
+            # Innocent's lab build pushes the player ~3 s after a cold start.
+            if [ "$app" = mx ]; then sleep 6; else sleep 9; fi
+            if ! ensure_controls "$app" "$w" "$h"; then
+              note "$app $o $f $sc: the controls never came up (try $tries)"
+              continue
+            fi
             if [ "$sc" = controls ]; then
               grab "$app" "${app}_${o}_${f}_controls"
-              mapfile -t btns < <(UI topbar "$base" "$(pkg_of "$app")" "$w" "$h" "$PROBE_DPI")
-              [ "${#btns[@]}" -ge 4 ] && break
-              note "$app $o $f: the top bar had ${#btns[@]} buttons (try $tries)"
-            else
-              case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
-              xy=${btns[$idx]:-}
-              [ -n "$xy" ] || { note "$app $o $f $sc: no button to tap"; break; }
-              # shellcheck disable=SC2086
-              adb shell input tap $xy
-              sleep 1.5
-              grab "$app" "${app}_${o}_${f}_${sc}"
-              n=$(UI added "$base" "$OUT/${app}_${o}_${f}_${sc}.xml" "$(pkg_of "$app")" || echo 0)
-              note "$app $o $f $sc: the panel added $n nodes (try $tries)"
-              [ "${n:-0}" -ge 3 ] && { got=$((got + 1)); break; }
+              break
             fi
+            case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
+            # shellcheck disable=SC2086
+            adb shell input tap ${BTNS[$idx]}
+            sleep 1.5
+            grab "$app" "${app}_${o}_${f}_${sc}"
+            n=$(UI added "$OUT/raw/quick.xml" "$OUT/${app}_${o}_${f}_${sc}.xml" "$(pkg_of "$app")" || echo 0)
+            note "$app $o $f $sc: the panel added $n nodes (try $tries)"
+            [ "${n:-0}" -ge 3 ] && { got=$((got + 1)); break; }
           done
         done
         orient=$(adb shell dumpsys input | grep -m1 -oE 'SurfaceOrientation: [0-9]' | awk '{print $2}' | tr -d '\r')
         adb shell am force-stop "$(pkg_of "$app")"
         total=$((total + got))
-        say "$app $o over $f: top bar buttons ${#btns[@]} of 4, panels taken $got of 3; orientation ${orient:-?}"
+        say "$app $o over $f: controls $([ -f "$OUT/${app}_${o}_${f}_controls.xml" ] && echo taken || echo missing), panels taken $got of 3; orientation ${orient:-?}"
       done
     done
   done
+  adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
   adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
 
-  local alive=0 blocked L="$OUT/logcat_raw.txt"
+  local blocked L="$OUT/logcat_raw.txt"
   blocked=$(adb shell "iptables -L OUTPUT -v -n -x" 2>/dev/null | tr -d '\r' \
     | awk -v u="$MX_UID" '$0 ~ ("owner UID match " u "( |$)") {print $1; exit}')
   kill "$LOGCAT" 2>/dev/null || true
-  say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
+  say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); Innocent playback failed $(grep -c 'engine stuck' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
   say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
   gzip -9 "$L"
 }

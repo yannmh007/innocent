@@ -15,8 +15,8 @@ AND BEHAVIOUR ONLY, never colour (skill ui-design §4):
   anchor      which screen edges it holds to: bottom, right, ...
   w_pct h_pct its width and height against the screen
   rise_pct    how far up the screen its top is, from the bottom
-  picture_pct how much of the picture (the film fitted, 16:9) it leaves
-              uncovered
+  picture_pct how much of the picture (the film fitted: 16:9 sideways,
+              9:16 upright) it leaves uncovered
   controls    of the controls dump's clickable nodes outside the panel, how
               many are still there (0 = the controls give way)
   rows        the panel's clickable rows: count, median height, the side
@@ -82,11 +82,13 @@ def union(boxes):
 
 
 def picture(w, h):
-    """The film fitted into the screen, centred (both apps open in Fit)."""
-    if w / h > FILM_ASPECT:
-        pw = h * FILM_ASPECT
+    """The film fitted into the screen, centred (both apps open in Fit):
+    the wide film sideways, the upright film (9:16) upright."""
+    a = FILM_ASPECT if w > h else 1 / FILM_ASPECT
+    if w / h > a:
+        pw = h * a
         return ((w - pw) / 2, 0, (w + pw) / 2, h)
-    ph = w / FILM_ASPECT
+    ph = w / a
     return (0, (h - ph) / 2, w, (h + ph) / 2)
 
 
@@ -97,6 +99,25 @@ def measure(base, panel, pkg, w, h, dp):
     added = [n for n in panel if n['pkg'] == pkg and key(n) not in before and area(n['box']) < full]
     if not added:
         return None
+    # The panel: the largest thing it added and whatever touches it or sits
+    # within 24 dp of it, grown until nothing more joins. A prompt the app
+    # showed on one open and not the other, away from the panel, stays out.
+    near = 24 * dp
+    added.sort(key=lambda n: -area(n['box']))
+    core = [added[0]]
+    cur = added[0]['box']
+    grew = True
+    while grew:
+        grew = False
+        for n in added:
+            if n in core:
+                continue
+            b = n['box']
+            if b[0] <= cur[2] + near and b[2] >= cur[0] - near and b[1] <= cur[3] + near and b[3] >= cur[1] - near:
+                core.append(n)
+                cur = union([cur, b])
+                grew = True
+    added = core
     x1, y1, x2, y2 = union([n['box'] for n in added])
     x1 = 0 if x1 <= snap else x1
     y1 = 0 if y1 <= snap else y1

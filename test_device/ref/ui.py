@@ -136,10 +136,13 @@ def hier(top, windows, package):
     out = ['<?xml version="1.0" encoding="UTF-8"?>', '<hierarchy rotation="0">']
     with open(top, encoding='utf-8', errors='replace') as f:
         lines = f.read().splitlines()
-    try:
-        start = next(i for i, l in enumerate(lines) if l.strip() == 'View Hierarchy:')
-    except StopIteration:
-        start = None
+    # `dumpsys activity top` lists every task's top activity, the launcher's
+    # first (run 44991688519): the hierarchy is the one under PACKAGE's.
+    start = None
+    act = next((i for i, l in enumerate(lines)
+                if l.strip().startswith('ACTIVITY %s/' % package)), None)
+    if act is not None:
+        start = next((i for i in range(act, len(lines)) if lines[i].strip() == 'View Hierarchy:'), None)
     if start is not None:
         base = None
         stack = []   # (indent, abs_x, abs_y, visible)

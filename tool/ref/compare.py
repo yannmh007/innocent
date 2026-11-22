@@ -64,7 +64,7 @@ def dash(draw, b, scale, colour):
 
 
 def picture(w, h):
-    a = 16 / 9
+    a = 16 / 9 if w > h else 9 / 16
     if w / h > a:
         pw = h * a
         return ((w - pw) / 2, 0, (w + pw) / 2, h)
