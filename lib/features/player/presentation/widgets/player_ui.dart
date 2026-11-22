@@ -56,16 +56,21 @@ class PlayerUi {
   /// it disturbs the film less while it plays than the misted glass"; and
   /// again: "MX's is more see-through, the film behind shows; ours is still
   /// heavier"). A panel or sheet neither blurs nor dims the picture as a
-  /// whole. Behind it a shade of [surface] lets [shadeSeeThrough] of the
+  /// whole. Behind it a shade of [shadeColour] lets [shadeSeeThrough] of the
   /// film show through — 40 %, as much as MX lets through its panels
   /// (measured over a white and a black frame, grey levels only: run
   /// 45019756405) — and before its edge the shade thins out over
   /// [shadeFade] dp, to [shadeMid] at [shadeMidAt] dp before the edge and
-  /// to nothing at the far end, as MX's does. Innocent's colour, MX's
-  /// see-through. The words and icons on it carry [shadeInk], a soft dark
+  /// to nothing at the far end, as MX's does. MX's see-through, never its
+  /// colours. The words and icons on it carry [shadeInk], a soft dark
   /// halo, so they still read over a white, a busy or a colourful frame
   /// (test/player_legibility_test.dart: 4.5:1 for text, 3:1 for icons).
   static const double shadeSeeThrough = 0.40;
+
+  /// The shade's colour: the scrim's black, not [surface]'s grey — at the
+  /// same see-through a grey shade over a bright film left words 15 % less
+  /// contrast (the legibility test, 22 Nov 2026).
+  static const Color shadeColour = Color(0xFF000000);
   static const double shadeFade = 360;
   static const double shadeMidAt = 160;
   static const double shadeMid = 0.20;
@@ -975,7 +980,7 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
 }
 
 /// The shade behind a panel or sheet ([PlayerUi.shadeSeeThrough]): within
-/// the menu, [PlayerUi.surface] letting 40 % of the film through; before
+/// the menu, [PlayerUi.shadeColour] letting 40 % of the film through; before
 /// its edge (above it upright, left of it sideways) thinning out over
 /// [PlayerUi.shadeFade] dp to nothing. No blur, no edge, no corners: the film
 /// stays sharp. The fade before the edge is drawn outside the menu's box and
@@ -1010,10 +1015,10 @@ class PlayerShade extends StatelessWidget {
                     begin: sideways ? Alignment.centerLeft : Alignment.topCenter,
                     end: sideways ? Alignment.centerRight : Alignment.bottomCenter,
                     colors: [
-                      PlayerUi.surface.withValues(alpha: 0),
-                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeMid),
-                      PlayerUi.surface.withValues(alpha: full),
-                      PlayerUi.surface.withValues(alpha: full),
+                      PlayerUi.shadeColour.withValues(alpha: 0),
+                      PlayerUi.shadeColour.withValues(alpha: PlayerUi.shadeMid),
+                      PlayerUi.shadeColour.withValues(alpha: full),
+                      PlayerUi.shadeColour.withValues(alpha: full),
                     ],
                     stops: [
                       0,

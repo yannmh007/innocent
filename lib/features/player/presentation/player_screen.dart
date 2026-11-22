@@ -4120,9 +4120,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   EdgeInsets _subtitlePadding(PlayerState state) {
     final pad = MediaQuery.paddingOf(context);
     final size = MediaQuery.sizeOf(context);
+    // Under an open menu the controls step aside (_chromeUp), so the
+    // subtitle does not keep their lift: sideways it sat across the
+    // panel's rows (the reference lab, run 45035203039).
+    final menuUp =
+        state.openPanel != SidePanel.none || PlayerUi.openSheets.value > 0;
     final controlsUp = state.controlsVisible &&
         !state.isLocked &&
-        !state.sleepTimerDialogOpen;
+        !state.sleepTimerDialogOpen &&
+        !menuUp;
     var bottom = controlsUp
         ? math.max(pad.bottom, _controlsInsets(context).bottom + 108)
         : pad.bottom;
@@ -4130,8 +4136,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // its own over an open panel (reference lab, 22 Nov 2026), so the
     // film's words stay readable while a menu is open. Sideways it stays
     // where it is (so does MX's).
-    if (size.height > size.width &&
-        (state.openPanel != SidePanel.none || PlayerUi.openSheets.value > 0)) {
+    if (size.height > size.width && menuUp) {
       bottom = math.max(bottom, PlayerUi.panelExtent(size) + 8);
     }
     return EdgeInsets.only(top: pad.top, bottom: bottom);
