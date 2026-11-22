@@ -11,8 +11,12 @@
 #   probe.sh run    no token, inside the emulator step: install, cut MX's
 #                   network by uid, open the film, pass the first-run
 #                   screens, show the controls, one screenshot and one dump
+#   probe.sh panels no token, inside the emulator step (MODE=panels):
+#                   MX and Innocent's lab build, their ⋮, ♪ and CC panels
+#                   upright and sideways over a black and a white frame,
+#                   each a screenshot and its tree (tool/ref/measure.py)
 #   probe.sh keep   needs GH_TOKEN: innocent-ref is private; push what run
-#                   left to runs/<date>_<run id>/
+#                   or panels left to runs/<date>_<run id>/
 #
 # THE PUBLIC LOG AND SUMMARY CARRY NUMBERS ONLY (and Android's own facts:
 # its version, ABIs, an INSTALL_* status). MX's words, screens, dumps and
@@ -24,7 +28,8 @@ say() { printf '%s\n' "$*"; printf -- '- %s\n' "$*" >> "$SUM"; }
 T="${RUNNER_TEMP:-/tmp}"
 W="$T/mx"            # the XAPK and its APKs
 OUT="$T/ref_out"     # what goes to innocent-ref, and nowhere else
-FILM="$T/film/ref_measure.mp4"
+FILM="$T/film/ref_measure.mp4"      # black first
+FILM_W="$T/film/ref_measure_w.mp4"  # white first
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UI() { python3 -I "$HERE/ui.py" "$@"; }
 note() { printf '%s\n' "$*" >> "$OUT/probe.txt"; }
@@ -92,23 +97,29 @@ film() {
   done
   # 140 s at 1280x720: black 0-40, white 40-80, grey 80-100, busy (a fine
   # black-and-white texture) 100-120, colourful 120-140. Two audio tracks.
-  ffmpeg -loglevel error -y \
-    -t 40 -f lavfi -i "color=c=black:s=1280x720:r=24" \
-    -t 40 -f lavfi -i "color=c=white:s=1280x720:r=24" \
-    -t 20 -f lavfi -i "color=c=0x808080:s=1280x720:r=24" \
-    -t 20 -f lavfi -i "cellauto=s=1280x720:r=24:rule=30:start_full=1:random_fill_ratio=0.5" \
-    -t 20 -f lavfi -i "testsrc2=s=1280x720:r=24" \
-    -t 140 -f lavfi -i "sine=frequency=440:sample_rate=48000" \
-    -t 140 -f lavfi -i "sine=frequency=660:sample_rate=48000" \
-    -i "$d/sub0.srt" -i "$d/sub1.srt" \
-    -filter_complex "[0:v][1:v][2:v][3:v][4:v]concat=n=5:v=1:a=0,format=yuv420p[v]" \
-    -map "[v]" -map 5:a -map 6:a -map 7:s -map 8:s \
-    -c:v libx264 -preset veryfast -crf 30 -g 48 -c:a aac -b:a 64k -c:s mov_text \
-    -metadata:s:a:0 language=eng -metadata:s:a:0 title="Tone 440" \
-    -metadata:s:a:1 language=mya -metadata:s:a:1 title="Tone 660" \
-    -metadata:s:s:0 language=eng -metadata:s:s:0 title="English" \
-    -metadata:s:s:1 language=mya -metadata:s:s:1 title="Burmese" \
-    -disposition:a:0 default -disposition:s:0 default -movflags +faststart "$FILM"
+  # And the same film white first (FILM_W): each panel is taken over black
+  # and over white within the first 40 s of a fresh open.
+  local first second out
+  for first in black white; do
+    if [ "$first" = black ]; then second=white; out="$FILM"; else second=black; out="$FILM_W"; fi
+    ffmpeg -loglevel error -y \
+      -t 40 -f lavfi -i "color=c=$first:s=1280x720:r=24" \
+      -t 40 -f lavfi -i "color=c=$second:s=1280x720:r=24" \
+      -t 20 -f lavfi -i "color=c=0x808080:s=1280x720:r=24" \
+      -t 20 -f lavfi -i "cellauto=s=1280x720:r=24:rule=30:start_full=1:random_fill_ratio=0.5" \
+      -t 20 -f lavfi -i "testsrc2=s=1280x720:r=24" \
+      -t 140 -f lavfi -i "sine=frequency=440:sample_rate=48000" \
+      -t 140 -f lavfi -i "sine=frequency=660:sample_rate=48000" \
+      -i "$d/sub0.srt" -i "$d/sub1.srt" \
+      -filter_complex "[0:v][1:v][2:v][3:v][4:v]concat=n=5:v=1:a=0,format=yuv420p[v]" \
+      -map "[v]" -map 5:a -map 6:a -map 7:s -map 8:s \
+      -c:v libx264 -preset veryfast -crf 30 -g 48 -c:a aac -b:a 64k -c:s mov_text \
+      -metadata:s:a:0 language=eng -metadata:s:a:0 title="Tone 440" \
+      -metadata:s:a:1 language=mya -metadata:s:a:1 title="Tone 660" \
+      -metadata:s:s:0 language=eng -metadata:s:s:0 title="English" \
+      -metadata:s:s:1 language=mya -metadata:s:s:1 title="Burmese" \
+      -disposition:a:0 default -disposition:s:0 default -movflags +faststart "$out"
+  done
   local streams
   streams=$(ffprobe -v error -show_entries stream=codec_type -of csv=p=0 "$FILM" | sort | uniq -c | awk '{printf "%s %s, ", $1, $2}')
   say "the measuring film: $(ffprobe -v error -show_entries format=duration -of csv=p=0 "$FILM" | cut -d. -f1) s, ${streams%, }"
@@ -122,16 +133,18 @@ dump() {
   grep -q '<hierarchy' "$1" 2>/dev/null
 }
 
-run() {
-  rm -rf "$OUT"; mkdir -p "$OUT"
+ABIS=""; ROOT=0; LOGCAT=""; MX_UID=""; MX_COMP=""
+
+# The emulator made like the owner's phone, root, the log streaming to $OUT.
+setup_device() {
   adb wait-for-device
-  local abis bridge
-  abis=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')
+  local bridge
+  ABIS=$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')
   bridge=$(adb shell getprop ro.dalvik.vm.native.bridge | tr -d '\r')
-  say "device: Android $(adb shell getprop ro.build.version.release | tr -d '\r') (API $(adb shell getprop ro.build.version.sdk | tr -d '\r')), ABIs $abis, native bridge ${bridge:-none}"
+  say "device: Android $(adb shell getprop ro.build.version.release | tr -d '\r') (API $(adb shell getprop ro.build.version.sdk | tr -d '\r')), ABIs $ABIS, native bridge ${bridge:-none}"
   adb root >/dev/null 2>&1 || true
   adb wait-for-device
-  local root=0; [ "$(adb shell id -u | tr -d '\r')" = 0 ] && root=1
+  ROOT=0; [ "$(adb shell id -u | tr -d '\r')" = 0 ] && ROOT=1
 
   # A phone like the owner's: 1080x2316 at 450 dpi (about 384x823 dp),
   # three-button navigation and a punch-hole camera (run.sh PHONE_LIKE_OWNER).
@@ -149,15 +162,18 @@ run() {
   local nav hole
   nav=$(adb shell cmd overlay list 2>/dev/null | grep -F '[x]' | grep -c 'navbar.threebutton' || true)
   hole=$(adb shell cmd overlay list 2>/dev/null | grep -F '[x]' | grep -c 'cutout.emulation.hole' || true)
-  say "screen: physical $phys, now $(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r') at $(adb shell wm density | tail -1 | awk '{print $NF}' | tr -d '\r') dpi; three-button nav $nav, punch hole $hole; root $root"
+  say "screen: physical $phys, now $(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r') at $(adb shell wm density | tail -1 | awk '{print $NF}' | tr -d '\r') dpi; three-button nav $nav, punch hole $hole; root $ROOT"
 
   adb logcat -G 16M >/dev/null 2>&1 || true
   adb logcat -c || true
   adb logcat -v time > "$OUT/logcat_raw.txt" 2>&1 &
-  local LOGCAT=$!
+  LOGCAT=$!
+}
 
-  # INSTALL: the splits manifest.json names for this device.
-  UI splits "$W/x/manifest.json" "$PROBE_DPI" "$abis" > "$W/install.list"
+# MX installed from the splits manifest.json names for this device, its
+# permissions given, its uid cut off the network. False if any of it failed.
+install_mx() {
+  UI splits "$W/x/manifest.json" "$PROBE_DPI" "$ABIS" > "$W/install.list"
   local files=() f
   while IFS= read -r f; do [ -n "$f" ] && files+=("$W/x/$f"); done < "$W/install.list"
   note "install: $(tr '\n' ' ' < "$W/install.list")"
@@ -169,9 +185,8 @@ run() {
   status=$(grep -oE '^Success|INSTALL_[A-Z_]+' "$OUT/install.txt" | tail -1 || true)
   say "install: ${status:-no answer} (${#files[@]} APKs: base, ABI, density, language)"
   if [ "$status" != Success ]; then
-    kill "$LOGCAT" 2>/dev/null || true
     say "PROBE: MX does not install on this image"
-    return 0
+    return 1
   fi
   local abi; abi=$(adb shell dumpsys package "$MX_PACKAGE" | sed -n 's/.*primaryCpuAbi=\([^ ]*\).*/\1/p' | head -1 | tr -d '\r')
   say "installed with primary ABI ${abi:-unknown}"
@@ -190,36 +205,61 @@ run() {
   adb shell dumpsys package "$MX_PACKAGE" > "$OUT/package.txt" 2>/dev/null || true
   adb shell appops get "$MX_PACKAGE" > "$OUT/appops.txt" 2>/dev/null || true
   say "permissions: $(grep -cE 'permission\.[A-Z_]+: granted=true' "$OUT/package.txt" || true) granted; all files access $(grep -c 'MANAGE_EXTERNAL_STORAGE: allow' "$OUT/appops.txt" || true)"
-  local uid cut=0 t
-  uid=$(adb shell pm list packages -U "$MX_PACKAGE" | sed -n "s/^package:$MX_PACKAGE uid:\([0-9]*\).*/\1/p" | head -1 | tr -d '\r')
-  if [ "$root" = 1 ] && [ -n "$uid" ]; then
+  local cut=0 t
+  MX_UID=$(adb shell pm list packages -U "$MX_PACKAGE" | sed -n "s/^package:$MX_PACKAGE uid:\([0-9]*\).*/\1/p" | head -1 | tr -d '\r')
+  if [ "$ROOT" = 1 ] && [ -n "$MX_UID" ]; then
     for t in iptables ip6tables; do
-      adb shell "$t -I OUTPUT 1 -m owner --uid-owner $uid -j REJECT" >/dev/null 2>&1 \
-        || adb shell "$t -I OUTPUT 1 -m owner --uid-owner $uid -j DROP" >/dev/null 2>&1 \
+      adb shell "$t -I OUTPUT 1 -m owner --uid-owner $MX_UID -j REJECT" >/dev/null 2>&1 \
+        || adb shell "$t -I OUTPUT 1 -m owner --uid-owner $MX_UID -j DROP" >/dev/null 2>&1 \
         && cut=$((cut + 1))
     done
   fi
   say "network: MX's uid cut on $cut of 2 tables (IPv4, IPv6)"
-  [ "$cut" = 2 ] || { kill "$LOGCAT" 2>/dev/null || true; say "PROBE: stopped before MX ran, its network is not cut"; return 0; }
+  [ "$cut" = 2 ] || { say "PROBE: stopped before MX ran, its network is not cut"; return 1; }
+}
+
+# MX answers a video with two activities, its player and its pop-up player,
+# so "-p" alone brought Android's "Open with" chooser and MX never ran (run
+# 44989031141); by name, the PiP one sorts first (run 44989696334). The
+# player: the first in Android's order that is not a pop-up. Its name goes
+# to innocent-ref only.
+resolve_mx() {
+  adb shell cmd package query-activities --brief -a android.intent.action.VIEW \
+    -d "file://$1" -t video/mp4 > "$OUT/resolve.txt" 2>&1 || true
+  local comps
+  comps=$(grep -oE "$MX_PACKAGE/[A-Za-z0-9_.\$]+" "$OUT/resolve.txt" | awk '!seen[$0]++' || true)
+  MX_COMP=$(printf '%s\n' "$comps" | grep -viE 'pop|pip|float' | head -1 || true)
+  say "MX answers the film with $(printf '%s\n' "$comps" | grep -c . || true) activities; opening the one that is not the pop-up ($([ -n "$MX_COMP" ] && echo found || echo none))"
+  [ -n "$MX_COMP" ]
+}
+
+# The screen and its tree, at once: $1 mx|inn, $2 the name. MX's tree from
+# Android's own dumpsys (its view tree and its popup windows' frames),
+# Innocent's from uiautomator (Flutter's semantics; it idles).
+grab() {
+  adb exec-out screencap -p > "$OUT/$2.png" 2>/dev/null || true
+  if [ "$1" = mx ]; then
+    mkdir -p "$OUT/raw"
+    adb shell dumpsys activity top > "$OUT/raw/$2.top.txt" 2>/dev/null || true
+    adb shell dumpsys window windows > "$OUT/raw/$2.win.txt" 2>/dev/null || true
+    UI hier "$OUT/raw/$2.top.txt" "$OUT/raw/$2.win.txt" "$MX_PACKAGE" > "$OUT/$2.xml" || true
+  else
+    dump "$OUT/$2.xml" || echo '<hierarchy/>' > "$OUT/$2.xml"
+  fi
+}
+
+run() {
+  rm -rf "$OUT"; mkdir -p "$OUT"
+  setup_device
+  install_mx || { kill "$LOGCAT" 2>/dev/null || true; return 0; }
+  local root=$ROOT uid=$MX_UID
 
   # THE FILM, opened in MX by the intent a file manager sends.
   adb push "$FILM" /sdcard/Movies/ref_measure.mp4 >/dev/null
   adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
-  # MX answers a video with two activities, its player and its pop-up
-  # player, so "-p" alone brought Android's "Open with" chooser and MX never
-  # ran (run 44989031141). The player is named: the one that is not the
-  # pop-up (the names go to innocent-ref only).
-  adb shell cmd package query-activities --brief -a android.intent.action.VIEW \
-    -d file:///sdcard/Movies/ref_measure.mp4 -t video/mp4 > "$OUT/resolve.txt" 2>&1 || true
-  local comps comp
-  # In Android's order; not the pop-up (run 44989696334 took the PiP one,
-  # which sorts first by name).
-  comps=$(grep -oE "$MX_PACKAGE/[A-Za-z0-9_.\$]+" "$OUT/resolve.txt" | awk '!seen[$0]++' || true)
-  comp=$(printf '%s\n' "$comps" | grep -viE 'pop|pip|float' | head -1 || true)
-  say "MX answers the film with $(printf '%s\n' "$comps" | grep -c . || true) activities; opening the one that is not the pop-up ($([ -n "$comp" ] && echo found || echo none))"
-  [ -n "$comp" ] || { kill "$LOGCAT" 2>/dev/null || true; say "PROBE: no MX player activity for a video"; return 0; }
+  resolve_mx /sdcard/Movies/ref_measure.mp4 || { kill "$LOGCAT" 2>/dev/null || true; say "PROBE: no MX player activity for a video"; return 0; }
   adb shell am start -W -a android.intent.action.VIEW -t video/mp4 \
-    -d file:///sdcard/Movies/ref_measure.mp4 -n "$comp" > "$OUT/launch.txt" 2>&1 || true
+    -d file:///sdcard/Movies/ref_measure.mp4 -n "$MX_COMP" > "$OUT/launch.txt" 2>&1 || true
   local lst ltime
   lst=$(sed -n 's/^Status: //p' "$OUT/launch.txt" | tr -d '\r' | head -1)
   ltime=$(sed -n 's/^TotalTime: //p' "$OUT/launch.txt" | tr -d '\r' | head -1)
@@ -244,23 +284,18 @@ run() {
   say "first run: $taps tap(s) on its screens"
 
   # THE CONTROLS: let any shown at the start hide, then tap the picture and
-  # take the screen at once (they hide again after a few seconds).
+  # take the screen at once (they hide again after a few seconds). The tree
+  # from dumpsys: uiautomator never found MX's player idle (run 44990303466).
   sleep 7
   local wh w hh shot=0 c0 c1 c2
   wh=$(adb shell wm size | tail -1 | awk '{print $NF}' | tr -d '\r'); w=${wh%x*}; hh=${wh#*x}
   adb shell input tap $((w / 2)) $((hh * 45 / 100))
-  adb exec-out screencap -p > "$OUT/shot_controls.png" 2>/dev/null && [ -s "$OUT/shot_controls.png" ] && shot=1
-  if ! dump "$OUT/ui_controls.xml"; then
-    # A screen that never settles: paused, the controls up again, once more.
-    adb shell input keyevent KEYCODE_MEDIA_PAUSE
-    sleep 1
-    adb shell input tap $((w / 2)) $((hh * 45 / 100))
-    adb exec-out screencap -p > "$OUT/shot_controls.png" 2>/dev/null || true
-    dump "$OUT/ui_controls.xml" || true
-  fi
+  grab mx shot_controls
+  mv "$OUT/shot_controls.xml" "$OUT/ui_controls.xml" 2>/dev/null || true
+  [ -s "$OUT/shot_controls.png" ] && shot=1
   read -r c0 c1 c2 < <(UI count "$OUT/ui_controls.xml" "$MX_PACKAGE" || echo "0 0 0")
   local orient; orient=$(adb shell dumpsys input | grep -m1 -oE 'SurfaceOrientation: [0-9]' | awk '{print $2}' | tr -d '\r')
-  say "controls: $c0 of MX's nodes on screen, $c1 clickable, $c2 seek bar(s); orientation ${orient:-?}; screenshot $shot"
+  say "controls: $c0 of MX's views on screen, $c1 clickable, $c2 seek bar(s); orientation ${orient:-?}; screenshot $shot"
 
   adb shell dumpsys activity activities > "$OUT/activities.txt" 2>/dev/null || true
   adb shell dumpsys media_session > "$OUT/media_session.txt" 2>/dev/null || true
@@ -292,6 +327,124 @@ run() {
   else
     say "PROBE: MX does NOT run cleanly on this image (see the numbers above; the screens and logs are in innocent-ref)"
   fi
+  gzip -9 "$L"
+}
+
+INN_PACKAGE=com.innocent.media
+INN_APK="${INN_APK:-$T/inn/lab.apk}"
+pkg_of() { if [ "$1" = mx ]; then echo "$MX_PACKAGE"; else echo "$INN_PACKAGE"; fi; }
+
+# Innocent's x86_64 lab build (device-lab.yml's): our own app, beside MX.
+install_inn() {
+  adb install -r -g "$INN_APK" > "$OUT/install_inn.txt" 2>&1 || true
+  local st p
+  st=$(grep -oE '^Success|INSTALL_[A-Z_]+' "$OUT/install_inn.txt" | tail -1 || true)
+  say "Innocent (the x86_64 lab build of this commit): install ${st:-no answer}"
+  [ "$st" = Success ] || return 1
+  for p in READ_EXTERNAL_STORAGE READ_MEDIA_VIDEO POST_NOTIFICATIONS; do
+    adb shell pm grant "$INN_PACKAGE" "android.permission.$p" >/dev/null 2>&1 || true
+  done
+}
+
+# A film handed over as a file manager does: $1 mx|inn, $2 its path.
+open_film() {
+  local comp="$MX_COMP"
+  [ "$1" = mx ] || comp="$INN_PACKAGE/.MainActivity"
+  adb shell am start -W -a android.intent.action.VIEW -t video/mp4 -d "file://$2" -n "$comp" >/dev/null 2>&1 || true
+}
+
+# PHASE 1: the panels that rise (⋮, ♪, CC) of both apps, upright and
+# sideways, over a black and a white frame. Each screen from a fresh open of
+# its own copy of the film (neither app resumes or asks), so the frame is
+# the film's first 40 s and the controls' state is known: shown at the open,
+# hidden again by the wait, shown by one tap on the picture. The top bar's
+# buttons are found by place (the last four, rightmost first: ⋮, HW, CC, ♪;
+# both apps keep that order, ui-design §4), never by MX's names.
+panels() {
+  rm -rf "$OUT"; mkdir -p "$OUT"
+  setup_device
+  install_mx || { kill "$LOGCAT" 2>/dev/null || true; return 0; }
+  install_inn || { kill "$LOGCAT" 2>/dev/null || true; return 0; }
+  local pw=${PROBE_SIZE%x*} ph=${PROBE_SIZE#*x}
+  echo "$pw $ph $PROBE_DPI" > "$OUT/display.txt"
+
+  local o f sc dir
+  adb push "$FILM" /sdcard/Movies/ref_black.mp4 >/dev/null
+  adb push "$FILM_W" /sdcard/Movies/ref_white.mp4 >/dev/null
+  adb shell "mkdir -p /sdcard/Movies/ref_warm && cp /sdcard/Movies/ref_black.mp4 /sdcard/Movies/ref_warm/innocent_lab_play.mp4"
+  for o in port land; do for f in black white; do for sc in controls more audio cc; do
+    dir=/sdcard/Movies/ref_${o}_${f}_${sc}
+    adb shell "mkdir -p $dir && cp /sdcard/Movies/ref_$f.mp4 $dir/innocent_lab_play.mp4 && cp /sdcard/Movies/ref_$f.mp4 $dir/ref_$sc.mp4"
+  done; done; done
+  adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+  resolve_mx /sdcard/Movies/ref_black.mp4 || { kill "$LOGCAT" 2>/dev/null || true; say "PANELS: no MX player activity"; return 0; }
+
+  # The orientation is the lab's, whatever each app asks for (MX turns a
+  # wide film sideways by itself: run 44990303466).
+  adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
+  adb shell settings put system accelerometer_rotation 0 >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+
+  # One open of each first: MX's one-time font cache for subtitles, the
+  # Innocent lab build's start; a screen of each for the record.
+  open_film mx /sdcard/Movies/ref_black.mp4; sleep 25; grab mx warm_mx; adb shell am force-stop "$MX_PACKAGE"
+  open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn; adb shell am force-stop "$INN_PACKAGE"
+
+  local app w h rot idx xy n tries got total=0 base orient
+  for app in mx inn; do
+    for o in port land; do
+      if [ "$o" = port ]; then w=$pw; h=$ph; rot=0; else w=$ph; h=$pw; rot=1; fi
+      adb shell settings put system user_rotation "$rot" >/dev/null 2>&1 || true
+      sleep 2
+      for f in black white; do
+        local btns=()
+        got=0
+        for sc in controls more audio cc; do
+          dir=/sdcard/Movies/ref_${o}_${f}_${sc}
+          for tries in 1 2; do
+            adb shell am force-stop "$(pkg_of "$app")"
+            if [ "$app" = mx ]; then open_film mx "$dir/ref_$sc.mp4"; else open_film inn "$dir/innocent_lab_play.mp4"; fi
+            # The controls shown at the open hide again (MX after a few
+            # seconds, Innocent 4 s after its first frame, which comes ~5 s
+            # after a cold start of the lab build).
+            if [ "$app" = mx ]; then sleep $((9 + tries * 3)); else sleep $((12 + tries * 3)); fi
+            adb shell input tap $((w / 2)) $((h / 2))
+            sleep 0.8
+            base="$OUT/${app}_${o}_${f}_controls.xml"
+            if [ "$sc" = controls ]; then
+              grab "$app" "${app}_${o}_${f}_controls"
+              mapfile -t btns < <(UI topbar "$base" "$(pkg_of "$app")" "$w" "$h" "$PROBE_DPI")
+              [ "${#btns[@]}" -ge 4 ] && break
+              note "$app $o $f: the top bar had ${#btns[@]} buttons (try $tries)"
+            else
+              case "$sc" in more) idx=0 ;; cc) idx=2 ;; audio) idx=3 ;; esac
+              xy=${btns[$idx]:-}
+              [ -n "$xy" ] || { note "$app $o $f $sc: no button to tap"; break; }
+              # shellcheck disable=SC2086
+              adb shell input tap $xy
+              sleep 1.5
+              grab "$app" "${app}_${o}_${f}_${sc}"
+              n=$(UI added "$base" "$OUT/${app}_${o}_${f}_${sc}.xml" "$(pkg_of "$app")" || echo 0)
+              note "$app $o $f $sc: the panel added $n nodes (try $tries)"
+              [ "${n:-0}" -ge 3 ] && { got=$((got + 1)); break; }
+            fi
+          done
+        done
+        orient=$(adb shell dumpsys input | grep -m1 -oE 'SurfaceOrientation: [0-9]' | awk '{print $2}' | tr -d '\r')
+        adb shell am force-stop "$(pkg_of "$app")"
+        total=$((total + got))
+        say "$app $o over $f: top bar buttons ${#btns[@]} of 4, panels taken $got of 3; orientation ${orient:-?}"
+      done
+    done
+  done
+  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+
+  local alive=0 blocked L="$OUT/logcat_raw.txt"
+  blocked=$(adb shell "iptables -L OUTPUT -v -n -x" 2>/dev/null | tr -d '\r' \
+    | awk -v u="$MX_UID" '$0 ~ ("owner UID match " u "( |$)") {print $1; exit}')
+  kill "$LOGCAT" 2>/dev/null || true
+  say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
+  say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
   gzip -9 "$L"
 }
 
@@ -329,7 +482,8 @@ case "${1:-}" in
   pull)  pull ;;
   check) check ;;
   film)  film ;;
-  run)   run ;;
-  keep)  keep ;;
-  *) echo "usage: probe.sh pull|check|film|run|keep" >&2; exit 2 ;;
+  run)    run ;;
+  panels) panels ;;
+  keep)   keep ;;
+  *) echo "usage: probe.sh pull|check|film|run|panels|keep" >&2; exit 2 ;;
 esac

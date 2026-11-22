@@ -19,7 +19,13 @@ class FakePlayerService implements VideoPlayerService {
     this.subtitleTracks = const <SubtitleTrackInfo>[],
     this.videoSize = const Size(1920, 1080),
     this.pictureOnOpen = true,
+    this.frame,
   }) : _position = startPosition;
+
+  /// What the picture shows; the sky-and-hills scene when null. The
+  /// legibility test (test/player_legibility_test.dart) lays the chrome over
+  /// dark, bright, busy and colourful frames.
+  final CustomPainter? frame;
 
   /// Whether open() shows the first picture at once, as a file on the phone
   /// does. False plays a stream as libmpv opens one: "not buffering" and the
@@ -215,7 +221,9 @@ class FakePlayerService implements VideoPlayerService {
   Widget buildVideoWidget({BoxFit fit = BoxFit.contain}) => Center(
         child: AspectRatio(
           aspectRatio: videoSize.width / videoSize.height,
-          child: const _StillFrame(),
+          child: frame == null
+              ? const _StillFrame()
+              : CustomPaint(painter: frame, child: const SizedBox.expand()),
         ),
       );
 
