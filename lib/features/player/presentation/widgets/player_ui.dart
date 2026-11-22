@@ -101,8 +101,11 @@ class PlayerUi {
   );
 
   /// Side padding of a panel: a little less on the narrowest phones.
+  /// 24, as MX Player's panels keep their content about 26 dp in (the
+  /// reference lab, 22 Nov 2026, on the owner's 384 dp phone; the owner
+  /// chose MX's spacing): it was 20.
   static double pad(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide < 360 ? 16 : 20;
+      MediaQuery.sizeOf(context).shortestSide < 360 ? 20 : 24;
 
   /// A dialog's surface: the panel's colour and corners.
   static ShapeBorder get dialogShape => RoundedRectangleBorder(

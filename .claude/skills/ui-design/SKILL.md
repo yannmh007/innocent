@@ -36,7 +36,7 @@ on a phone. The player's building blocks live in
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
 | selected | accent text/icon; container accent 16 % |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
-| spacing | 4 dp grid; panel padding 20 (16 under 360 dp); section gap 20 |
+| spacing | 4 dp grid; panel padding 24 (20 under 360 dp: MX keeps panel content ~26 dp in, the owner chose it 22 Nov); section gap 20 |
 | rows | min 52 dp, icon 22 dp, gap 16 |
 | touch | 48 dp, never under 40 in the player chrome |
 | motion | 200 ms ease-out-cubic for panels; 150 ms fades |
