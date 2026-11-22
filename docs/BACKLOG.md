@@ -16,6 +16,44 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **22 Nov: 1.64.88 CANDIDATE — the sign-in kept when the server ends a
+  session while its token still lives; THE CONSOLE'S SIGN-OUT IS LOCAL
+  (LIVE)**. The owner's test of 1.64.87 (21 Nov evening) still showed
+  "Sign in". Edge logs: the console's Sign out was GLOBAL
+  (`logout?scope=global` 18:15:32 UTC, supabase-js's default — it ends
+  every session of the account, the app's too), then Google + MFA
+  18:16:19; the app's /auth/v1/user answered 403 `session_not_found` from
+  18:16:45 (its access token still had its hour), which 1.64.87 read as a
+  refusal and never refreshed. No app auth request after 18:25:37.
+  LIVE: main bc2ec2a3 (03:51 UTC 22 Nov, the owner's go) — the console's
+  button and idle timeout sign out `scope: 'local'`; RUNBOOK: a lost
+  phone is ended by a ban. Static analysis green, no Build (docs/ and
+  .claude/ only), no Pages run; both Workers rebuilt 03:51-03:52. The
+  checks that hold it (console_smoke clicks Sign out and reads the scope,
+  console_build_test fails a signOut() without scope 'local') ship with
+  1.64.88, since a push of tool/js starts the app Build. PROOF STILL TO
+  SEE: the next console sign-out in edge_logs is `scope=local`.
+  1.64.88 ON THE BRANCH (1572c0eb, 1bb4465c, f8437284): a 403
+  `session_not_found`/`session_expired` counts as stale → refresh →
+  refused → cleared → `unauthenticated` → the Google renewal (MFA
+  accounts, same user); an Auth outage (5xx/429/offline, or a Keystore
+  that cannot be read) is `network` for EVERY caller (the in-flight
+  refresh hands each its own answer; before, a joined caller retried its
+  stale token and the account cleared the session); the renewal forgets
+  a refusal met inside itself; dispose cancels the pack header read.
+  Review: SHIP (two rounds; its notes folded in). flutter test 1873;
+  build.yml 44940097206 green; gate U5 44940085085 (genres 37/37, jumps
+  15/15, gestures 27/27 and 19/19, audits 52/52 both ways); Test Lab
+  OPPO 44940085103 16 PASS 1 SKIP (the home trip). The tree: main + 8
+  files (scratchpad release_tree_88.sh: api_client and both tests whole,
+  the fix commit's hunks of media_kit_player_service and
+  api_account_repository — main's has no nonce — and the version
+  1.64.88+401), plus the two console tests. THE OWNER'S CHOICE (22 Nov):
+  release after the realme too (Test Lab quota resets 08:00 UTC).
+  Known trade-off (review, not blocking): a deliberate global sign-out
+  of an MFA account is undone on a phone whose Google account still
+  allows the app (RUNBOOK: ban instead); a session time-box, if one is
+  ever set, likewise.
 - **21 Nov: REFERENCE LAB — PLANNED, NOT BUILT (the owner sets up on 22
   Nov)**. Purpose: see how MX Player's panels and menus sit against the
   picture (how far they rise, where they anchor, width and height, what of
