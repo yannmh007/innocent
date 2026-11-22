@@ -61,9 +61,20 @@ base_of() {
   for c in "$d/$MX_PACKAGE.apk" "$d/base.apk"; do [ -f "$c" ] && { echo "$c"; return; }; done
   ls -S "$d"/*.apk | head -1
 }
+# Google Play's source-stamp certificate (SHA-256): Play stamps the APKs it
+# delivers, over their signatures, so a verified stamp by this certificate
+# says the file is one Play handed out, unchanged. Read in run 44985917683
+# from MX 3.4.3 as APKPure serves it, with "Verified for SourceStamp: true".
+PLAY_STAMP_SHA256=3257d599a49d2c961a471ca9843f59d341a405884583fc087df4237b733bbd6d
+
 # These print nothing on failure (never exit): the checks below say why.
-digest() { { "${BT}apksigner" verify --print-certs "$1" 2>/dev/null || true; } | sed -n "s/^Signer #1 certificate $2 digest: //p" | head -1; }
-signer() { { "${BT}apksigner" verify --print-certs "$1" 2>/dev/null || true; } | sed -n 's/^Signer #1 certificate DN: //p' | head -1; }
+# apksigner names the signer "Signer #1" or, with build-tools 37 on a v3
+# APK, "V3.0 Signer:" (run 44985917683); either is read.
+certs()  { "${BT}apksigner" verify --verbose --print-certs "$1" 2>/dev/null || true; }
+digest() { certs "$1" | sed -n -E "s/^(Signer #1|V[0-9.]+ Signer:) certificate $2 digest: //p" | head -1; }
+signer() { certs "$1" | sed -n -E 's/^(Signer #1|V[0-9.]+ Signer:) certificate DN: //p' | head -1; }
+stamp()  { certs "$1" | awk '/^Verified for SourceStamp: true/ {ok=1}
+                             ok && /^Source Stamp Signer: certificate SHA-256 digest: / {print $NF; exit}'; }
 abis()   { for a in "$W/$1"/x/*.apk; do unzip -Z1 "$a" 2>/dev/null | sed -n 's#^lib/\([^/]*\)/.*#\1#p'; done | sort -u | tr '\n' ' '; }
 badge()  { { "${BT}aapt2" dump badging "$1" 2>/dev/null || true; } | sed -n '1p' | sed -n "s/.* $2='\([^']*\)'.*/\1/p"; }
 
@@ -121,6 +132,11 @@ get() {
     done
   done
 
+  # Google Play's stamp on the base APK: the file is the one Play delivers.
+  local st; st=$(stamp "$b")
+  [ "$st" = "$PLAY_STAMP_SHA256" ] \
+    || { say "NO VERIFIED GOOGLE PLAY SOURCE STAMP on the base APK (got '${st:-none}'): not kept"; exit 1; }
+
   # Anchored: the oldest release APKPure lists, and/or a second source.
   local anchored="" old="none older listed"
   if [ -d "$W/anchor" ]; then
@@ -148,6 +164,7 @@ Research only: it runs in the lab's throwaway emulator. Never install it on a ph
 - Source: APKPure, through EFF's apkeep 1.1.0 (run ${GITHUB_RUN_ID:-local})
 - Signed by: $dn
 - Signer SHA-256: $cert
+- Google Play source stamp: verified, Google's stamp certificate (the file Play delivers, unchanged)
 - Same signer as the oldest release APKPure lists: $old
 - Same signer as the second source (MX_CERT): $second
 - The x86_64 download, native code for: $x86

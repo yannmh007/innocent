@@ -425,6 +425,10 @@ CRED_ALLOWED = {
     # .github/workflows/reference-lab.yml checks before running it. The
     # digest of a public release file; not a key.
     'badd7ad9fa7d2f32abe01eaf33b7ff086361a95bbc000a33bf44b630d4bf2140',
+    # SHA-256 of Google Play's source-stamp certificate (CN=Android, O=Google
+    # Inc.), which test_device/ref/fetch.sh requires on the APK it keeps. A
+    # public certificate's digest; not a key.
+    '3257d599a49d2c961a471ca9843f59d341a405884583fc087df4237b733bbd6d',
 }
 
 CRED_EXTS = ('.md', '.ts', '.js', '.mjs', '.html', '.yml', '.yaml', '.sh',
