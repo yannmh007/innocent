@@ -164,7 +164,11 @@ does it.
     the legibility test: every panel word passes over black, white, grey,
     busy and colour on the shade, but the selected track's accent label
     (3.2-3.7:1, as before) and its ✓ sideways over white (2.7-2.9:1).
-    The reference lab's run on this build: see ref.env.
+    PROVED on the emulator, run 45019756405 (the lab build of d0cdb039):
+    all 24 screens; Innocent upright 45-47 % | MX 46.6 %, sideways 46.8 %
+    | 46.6 %, content 24-26 dp in | 24-26; the picture above an upright
+    panel left white and sharp; the film's subtitle laid just above it
+    (406-430 dp; the panel's top at 439, where MX puts its own 370-439).
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
