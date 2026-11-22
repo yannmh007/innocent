@@ -61,8 +61,8 @@ does it.
   of an MFA account is undone on a phone whose Google account still
   allows the app (RUNBOOK: ban instead); a session time-box, if one is
   ever set, likewise.
-- **21 Nov: REFERENCE LAB — PLANNED, NOT BUILT (the owner sets up on 22
-  Nov)**. Purpose: see how MX Player's panels and menus sit against the
+- **21 Nov: REFERENCE LAB — 22 Nov: PHASE 0 AND PHASE 1 DONE; THE OWNER'S
+  DECISIONS PENDING (decision.md in innocent-ref)**. Purpose: see how MX Player's panels and menus sit against the
   picture (how far they rise, where they anchor, width and height, what of
   the picture stays visible, how they come in) next to Innocent's, and
   take MX's proportions only where they are better. Never its theme,
@@ -103,14 +103,58 @@ does it.
     get_release_by_tag. A rerun of fetch is a no-op (the release exists).
     security_invariants 16 fails on any app binary tracked here
     (.gitignore already drops *.apk, not .xapk/.apkm).
-  - NEXT, Phase 0 (MODE=probe): MX 3.4.3 has NATIVE CODE FOR ARM64-V8A
-    ONLY (APKPure has no x86_64 build), so the x86_64 Android 13 image
-    will refuse it. Try an image with ARM translation (google_apis
-    x86_64, API 30-ish, as device-lab.yml's APK_SOURCE=release path
-    does; Innocent's libs died there on a SIMD instruction — MX's may
-    or may not); `adb install-multiple` the XAPK's APKs. If it will not
-    run, Test Lab on a real arm64 phone (screens only) — ask the owner.
-    innocent-ref is attached to the session read-only (add_repo).
+  - 22 Nov, PHASE 0 PASSED (MODE=probe; runs 44989031141, 44989696334,
+    44990303466; ref.env says what each fixed): MX 3.4.3 (arm64-v8a only)
+    INSTALLS AND RUNS on google_apis x86_64 API 30 under ARM translation
+    ("Initialized NDK translation (aarch64)"), offline: player resumed,
+    controls up, SIGILL 0, fatal 0, 779 packets of MX's refused by the uid
+    cut. Needs: its player activity named (-p alone brings the chooser:
+    it has a PiP twin), All files access (appops), and its tree from
+    `dumpsys activity top` (uiautomator never finds its player idle).
+    Screens and dumps: innocent-ref runs/2026-11-22_<run id>/.
+  - 22 Nov, PHASE 1 DONE (MODE=panels; runs 44991688519 → 45002219382
+    took all 24 screens; 45004133042 repeated every number; its sheets and
+    decision.md: innocent-ref runs/2026-11-22_45004133042/compare/). ⋮, ♪, CC of both apps, upright and sideways, over
+    black and white (same boxes both). Upright = an upright 9:16 film (each
+    app turns itself; forcing MX upright from outside broke its layout);
+    sideways = the wide film, rotation held by the lab. Innocent runs in
+    software decoding there (libmpv stalled on goldfish H.264; the lab sets
+    the Development switch). Screen 384×823 dp. MX | Innocent:
+      ⋮ upright: bottom sheet 55 % | 55 %; sideways: right, full height,
+        47 % | 46 %. Controls put away by both, everywhere.
+      CC upright: MX's is INSIDE ⋮ (two taps; upright MX keeps only HW
+        and ⋮ in its top bar) 55 % | top bar, 55 %; sideways 47 % | 46 %.
+        Rows 38 | 52 dp; inset 32 | 20 dp.
+      ♪ upright: inside ⋮, ~47 % with a 17 dp left margin | top bar, 24 %
+        (as tall as its two tracks); sideways 44 % wide, from 17 dp below
+        the top | 46 %, full height. Rows 45 | 52 dp.
+      Picture left clear: ⋮/CC equal; ♪ upright 56 | 81 %; ♪ sideways
+        60 | 55 %.
+    The owner decides each row (decision.md); none taken yet. Candidates
+    the table leaves to the owner: ♪ sideways narrower (MX 44 %); MX's
+    wider inset in CC rows (32 dp). Innocent keeps: 52 dp rows (touch,
+    Burmese), ♪/CC one tap upright, glass, the 55 % cap.
+  - FOUND ON THE WAY (22 Nov, not fixed: no app code this session):
+    (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
+    owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
+    upright, [0,0][2045,1080] sideways, while the app draws edge to edge —
+    ⋮ sideways is missing from the tree and the bottom row upright (Lock,
+    Previous, Play, Next, Fit, PiP) has zero bounds: TalkBack could not
+    reach them. Check on API 34 (device-lab) and a real phone first.
+    (2) LEGIBILITY (test/player_legibility_test.dart, LEGIBILITY_OUT=dir,
+    owner's 384×823 dp, frames black/white/grey/busy/colour): every panel
+    passes on every frame (the glass works) except the selected track's
+    accent label (3.8:1 over black, 2.5-3.7 others; needs 4.5) and its ✓
+    sideways over white (2.8:1). Controls upright pass (a wide film leaves
+    them on black bars). Controls SIDEWAYS FAIL over white, busy and
+    colour: title 2.2-2.5, clock 2.2-2.5, ♪/CC 2.0-2.6, HW 2.0-2.5,
+    elapsed time 1.5-1.6:1 (the top and bottom gradients are too light).
+    An upright film puts upright controls on the picture too: not yet
+    measured. (3) test/support/player_harness.dart calls the owner's phone
+    411×882 dp (2.625); BACKLOG's 22 Nov reading is 450 dpi, 384×823.
+  - NEXT: the owner's decisions on decision.md and on the legibility
+    fixes (a stronger gradient sideways; the selected label); then, only
+    if asked, more panels. A rerun: ref.env MODE=panels (~30 min).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
