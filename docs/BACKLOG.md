@@ -33,6 +33,13 @@ does it.
   console_build_test fails a signOut() without scope 'local') ship with
   1.64.88, since a push of tool/js starts the app Build. PROOF STILL TO
   SEE: the next console sign-out in edge_logs is `scope=local`.
+  THE OWNER'S PHONE ON 1.64.87, 22 Nov 04:21 UTC (the token's hour long
+  gone): refresh 400 (the session ended the evening before)
+  → /user 401 → Google id_token 200 sixteen seconds later (the owner
+  picked the Google account) → /user 200, subscriptions, bookmarks,
+  premium_requests: signed in again as the same account. The expired
+  shape works on a real phone; whether the chooser came by itself (the
+  renewal) or after a tap on Sign in is the owner's answer.
   1.64.88 ON THE BRANCH (1572c0eb, 1bb4465c, f8437284): a 403
   `session_not_found`/`session_expired` counts as stale → refresh →
   refused → cleared → `unauthenticated` → the Google renewal (MFA
