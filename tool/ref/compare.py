@@ -187,9 +187,9 @@ def reading(screen, orient, mx, inn, via_more=False):
         out.append(('row height (dp)', str(mx['row_h_dp']), str(inn['row_h_dp']), v, why))
     if mx['inset_l_dp'] is not None and inn['inset_l_dp'] is not None:
         d = mx['inset_l_dp'] - inn['inset_l_dp']
-        out.append(('side inset (dp)', str(mx['inset_l_dp']), str(inn['inset_l_dp']),
+        out.append(('content inset (dp)', str(mx['inset_l_dp']), str(inn['inset_l_dp']),
                     'တူသလောက် — မပြောင်း' if abs(d) <= 4 else 'owner ဆုံးဖြတ်',
-                    'within 4 dp' if abs(d) <= 4 else 'a different margin inside the panel'))
+                    'within 4 dp' if abs(d) <= 4 else 'the words and icons start further in on one side'))
     return out
 
 

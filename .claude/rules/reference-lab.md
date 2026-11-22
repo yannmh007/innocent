@@ -41,3 +41,10 @@ repository and a run's public log carry numbers and our own code.
   edit dropped ui.py's `added()` and every panel check read 0 for a whole
   run (44999637142). After editing ui.py, call each subcommand once on a
   saved tree before pushing.
+- **A panel is its container, nothing around it.** The first Phase 1
+  table read MX's upright panels as 55 % (they are 46.6 %) and its ♪
+  sideways as 44 % (46.6 %): it took in MX's subtitle view, which MX moves
+  up above an open panel, and a list running past the screen. measure.py
+  now clips to the screen and takes the added node holding the most others
+  wholly. Check a table's numbers against the trees before they go to the
+  owner (22 Nov: one decision was taken on the wrong figure).

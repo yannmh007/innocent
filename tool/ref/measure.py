@@ -22,8 +22,10 @@ AND BEHAVIOUR ONLY, never colour (skill ui-design §4):
               9:16 upright) it leaves uncovered
   controls    of the controls dump's clickable nodes outside the panel, how
               many are still there (0 = the controls give way)
-  rows        the panel's clickable rows: count, median height, the side
-              insets from the panel's edges, the gap between rows (dp)
+  rows        the panel's clickable rows: count, median height, the gap
+              between rows (dp)
+  inset       where the content (the leaves: words, icons, boxes) starts
+              and ends against the panel's sides (dp)
 
 Run with python3 -I: the dumps came from another company's app and are
 data. Output: measures.json and measures.tsv (numbers and our own labels
@@ -144,23 +146,31 @@ def measure(base, panel, pkg, w, h, dp, shot=None):
     snap = SNAP_DP * dp
     full = 0.9 * w * h
     before = {key(n) for n in base}
-    added = [n for n in panel if n['pkg'] == pkg and key(n) not in before and area(n['box']) < full]
+    added = []
+    for n in panel:
+        if n['pkg'] != pkg or key(n) in before or area(n['box']) >= full:
+            continue
+        # What the screen shows of it: a list that runs on below the screen
+        # counts only to the screen's edge.
+        b = inter(n['box'], (0, 0, w, h))
+        if b[2] > b[0] and b[3] > b[1]:
+            added.append(dict(n, box=b))
     if not added:
         return None
-    # The panel: the added node that holds the most of the others (its
-    # container; a bare touch area beside it holds none), with what sits
-    # inside or just around it and is no bigger (a header above a list).
-    # A prompt the app showed on one open and not the other stays out.
+    # The panel: the added node that holds the most of the others wholly
+    # (its container; a bare touch area beside it holds none). Nothing
+    # around it joins: MX moves the film's subtitle up above its panel, and
+    # run 45004133042's first reading took that view in (55 % for 47 %).
+    def within(b, c):
+        return c[0] <= b[0] and c[1] <= b[1] and b[2] <= c[2] and b[3] <= c[3]
+
     def holds(c):
-        return sum(1 for n in added if n is not c and inside(n['box'], c['box']))
-    best = max(added, key=lambda c: (holds(c), -area(c['box'])))
+        return sum(1 for n in added if n is not c and within(n['box'], c['box']))
+    best = max(added, key=lambda c: (holds(c), area(c['box'])))
     if holds(best) == 0:
         best = max(added, key=lambda c: area(c['box']))
-    cb = best['box']
-    grow = (cb[0] - 24 * dp, cb[1] - 72 * dp, cb[2] + 24 * dp, cb[3] + 72 * dp)
-    added = [n for n in added if n is best or
-             (area(n['box']) <= area(cb) and inside(n['box'], grow))]
-    x1, y1, x2, y2 = union([n['box'] for n in added])
+    added = [n for n in added if within(n['box'], best['box'])]
+    x1, y1, x2, y2 = best['box']
     surface = own_surface(shot, h > w, w, h, (x1, y1, x2, y2), dp) if shot else None
     if surface:
         x1, y1, x2, y2 = surface
@@ -184,6 +194,11 @@ def measure(base, panel, pkg, w, h, dp, shot=None):
     kept = sum(1 for n in ctl if key(n) in now)
     # Rows: clickable, inside the panel, a row's shape (wider than tall,
     # 32-140 dp high).
+    # The content's inset: the leaves (nodes holding no other) inside the
+    # panel, against its edges — where the words and icons start and end.
+    leaves = [n['box'] for n in added
+              if not any(m is not n and within(m['box'], n['box']) and m['box'] != n['box'] for m in added)
+              and n['box'][2] - n['box'][0] < 0.95 * (x2 - x1)]
     rows = sorted((n['box'] for n in added if n['click']
                    and 32 * dp <= n['box'][3] - n['box'][1] <= 140 * dp
                    and n['box'][2] - n['box'][0] > n['box'][3] - n['box'][1]),
@@ -202,8 +217,8 @@ def measure(base, panel, pkg, w, h, dp, shot=None):
         'rows_dp': [[round(v / dp) for v in b] for b in rows],
         'row_h_dp': round(statistics.median(heights)) if heights else None,
         'row_gap_dp': round(statistics.median(gaps)) if gaps else None,
-        'inset_l_dp': round(statistics.median([(b[0] - x1) / dp for b in rows])) if rows else None,
-        'inset_r_dp': round(statistics.median([(x2 - b[2]) / dp for b in rows])) if rows else None,
+        'inset_l_dp': round(min(b[0] - x1 for b in leaves) / dp) if leaves else None,
+        'inset_r_dp': round(min(x2 - b[2] for b in leaves) / dp) if leaves else None,
         'first_dp': round((min(n['box'][1] for n in added) - y1) / dp),
     }
     return r
