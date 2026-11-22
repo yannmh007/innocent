@@ -3231,7 +3231,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           if (_videoDisplayEnabled &&
               svc.isInitialized &&
               svc is MediaKitPlayerService)
-            Positioned.fill(child: _subtitleLayer(svc, state)),
+            // Rebuilt when a sheet opens or closes: the subtitle goes over
+            // an upright one (_subtitlePadding).
+            Positioned.fill(
+              child: ValueListenableBuilder<int>(
+                valueListenable: PlayerUi.openSheets,
+                builder: (_, __, ___) => _subtitleLayer(svc, state),
+              ),
+            ),
 
           // === LAYER 1c: The account's code, on a paid film only ===
           // Over the picture, under every control. Not the vault: those are
@@ -4112,12 +4119,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// text sat on the play button (lab, run 37281576125).
   EdgeInsets _subtitlePadding(PlayerState state) {
     final pad = MediaQuery.paddingOf(context);
+    final size = MediaQuery.sizeOf(context);
     final controlsUp = state.controlsVisible &&
         !state.isLocked &&
         !state.sleepTimerDialogOpen;
-    final bottom = controlsUp
+    var bottom = controlsUp
         ? math.max(pad.bottom, _controlsInsets(context).bottom + 108)
         : pad.bottom;
+    // A PANEL OR SHEET UP, UPRIGHT: the subtitle goes over it, as MX lifts
+    // its own over an open panel (reference lab, 22 Nov 2026), so the
+    // film's words stay readable while a menu is open. Sideways it stays
+    // where it is (so does MX's).
+    if (size.height > size.width &&
+        (state.openPanel != SidePanel.none || PlayerUi.openSheets.value > 0)) {
+      bottom = math.max(bottom, PlayerUi.panelExtent(size) + 8);
+    }
     return EdgeInsets.only(top: pad.top, bottom: bottom);
   }
 }

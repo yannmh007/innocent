@@ -13,11 +13,16 @@ on a phone. The player's building blocks live in
 ## 1. Principles
 1. **The picture is the hero.** Chrome recedes: one accent (brand blue
    `#3D8DF0`, `AppColors.specPrimary`), greys for everything else.
-2. **One layer at a time.** An open panel, sheet or dialog is frosted
-   glass over a dimmed picture, and the controls under it hide: the film
-   shows through as colour, nothing sharp does (11 Nov: the clock, ♪,
-   "Default" and the seek bar showed through a translucent ⋮; 12 Nov the
-   owner chose misted glass over moving the picture out of the way).
+2. **One layer at a time, and the film stays the film.** An open panel
+   or sheet sits on THE SHADE (the owner, 22 Nov 2026, after the
+   reference lab: "as MX — it disturbs the film less while it plays than
+   the misted glass"): no blur, no dim over the picture; only behind the
+   words a shade of `#1C1C1E` rises from nothing, 56 dp before the menu's
+   edge, to 84 % where the words start and 92 % at the screen's edge
+   (`PlayerShade`). The controls under it hide (11 Nov: the clock, ♪,
+   "Default" and the seek bar showed through a translucent ⋮). Upright,
+   the film's subtitle goes over the open panel, as MX lifts its own. A
+   dialog keeps frosted glass over a dimmed picture (12 Nov).
 3. **Every menu looks like every other menu**: same surface, header, row,
    spacing. A new menu is built from player_ui.dart, not from scratch.
 4. **It fits everywhere**: 320–411 dp, portrait and landscape, Burmese,
@@ -29,8 +34,11 @@ on a phone. The player's building blocks live in
 ## 2. Tokens (dark; the player is always dark)
 | | value |
 |---|---|
-| scrim behind a panel/dialog | black 40 % (`PlayerUi.scrim`) |
-| surface (panel, sheet, dialog) | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| behind a panel or sheet | nothing: the picture is not dimmed (22 Nov) |
+| panel, sheet | **the shade** (`PlayerShade`): `#1C1C1E` from 0 (56 dp before the edge) through 55 % at the edge and 84 % at the words to 92 %; no blur, edge or corners |
+| scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |
+| surface of a dialog or card | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side — upright that tall, sideways that wide (≤ 440) plus the navigation strip |
 | raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
 | hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
@@ -48,11 +56,13 @@ row title 15 sp w500 · row value 13 sp secondary · tile label 12 sp w500,
 two lines at most · caption 11 sp.
 
 ## 3. Components (all in player_ui.dart)
-- **Panel** (`PlayerPanel`, in the player's own Stack): landscape a side
-  panel from the right, up to 400 dp of content plus the navigation strip,
-  46 % of the width; portrait a bottom sheet up to 60 % of the height with a
-  drag handle, up to 55 % (at 72 % it rose over the whole picture: "it
-  goes up too far", owner, 12 Nov). The picture never moves. Header: title + optional trailing (capped at half the row,
+- **Panel** (`PlayerPanel`, in the player's own Stack): MX's reach
+  (`PlayerUi.panelExtent`, 22 Nov 2026: one square, the screen's short
+  side — 384 dp, 46.6 % of the owner's screen, both ways); landscape a side
+  panel from the right that wide plus the navigation strip; portrait a
+  bottom sheet that tall with a drag handle (it was up to 55 %, and at 72 %
+  it rose over the whole picture: "it goes up too far", owner, 12 Nov). On
+  the shade. The picture never moves. Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
@@ -68,9 +78,9 @@ two lines at most · caption 11 sp.
 - **Card** (`PanelCard`): raised, radius 14, for a checklist or a group.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
-- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): upright a glass
-  bottom sheet (dragged down to close); **sideways a glass side panel from
-  the right, the whole height**, like ⋮ (a bottom sheet held sideways had
+- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): the panel's reach
+  and shade; upright a bottom sheet (dragged down to close); **sideways a
+  side panel from the right, the whole height**, like ⋮ (a bottom sheet held sideways had
   ~300 dp and cut its lists and sliders). The form follows the window
   while the sheet is open — a turn or a resize keeps the content's state
   (Android 16 ignores the player's orientation requests on tablets). `barrierColor: Colors.transparent` for a sheet that
@@ -147,9 +157,11 @@ from MX but its reasoning).
   visible and how the controls give way, how it comes in and goes, the
   proportions of its spacing.
 - Never take: its theme, colours, icons, images, animations or brand.
-- Where Innocent's choice is better (the frosted glass, 12 Nov; the 55 %
-  portrait panel) it stays. Take MX's only where it answers something
-  Innocent lacks, and the owner decides each one.
+- Where Innocent's choice is better it stays (rows of 52 dp; ♪ and CC one
+  tap away upright). Take MX's only where it answers something Innocent
+  lacks, and the owner decides each one: on 22 Nov the owner took MX's
+  reach (over the 55 % panel), its spacing (panel padding 24), its shade
+  (over the frosted glass) and its subtitle lifted over an upright panel.
 - Colour is tested against the film, not against MX: the player plays any
   video, so every icon, label and panel must read over a dark, a bright, a
   busy and a colourful frame — at least 3:1 for icons and controls, 4.5:1

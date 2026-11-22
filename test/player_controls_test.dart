@@ -182,38 +182,53 @@ void main() {
     });
   }
 
-  testWidgets('menus are frosted glass, and the picture stays where it is',
+  testWidgets(
+      'menus are on the shade, MX\'s reach, and the picture stays where it is',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
     final frame = find.byType(AspectRatio).first;
     final before = tester.getRect(frame);
     await tester.tap(find.byIcon(Icons.more_vert));
     await _settle(tester);
+    // The owner, 22 Nov 2026: as MX, the film neither blurred nor dimmed
+    // under a menu (it was frosted glass over a 40 % dim since 12 Nov).
     expect(
         find.descendant(
             of: find.byType(MoreMenuPanel), matching: find.byType(BackdropFilter)),
-        findsOneWidget,
-        reason: 'the menu is not glass (owner, 12 Nov)');
-    // The owner chose glass over moving the film (12 Nov).
+        findsNothing,
+        reason: 'the menu blurs the film');
+    expect(
+        find.descendant(
+            of: find.byType(MoreMenuPanel),
+            matching: find.byWidgetPredicate((w) =>
+                w is ColoredBox && w.color.a > 0 && w.color == PlayerUi.scrim)),
+        findsNothing,
+        reason: 'the menu dims the picture');
     expect(tester.getRect(frame), before);
-    // Upright, the sheet stops at 55 % of the screen.
-    final sheet = tester.getRect(find.byType(PlayerGlass).first);
-    expect(sheet.height, lessThanOrEqualTo(_phone.height * 0.55 + 0.5));
+    // Upright, MX's reach: the screen's short side, 46.6 % of the long one
+    // at most (the reference lab, 22 Nov).
+    final sheet = tester.getRect(find.byType(PlayerShade).first);
+    expect(sheet.height,
+        closeTo(PlayerUi.panelExtent(Size(_phone.width, _phone.height)), 0.5));
+    expect(sheet.bottom, closeTo(_phone.height, 0.5));
     await leavePlayer(tester);
   });
 
-  testWidgets('sideways, a player sheet is a glass panel from the right',
+  testWidgets('sideways, a player sheet is a panel from the right',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
     expect(find.text('Loop one'), findsOneWidget);
-    final glass = tester.getRect(find.byType(PlayerGlass).last);
+    final glass = tester.getRect(find.byType(PlayerShade).last);
     // The whole height, at the right edge: not a bottom sheet that held two
     // rows (12 Nov).
     expect(glass.height, closeTo(_phone.width, 0.5));
     expect(glass.right, closeTo(_phone.height, 0.5));
-    expect(glass.width, lessThan(_phone.height * 0.6));
+    // MX's reach sideways (PlayerUi.sideWidth; the harness has no
+    // navigation strip).
+    expect(glass.width,
+        closeTo(PlayerUi.sideWidth(Size(_phone.height, _phone.width)), 0.5));
     await leavePlayer(tester);
   });
 
@@ -228,9 +243,11 @@ void main() {
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
     final content = tester.element(find.text('Loop one'));
-    var glass = tester.getRect(find.byType(PlayerGlass).last);
+    var glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.bottom, closeTo(_phone.height, 0.5), reason: 'not at the foot');
     expect(glass.width, closeTo(_phone.width, 0.5));
+    expect(glass.height,
+        closeTo(PlayerUi.panelExtent(Size(_phone.width, _phone.height)), 0.5));
 
     Future<void> turn(bool sideways) async {
       tester.view.physicalSize = sideways
@@ -240,7 +257,7 @@ void main() {
     }
 
     await turn(true);
-    glass = tester.getRect(find.byType(PlayerGlass).last);
+    glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.height, closeTo(_phone.width, 0.5),
         reason: 'sideways, not the whole height');
     expect(glass.right, closeTo(_phone.height, 0.5));
@@ -249,7 +266,7 @@ void main() {
         reason: 'the turn rebuilt the sheet\'s content from scratch');
 
     await turn(false);
-    glass = tester.getRect(find.byType(PlayerGlass).last);
+    glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.bottom, closeTo(_phone.height, 0.5));
     expect(glass.width, closeTo(_phone.width, 0.5));
     expect(identical(tester.element(find.text('Loop one')), content), isTrue);
@@ -297,11 +314,11 @@ void main() {
     await _settle(tester);
     final handle = find.byType(PlayerDragHandle);
     expect(handle, findsOneWidget);
-    final top = tester.getRect(find.byType(PlayerGlass).last).top;
+    final top = tester.getRect(find.byType(PlayerShade).last).top;
     await tester.drag(handle, const Offset(0, 30));
     await _settle(tester);
     expect(find.text('Loop one'), findsOneWidget);
-    expect(tester.getRect(find.byType(PlayerGlass).last).top,
+    expect(tester.getRect(find.byType(PlayerShade).last).top,
         closeTo(top, 0.5), reason: 'a short drag did not settle back');
     await tester.drag(handle, const Offset(0, 400));
     await _settle(tester);
@@ -602,8 +619,8 @@ void main() {
     await tutorial(tester);
     final help = find.byType(GesturesHelpOverlay);
     expect(help, findsOneWidget);
-    // On the player's glass, as every menu of the player.
-    expect(find.ancestor(of: help, matching: find.byType(PlayerGlass)),
+    // On the player's shade, as every menu of the player.
+    expect(find.ancestor(of: help, matching: find.byType(PlayerShade)),
         findsOneWidget);
     expect(find.text('Player gestures'), findsOneWidget);
     expect(find.text('Tap anywhere to dismiss'), findsNothing);

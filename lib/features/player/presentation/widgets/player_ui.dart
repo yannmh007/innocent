@@ -52,6 +52,37 @@ class PlayerUi {
 
   static bool _probed = false;
 
+  /// THE SHADE (the owner, 22 Nov 2026, after the reference lab: "as MX —
+  /// it disturbs the film less while it plays than the misted glass"). A
+  /// panel or sheet no longer dims the whole picture or blurs it: the film
+  /// stays sharp and bright everywhere but where the menu's words are, and
+  /// there a shade of [surface] rises from nothing, [shadeFade] dp before
+  /// the menu begins, to [shadeText] where its words start and [shadeEnd]
+  /// at the far edge. Innocent's own colour and stops, never MX's: chosen
+  /// so every word reads over a white, a busy and a colourful frame
+  /// (test/player_legibility_test.dart).
+  static const double shadeFade = 56;
+  static const double shadeEdge = 0.55;
+  static const double shadeText = 0.84;
+  static const double shadeEnd = 0.92;
+
+  /// How far a panel or sheet reaches from its edge: as MX's (one square,
+  /// the screen's short side — 384 dp, 46.6 % of the owner's 823 dp
+  /// screen, upright and sideways alike; reference lab, 22 Nov 2026), never
+  /// more than 46.6 % of the long side (a tablet). It was 55 % upright, 46 %
+  /// sideways.
+  static double panelExtent(Size size) {
+    final cap = size.longestSide * 0.466;
+    return size.shortestSide < cap ? size.shortestSide : cap;
+  }
+
+  /// Sideways, a side panel is no wider than a phone's (a tablet).
+  static double sideWidth(Size size) => panelExtent(size).clamp(280.0, 440.0);
+
+  /// How many player sheets are open (showPlayerSheet): the player lifts
+  /// the subtitle over an upright one, as over an open panel.
+  static final ValueNotifier<int> openSheets = ValueNotifier<int>(0);
+
   /// A tile, card or chip on a menu: a light film over the glass.
   static const Color raised = Color(0x1FFFFFFF);
 
@@ -114,9 +145,11 @@ class PlayerUi {
 }
 
 /// A menu of the player: a side panel from the right with the phone held
-/// sideways, a bottom sheet upright. Opaque, over a dimmed picture; a tap
-/// on the picture closes it. Its body scrolls, and fades at an edge that
-/// has more. It slides in.
+/// sideways, a bottom sheet upright, MX's reach both ways
+/// ([PlayerUi.panelExtent]). On the [PlayerShade]: the picture is neither
+/// dimmed nor blurred, only darkened behind the words (the owner, 22 Nov
+/// 2026); a tap on the picture closes it. Its body scrolls, and fades at
+/// an edge that has more. It slides in.
 class PlayerPanel extends StatelessWidget {
   const PlayerPanel({
     super.key,
@@ -137,12 +170,10 @@ class PlayerPanel extends StatelessWidget {
     final portrait = size.height >= size.width;
     final pad = PlayerUi.pad(context);
     final padding = MediaQuery.paddingOf(context);
+    final extent = PlayerUi.panelExtent(size);
 
-    final surface = PlayerGlass(
-      borderRadius: portrait
-          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-          : const BorderRadius.horizontal(
-              left: Radius.circular(PlayerUi.radius)),
+    final surface = PlayerShade(
+      sideways: !portrait,
       child: Padding(
         // Sideways the panel runs under the status bar and the navigation
         // buttons; its content keeps clear of both.
@@ -151,7 +182,7 @@ class PlayerPanel extends StatelessWidget {
           right: portrait ? 0 : padding.right,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (portrait) const PlayerDragHandle(),
@@ -184,16 +215,14 @@ class PlayerPanel extends StatelessWidget {
       builder: (context, t, panel) => Stack(
         children: [
           Positioned.fill(
-            // Read as Android reads a dialog's backdrop: "Dismiss".
+            // Read as Android reads a dialog's backdrop: "Dismiss". Nothing
+            // drawn: the picture is not dimmed (the shade, 22 Nov).
             child: Semantics(
               label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
               child: GestureDetector(
                 onTap: onDismiss,
                 behavior: HitTestBehavior.opaque,
-                child: Opacity(
-                  opacity: t,
-                  child: const ColoredBox(color: PlayerUi.scrim),
-                ),
+                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -210,13 +239,12 @@ class PlayerPanel extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   heightFactor: 1,
-                  child: ConstrainedBox(
-                    // 55 %, not 72: upright it rose over the whole picture
-                    // (owner's screenshot, 12 Nov). What it covers shows
-                    // through its glass.
-                    constraints: BoxConstraints(
-                        maxWidth: 640, maxHeight: size.height * 0.55),
-                    child: panel,
+                  child: SizedBox(
+                    // MX's reach, the same for every panel (panelExtent):
+                    // what it covers below its words is shade, not glass.
+                    width: size.width < 640 ? size.width : 640,
+                    height: extent,
+                    child: Opacity(opacity: t, child: panel),
                   ),
                 ),
               ),
@@ -226,12 +254,12 @@ class PlayerPanel extends StatelessWidget {
               right: 0,
               top: 0,
               bottom: 0,
-              // Up to 400 dp of content; the navigation buttons' strip is
-              // added to it, not taken from it.
-              width: (size.width * 0.46).clamp(300.0, 400.0) + padding.right,
+              // MX's reach; the navigation buttons' strip is added to it,
+              // not taken from it.
+              width: PlayerUi.sideWidth(size) + padding.right,
               child: FractionalTranslation(
                 translation: Offset(1 - t, 0),
-                child: panel,
+                child: Opacity(opacity: t, child: panel),
               ),
             ),
         ],
@@ -778,13 +806,13 @@ class PlayerSheetHeader extends StatelessWidget {
   }
 }
 
-/// A sheet of the player. Upright, a bottom sheet of frosted glass, as tall
-/// as its content up to 85 % of the screen, no wider than 640 dp, dragged
-/// or flicked down to close. Sideways, the same content in a glass panel
-/// from the right, the whole height — as ⋮ and the subtitle panel are: a
-/// bottom sheet on a phone held sideways had some 300 dp and cut the lists,
-/// the sliders and the buttons (12 Nov). [barrierColor] transparent for a
-/// sheet that changes the picture, so the change can be seen.
+/// A sheet of the player. Upright, a bottom sheet on the [PlayerShade], as
+/// tall as every panel ([PlayerUi.panelExtent], MX's reach: 22 Nov 2026),
+/// no wider than 640 dp, dragged or flicked down to close. Sideways, the
+/// same content in a panel from the right, the whole height — as ⋮ and the
+/// subtitle panel are: a bottom sheet on a phone held sideways had some
+/// 300 dp and cut the lists, the sliders and the buttons (12 Nov). The
+/// picture is not dimmed behind it; [barrierColor] can still set a dim.
 ///
 /// The form follows the WINDOW while the sheet is open (_PlayerSheetFrame):
 /// it was chosen once, on opening, so a phone turned under an open sheet —
@@ -796,11 +824,13 @@ Future<T?> showPlayerSheet<T>(
   required WidgetBuilder builder,
   Color? barrierColor,
 }) {
+  PlayerUi.openSheets.value++;
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: barrierColor ?? PlayerUi.scrim,
+    // The picture is not dimmed behind a sheet (the shade, 22 Nov 2026).
+    barrierColor: barrierColor ?? Colors.transparent,
     transitionDuration: PlayerUi.motion,
     pageBuilder: (_, __, ___) => _PlayerSheetFrame(builder: builder),
     transitionBuilder: (context, animation, __, child) {
@@ -815,11 +845,11 @@ Future<T?> showPlayerSheet<T>(
         child: child,
       );
     },
-  );
+  ).whenComplete(() => PlayerUi.openSheets.value--);
 }
 
-/// The frame of a player sheet, by the window: a glass bottom sheet
-/// upright, a glass panel from the right, the whole height, sideways. Every
+/// The frame of a player sheet, by the window: a bottom sheet upright, a
+/// panel from the right, the whole height, sideways, both on the shade. Every
 /// widget above the content is the same in both forms — only their values
 /// change — so a turn keeps the content's element and its state (a cut's
 /// marks, the subtitle panel's values).
@@ -877,9 +907,12 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final sideways = size.width > size.height;
+    // MX's reach, as every panel's (PlayerUi.panelExtent): upright the
+    // screen's short side tall, sideways as wide.
     final width = sideways
-        ? (size.width * 0.46).clamp(300.0, 400.0) + padding.right
+        ? PlayerUi.sideWidth(size) + padding.right
         : size.width.clamp(0.0, 640.0);
+    final extent = PlayerUi.panelExtent(size);
     return Align(
       alignment: sideways ? Alignment.centerRight : Alignment.bottomCenter,
       child: Transform.translate(
@@ -893,24 +926,15 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
             key: _sheet,
             constraints: sideways
                 ? BoxConstraints.tightFor(width: width, height: size.height)
-                : BoxConstraints(
-                    minWidth: width,
-                    maxWidth: width,
-                    maxHeight: size.height * 0.85,
-                  ),
-            child: PlayerGlass(
-              borderRadius: sideways
-                  ? const BorderRadius.horizontal(
-                      left: Radius.circular(PlayerUi.radius))
-                  : const BorderRadius.vertical(
-                      top: Radius.circular(PlayerUi.radius)),
+                : BoxConstraints.tightFor(width: width, height: extent),
+            child: PlayerShade(
+              sideways: sideways,
               child: Padding(
                 padding: sideways
                     ? EdgeInsets.only(top: padding.top, right: padding.right)
                     : EdgeInsets.only(bottom: padding.bottom),
                 child: Column(
-                  mainAxisSize:
-                      sideways ? MainAxisSize.max : MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [Flexible(child: Builder(builder: widget.builder))],
                 ),
@@ -923,9 +947,67 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
   }
 }
 
+/// The shade behind a panel or sheet ([PlayerUi.shadeFade]): [PlayerUi.surface]
+/// rising from nothing a little before the menu's edge (above it upright,
+/// left of it sideways) to [PlayerUi.shadeText] where the words start and
+/// [PlayerUi.shadeEnd] at the screen's edge. No blur, no edge, no corners:
+/// the film stays sharp; only behind the words is it darkened. The fade
+/// before the edge is drawn outside the menu's box and takes no taps (a tap
+/// there closes the menu, as anywhere off it). Ink draws on it.
+class PlayerShade extends StatelessWidget {
+  const PlayerShade({super.key, required this.sideways, required this.child});
+
+  /// The menu rises from the right; else from the bottom.
+  final bool sideways;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) {
+      const fade = PlayerUi.shadeFade;
+      final reach = (sideways ? c.maxWidth : c.maxHeight);
+      final length = (reach.isFinite ? reach : 400.0) + fade;
+      // Where the words start: the header sits some 20 dp into the menu.
+      final words = ((fade + 20) / length).clamp(0.0, 1.0);
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: sideways ? -fade : 0,
+            top: sideways ? 0 : -fade,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: sideways ? Alignment.centerLeft : Alignment.topCenter,
+                    end: sideways ? Alignment.centerRight : Alignment.bottomCenter,
+                    colors: [
+                      PlayerUi.surface.withValues(alpha: 0),
+                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeEdge),
+                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeText),
+                      PlayerUi.surface.withValues(alpha: PlayerUi.shadeEnd),
+                    ],
+                    stops: [0, fade / length, words, 1],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Material(type: MaterialType.transparency, child: child),
+          ),
+        ],
+      );
+    });
+  }
+}
+
 /// Frosted glass: the film behind blurred, under [PlayerUi.glassTint], a
 /// faint edge; [PlayerUi.surface] where the phone cannot afford the blur.
-/// Ink (a row's ripple) draws on it.
+/// Ink (a row's ripple) draws on it. A dialog's and a card's surface; a
+/// panel or sheet has the [PlayerShade] since 22 Nov 2026.
 class PlayerGlass extends StatelessWidget {
   const PlayerGlass({
     super.key,
