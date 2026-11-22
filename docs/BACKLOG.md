@@ -186,6 +186,18 @@ does it.
     | 46.6 %, content 24-26 dp in | 24-26; the picture above an upright
     panel left white and sharp; the film's subtitle laid just above it
     (406-430 dp; the panel's top at 439, where MX puts its own 370-439).
+  - 22 Nov (later), THE OWNER: "look again — MX's is more see-through,
+    the film behind shows; ours is still heavier". Measured (grey levels
+    of the same panel over the white and the black frame, run
+    45019756405): MX lets 40 % of the film through within its panels and
+    thins out from the picture's top (80 % at 160 dp before the edge);
+    Innocent's shade let 9-15 % through. Now (player_ui.dart): 40 % within,
+    20 % → 0 over 360 dp before the edge; words and icons with a dark halo;
+    a choice a white ✓ and a heavier white title (blue read 1.3:1); tile
+    icons on a dark disc. LEGIBILITY on it (the test, owner's phone): every
+    icon passes on every frame (≥ 5.3:1); words pass over black, grey and
+    colour, and over white or busy film some drop to 3.1-4.4:1 (the 4.5
+    bar) — the price of MX's see-through; the owner to judge on the phone.
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
