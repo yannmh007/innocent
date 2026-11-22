@@ -3,24 +3,24 @@ Have questions, feedback, or issues? Get support by visiting:
   https://firebase.google.com/support/
 
 Uploading [app.apk] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/44940085103/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/45001500407/]
 
-Test [matrix-10mb8uxulv19t] has been created in the Google Cloud.
+Test [matrix-2b1r8yfa2fvkt] has been created in the Google Cloud.
 Creating individual test executions...
-................................................................done.
+..................................................................done.
 Firebase Test Lab will execute your game-loop test on 1 device(s). More devices may be added later if flaky test attempts are specified.
 
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5238133917114551816 ].
-19:32:13 Test is Pending
-19:33:01 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
-19:33:01 Starting attempt 1.
-19:33:01 Test is Running
-19:39:54 Done. Test time = 334 (secs)
-19:39:54 Starting results processing. Attempt: 1
-19:40:06 Completed results processing. Time taken = 12 (secs)
-19:40:06 Test is Finished
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/9065324891072108322 ].
+08:26:26 Test is Pending
+08:27:15 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
+08:27:15 Starting attempt 1.
+08:27:15 Test is Running
+08:34:23 Done. Test time = 333 (secs)
+08:34:23 Starting results processing. Attempt: 1
+08:34:35 Completed results processing. Time taken = 6 (secs)
+08:34:35 Test is Finished
 
 Game-loop testing complete.
 
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5238133917114551816 ].
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/9065324891072108322 ].
 exit 0
