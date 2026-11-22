@@ -16,6 +16,199 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **22 Nov: 1.64.88 IS OUT — the sign-in kept when the server ends a
+  session while its token still lives; THE CONSOLE'S SIGN-OUT IS LOCAL
+  (LIVE)**. RELEASED: main f82cbc4c (pushed 08:41:35 UTC after the
+  realme passed and the libmpv jars came whole 3 of 3, md5 right), Build
+  45003991782 green; GitHub release v1.64.88-401: arm64 95723768 B
+  `2da3489c…aff4`, arm32 87702108 B `63076dc7…2880` (the assets'
+  digests, = the release body); Static analysis 45003991758 and
+  Dependency scan 45003991765 green; Semgrep on the tree against
+  origin/main 0 findings; tree flutter test 1869 and check.py; Playback
+  check 45006279752 green; app_releases id 1 moved 13:27:55 UTC after a
+  rolled-back dry run (a worker restart held it from ~09:15; notes: fewer
+  unexpected sign-outs, an Auth hiccup no longer signs out; an account
+  with two-step stays signed in after signing in elsewhere); transport
+  check 45027624325 (dispatched 13:28:00, after the row moved) green. Test Lab realme 45001500407: 16
+  PASS, the home trip SKIP. Edge functions and Workers' code unchanged.
+  THE OWNER TO CONFIRM ON THE PHONE: update, open the app once, sign out
+  of the console and in again (Google + code), reopen the app without a
+  tap — still signed in (a Google account chooser may come once); edge
+  logs then show the console's `logout?scope=local`, the app's /user 403
+  (if its token still lived), refresh 400 and id_token 200. The owner's test of 1.64.87 (21 Nov evening) still showed
+  "Sign in". Edge logs: the console's Sign out was GLOBAL
+  (`logout?scope=global` 18:15:32 UTC, supabase-js's default — it ends
+  every session of the account, the app's too), then Google + MFA
+  18:16:19; the app's /auth/v1/user answered 403 `session_not_found` from
+  18:16:45 (its access token still had its hour), which 1.64.87 read as a
+  refusal and never refreshed. No app auth request after 18:25:37.
+  LIVE: main bc2ec2a3 (03:51 UTC 22 Nov, the owner's go) — the console's
+  button and idle timeout sign out `scope: 'local'`; RUNBOOK: a lost
+  phone is ended by a ban. Static analysis green, no Build (docs/ and
+  .claude/ only), no Pages run; both Workers rebuilt 03:51-03:52. The
+  checks that hold it (console_smoke clicks Sign out and reads the scope,
+  console_build_test fails a signOut() without scope 'local') ship with
+  1.64.88, since a push of tool/js starts the app Build. PROOF STILL TO
+  SEE: the next console sign-out in edge_logs is `scope=local`.
+  THE OWNER'S PHONE ON 1.64.87, 22 Nov 04:21 UTC (the token's hour long
+  gone): refresh 400 (the session ended the evening before)
+  → /user 401 → Google id_token 200 sixteen seconds later (the owner
+  picked the Google account) → /user 200, subscriptions, bookmarks,
+  premium_requests: signed in again as the same account. The expired
+  shape works on a real phone; whether the chooser came by itself (the
+  renewal) or after a tap on Sign in is the owner's answer.
+  1.64.88 ON THE BRANCH (1572c0eb, 1bb4465c, f8437284): a 403
+  `session_not_found`/`session_expired` counts as stale → refresh →
+  refused → cleared → `unauthenticated` → the Google renewal (MFA
+  accounts, same user); an Auth outage (5xx/429/offline, or a Keystore
+  that cannot be read) is `network` for EVERY caller (the in-flight
+  refresh hands each its own answer; before, a joined caller retried its
+  stale token and the account cleared the session); the renewal forgets
+  a refusal met inside itself; dispose cancels the pack header read.
+  Review: SHIP (two rounds; its notes folded in). flutter test 1873;
+  build.yml 44940097206 green; gate U5 44940085085 (genres 37/37, jumps
+  15/15, gestures 27/27 and 19/19, audits 52/52 both ways); Test Lab
+  OPPO 44940085103 16 PASS 1 SKIP (the home trip). The tree: main + 8
+  files (scratchpad release_tree_88.sh: api_client and both tests whole,
+  the fix commit's hunks of media_kit_player_service and
+  api_account_repository — main's has no nonce — and the version
+  1.64.88+401), plus the two console tests. THE OWNER'S CHOICE (22 Nov):
+  release after the realme too (Test Lab quota resets 08:00 UTC).
+  Known trade-off (review, not blocking): a deliberate global sign-out
+  of an MFA account is undone on a phone whose Google account still
+  allows the app (RUNBOOK: ban instead); a session time-box, if one is
+  ever set, likewise.
+- **21 Nov: REFERENCE LAB — 22 Nov: PHASE 0 AND PHASE 1 DONE; THE OWNER
+  TOOK MX'S WAY: padding 24 dp, MX's reach, the shade for the glass, the
+  subtitle over an upright panel (on the branch, not released)**. Purpose: see how MX Player's panels and menus sit against the
+  picture (how far they rise, where they anchor, width and height, what of
+  the picture stays visible, how they come in) next to Innocent's, and
+  take MX's proportions only where they are better. Never its theme,
+  colours or icons (the owner's rule, skill `ui-design` §4). With it, a
+  legibility check of Innocent's own chrome over dark, bright, busy and
+  colourful frames (needs no MX: player_layout_test over frames, here).
+  - Shape: `.github/workflows/reference-lab.yml`, `test_device/ref/`,
+    `tool/ref/` in this repo (our code only). The MX APK (the version the
+    owner uses, uploaded by the owner) and every MX screenshot live only
+    in the owner's PRIVATE repo `innocent-ref`, never in this public one:
+    add a check.py guard (no .apk, no ref output). Both apps on the same
+    emulator, sized like the owner's phone; a film made with ffmpeg
+    (black, white, grey, busy; two audio and two subtitle tracks); MX's
+    network cut by uid. Per screen: screencap + uiautomator dump → a dp
+    table, side by side, MX's boxes drawn over ours. The report is a
+    decision table (keep Innocent / take MX / the owner decides), not a
+    diff to drive to zero. Start small: the panels that rise (⋮, ♪, CC),
+    portrait and landscape; more only when the owner asks.
+  - Phase 0, a probe: which ABIs the APK carries; does it run on the
+    x86_64 Android 13 image, else 11/12 with ARM translation, else Test
+    Lab (screens only, one of the five a day) — ask the owner then.
+  - 22 Nov, DONE BY THE OWNER: the private repo `innocent-ref` (list_repos:
+    private, the Claude app can reach it); the fine-grained token saved as
+    the Actions secret `REF_REPO_TOKEN` (innocent-ref only, Contents read
+    and write, 90 days — renew by about 20 Feb 2027). MX on the owner's
+    phone: 3.4.3 from the Play Store. The owner asked Claude to fetch that
+    version rather than upload it. The emulator to match the owner's
+    phone: 1080×2316 at 450 dpi (≈384×823 dp, the default display; ask for
+    a screenshot if Screen zoom was changed).
+  - 22 Nov, MODE=fetch DONE (`reference-lab.yml`, `test_device/ref/
+    fetch.sh`; runs 1-4 failed on the script, each fixed, ref.env says
+    how; run 44986302924 green): innocent-ref's release `mx-3.4.3` holds
+    `mx-3.4.3-arm64-v8a.xapk` (67788927 B), versionCode 2001003553. It
+    verifies (v2, v3; CN=Kim Jae hyun, O=MX Technologies; the certificate
+    pinned as MX_CERT), carries a VERIFIED GOOGLE PLAY SOURCE STAMP (the
+    file Play delivers, unchanged; now required), and shares the signer
+    of 1.85.8, the oldest APKPure lists. Checked from the session with
+    get_release_by_tag. A rerun of fetch is a no-op (the release exists).
+    security_invariants 16 fails on any app binary tracked here
+    (.gitignore already drops *.apk, not .xapk/.apkm).
+  - 22 Nov, PHASE 0 PASSED (MODE=probe; runs 44989031141, 44989696334,
+    44990303466; ref.env says what each fixed): MX 3.4.3 (arm64-v8a only)
+    INSTALLS AND RUNS on google_apis x86_64 API 30 under ARM translation
+    ("Initialized NDK translation (aarch64)"), offline: player resumed,
+    controls up, SIGILL 0, fatal 0, 779 packets of MX's refused by the uid
+    cut. Needs: its player activity named (-p alone brings the chooser:
+    it has a PiP twin), All files access (appops), and its tree from
+    `dumpsys activity top` (uiautomator never finds its player idle).
+    Screens and dumps: innocent-ref runs/2026-11-22_<run id>/.
+  - 22 Nov, PHASE 1 DONE (MODE=panels; runs 44991688519 → 45002219382
+    took all 24 screens; 45004133042 repeated every number; its sheets and
+    decision.md: innocent-ref runs/2026-11-22_45004133042/compare/). ⋮, ♪, CC of both apps, upright and sideways, over
+    black and white (same boxes both). Upright = an upright 9:16 film (each
+    app turns itself; forcing MX upright from outside broke its layout);
+    sideways = the wide film, rotation held by the lab. Innocent runs in
+    software decoding there (libmpv stalled on goldfish H.264; the lab sets
+    the Development switch). Screen 384×823 dp. MX | Innocent:
+      CORRECTED 22 Nov (the first table took MX's subtitle, which MX
+      moves up above its panel, and a list running past the screen into
+      the panel; measure.py now takes the panel's container alone): ALL
+      THREE MX PANELS ARE ONE 384×384 dp SQUARE — upright a bottom sheet
+      46.6 % of the height, sideways a right panel 46.6 % of the width,
+      full height; content ~26 dp in. Innocent: upright ⋮/CC 55 %, ♪ 24 %
+      (as tall as its two tracks); sideways 46 %, full height; content
+      20 dp in. Controls put away by both, everywhere.
+      Upright, MX's ♪ and CC are INSIDE ⋮ (two taps; its top bar keeps only
+      HW and ⋮) | Innocent's top bar, one tap. Rows 38 | 52 dp.
+    THE OWNER'S DECISION (22 Nov: "the items to decide, as MX does"):
+    the panel padding token 20 → 24 dp (20 under 360 dp), PlayerUi.pad,
+    every panel and sheet alike (ui-design §2). The "♪ sideways 44 %" of
+    the first report was the measuring error: MX's is 46.6 % like the
+    others, no change. ASKED, NOT CHANGED: upright height, MX 46.6 % (a
+    fixed square) against Innocent's 55 % cap, which the owner's 12 Nov
+    choice protects. Kept (Innocent better): 52 dp rows, ♪/CC one tap.
+    PROVED on the emulator, run 45010640345 (the lab build of 6e2efe8a):
+    Innocent's content 24 dp in, upright and sideways (⋮ tiles from
+    24.2 dp); its boxes and MX's unchanged; all 24 screens again.
+    (Its stored decision.md reads Innocent's upright inset as 11 dp — the
+    film's subtitle line, under the panel, taken for content; measure.py
+    since leaves such a line out: 24.)
+    ALSO ASKED (new, run 45010640345's trees): UPRIGHT, MX MOVES THE FILM'S
+    SUBTITLE ABOVE AN OPEN PANEL (from 754-823 dp to 370-439, just over the
+    panel's top) so it stays readable; sideways it leaves it at the bottom.
+    Innocent leaves it where it was: upright under the glass, sideways
+    centred and half under the panel.
+  - 22 Nov (evening), THE OWNER: "as MX — it disturbs the film less while
+    it plays than the clear background". Done on the branch (player_ui.dart,
+    player_screen.dart; skill ui-design §1-§4 rewritten): (1) MX's reach
+    for every panel and sheet, PlayerUi.panelExtent = the screen's short
+    side, ≤ 46.6 % of the long side (upright 384 dp tall, sideways 384 dp
+    wide + the navigation strip; it was ≤ 55 % / 46 %); (2) THE SHADE for
+    the frosted glass: no blur, no 40 % dim over the picture; #1C1C1E from
+    0 (56 dp before the edge) to 55 % at it, 84 % where the words start,
+    92 % at the screen's edge — our stops, measured over the film, never
+    MX's; dialogs keep the glass; (3) upright, the film's subtitle is laid
+    above an open panel or sheet (PlayerUi.openSheets counts the sheets).
+    Proof: flutter test 1873; player_layout_test 1062 without an overflow;
+    the legibility test: every panel word passes over black, white, grey,
+    busy and colour on the shade, but the selected track's accent label
+    (3.2-3.7:1, as before) and its ✓ sideways over white (2.7-2.9:1).
+    PROVED on the emulator, run 45019756405 (the lab build of d0cdb039):
+    all 24 screens; Innocent upright 45-47 % | MX 46.6 %, sideways 46.8 %
+    | 46.6 %, content 24-26 dp in | 24-26; the picture above an upright
+    panel left white and sharp; the film's subtitle laid just above it
+    (406-430 dp; the panel's top at 439, where MX puts its own 370-439).
+  - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
+    (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
+    owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
+    upright, [0,0][2045,1080] sideways, while the app draws edge to edge —
+    ⋮ sideways is missing from the tree and the bottom row upright (Lock,
+    Previous, Play, Next, Fit, PiP) has zero bounds: TalkBack could not
+    reach them. Check on API 34 (device-lab) and a real phone first.
+    (2) LEGIBILITY (test/player_legibility_test.dart, LEGIBILITY_OUT=dir,
+    owner's 384×823 dp, frames black/white/grey/busy/colour): every panel
+    passes on every frame (the glass works) except the selected track's
+    accent label (3.8:1 over black, 2.5-3.7 others; needs 4.5) and its ✓
+    sideways over white (2.8:1). Controls upright pass (a wide film leaves
+    them on black bars). Controls SIDEWAYS FAIL over white, busy and
+    colour: title 2.2-2.5, clock 2.2-2.5, ♪/CC 2.0-2.6, HW 2.0-2.5,
+    elapsed time 1.5-1.6:1 (the top and bottom gradients are too light).
+    An upright film puts upright controls on the picture too: not yet
+    measured. (3) test/support/player_harness.dart calls the owner's phone
+    411×882 dp (2.625); BACKLOG's 22 Nov reading is 450 dpi, 384×823.
+  - NEXT: the owner's look at the shade on the phone (a release when the
+    owner says); the legibility fixes (a stronger gradient behind the
+    sideways controls, the selected label — Innocent's own colours); the
+    accessibility root. More panels only if asked. A rerun: ref.env
+    MODE=panels (~30 min; ~50 when lib/ changed and the lab APK rebuilds).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
