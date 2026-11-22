@@ -119,7 +119,9 @@ def own_surface(png, port, w, h, cb, dp):
         return None
     px = im.load()
     if port:
-        x, y = w // 2, min(h - 1, cb[1] + int(8 * dp))
+        # Near the right edge: clear of the drag handle (centre) and the
+        # title (left), inside the corner's curve.
+        x, y = w - int(24 * dp), min(h - 1, cb[1] + int(8 * dp))
         ref = px[x, y]
         while y > 0 and abs(px[x, y - 1] - ref) <= 30:
             y -= 1
@@ -129,8 +131,9 @@ def own_surface(png, port, w, h, cb, dp):
     ref = px[x, y]
     while x > 0 and abs(px[x - 1, y] - ref) <= 30:
         x -= 1
+    # Just inside the left edge, clear of the title's letters.
     top = min(h - 1, cb[1] + int(8 * dp))
-    xx = min(w - 1, x + int(40 * dp))
+    xx = min(w - 1, x + int(6 * dp))
     ref = px[xx, top]
     while top > 0 and abs(px[xx, top - 1] - ref) <= 30:
         top -= 1

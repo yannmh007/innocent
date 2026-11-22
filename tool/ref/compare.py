@@ -124,10 +124,13 @@ def sheet(src, meas, dp, screen, orient, out):
     return p
 
 
-def reading(screen, orient, mx, inn):
+def reading(screen, orient, mx, inn, via_more=False):
     """(metric, MX, Innocent, verdict, why) rows: a first reading for the
     owner, who decides each one."""
     out = []
+    if via_more:
+        out.append(('how it is reached', 'inside ⋮ (two taps)', 'top bar (one tap)', 'Innocent ပိုသာ — မပြောင်း',
+                    'upright, MX keeps only HW and ⋮ in its top bar'))
     if not mx or not inn:
         out.append(('—', 'n/a' if not mx else 'ok', 'n/a' if not inn else 'ok',
                     'owner ဆုံးဖြတ်', 'one side was not taken: run again before deciding'))
@@ -140,7 +143,8 @@ def reading(screen, orient, mx, inn):
     if port:
         d = mx['rise_pct'] - inn['rise_pct']
         if d > 3:
-            v, why = 'Innocent ပိုသာ — မပြောင်း', 'MX rises higher over the picture; 55 % is the owner\'s choice (12 Nov)'
+            v, why = 'Innocent ပိုသာ — မပြောင်း', ('MX rises higher over the picture; Innocent stops at its '
+                                                  'content, 55 % at most (the owner\'s choice, 12 Nov)')
         elif d < -5:
             v, why = 'owner ဆုံးဖြတ်', 'MX stops lower and leaves more of the picture'
         else:
@@ -156,10 +160,13 @@ def reading(screen, orient, mx, inn):
             v, why = 'owner ဆုံးဖြတ်', 'MX\'s is narrower: more picture, less room for Burmese'
         out.append(('width (screen %)', '%.0f %%' % mx['w_pct'], '%.0f %%' % inn['w_pct'], v, why))
     d = mx['picture_pct'] - inn['picture_pct']
-    out.append(('picture left uncovered', '%.0f %%' % mx['picture_pct'], '%.0f %%' % inn['picture_pct'],
-                'Innocent ပိုသာ — မပြောင်း' if d <= 3 else 'owner ဆုံးဖြတ်',
-                'Innocent leaves as much or more (and its glass shows the rest as colour)' if d <= 3
-                else 'MX leaves %.0f points more of the picture clear' % d))
+    if abs(d) <= 3:
+        v, why = 'တူသလောက် — မပြောင်း', 'within a few points (Innocent\'s glass shows the rest as colour)'
+    elif d < 0:
+        v, why = 'Innocent ပိုသာ — မပြောင်း', 'Innocent leaves %.0f points more of the picture clear' % -d
+    else:
+        v, why = 'owner ဆုံးဖြတ်', 'MX leaves %.0f points more of the picture clear' % d
+    out.append(('picture left uncovered', '%.0f %%' % mx['picture_pct'], '%.0f %%' % inn['picture_pct'], v, why))
     mk = '%d of %d' % (mx['controls_kept'], mx['controls_before'])
     ik = '%d of %d' % (inn['controls_kept'], inn['controls_before'])
     if inn['controls_kept'] == 0 and mx['controls_kept'] > 0:
@@ -198,6 +205,11 @@ def main(argv):
         dpi = int(f.read().split()[2])
     dp = dpi / 160
     os.makedirs(out, exist_ok=True)
+    try:
+        with open(os.path.join(src, 'probe.txt'), encoding='utf-8') as f:
+            notes = f.read().splitlines()
+    except OSError:
+        notes = []
     made = []
     lines = ['# Reference lab — decision table (owner decides each row)', '',
              'Screen %d x %d dp. Proportions and behaviour only; colour is never compared with MX. '
@@ -217,7 +229,9 @@ def main(argv):
                     diffs += 1
             lines += ['## %s — %s' % (title, 'upright' if orient == 'port' else 'sideways'), '',
                       '| | MX 3.4.3 | Innocent | reading | why |', '|---|---|---|---|---|']
-            for row in reading(screen, orient, mx, inn):
+            via = any(('mx %s ' % orient) in l and (' %s: not in the top bar; opened from' % screen) in l
+                      for l in notes)
+            for row in reading(screen, orient, mx, inn, via):
                 lines.append('| %s |' % ' | '.join(row))
             lines.append('')
     lines[2] = lines[2].replace('{white}', 'the same boxes' if diffs == 0 else
