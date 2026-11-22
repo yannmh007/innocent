@@ -954,6 +954,13 @@ for _rel in _tracked:
         fails.append(
             'AN APP BINARY IS IN THE PUBLIC REPOSITORY: %s. MX files belong in '
             'the private innocent-ref (reference-lab.yml); our APKs in releases.' % _rel)
+    # The reference lab's own code holds code and settings only: a
+    # screenshot, a uiautomator dump or a log of MX's there would publish it.
+    if _rel.startswith(('test_device/ref/', 'tool/ref/')) and \
+            not _rel.endswith(('.sh', '.py', '.env', '.md')):
+        fails.append(
+            'REFERENCE LAB OUTPUT IN THE PUBLIC REPOSITORY: %s. MX\'s screens, dumps '
+            'and logs belong in the private innocent-ref, runs/<date>_<run id>/.' % _rel)
 
 print('=== %d security invariant violation(s) ===' % len(fails))
 for f in fails:

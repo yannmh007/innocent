@@ -22,6 +22,15 @@
 #          It only ever runs in the lab's throwaway emulator, never on a
 #          phone. The token is in the steps that talk to innocent-ref only,
 #          never in the one that runs the download tool.
+#   probe  Does that MX run on the lab's emulator (test_device/ref/probe.sh)?
+#          MX 3.4.3 has native code for arm64-v8a only, so the image must
+#          translate ARM (PROBE_API, google_apis x86_64). Sized like the
+#          owner's phone; MX's network cut by uid inside the emulator; our
+#          own measuring film (ffmpeg). One screenshot and one uiautomator
+#          dump with the controls up, the logs, pushed to innocent-ref
+#          runs/<date>_<run id>/. The token is in the first and last steps
+#          (download, push) only; the emulator step never holds it. This
+#          run's log and summary carry numbers only.
 #
 # HOW TO RUN: push a change under test_device/ref/ on a branch (not main).
 
@@ -53,7 +62,30 @@ defaults:
     shell: bash
 
 jobs:
+  # Which mode ref.env asks for, so that only that job starts.
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: test_device/ref
+
+      - name: Which mode
+        id: mode
+        run: |
+          mode=$(grep -E '^MODE=' test_device/ref/ref.env | tail -1 | cut -d= -f2 | tr -cd 'a-z')
+          case "$mode" in
+            fetch|probe) echo "mode=$mode" >> "$GITHUB_OUTPUT" ;;
+            *) echo "MODE=$mode is not built yet (fetch, probe)" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1 ;;
+          esac
+
   fetch:
+    needs: plan
+    if: needs.plan.outputs.mode == 'fetch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -99,3 +131,75 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REF_REPO_TOKEN }}
         run: bash test_device/ref/fetch.sh keep
+
+  probe:
+    needs: plan
+    if: needs.plan.outputs.mode == 'probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: test_device/ref
+
+      - name: What this run does
+        run: |
+          set -a; . test_device/ref/ref.env; set +a
+          [[ "$MX_PACKAGE" =~ ^[a-z][a-z0-9_]*(\.[a-z0-9_]+)+$ ]] || { echo "bad MX_PACKAGE"; exit 1; }
+          [[ "$MX_VERSION" =~ ^[0-9][0-9A-Za-z._-]{0,30}$ ]] || { echo "bad MX_VERSION"; exit 1; }
+          [[ "$MX_ASSET" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "bad MX_ASSET"; exit 1; }
+          [[ "$MX_SIZE" =~ ^[0-9]+$ && "$MX_SHA256" =~ ^[0-9a-f]{64}$ && "$MX_CERT" =~ ^[0-9a-f]{64}$ ]] \
+            || { echo "bad MX_SIZE, MX_SHA256 or MX_CERT"; exit 1; }
+          [[ "$PROBE_API" =~ ^[0-9]{2}$ && "$PROBE_TARGET" =~ ^(google_apis|google_apis_playstore|default)$ ]] \
+            || { echo "bad PROBE_API or PROBE_TARGET"; exit 1; }
+          [[ "$PROBE_SIZE" =~ ^[0-9]{3,4}x[0-9]{3,4}$ && "$PROBE_DPI" =~ ^[0-9]{3}$ ]] || { echo "bad PROBE_SIZE or PROBE_DPI"; exit 1; }
+          for v in MODE MX_PACKAGE MX_VERSION MX_ASSET MX_SIZE MX_SHA256 MX_CERT PROBE_API PROBE_TARGET PROBE_SIZE PROBE_DPI; do
+            echo "$v=${!v}" >> "$GITHUB_ENV"
+          done
+          echo "### Reference lab: probe $MX_PACKAGE $MX_VERSION on $PROBE_TARGET x86_64 API $PROBE_API" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Get MX from innocent-ref
+        env:
+          GH_TOKEN: ${{ secrets.REF_REPO_TOKEN }}
+        run: bash test_device/ref/probe.sh pull
+
+      - name: Check it (no token here)
+        run: bash test_device/ref/probe.sh check
+
+      - name: Make the measuring film
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
+          bash test_device/ref/probe.sh film
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # No token in this step: it runs the emulator, its image and MX.
+      - name: Boot the emulator and probe
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ env.PROBE_API }}
+          target: ${{ env.PROBE_TARGET }}
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disk-size: 6G
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -skin ${{ env.PROBE_SIZE }}
+          disable-animations: true
+          script: bash test_device/ref/probe.sh run
+
+      - name: Keep the run in innocent-ref
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.REF_REPO_TOKEN }}
+        run: bash test_device/ref/probe.sh keep
+
+      # MX's file and screens off the runner before it is handed back.
+      - name: Clear MX from the runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/mx" "$RUNNER_TEMP/ref_out" "$RUNNER_TEMP/ref_repo"
