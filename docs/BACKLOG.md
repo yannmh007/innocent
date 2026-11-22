@@ -137,6 +137,17 @@ does it.
     others, no change. ASKED, NOT CHANGED: upright height, MX 46.6 % (a
     fixed square) against Innocent's 55 % cap, which the owner's 12 Nov
     choice protects. Kept (Innocent better): 52 dp rows, ♪/CC one tap.
+    PROVED on the emulator, run 45010640345 (the lab build of 6e2efe8a):
+    Innocent's content 24 dp in, upright and sideways (⋮ tiles from
+    24.2 dp); its boxes and MX's unchanged; all 24 screens again.
+    (Its stored decision.md reads Innocent's upright inset as 11 dp — the
+    film's subtitle line, under the panel, taken for content; measure.py
+    since leaves such a line out: 24.)
+    ALSO ASKED (new, run 45010640345's trees): UPRIGHT, MX MOVES THE FILM'S
+    SUBTITLE ABOVE AN OPEN PANEL (from 754-823 dp to 370-439, just over the
+    panel's top) so it stays readable; sideways it leaves it at the bottom.
+    Innocent leaves it where it was: upright under the glass, sideways
+    centred and half under the panel.
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
@@ -155,8 +166,8 @@ does it.
     An upright film puts upright controls on the picture too: not yet
     measured. (3) test/support/player_harness.dart calls the owner's phone
     411×882 dp (2.625); BACKLOG's 22 Nov reading is 450 dpi, 384×823.
-  - NEXT: the owner's answer on the upright height (46.6 % as MX, or the
-    55 % cap); the legibility fixes (a stronger gradient sideways, the
+  - NEXT: the owner's answers on the upright height (46.6 % as MX, or the
+    55 % cap) and on lifting the subtitle above an upright panel; the legibility fixes (a stronger gradient sideways, the
     selected label — Innocent's own, never MX's colours); the
     accessibility root. More panels only if asked. A rerun: ref.env
     MODE=panels (~30 min; ~50 when lib/ changed and the lab APK rebuilds).

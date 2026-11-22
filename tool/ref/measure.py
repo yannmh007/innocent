@@ -196,9 +196,11 @@ def measure(base, panel, pkg, w, h, dp, shot=None):
     # 32-140 dp high).
     # The content's inset: the leaves (nodes holding no other) inside the
     # panel, against its edges — where the words and icons start and end.
+    # Not a line across nearly all of it: Innocent's film subtitle, left
+    # under an upright panel, read as content 11 dp in (run 45010640345).
     leaves = [n['box'] for n in added
               if not any(m is not n and within(m['box'], n['box']) and m['box'] != n['box'] for m in added)
-              and n['box'][2] - n['box'][0] < 0.95 * (x2 - x1)]
+              and n['box'][2] - n['box'][0] < 0.93 * (x2 - x1)]
     rows = sorted((n['box'] for n in added if n['click']
                    and 32 * dp <= n['box'][3] - n['box'][1] <= 140 * dp
                    and n['box'][2] - n['box'][0] > n['box'][3] - n['box'][1]),
