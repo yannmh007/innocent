@@ -92,12 +92,25 @@ does it.
     version rather than upload it. The emulator to match the owner's
     phone: 1080×2316 at 450 dpi (≈384×823 dp, the default display; ask for
     a screenshot if Screen zoom was changed).
-  - 22 Nov, MODE=fetch built (`reference-lab.yml`, `test_device/ref/
-    fetch.sh`): apkeep from APKPure, kept as innocent-ref's release
-    `mx-3.4.3` only if it verifies and shares the signer of the oldest
-    release APKPure lists (APKMirror, the second source, is unreachable
-    from the session). security_invariants 16 fails on any app binary
-    tracked here (.gitignore already drops *.apk, not .xapk/.apkm).
+  - 22 Nov, MODE=fetch DONE (`reference-lab.yml`, `test_device/ref/
+    fetch.sh`; runs 1-4 failed on the script, each fixed, ref.env says
+    how; run 44986302924 green): innocent-ref's release `mx-3.4.3` holds
+    `mx-3.4.3-arm64-v8a.xapk` (67788927 B), versionCode 2001003553. It
+    verifies (v2, v3; CN=Kim Jae hyun, O=MX Technologies; the certificate
+    pinned as MX_CERT), carries a VERIFIED GOOGLE PLAY SOURCE STAMP (the
+    file Play delivers, unchanged; now required), and shares the signer
+    of 1.85.8, the oldest APKPure lists. Checked from the session with
+    get_release_by_tag. A rerun of fetch is a no-op (the release exists).
+    security_invariants 16 fails on any app binary tracked here
+    (.gitignore already drops *.apk, not .xapk/.apkm).
+  - NEXT, Phase 0 (MODE=probe): MX 3.4.3 has NATIVE CODE FOR ARM64-V8A
+    ONLY (APKPure has no x86_64 build), so the x86_64 Android 13 image
+    will refuse it. Try an image with ARM translation (google_apis
+    x86_64, API 30-ish, as device-lab.yml's APK_SOURCE=release path
+    does; Innocent's libs died there on a SIMD instruction — MX's may
+    or may not); `adb install-multiple` the XAPK's APKs. If it will not
+    run, Test Lab on a real arm64 phone (screens only) — ask the owner.
+    innocent-ref is attached to the session read-only (add_repo).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
