@@ -32,3 +32,13 @@ paths:
   route) and `console_build_test.mjs`; both run in `tool/check.py`.
 - Every console write goes through the `studio` function, which checks the
   role itself; the page never holds a service key.
+- **Sign out is THIS browser's session: `sb.auth.signOut({ scope: 'local' })`,**
+  the button and the idle timeout both. supabase-js signs out globally by
+  default, which ends every session of the account — the phone app's too.
+  Why: 21 Nov 2026, the owner's console sign-out (`logout?scope=global`
+  18:15:32 UTC) left the app showing "Sign in" (with the MFA sign-in after
+  it, which ends aal1 sessions anyway: the app renews those, see
+  `.claude/rules/flutter-app.md`). How: `console_smoke.mjs` checks the
+  logout's scope; a real "sign out everywhere" would be a separate,
+  named control — and the app's Google renewal would undo it for an MFA
+  account, so it needs a server-side mark first.

@@ -1015,6 +1015,22 @@ authenticator on Security and set up a new one, then switch it back on.
 The console also signs out after *Sign out after (minutes idle)* without a
 touch (default 30) — never while an upload is running.
 
+**Signing out ends this browser only** (since 21 Nov 2026): the console's
+Sign out and its idle timeout leave the account's other sessions alone,
+the app on a phone among them. Signing in to the console with a two-step
+code still ends the account's sessions that had no code (Supabase does
+that, no setting), and the app signs a Google account WITH two-step back
+in by itself, once, without a tap. A sign-out from the dashboard alone is
+undone on a phone whose Google account still allows the app. So **a lost
+or stolen phone: ban the user** in Supabase (Authentication → Users → the
+user → Ban user). A ban stays until someone lifts it, and an access token
+already issued still works at the database for up to its hour. Removing
+the app from the Google account (myaccount.google.com → Security → "Your
+connections to third-party apps & services") stops only the silent
+sign-in: whoever holds the unlocked phone can tap "Sign in with Google"
+and allow it again. Signing that phone out of Google (Security → Your
+devices) helps too.
+
 ---
 
 ## The review queue
