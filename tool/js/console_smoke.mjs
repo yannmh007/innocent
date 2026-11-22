@@ -529,7 +529,7 @@ async function open(browser, role, opts = {}) {
     const claims = JSON.parse(Buffer.from((auth.split('.')[1] || 'e30'), 'base64url').toString() || '{}');
     let body = {};
     try { body = req.postDataJSON() || {}; } catch { body = {}; }
-    state.calls.push({ p, op: body.op, aal: claims.aal });
+    state.calls.push({ p, op: body.op, aal: claims.aal, q: url.search });
 
     if (p === '/auth/v1/user') {
       return json(route, 200, { id: USER, email: 'boss@example.com', aud: 'authenticated', factors: state.factors });
@@ -946,11 +946,20 @@ try {
 
   // ── somebody who is not an admin ────────────────────────────────────────
   {
-    const { page, ctx } = await open(browser, 'owner', { notAdmin: true });
+    const { page, ctx, state } = await open(browser, 'owner', { notAdmin: true });
     await page.waitForSelector('#msg.bad');
     check('stranger: told in words', /not an admin/.test(await page.textContent('#msg')));
     check('stranger: no menu', !(await visible(page, '#side')) && !(await visible(page, '#tabbar')));
     check('stranger: can sign out', await visible(page, '#signout'));
+    // THIS BROWSER only: a global sign-out ended the phone app's session too
+    // (21 Nov 2026, logout?scope=global 18:15:32 UTC, then the app's 403s).
+    await page.click('#signout');
+    for (let i = 0; i < 50 && !state.calls.some((c) => c.p === '/auth/v1/logout'); i++) {
+      await page.waitForTimeout(100);
+    }
+    const outs = state.calls.filter((c) => c.p === '/auth/v1/logout');
+    check('sign out: this browser only (scope=local), never the phone app (' +
+      outs.map((c) => c.q).join(',') + ')', outs.length > 0 && outs.every((c) => /scope=local/.test(c.q)));
     await ctx.close();
   }
 
@@ -1268,7 +1277,6 @@ try {
     const held = new Promise((r) => { release = r; });
     state.r2.hold = (n) => (n === 2 ? held : null);
     await page.evaluate(() => __start(2, 'dies.jpg'));
-    await page.waitForFunction(() => true);
     for (let k = 0; k < 200 && !partsOf('u2').includes(1); k++) await new Promise((r) => setTimeout(r, 50));
     check('upload: part 1 reached R2 before the tab died', partsOf('u2').includes(1));
     await page.reload();

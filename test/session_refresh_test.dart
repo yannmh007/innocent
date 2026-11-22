@@ -38,6 +38,25 @@ class _MemSession extends SessionStore {
   }
 }
 
+/// Holds the refresh until BOTH stale answers have gone out, then a few
+/// turns more: the second caller reaches the refresh in microtasks after its
+/// answer, so it joins this one however slow the machine is (no timing).
+Future<void> _bothServed(int Function() served) async {
+  while (served() < 2) {
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+  }
+  for (var i = 0; i < 3; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 2));
+  }
+}
+
+/// The Keystore failing to read the refresh token (a store that throws).
+class _UnreadableRefresh extends _MemSession {
+  _UnreadableRefresh({super.access, super.refresh});
+  @override
+  Future<String?> refreshToken() async => throw StateError('keystore');
+}
+
 http.Response _json(int status, Object body) =>
     http.Response(jsonEncode(body), status,
         headers: {'content-type': 'application/json'});
@@ -114,6 +133,49 @@ void main() {
     expect(s.clears, 0);
   });
 
+  test('a 403 session_not_found asks the refresh; refused, the session is cleared and the call unauthenticated', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    final seen = <String>[];
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async {
+        seen.add(req.url.path);
+        if (req.url.path.endsWith('/token')) {
+          return _json(400, {'error_code': 'refresh_token_not_found', 'msg': 'Invalid Refresh Token: Refresh Token Not Found'});
+        }
+        return _json(403, {
+          'code': 403,
+          'error_code': 'session_not_found',
+          'msg': 'Session from session_id claim in JWT does not exist',
+        });
+      }),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => e.kind, 'kind', ApiErrorKind.unauthenticated)),
+    );
+    expect(seen, <String>['/auth/v1/user', '/auth/v1/token']);
+    expect(s.access, isNull);
+    expect(s.clears, 1);
+  });
+
+  test('a 403 session_not_found while Auth is down: the tokens kept for the next try', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async {
+        if (req.url.path.endsWith('/token')) return http.Response('bad gateway', 502);
+        return _json(403, {'code': 403, 'error_code': 'session_not_found', 'msg': 'gone'});
+      }),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
+    expect(s.clears, 0);
+    expect(s.access, 'live');
+  });
+
   test('Auth being down does not throw the session away', () async {
     final s = _MemSession(access: 'old', refresh: 'r1');
     final client = ApiClient(
@@ -123,9 +185,91 @@ void main() {
         return _json(401, {'msg': 'expired'});
       }),
     );
-    await expectLater(client.getJson('/auth/v1/user'), throwsA(isA<ApiException>()));
+    // Unreachable, not unauthenticated: the account layer clears a session
+    // on `unauthenticated`, which is what signed people out during an Auth
+    // outage (21 Nov).
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
     expect(s.clears, 0);
     expect(s.refresh, 'r1');
+  });
+
+  test('two requests at once while Auth is down: BOTH unreachable, one refresh, the session kept', () async {
+    // The release review, 21 Nov: the second request joined the first's
+    // refresh and was told "a token is still stored", so it retried its
+    // stale token and went up unauthenticated — and the account cleared the
+    // session. Every caller now gets the refresh's own answer.
+    for (final gone in <bool>[false, true]) {
+      final s = _MemSession(access: 'old', refresh: 'r1');
+      var refreshes = 0;
+      var served = 0;
+      final client = ApiClient(
+        session: s,
+        httpClient: MockClient((req) async {
+          if (req.url.path.endsWith('/token')) {
+            refreshes++;
+            await _bothServed(() => served);
+            return http.Response('bad gateway', 502);
+          }
+          served++;
+          return gone
+              ? _json(403, {'code': 403, 'error_code': 'session_not_found', 'msg': 'gone'})
+              : _json(401, {'msg': 'expired'});
+        }),
+      );
+      final results = await Future.wait(<Future<Object?>>[
+        client.getJson('/auth/v1/user').then<Object?>((_) => null, onError: (Object e) => e),
+        client.getJson('/rest/v1/videos').then<Object?>((_) => null, onError: (Object e) => e),
+      ]);
+      for (final r in results) {
+        expect(isUnreachableError(r), isTrue, reason: 'gone=$gone: $r');
+      }
+      expect(refreshes, 1, reason: 'gone=$gone: one refresh for both');
+      expect(s.clears, 0);
+      expect(s.refresh, 'r1');
+    }
+  });
+
+  test('two requests at once, the session ended: both unauthenticated, one refresh', () async {
+    final s = _MemSession(access: 'live', refresh: 'r1');
+    var refreshes = 0;
+    var served = 0;
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async {
+        if (req.url.path.endsWith('/token')) {
+          refreshes++;
+          await _bothServed(() => served);
+          return _json(400, {'error_code': 'refresh_token_not_found'});
+        }
+        served++;
+        return _json(403, {'code': 403, 'error_code': 'session_not_found', 'msg': 'gone'});
+      }),
+    );
+    final results = await Future.wait(<Future<Object?>>[
+      client.getJson('/auth/v1/user').then<Object?>((_) => null, onError: (Object e) => e),
+      client.getJson('/rest/v1/videos').then<Object?>((_) => null, onError: (Object e) => e),
+    ]);
+    for (final r in results) {
+      expect(r, isA<ApiException>().having((e) => e.kind, 'kind', ApiErrorKind.unauthenticated));
+    }
+    expect(refreshes, 1);
+    expect(s.clears, 1);
+  });
+
+  test('a session store that cannot be read: unreachable, nothing cleared', () async {
+    final s = _UnreadableRefresh(access: 'old', refresh: 'r1');
+    final client = ApiClient(
+      session: s,
+      httpClient: MockClient((req) async => _json(401, {'msg': 'expired'})),
+    );
+    await expectLater(
+      client.getJson('/auth/v1/user'),
+      throwsA(isA<ApiException>().having((e) => isUnreachableError(e), 'unreachable', isTrue)),
+    );
+    expect(s.clears, 0);
   });
 
   test('a refresh token Auth rejects does end the session', () async {

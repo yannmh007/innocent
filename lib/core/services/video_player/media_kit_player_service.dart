@@ -1917,6 +1917,9 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     // already-disposed instance.
     _dragQuiet?.cancel();
     _dragQuiet = null;
+    // The pack's header read in [packHeaderAfter]: not for a disposed player.
+    _headerSoon?.cancel();
+    _headerSoon = null;
     await _positionSub?.cancel();
     await _durationSub?.cancel();
     await _playingSub?.cancel();

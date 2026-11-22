@@ -316,6 +316,9 @@ class ApiAccountRepository implements AccountRepository {
       return null;
     } finally {
       _renewing = false;
+      // A refusal met inside the renewal (its own user read) is not one
+      // to renew at the next start.
+      SessionStore.forgetRefused();
     }
   }
 

@@ -34,7 +34,14 @@ class ApiClient {
   /// token would fire six refreshes, five of which race and lose - and on
   /// rotating-refresh-token setups the losers invalidate the winner, signing
   /// the user out mid-session.
-  Future<void>? _refreshInFlight;
+  ///
+  /// It hands every caller the refresh's OWN answer. It used to hand a caller
+  /// who joined one "is a token still stored?", which is true when Auth was
+  /// down and the tokens were kept: that caller retried its stale token and
+  /// went up `unauthenticated`, and the account cleared the session — the
+  /// outage sign-out [_send] guards against, met by the second of two
+  /// requests at a start (the release review, 21 Nov 2026).
+  Future<bool>? _refreshInFlight;
 
   Future<Map<String, String>> _headers({
     required bool authenticated,
@@ -173,6 +180,37 @@ class ApiClient {
           allowRefresh: false,
         );
       }
+      // THE REFRESH WAS REFUSED AND THE SESSION CLEARED ([_doRefresh]): the
+      // server ended it. Said as what it is — unauthenticated — whatever
+      // status this answer carried (a 403 `session_not_found`), so the
+      // account reads a sign-out it can renew, not a refusal of the user.
+      final left = await _session.accessToken();
+      if (left == null || left.isEmpty) {
+        throw const ApiException(
+          ApiErrorKind.unauthenticated,
+          code: 'session_ended',
+          statusCode: 401,
+        );
+      }
+      // THE REFRESH COULD NOT BE ASKED (Auth 5xx, a 429, offline) and the
+      // tokens are kept for the next try. This answer is no verdict on the
+      // session then: decoded, a stale 401 went up as `unauthenticated` and
+      // ApiAccountRepository.currentUser cleared the session [_doRefresh]
+      // had just kept — a minute of Auth trouble signed out everyone whose
+      // token had expired (found 21 Nov). Unreachable, it is a retry.
+      var kept = true;
+      try {
+        final again = await _session.refreshToken();
+        kept = again != null && again.isNotEmpty;
+      } catch (_) {
+        // A store that cannot be read is no verdict on the session either.
+      }
+      if (kept) {
+        throw const ApiException(
+          ApiErrorKind.network,
+          message: 'auth unreachable',
+        );
+      }
     }
 
     return _decode(response);
@@ -201,9 +239,21 @@ class ApiClient {
         if (code == 'bad_jwt' || code == 'PGRST301' || code == 'PGRST303') {
           return true;
         }
+        // A LIVE TOKEN WHOSE SESSION IS GONE (21 Nov 2026, the owner's
+        // phone): Supabase Auth deleted the session — the account completed
+        // MFA in the console at 18:16:19 UTC — while the access token still
+        // had most of its hour, and every /auth/v1/user answered 403
+        // `session_not_found` ("Session from session_id claim in JWT does
+        // not exist"). Read as a refusal, the app showed "Sign in" and never
+        // asked the refresh token, so nothing could renew it. The refresh is
+        // what says whether the session lives: refused, it is cleared and
+        // renewed where that is allowed (ApiAccountRepository._renewRefused).
+        if (code == 'session_not_found' || code == 'session_expired') return true;
         final msg = '${decoded['msg'] ?? decoded['message'] ?? ''}'
             .toLowerCase();
-        return msg.contains('token is expired') || msg.contains('jwt expired');
+        return msg.contains('token is expired') ||
+            msg.contains('jwt expired') ||
+            msg.contains('session_id claim in jwt does not exist');
       }
     } catch (_) {
       // Not JSON: a gateway's page, not Auth's verdict on the token.
@@ -276,27 +326,17 @@ class ApiClient {
     }
   }
 
-  Future<bool> _refreshSession() {
-    final inFlight = _refreshInFlight;
-    if (inFlight != null) {
-      return inFlight.then((_) async {
-        final token = await _session.accessToken();
-        return token != null && token.isNotEmpty;
+  Future<bool> _refreshSession() =>
+      _refreshInFlight ??= _doRefresh().whenComplete(() {
+        _refreshInFlight = null;
       });
-    }
-
-    final completer = Completer<void>();
-    _refreshInFlight = completer.future;
-    return _doRefresh().whenComplete(() {
-      _refreshInFlight = null;
-      if (!completer.isCompleted) completer.complete();
-    });
-  }
 
   Future<bool> _doRefresh() async {
-    final refresh = await _session.refreshToken();
-    if (refresh == null || refresh.isEmpty) return false;
     try {
+      // Inside the try: a store that cannot be read is "could not refresh"
+      // for every caller who joined, not an error none of them can place.
+      final refresh = await _session.refreshToken();
+      if (refresh == null || refresh.isEmpty) return false;
       final response = await _http
           .post(
             _uri('/auth/v1/token', <String, String>{
