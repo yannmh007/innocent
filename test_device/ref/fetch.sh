@@ -69,8 +69,8 @@ badge()  { { "${BT}aapt2" dump badging "$1" 2>/dev/null || true; } | sed -n '1p'
 get() {
   tools
   rm -rf "$W"; mkdir -p "$W"
-  "$APKEEP" -l -a "$MX_PACKAGE" > "$W/versions.txt" 2>&1 || true
-  { sed -n 's/^| //p' "$W/versions.txt" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep -v '^$' || true; } \
+  "$APKEEP" -l -a "$MX_PACKAGE" -d apk-pure > "$W/versions.txt" 2>&1 || true
+  { sed -n 's/^| //p' "$W/versions.txt" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep -E '^[0-9][0-9A-Za-z._-]*$' || true; } \
     | sort -uV > "$W/vers"
   local n; n=$(wc -l < "$W/vers")
   [ "$n" -gt 0 ] || { say "APKPure lists no version of $MX_PACKAGE ($(head -c 200 "$W/versions.txt" | tr '\n' ' '))"; exit 1; }
