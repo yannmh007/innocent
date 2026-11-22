@@ -105,7 +105,15 @@ get() {
   # Every APK verifies, and all are signed by one certificate.
   local cert cert1 dn set a c
   cert=$(digest "$b" SHA-256); cert1=$(digest "$b" SHA-1); dn=$(signer "$b")
-  [ -n "$cert" ] || { say "THE BASE APK DOES NOT VERIFY (apksigner)"; exit 1; }
+  if [ -z "$cert" ]; then
+    say "THE BASE APK DOES NOT VERIFY (apksigner): $(basename "$b")"
+    # Why, in apksigner's words (certificate facts and errors; nothing secret).
+    echo "--- the download: $(basename "$(cat "$W/arm64.file")"), $(du -h "$(cat "$W/arm64.file")" | cut -f1)"
+    ls -l "$W/arm64/x" | tail -n +2 | awk '{print "    " $5, $9}'
+    echo "--- $("${BT}apksigner" --version 2>&1 | head -1) on $(java -version 2>&1 | head -1)"
+    "${BT}apksigner" verify --verbose --print-certs "$b" 2>&1 | grep -v -i 'WARNING: META-INF' | head -30 || true
+    exit 1
+  fi
   for set in $sets; do
     for a in "$W/$set"/x/*.apk; do
       c=$(digest "$a" SHA-256)
