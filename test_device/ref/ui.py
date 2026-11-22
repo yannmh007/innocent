@@ -75,7 +75,7 @@ FIRST_RUN = [
     ('agree', 'i agree', 'agree and continue', 'accept', 'accept all',
      'accept and continue', 'continue', 'got it', 'ok', 'okay', 'start',
      'next', 'done', 'confirm', 'yes', 'skip', 'close', 'not now', 'later',
-     'maybe later', 'no thanks', 'dismiss'),
+     'maybe later', 'no thanks', 'dismiss', 'just once'),
     ('english',),
 ]
 

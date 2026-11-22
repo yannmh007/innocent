@@ -198,8 +198,19 @@ run() {
   # THE FILM, opened in MX by the intent a file manager sends.
   adb push "$FILM" /sdcard/Movies/ref_measure.mp4 >/dev/null
   adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+  # MX answers a video with two activities, its player and its pop-up
+  # player, so "-p" alone brought Android's "Open with" chooser and MX never
+  # ran (run 44989031141). The player is named: the one that is not the
+  # pop-up (the names go to innocent-ref only).
+  adb shell cmd package query-activities --brief -a android.intent.action.VIEW \
+    -d file:///sdcard/Movies/ref_measure.mp4 -t video/mp4 > "$OUT/resolve.txt" 2>&1 || true
+  local comps comp
+  comps=$(grep -oE "$MX_PACKAGE/[A-Za-z0-9_.\$]+" "$OUT/resolve.txt" | sort -u || true)
+  comp=$(printf '%s\n' "$comps" | grep -vi 'pop' | head -1 || true)
+  say "MX answers the film with $(printf '%s\n' "$comps" | grep -c . || true) activities; opening the one that is not the pop-up ($([ -n "$comp" ] && echo found || echo none))"
+  [ -n "$comp" ] || { kill "$LOGCAT" 2>/dev/null || true; say "PROBE: no MX player activity for a video"; return 0; }
   adb shell am start -W -a android.intent.action.VIEW -t video/mp4 \
-    -d file:///sdcard/Movies/ref_measure.mp4 -p "$MX_PACKAGE" > "$OUT/launch.txt" 2>&1 || true
+    -d file:///sdcard/Movies/ref_measure.mp4 -n "$comp" > "$OUT/launch.txt" 2>&1 || true
   local lst ltime
   lst=$(sed -n 's/^Status: //p' "$OUT/launch.txt" | tr -d '\r' | head -1)
   ltime=$(sed -n 's/^TotalTime: //p' "$OUT/launch.txt" | tr -d '\r' | head -1)
@@ -265,8 +276,10 @@ run() {
   died=$(grep -E "Process $MX_PACKAGE .*has died" "$L" | grep -vc 'Force stopping' || true)
   say "MX resumed $resumed, its media session playing $playing, alive at the end $alive"
   say "crashes: SIGILL $sigill, fatal signal $fsig, fatal exception $fexc, translator in a backtrace $ndkbt, ANR $anr, MX process died $died; packets MX tried and was refused: ${blocked:-?}"
-  if [ "$alive" = 1 ] && [ "$c0" -gt 0 ] && [ "$sigill" = 0 ] && [ "$fsig" = 0 ]; then
+  if [ "$alive" = 1 ] && [ "$resumed" -gt 0 ] && [ "$c0" -gt 0 ] && [ "$sigill" = 0 ] && [ "$fsig" = 0 ]; then
     say "PROBE: MX RUNS on this image (installed, opened the film, controls shown, no crash)"
+  elif [ "$resumed" = 0 ] && [ "$sigill" = 0 ] && [ "$fsig" = 0 ]; then
+    say "PROBE: MX was not in front at the end, with no crash (see the screen in innocent-ref)"
   else
     say "PROBE: MX does NOT run cleanly on this image (see the numbers above; the screens and logs are in innocent-ref)"
   fi
