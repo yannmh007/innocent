@@ -16,9 +16,26 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
-- **22 Nov: 1.64.88 CANDIDATE — the sign-in kept when the server ends a
+- **22 Nov: 1.64.88 IS OUT — the sign-in kept when the server ends a
   session while its token still lives; THE CONSOLE'S SIGN-OUT IS LOCAL
-  (LIVE)**. The owner's test of 1.64.87 (21 Nov evening) still showed
+  (LIVE)**. RELEASED: main f82cbc4c (pushed 08:41:35 UTC after the
+  realme passed and the libmpv jars came whole 3 of 3, md5 right), Build
+  45003991782 green; GitHub release v1.64.88-401: arm64 95723768 B
+  `2da3489c…aff4`, arm32 87702108 B `63076dc7…2880` (the assets'
+  digests, = the release body); Static analysis 45003991758 and
+  Dependency scan 45003991765 green; Semgrep on the tree against
+  origin/main 0 findings; tree flutter test 1869 and check.py; Playback
+  check 45006279752 green; app_releases id 1 moved 13:27:55 UTC after a
+  rolled-back dry run (a worker restart held it from ~09:15; notes: fewer
+  unexpected sign-outs, an Auth hiccup no longer signs out; an account
+  with two-step stays signed in after signing in elsewhere); transport
+  check 45027624325 (dispatched 13:28:00, after the row moved) green. Test Lab realme 45001500407: 16
+  PASS, the home trip SKIP. Edge functions and Workers' code unchanged.
+  THE OWNER TO CONFIRM ON THE PHONE: update, open the app once, sign out
+  of the console and in again (Google + code), reopen the app without a
+  tap — still signed in (a Google account chooser may come once); edge
+  logs then show the console's `logout?scope=local`, the app's /user 403
+  (if its token still lived), refresh 400 and id_token 200. The owner's test of 1.64.87 (21 Nov evening) still showed
   "Sign in". Edge logs: the console's Sign out was GLOBAL
   (`logout?scope=global` 18:15:32 UTC, supabase-js's default — it ends
   every session of the account, the app's too), then Google + MFA
