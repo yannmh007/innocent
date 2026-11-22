@@ -180,9 +180,16 @@ run() {
   # for MX's uid: no ads, no tracking, nothing sent about the lab.
   local p
   for p in android.permission.READ_MEDIA_VIDEO android.permission.POST_NOTIFICATIONS \
-           android.permission.READ_EXTERNAL_STORAGE; do
+           android.permission.READ_EXTERNAL_STORAGE android.permission.WRITE_EXTERNAL_STORAGE; do
     adb shell pm grant "$MX_PACKAGE" "$p" >/dev/null 2>&1 || true
   done
+  # "All files access": with READ_EXTERNAL_STORAGE alone MX showed its own
+  # storage screen on Android 11 and left (run 44989696334).
+  adb shell appops set --uid "$MX_PACKAGE" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 \
+    || adb shell appops set "$MX_PACKAGE" MANAGE_EXTERNAL_STORAGE allow >/dev/null 2>&1 || true
+  adb shell dumpsys package "$MX_PACKAGE" > "$OUT/package.txt" 2>/dev/null || true
+  adb shell appops get "$MX_PACKAGE" > "$OUT/appops.txt" 2>/dev/null || true
+  say "permissions: $(grep -cE 'permission\.[A-Z_]+: granted=true' "$OUT/package.txt" || true) granted; all files access $(grep -c 'MANAGE_EXTERNAL_STORAGE: allow' "$OUT/appops.txt" || true)"
   local uid cut=0 t
   uid=$(adb shell pm list packages -U "$MX_PACKAGE" | sed -n "s/^package:$MX_PACKAGE uid:\([0-9]*\).*/\1/p" | head -1 | tr -d '\r')
   if [ "$root" = 1 ] && [ -n "$uid" ]; then
@@ -205,8 +212,10 @@ run() {
   adb shell cmd package query-activities --brief -a android.intent.action.VIEW \
     -d file:///sdcard/Movies/ref_measure.mp4 -t video/mp4 > "$OUT/resolve.txt" 2>&1 || true
   local comps comp
-  comps=$(grep -oE "$MX_PACKAGE/[A-Za-z0-9_.\$]+" "$OUT/resolve.txt" | sort -u || true)
-  comp=$(printf '%s\n' "$comps" | grep -vi 'pop' | head -1 || true)
+  # In Android's order; not the pop-up (run 44989696334 took the PiP one,
+  # which sorts first by name).
+  comps=$(grep -oE "$MX_PACKAGE/[A-Za-z0-9_.\$]+" "$OUT/resolve.txt" | awk '!seen[$0]++' || true)
+  comp=$(printf '%s\n' "$comps" | grep -viE 'pop|pip|float' | head -1 || true)
   say "MX answers the film with $(printf '%s\n' "$comps" | grep -c . || true) activities; opening the one that is not the pop-up ($([ -n "$comp" ] && echo found || echo none))"
   [ -n "$comp" ] || { kill "$LOGCAT" 2>/dev/null || true; say "PROBE: no MX player activity for a video"; return 0; }
   adb shell am start -W -a android.intent.action.VIEW -t video/mp4 \
