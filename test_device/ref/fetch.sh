@@ -45,7 +45,8 @@ download() {
     | tr '\r' '\n' | grep -E 'Downloading|downloaded|Skipping|error' | tail -3 || true
   local f
   f=$(find "$W/$1" -maxdepth 1 -type f \( -name '*.apk' -o -name '*.xapk' \) | head -1)
-  [ -n "$f" ] || { say "download failed: $MX_PACKAGE $2 for $3"; exit 1; }
+  # apkeep's own reason is drawn on a progress bar, which a runner hides.
+  [ -n "$f" ] || { rm -rf "${W:?}/$1"; return 1; }
   echo "$f" > "$W/$1.file"
   case "$f" in
     *.xapk) unzip -q -o "$f" '*.apk' -d "$W/$1/x" ;;
@@ -77,11 +78,21 @@ get() {
   say "APKPure lists $n version(s) of $MX_PACKAGE, $(head -1 "$W/vers") to $(tail -1 "$W/vers")"
   grep -qxF "$MX_VERSION" "$W/vers" \
     || { say "NOT FOUND: $MX_VERSION is not among them; the newest are $(tail -6 "$W/vers" | tr '\n' ' ')"; exit 1; }
-  local oldest; oldest=$(head -1 "$W/vers")
 
-  download x86_64 "$MX_VERSION" x86_64
-  download arm64 "$MX_VERSION" arm64-v8a
-  [ "$oldest" != "$MX_VERSION" ] && download anchor "$oldest" arm64-v8a
+  # The build phones get (arm64-v8a) must come; an x86_64 build, which the
+  # lab's emulator would run natively, only if APKPure has one (run
+  # 44985066077: none for 3.4.3). The anchor: the oldest of the first three
+  # listed releases that downloads.
+  download arm64 "$MX_VERSION" arm64-v8a \
+    || { say "download failed: $MX_PACKAGE $MX_VERSION for arm64-v8a"; exit 1; }
+  local sets="arm64"
+  if download x86_64 "$MX_VERSION" x86_64; then sets="arm64 x86_64"
+  else say "APKPure has no x86_64 build of $MX_VERSION"; fi
+  local oldest="" v
+  for v in $(head -3 "$W/vers"); do
+    [ "$v" = "$MX_VERSION" ] && break
+    if download anchor "$v" arm64-v8a; then oldest="$v"; break; fi
+  done
 
   # It is the app and the version asked for.
   local b pkg ver code
@@ -95,7 +106,7 @@ get() {
   local cert cert1 dn set a c
   cert=$(digest "$b" SHA-256); cert1=$(digest "$b" SHA-1); dn=$(signer "$b")
   [ -n "$cert" ] || { say "THE BASE APK DOES NOT VERIFY (apksigner)"; exit 1; }
-  for set in x86_64 arm64; do
+  for set in $sets; do
     for a in "$W/$set"/x/*.apk; do
       c=$(digest "$a" SHA-256)
       [ "$c" = "$cert" ] || { say "A DIFFERENT OR BROKEN SIGNATURE: $(basename "$a") in the $set download"; exit 1; }
@@ -117,8 +128,11 @@ get() {
   fi
   [ -n "$anchored" ] || { say "NO ANCHOR: no older release listed and no MX_CERT; not kept"; exit 1; }
 
-  local same="no"
-  cmp -s "$(cat "$W/x86_64.file")" "$(cat "$W/arm64.file")" && same="yes: APKPure has one build for both"
+  local same="no x86_64 build" x86="none on APKPure"
+  if [ -f "$W/x86_64.file" ]; then
+    x86=$(abis x86_64); same="no"
+    cmp -s "$(cat "$W/x86_64.file")" "$(cat "$W/arm64.file")" && same="yes: APKPure has one build for both"
+  fi
   cat > "$W/notes.md" <<EOF
 MX Player $MX_VERSION ($MX_PACKAGE, versionCode $code), kept for the reference lab of yannmh007/innocent.
 Research only: it runs in the lab's throwaway emulator. Never install it on a phone.
@@ -128,7 +142,7 @@ Research only: it runs in the lab's throwaway emulator. Never install it on a ph
 - Signer SHA-256: $cert
 - Same signer as the oldest release APKPure lists: $old
 - Same signer as the second source (MX_CERT): $second
-- The x86_64 download, native code for: $(abis x86_64)
+- The x86_64 download, native code for: $x86
 - The arm64-v8a download, native code for: $(abis arm64)
 - The two downloads are the same file: $same
 EOF
@@ -139,12 +153,14 @@ EOF
 keep() {
   local out="$W/out" f ext
   mkdir -p "$out"
-  f=$(cat "$W/x86_64.file"); ext="${f##*.}"
+  f=$(cat "$W/arm64.file"); ext="${f##*.}"
   if [ "$(cut -c1-3 "$W/same")" = yes ]; then
     cp "$f" "$out/mx-$MX_VERSION.$ext"
   else
-    cp "$f" "$out/mx-$MX_VERSION-x86_64.$ext"
-    f=$(cat "$W/arm64.file"); cp "$f" "$out/mx-$MX_VERSION-arm64-v8a.${f##*.}"
+    cp "$f" "$out/mx-$MX_VERSION-arm64-v8a.$ext"
+    if [ -f "$W/x86_64.file" ]; then
+      f=$(cat "$W/x86_64.file"); cp "$f" "$out/mx-$MX_VERSION-x86_64.${f##*.}"
+    fi
   fi
   gh release create "$TAG" --repo "$REF_REPO" --title "MX Player $MX_VERSION" \
     --notes-file "$W/notes.md" "$out"/* >/dev/null
