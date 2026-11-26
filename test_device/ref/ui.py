@@ -278,6 +278,74 @@ def tiles(base, panel, package):
         print('%d %d' % c)
 
 
+def grid(base, panel, package, dpi):
+    """The panel's tiles alone, top row first, left to right: "x y" each.
+    A tile is a clickable new node about as tall as it is wide and under
+    140 dp: not a switch's row, which runs the panel's width (tapping the
+    last of tiles() could turn the Shortcuts switch off)."""
+    dp = dpi / 160
+    found = {}
+    for n in _added(base, panel, package):
+        m = re.match(r'\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]', n.get('bounds', ''))
+        if n.get('clickable') != 'true' or not m:
+            continue
+        x1, y1, x2, y2 = map(int, m.groups())
+        w, h = x2 - x1, y2 - y1
+        if w < 140 * dp and h < 140 * dp and 0.5 < w / max(h, 1) < 2:
+            found[((x1 + x2) // 2, (y1 + y2) // 2)] = (w // 8, h // 8)
+    # The tiles are all one size; a switch's own knob, also square, is not.
+    sizes = list(found.values())
+    common = max(set(sizes), key=sizes.count) if sizes else None
+    for c in sorted((c for c, sz in found.items() if sz == common), key=lambda c: (c[1] // 40, c[0])):
+        print('%d %d' % c)
+
+
+def shortcuts(dump, package, dpi):
+    """The shortcut row's slots, left to right: "x y kind label" each, kind
+    "chevron" for the expand/collapse one, else "item". MX's row is its
+    screen_shortcut_list: the slots are the clickable nodes that fill its
+    height, the chevron the one whose disc is small (under 32 dp). Innocent's
+    chevron is labelled Expand or Collapse, its slots the clickable nodes on
+    the chevron's line with their TalkBack labels."""
+    dp = dpi / 160
+    ns = [n for n in nodes(dump) if n.get('package') == package]
+
+    def box(n):
+        m = re.match(r'\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]', n.get('bounds', ''))
+        return tuple(map(int, m.groups())) if m else None
+
+    def label(n):
+        t = (n.get('content-desc') or n.get('text') or '').replace('\n', ' ')
+        return re.sub(r'[^A-Za-z0-9]+', '_', t).strip('_')[:28] or '-'
+
+    out = []
+    lst = next((box(n) for n in ns if (n.get('resource-id') or '').endswith('screen_shortcut_list')), None)
+    if lst:
+        discs = [box(n) for n in ns if (n.get('resource-id') or '').endswith('screen_shortcut_background')]
+        for n in ns:
+            b = box(n)
+            if n.get('clickable') != 'true' or not b or b == lst:
+                continue
+            if abs(b[1] - lst[1]) > 3 or abs(b[3] - lst[3]) > 3 or b[2] - b[0] > 140 * dp:
+                continue
+            small = any(d and b[0] <= d[0] and d[2] <= b[2] and d[2] - d[0] < 32 * dp for d in discs)
+            out.append((b, 'chevron' if small else 'item', '-'))
+    else:
+        chev = next((n for n in ns if re.match(r'^(Expand|Collapse)$', n.get('content-desc') or '')), None)
+        if chev is None:
+            return
+        cb = box(chev)
+        for n in ns:
+            b = box(n)
+            if n.get('clickable') != 'true' or not b or abs(b[1] - cb[1]) > 3 * dp:
+                continue
+            if b[2] - b[0] > 140 * dp or b[3] - b[1] > 1.5 * (cb[3] - cb[1]) + 2:
+                continue
+            out.append((b, 'chevron' if n is chev else 'item', label(n)))
+    for b, kind, lab in sorted(out, key=lambda t: t[0][0]):
+        print('%d %d %s %s' % ((b[0] + b[2]) // 2, (b[1] + b[3]) // 2, kind, lab))
+
+
 def main(argv):
     if len(argv) == 4 and argv[0] == 'splits':
         splits(argv[1], int(argv[2]), argv[3])
@@ -291,6 +359,10 @@ def main(argv):
         added(argv[1], argv[2], argv[3])
     elif len(argv) == 4 and argv[0] == 'tiles':
         tiles(argv[1], argv[2], argv[3])
+    elif len(argv) == 5 and argv[0] == 'grid':
+        grid(argv[1], argv[2], argv[3], int(argv[4]))
+    elif len(argv) == 4 and argv[0] == 'shortcuts':
+        shortcuts(argv[1], argv[2], int(argv[3]))
     elif len(argv) == 6 and argv[0] == 'topbar':
         topbar(argv[1], argv[2], int(argv[3]), int(argv[4]), int(argv[5]))
     else:

@@ -493,7 +493,168 @@ panels() {
   open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
   inn_software_decoding
 
-  local app w h idx n k rot tries got total=0 orient b0 b1 b2 b3 b4 b5 b6 b7 ax ay bx by xy
+  local total=0
+  if [ "${SCREENS:-panels}" = shortcuts ]; then
+    shortcut_screens
+  else
+    panel_screens
+  fi
+
+  local blocked L="$OUT/logcat_raw.txt"
+  blocked=$(adb shell "iptables -L OUTPUT -v -n -x" 2>/dev/null | tr -d '\r' \
+    | awk -v u="$MX_UID" '$0 ~ ("owner UID match " u "( |$)") {print $1; exit}')
+  kill "$LOGCAT" 2>/dev/null || true
+  say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); Innocent playback failed $(grep -c 'engine stuck' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
+  [ "${SCREENS:-panels}" = shortcuts ] || say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
+  gzip -9 "$L"
+}
+
+# PHASE 2 (26 Nov 2026, the owner: "every shortcut as MX's — what it does
+# and the screen it brings, exactly; ⋮ as MX's 11 tiles and More"):
+# SCREENS=shortcuts. Sideways over the black frame, for each app: the
+# expanded row; then each shortcut tapped from a fresh open of its own copy
+# of the film (neither app resumes). What it opened (a panel, a page: new
+# nodes in the tree) is taken and closed with Back; a toggle (nothing new
+# in the tree: a toast, a state) is taken, tapped again and taken again
+# (_2: the other state, put back). Pass 2 swipes the expanded row to its
+# end for the shortcuts past the screen's edge (some come twice). Then ⋮:
+# its first page, its lower part, and MX's last tile ("More ›"). MX's tree
+# has no words: its shortcuts are told apart on the screenshots.
+SLOTS=()
+ITEMS=()
+sc_fresh() {  # $1 app, $2 copy: open it, paused, the controls up (BTNS)
+  local dir=/sdcard/Movies/ref_sc_$2
+  adb shell am force-stop "$(pkg_of "$1")"
+  if [ "$1" = mx ]; then open_film mx "$dir/ref_sc$2.mp4"; sleep 6
+  else open_film inn "$dir/innocent_lab_play.mp4"; sleep 9; fi
+  adb shell input keyevent KEYCODE_MEDIA_PAUSE
+  sleep 1
+  ensure_controls "$1" "$SW" "$SH"
+}
+sc_ready() {  # $1 app, $2 copy, $3 pass: the row expanded (ITEMS), at its end in pass 2
+  local line cx cy x y
+  sc_fresh "$1" "$2" || return 1
+  mapfile -t SLOTS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI")
+  line=$(printf '%s\n' "${SLOTS[@]}" | grep ' chevron ' | head -1 || true)
+  [ -n "$line" ] || return 1
+  read -r cx cy _ <<< "$line"
+  adb shell input tap "$cx" "$cy"
+  sleep 1.5
+  quick_tree "$1" "$OUT/raw/quick.xml"
+  mapfile -t ITEMS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI" | grep ' item ' || true)
+  if [ "$3" = 2 ] && [ "${#ITEMS[@]}" -gt 0 ]; then
+    read -r x y _ <<< "${ITEMS[0]}"
+    adb shell input swipe $((SW * 85 / 100)) "$y" $((SW * 15 / 100)) "$y" 400
+    sleep 1
+    adb shell input swipe $((SW * 85 / 100)) "$y" $((SW * 15 / 100)) "$y" 400
+    sleep 1.5
+    quick_tree "$1" "$OUT/raw/quick.xml"
+    mapfile -t ITEMS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI" | grep ' item ' || true)
+  fi
+  [ "${#ITEMS[@]}" -gt 0 ]
+}
+sc_more() {  # $1 app: ⋮ open (from BTNS); true when its panel came
+  local ax ay bx by k n
+  if [ "$1" = inn ] && [ "${#BTNS[@]}" = 3 ]; then
+    read -r ax ay <<< "${BTNS[0]}"; read -r bx by <<< "${BTNS[1]}"
+    BTNS=("$((2 * ax - bx)) $ay" "${BTNS[@]}")
+  fi
+  [ -n "${BTNS[0]:-}" ] || return 1
+  cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
+  # shellcheck disable=SC2086
+  adb shell input tap ${BTNS[0]}
+  for k in 1 2 3 4 5 6; do
+    sleep 1
+    quick_tree "$1" "$OUT/raw/quick.xml"
+    n=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$1")" || echo 0)
+    [ "${n:-0}" -ge 3 ] && return 0
+  done
+  return 1
+}
+shortcut_screens() {
+  local app i pass k n idx got name x y kind lab added dir src tiles
+  local TILES=()
+  SW=$ph; SH=$pw
+  src=/sdcard/Movies/ref_land_black.mp4
+  for i in $(seq 0 27); do
+    dir=/sdcard/Movies/ref_sc_$i
+    adb shell "mkdir -p $dir && cp $src $dir/innocent_lab_play.mp4 && cp $src $dir/ref_sc$i.mp4 && cp /sdcard/Movies/ref_sub.srt $dir/ref_sc$i.srt"
+  done
+  adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+  adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 1 >/dev/null 2>&1 || true
+  sleep 2
+  for app in mx inn; do
+    idx=0; got=0
+    for pass in 1 2; do
+      if ! sc_ready "$app" "$idx" "$pass"; then
+        note "$app pass $pass: the row never opened"; grab "$app" "${app}_land_norow_$pass"; continue
+      fi
+      n=${#ITEMS[@]}
+      grab "$app" "${app}_land_expanded_$pass"
+      note "$app pass $pass: $n shortcuts on screen ($(printf '%s ' "${ITEMS[@]##* }"))"
+      for k in $(seq 0 $((n - 1))); do
+        idx=$((idx + 1))
+        [ "$idx" -le 27 ] || break
+        sc_ready "$app" "$idx" "$pass" || { note "$app pass $pass slot $k: the row never opened"; continue; }
+        [ "$k" -lt "${#ITEMS[@]}" ] || { note "$app pass $pass slot $k: not on screen this time"; continue; }
+        read -r x y kind lab <<< "${ITEMS[$k]}"
+        name="${app}_land_sc${pass}_$(printf %02d "$k")"
+        [ "$app" = inn ] && name="${name}_${lab}"
+        cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
+        adb shell input tap "$x" "$y"
+        sleep 2.5
+        quick_tree "$app" "$OUT/raw/quick.xml"
+        added=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$app")" || echo 0)
+        grab "$app" "$name"
+        got=$((got + 1))
+        if [ "${added:-0}" -ge 3 ]; then
+          note "$name: opened something ($added new nodes); Back"
+          adb shell input keyevent KEYCODE_BACK
+          sleep 1
+        else
+          note "$name: nothing new in the tree (a toggle?); tapped again"
+          adb shell input tap "$x" "$y"
+          sleep 2
+          grab "$app" "${name}_2"
+        fi
+      done
+    done
+    # ⋮: its first page and MX's last tile ("More ›"), then its lower part.
+    idx=$((idx + 1))
+    if sc_fresh "$app" "$idx" && sc_more "$app"; then
+      grab "$app" "${app}_land_more"
+      mapfile -t TILES < <(UI grid "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$app")" "$PROBE_DPI")
+      tiles=${#TILES[@]}
+      note "$app ⋮: $tiles buttons in the panel"
+      if [ "$app" = mx ] && [ "$tiles" -gt 0 ]; then
+        # The last tile of the grid (ui.py grid: tiles only, never the
+        # switches' rows below them).
+        # shellcheck disable=SC2086
+        adb shell input tap ${TILES[$((tiles - 1))]}
+        sleep 3
+        grab mx mx_land_more2
+      fi
+    else
+      note "$app ⋮: never opened"
+    fi
+    idx=$((idx + 1))
+    if sc_fresh "$app" "$idx" && sc_more "$app"; then
+      adb shell input swipe $((SW * 80 / 100)) $((SH * 85 / 100)) $((SW * 80 / 100)) $((SH * 15 / 100)) 500
+      sleep 1.5
+      grab "$app" "${app}_land_more_low"
+    fi
+    adb shell am force-stop "$(pkg_of "$app")"
+    say "$app: $got shortcut screens taken; ⋮ $([ -f "$OUT/${app}_land_more.png" ] && echo taken || echo missing)"
+  done
+  adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
+}
+
+# The panels of both apps (⋮, ♪, CC), upright and sideways, over black and
+# white: SCREENS=panels (the default).
+panel_screens() {
+  local app w h idx n k rot tries got orient b0 b1 b2 b3 b4 b5 b6 b7 ax ay bx by xy
   local TILES=()
   for app in mx inn; do
     for o in port land; do
@@ -605,13 +766,6 @@ panels() {
   adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
   adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
 
-  local blocked L="$OUT/logcat_raw.txt"
-  blocked=$(adb shell "iptables -L OUTPUT -v -n -x" 2>/dev/null | tr -d '\r' \
-    | awk -v u="$MX_UID" '$0 ~ ("owner UID match " u "( |$)") {print $1; exit}')
-  kill "$LOGCAT" 2>/dev/null || true
-  say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); Innocent playback failed $(grep -c 'engine stuck' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
-  say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
-  gzip -9 "$L"
 }
 
 keep() {
