@@ -88,9 +88,15 @@ does it.
   would close it). tool/ref/controls.py measures the controls screen (dp,
   MX's view ids, Innocent's labels): THE OWNER TOOK MX's CONTROLS GEOMETRY
   (26 Nov) — the numbers and where they go: the handoff's update block.
-  IN FLIGHT: the reference lab on a tablet (1600x2560 at 320 dpi; ref.env
-  back to the phone after it) and the device lab gate A2 (API 34). NEXT
-  SESSION: the controls geometry as MX's, the tablet reach, then the
+  MX ON A TABLET, reference lab 45828625924 (800x1280 dp): MX's panels
+  are 480 dp both ways (37.5 %), upright full width, content 32 dp in —
+  MX's rule: the short side, at most 480. THE OWNER (26 Nov): MX's, all of
+  it (Innocent now: upright 596 within a 640 cap, sideways 440). Device lab
+  A2 45828625953 (API 34): genres 37/37, jumps 15/15, gestures 27/27 and
+  19/19, audits 52 and 52 — the gate as U5. ref.env is still at the
+  tablet: back to the phone with the next run. NEXT SESSION (the owner's
+  word given for both): the controls geometry as MX's and the tablet reach
+  as MX's (figures and places: the handoff's update block), then the
   handoff's §5.0 table.
 - **26 Nov: THE PLAYER'S MENUS AS MX'S, ON THE WORK BRANCH ONLY (not
   released)** — next session: docs/handoff_2026_11_26_mx_parity.md (the

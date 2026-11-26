@@ -38,10 +38,23 @@
 > ui_controls_port.xml, 1080x2400 at 2.625). The "MX GEOMETRY" block in
 > player_screen.dart (_BottomControls) and shortcut_row.dart's _slot/_circle
 > are where the numbers live. Then the lab again and MX | Innocent sheets.
-> IN FLIGHT at the end of this session: the reference lab on a TABLET
-> (ref.env PROBE_SIZE 1600x2560, PROBE_DPI 320; §4.6) — read it, decide
-> Innocent's tablet reach with the owner, then put ref.env BACK to
-> 1080x2316 at 450; the device lab gate A2 (API 34) on this work.
+> MX ON A TABLET (reference lab 45828625924, 1600x2560 at 320 dpi = 800x1280
+> dp; MX's XAPK installs there with its xxxhdpi split; all 24 screens):
+> every MX panel's container is 480 dp exactly (upright 480 tall = 37.5 %,
+> sideways 480 wide), upright the full width with the content 32 dp in
+> (`rv_menu` 32..768). With the phone's 384 (the short side) MX's rule reads
+> as THE SHORT SIDE, AT MOST 480 DP. Innocent now: upright 596 (0.466 x the
+> long side) with its content capped at 640 and centred, sideways 440 (the
+> 280-440 clamp). THE OWNER (26 Nov): "MX as it is, all of it" — so
+> `PlayerUi.panelExtent = min(shortestSide, 480)`, `sideWidth` the same
+> (keep a 280 floor for split windows), and upright the sheet/panel full
+> width with MX's inset (32 dp on a tablet; 24 on a phone) — this replaces
+> ui-design §3b's "≤ 640" for the player's panels. Phones do not change.
+> Then PLAYER_PHONES=all, the legibility test, the lab on the tablet again.
+> ref.env is STILL AT THE TABLET (1600x2560, 320): set it back to 1080x2316
+> at 450 in the same push as the next phone run.
+> Device lab A2 45828625953 (API 34, the gate on this work): genres 37/37,
+> jumps 15/15, gestures 27/27 and 19/19, audits 52 and 52 — as U5.
 > Where each run stands: BACKLOG §0, the entry "26 Nov (later)".
 
 

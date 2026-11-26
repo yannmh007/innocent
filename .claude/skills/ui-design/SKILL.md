@@ -164,6 +164,11 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
   14, inset 8), a page that opens pages in a `DetailNavigator`. Below 840
   the phone's layout, untouched. A window that narrows keeps what the
   person opened; never push over the player.
+- The player's panels and sheets on a large screen (the owner, 26 Nov
+  2026, from MX on a tablet, reference lab 45828625924): MX's reach — the
+  short side, at most 480 dp, both ways — and upright the full width, the
+  content 32 dp in; not the 640 cap above. TO BUILD (the handoff's update
+  block); until then `panelExtent` is 0.466 x the long side, ≤ 640 wide.
 - A grid adds columns with width (`Responsive.gridColumns`; posters
   `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
   cell stays about a phone's size.
