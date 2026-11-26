@@ -25,8 +25,10 @@ on a phone. The player's building blocks live in
    film); a tile's icon sits on a dark disc in a thin white ring. The
    controls are MX's kinds (the owner, 26 Nov 2026: "as MX, all of it"):
    one choice of a list is a radio ring with a dot, the subtitle tracks
-   are check boxes in a thin rectangle, ⋮ has no title, a sheet's title
-   no line under it, CC's settings open below a "Settings ▾" row.
+   are check boxes in a thin rectangle (marks are outlines, nothing fills
+   them until chosen), ⋮ has no title, a sheet's title no line under it,
+   CC's settings open below a "Settings ▾" row, and upright a ← before a
+   panel's or sheet's title closes it (no drag handle).
    The controls under it hide (11 Nov: the clock, ♪,
    "Default" and the seek bar showed through a translucent ⋮). Upright,
    the film's subtitle goes over the open panel, as MX lifts its own. A
@@ -50,7 +52,7 @@ on a phone. The player's building blocks live in
 | raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
 | hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
-| selected | on the shade (26 Nov): a choice's radio ring white with an accent dot (idle ring white 70 %); a check box filled accent with a white ✓ (idle white 70 %), both on a dark halo (`PlayerUi.markHalo`); a row that is not a choice, a white ✓ at its end; a tile, accent icon on accent 16 % in an accent ring (idle ring white 55 %, `PlayerUi.tileRing`) |
+| selected | on the shade (26 Nov): a choice's radio ring white with an accent dot (idle ring white 70 %, an outline: 3.7:1 over the shade on a white film); a check box filled accent with a white ✓ (idle an outline, white 70 %); a row that is not a choice, a white ✓ at its end; a tile, accent icon on accent 16 % in an accent ring (idle ring white 55 %, `PlayerUi.tileRing`) |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
 | spacing | 4 dp grid; panel padding 24 (20 under 360 dp: MX keeps panel content ~26 dp in, the owner chose it 22 Nov); section gap 20 |
 | rows | min 52 dp, icon 22 dp, gap 16 |
@@ -71,7 +73,9 @@ two lines at most · caption 11 sp.
   bottom sheet that tall with a drag handle (it was up to 55 %, and at 72 %
   it rose over the whole picture: "it goes up too far", owner, 12 Nov). On
   the shade. The picture never moves. ⋮ has no title, upright or sideways
-  (26 Nov: "hide the word More"). Header: title + optional trailing (capped at half the row,
+  (26 Nov: "hide the word More"); its first tiles 34 dp down, as MX's. No
+  drag handle; the title's middle 28 dp down, as MX's; upright a ← before
+  it closes the panel (26 Nov). Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
@@ -89,14 +93,17 @@ two lines at most · caption 11 sp.
 - **Expanding row** (`PanelExpandRow`): icon, title and a caret; its rows
   open below it (CC's "Settings": delay, text style, position). Shut when
   the panel opens.
-- **Tile** (`PanelTile` in a `PanelGrid`): 48 dp circle (black 30 % disc,
-  a 1.2 dp white 55 % ring, as MX rings its tiles), 22 dp icon, label up to
-  three lines. Four columns.
+- **Tile** (`PanelTile` in a `PanelGrid`): 44 dp circle (black 30 % disc,
+  a 1.2 dp white 55 % ring, as MX rings its tiles; MX's is 45), 22 dp icon,
+  label 6 dp below, up to three lines; rows ~88 dp apart in English (MX's
+  83; they were 110). Four columns.
 - **Card** (`PanelCard`): raised, radius 14, for a checklist or a group.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
 - **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`, no line under the
-  title, 26 Nov): the panel's reach and shade; upright a bottom sheet (dragged down to close); **sideways a
+  title and no handle, upright a ← that closes it, 26 Nov): the panel's
+  reach and shade; upright a bottom sheet (dragged down to close, by any
+  part of it); **sideways a
   side panel from the right, the whole height**, like ⋮ (a bottom sheet held sideways had
   ~300 dp and cut its lists and sliders). The form follows the window
   while the sheet is open — a turn or a resize keeps the content's state
@@ -182,7 +189,8 @@ from MX but its reasoning).
   on 26 Nov its kinds of control ("Innocent's UI is not pro, so make it
   as MX, all of it"): radio rings, the subtitle tracks as boxed check
   boxes, ringed tiles, no ⋮ title, no line under a sheet's title, CC's
-  settings behind "Settings ▾". Kinds of control and their places only —
+  settings behind "Settings ▾", the ← upright, MX's spacing of titles and
+  tiles (measured on the emulator, run 45775539414). Kinds of control and their places only —
   drawn with Innocent's own icons and colours, never MX's.
 - Colour is tested against the film, not against MX: the player plays any
   video, so every icon, label and panel must read over a dark, a bright, a

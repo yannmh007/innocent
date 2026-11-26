@@ -125,24 +125,39 @@ def own_surface(png, port, w, h, cb, dp):
         return None
     wp, bp = wi.load(), bi.load()
     step = max(1, int(dp))
-    if port:
-        x = w - int(10 * dp)
-        line = [(x, y) for y in range(h - 1 - int(80 * dp), 0, -step)]
-    else:
-        y = h - int(12 * dp)
-        line = [(x, y) for x in range(w - 1 - int(80 * dp), 0, -step)]
-    see = [wp[p] - bp[p] for p in line]
-    if not see:
+
+    def edge_along(at):
+        """Along one line from the panel's far side inward, the first
+        point past the panel: where more of the film shows than through
+        the shade. Content only lowers the see-through (white words are
+        the same over both frames, tile discs are darker), so the shade's
+        level is the upper part of what the line reads first; a median of
+        20 dp took ⋮'s tile discs for the shade once its title went
+        (run 45775539414: 10.9 % wide)."""
+        if port:
+            line = [(at, y) for y in range(h - 1 - int(80 * dp), 0, -step)]
+        else:
+            line = [(x, at) for x in range(w - 1 - int(80 * dp), 0, -step)]
+        see = [wp[p] - bp[p] for p in line]
+        first = sorted(see[:60])
+        if not first:
+            return None
+        inside = first[int(0.9 * (len(first) - 1))]
+        for i, v in enumerate(see):
+            if v > inside + 6:
+                return line[i][1] if port else line[i][0]
         return None
-    inside = sorted(see[:20])[len(see[:20]) // 2]
-    edge = None
-    for i, v in enumerate(see):
-        if v > inside + 6:
-            edge = line[i]
-            break
-    if edge is None:
+
+    # Three lines across the panel; the edge farthest out wins (a false
+    # one, on content, is always nearer the panel's side).
+    across = w if port else h
+    found = [e for e in (edge_along(int(across - 10 * dp) if port else int(across - 12 * dp)),
+                         edge_along(across // 2), edge_along(int(12 * dp)))
+             if e is not None]
+    if not found:
         return None
-    return (0, edge[1], w, h) if port else (edge[0], 0, w, h)
+    edge = min(found)
+    return (0, edge, w, h) if port else (edge, 0, w, h)
 
 
 def measure(base, panel, pkg, w, h, dp, shot=None):

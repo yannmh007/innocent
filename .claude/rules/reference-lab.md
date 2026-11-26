@@ -48,3 +48,10 @@ repository and a run's public log carry numbers and our own code.
   now clips to the screen and takes the added node holding the most others
   wholly. Check a table's numbers against the trees before they go to the
   owner (22 Nov: one decision was taken on the wrong figure).
+- **Read Innocent's shade where content cannot fool it.** Content only
+  lowers the see-through (white words read the same over both frames,
+  tile discs are darker), so the shade's level is the upper part of a
+  line, not its median: run 45775539414 read ⋮ sideways as 10.9 % wide
+  once its title went and its tiles reached the line. measure.py reads
+  three lines and keeps the edge farthest out. After a layout change,
+  check the panel figures against the screenshots before they go out.

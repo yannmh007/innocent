@@ -107,16 +107,13 @@ class PlayerUi {
   static const Color tileDisc = Color(0x4D000000);
 
   /// The ring round a tile's disc, as MX rings its tiles (the owner, 26 Nov
-  /// 2026); the box round the subtitle tracks; an idle radio or check box.
+  /// 2026); the box round the subtitle tracks; an idle radio or check box —
+  /// an outline only, as MX's: over a white film the shade under it is
+  /// grey 102 at most, and the ring (white 70 %) reads 3.7:1 there. A dark
+  /// halo under it filled the idle box and ring black (run 45775539414).
   static const Color tileRing = Color(0x8CFFFFFF);
   static const Color boxEdge = Color(0x66FFFFFF);
   static const Color markIdle = Color(0xB3FFFFFF);
-
-  /// The dark ground under a radio or a check box, as [shadeInk] is under
-  /// a word.
-  static const List<BoxShadow> markHalo = <BoxShadow>[
-    BoxShadow(color: Color(0x99000000), blurRadius: 4),
-  ];
 
   static const Color hairline = Color(0x1AFFFFFF);
   static const Color textPrimary = Color(0xEBFFFFFF);
@@ -217,18 +214,22 @@ class PlayerPanel extends StatelessWidget {
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (portrait) const PlayerDragHandle(),
+            // As MX's (the owner, 26 Nov 2026: "as MX, all of it"): no
+            // handle; upright a ← before the title closes the panel; the
+            // title as near the top as MX's (its middle 28 dp down).
             if (title != null)
               _PanelHeader(
                 title: title!,
                 trailing: trailing,
-                top: portrait ? 2 : 14,
+                top: portrait ? 4 : 6,
+                onBack: portrait ? onDismiss : null,
               ),
             Flexible(
               child: _FadingScroll(
                 padding: EdgeInsets.fromLTRB(
                   pad,
-                  title == null ? (portrait ? 4 : 18) : 2,
+                  // No title (⋮): the first tiles 34 dp down, as MX's.
+                  title == null ? 30 : 2,
                   pad,
                   20 + (portrait ? padding.bottom : 0),
                 ),
@@ -302,17 +303,28 @@ class PlayerPanel extends StatelessWidget {
 }
 
 class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({required this.title, required this.top, this.trailing});
+  const _PanelHeader({
+    required this.title,
+    required this.top,
+    this.trailing,
+    this.onBack,
+  });
 
   final String title;
   final Widget? trailing;
   final double top;
 
+  /// Upright, MX's ← before the title (26 Nov 2026): it closes.
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     final pad = PlayerUi.pad(context);
     return Padding(
-      padding: EdgeInsets.fromLTRB(pad, top, pad - 8, 6),
+      // With a ←, its 48 dp target starts 12 dp before the edge, so the
+      // arrow itself sits on it and the title 60 dp in, as MX's.
+      padding: EdgeInsets.fromLTRB(
+          onBack != null ? pad - 12 : pad, top, pad - 8, 0),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 44),
         // The action at the right edge, as wide as it needs up to half the
@@ -321,6 +333,13 @@ class _PanelHeader extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) => Row(
             children: [
+              if (onBack != null)
+                IconButton(
+                  onPressed: onBack,
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  icon: const Icon(Icons.arrow_back_rounded,
+                      size: 24, color: PlayerUi.textPrimary),
+                ),
               Expanded(
                 child: Semantics(
                   header: true,
@@ -620,7 +639,7 @@ class PanelRow extends StatelessWidget {
 
 /// A choice's mark (the owner, 26 Nov 2026: "as MX, all of it"): a ring,
 /// with a dot in it when chosen — the mark MX and Android give one choice
-/// of a list. White on a dark halo, so it holds over a bright film.
+/// of a list. An outline: nothing fills it while it is not chosen.
 class PanelRadio extends StatelessWidget {
   const PanelRadio({super.key, required this.selected});
 
@@ -636,7 +655,6 @@ class PanelRadio extends StatelessWidget {
         border: Border.all(
             color: selected ? PlayerUi.textPrimary : PlayerUi.markIdle,
             width: 2),
-        boxShadow: PlayerUi.markHalo,
       ),
       child: selected
           ? Center(
@@ -669,7 +687,6 @@ class PanelCheckMark extends StatelessWidget {
         borderRadius: BorderRadius.circular(3),
         border: Border.all(
             color: value ? PlayerUi.accent : PlayerUi.markIdle, width: 2),
-        boxShadow: PlayerUi.markHalo,
       ),
       child: value
           ? const Icon(Icons.check_rounded,
@@ -882,7 +899,9 @@ class PanelTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
+          // MX's proportions (26 Nov 2026): a 44 dp disc (MX's 45), rows
+          // about 88 dp apart (MX's 83; they were 110).
+          padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -890,8 +909,8 @@ class PanelTile extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
                       // A dark disc in a thin ring, as MX rings its tiles
                       // (the owner, 26 Nov 2026). Dark: on the see-through
@@ -927,7 +946,7 @@ class PanelTile extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               // Three lines at most: two hold every label at the usual
               // sizes; the third keeps a Burmese one whole on a 320 dp
               // phone at the largest font ("ဖွင့်နေသော စ…").
@@ -1028,10 +1047,14 @@ class PlayerSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sideways a sheet is a side panel (showPlayerSheet): nothing to
-        // drag.
-        if (upright) const PlayerDragHandle(),
-        _PanelHeader(title: title, trailing: trailing, top: upright ? 2 : 14),
+        // As a panel's (26 Nov 2026): no handle — upright the whole sheet
+        // still drags down to close — and upright a ← that closes it.
+        _PanelHeader(
+          title: title,
+          trailing: trailing,
+          top: upright ? 4 : 6,
+          onBack: upright ? () => Navigator.of(context).maybePop() : null,
+        ),
         if (divider)
           const Divider(height: 1, thickness: 1, color: PlayerUi.hairline),
       ],

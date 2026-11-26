@@ -41,7 +41,7 @@ class TrackSelectionSheet<T> extends StatelessWidget {
           child: ListView(
             shrinkWrap: true,
             padding: EdgeInsets.fromLTRB(
-                PlayerUi.pad(context) - 4, 8, PlayerUi.pad(context) - 4, 16),
+                PlayerUi.pad(context) - 4, 2, PlayerUi.pad(context) - 4, 16),
             children: [
               for (final t in tracks)
                 PanelRow(

@@ -222,8 +222,22 @@ does it.
     1.0/1.3); legibility: CC 20/20 and ♪ 6/6 on all five frames, ⋮ as
     before (white 42/48, lowest 3.7; colour 46/48, 4.1). Not done: MX's
     ♪ "Disable" (no audio) — the engines' setAudioTrack needs a track; it
-    wants an engine change. The emulator side by side: the ref.env run of
-    26 Nov.
+    wants an engine change. PROVED on the emulator, run 45775539414 (the
+    build of 341aca04): CC, ♪ and ⋮ as MX's in kind and order, both ways.
+    Left after it, and fixed the same day: the idle check box and radio
+    read as black squares and discs (a dark halo filled them; MX's are
+    outlines), the title sat 8 dp lower than MX's and the ♪ rows 35 dp
+    lower (Innocent's header and list padding), upright MX has "← title"
+    where Innocent had a drag handle, ⋮'s tile rows were 110 dp apart
+    against MX's 83 (now 44 dp discs, ~88 dp). The lab's measure read ⋮
+    sideways as 10.9 % wide that run: with no title its tiles reached the
+    line the see-through was read along, and a median took the discs for
+    the shade. measure.py now reads three lines and the shade's upper
+    level: every Innocent panel 47.9 % on runs 45035203039, 45038350235
+    and 45775539414, every other figure the same. ♪ beside MX's: MX also has
+    Disable, "Use SW audio decoder", Open (an audio file), Stereo mode,
+    Synchronization (audio delay: Innocent has it in Settings > Audio) —
+    the owner to choose which to bring into ♪.
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]

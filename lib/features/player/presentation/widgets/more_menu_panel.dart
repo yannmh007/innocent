@@ -77,7 +77,6 @@ class MoreMenuPanel extends StatelessWidget {
       onDismiss: onDismiss,
       children: [
         PanelGrid(
-          rowGap: 4,
           children: [
             for (final item in items)
               PanelTile(

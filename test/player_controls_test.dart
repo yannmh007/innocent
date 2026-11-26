@@ -116,6 +116,36 @@ void main() {
       await leavePlayer(tester);
     });
 
+    testWidgets('$o: upright a panel and a sheet close by their ←, as MX\'s',
+        (tester) async {
+      await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
+      await tester.tap(find.byIcon(Icons.subtitles_outlined));
+      await _settle(tester);
+      final back = find.descendant(
+          of: find.byType(PlayerPanel),
+          matching: find.byIcon(Icons.arrow_back_rounded));
+      // MX puts it before the title upright only.
+      expect(back, landscape ? findsNothing : findsOneWidget);
+      expect(find.byType(PlayerDragHandle), findsNothing);
+      if (!landscape) {
+        await tester.tap(back);
+        await _settle(tester);
+        expect(_state().openPanel, SidePanel.none);
+        expect(find.byType(PlayerScreen), findsOneWidget);
+        await tester.longPress(find.byIcon(Icons.skip_next));
+        await _settle(tester);
+        expect(find.text('Loop one'), findsOneWidget);
+        await tester.tap(find.descendant(
+            of: find.byType(PlayerSheetHeader),
+            matching: find.byIcon(Icons.arrow_back_rounded)));
+        await _settle(tester);
+        expect(find.text('Loop one'), findsNothing);
+        expect(find.byType(PlayerScreen), findsOneWidget,
+            reason: 'the ← closed the player, not the sheet');
+      }
+      await leavePlayer(tester);
+    });
+
     testWidgets('$o: Video display off turns the picture off, not the menu',
         (tester) async {
       await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
@@ -318,8 +348,10 @@ void main() {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
-    final handle = find.byType(PlayerDragHandle);
+    // No handle since 26 Nov 2026 (as MX): the sheet drags by its header.
+    final handle = find.byType(PlayerSheetHeader);
     expect(handle, findsOneWidget);
+    expect(find.byType(PlayerDragHandle), findsNothing);
     final top = tester.getRect(find.byType(PlayerShade).last).top;
     await tester.drag(handle, const Offset(0, 30));
     await _settle(tester);
@@ -630,10 +662,10 @@ void main() {
         findsOneWidget);
     expect(find.text('Player gestures'), findsOneWidget);
     expect(find.text('Tap anywhere to dismiss'), findsNothing);
-    // A keyboard or a remote walks the twelve rows, and the list scrolls
-    // to the last.
+    // A keyboard or a remote walks the header's ← (upright, as MX's,
+    // 26 Nov 2026) and the twelve rows, and the list scrolls to the last.
     final last = find.text('Headset button');
-    for (var i = 0; i < 12; i++) {
+    for (var i = 0; i < 13; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
     }
