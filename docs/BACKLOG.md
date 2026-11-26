@@ -16,6 +16,10 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **26 Nov: THE PLAYER'S MENUS AS MX'S, ON THE WORK BRANCH ONLY (not
+  released)** — next session: docs/handoff_2026_11_26_mx_parity.md (the
+  state, what is open, every screen size, the rest of the player after
+  MX, and the prompt to paste).
 - **22 Nov: 1.64.88 IS OUT — the sign-in kept when the server ends a
   session while its token still lives; THE CONSOLE'S SIGN-OUT IS LOCAL
   (LIVE)**. RELEASED: main f82cbc4c (pushed 08:41:35 UTC after the
@@ -262,11 +266,10 @@ does it.
     An upright film puts upright controls on the picture too: not yet
     measured. (3) test/support/player_harness.dart calls the owner's phone
     411×882 dp (2.625); BACKLOG's 22 Nov reading is 450 dpi, 384×823.
-  - NEXT: the owner's look at the shade on the phone (a release when the
-    owner says); the legibility fixes (a stronger gradient behind the
-    sideways controls, the selected label — Innocent's own colours); the
-    accessibility root. More panels only if asked. A rerun: ref.env
-    MODE=panels (~30 min; ~50 when lib/ changed and the lab APK rebuilds).
+  - NEXT (26 Nov, the owner): a new session — docs/handoff_2026_11_26_mx_parity.md
+    holds the state, the open items, the plan (every screen size; the rest
+    of the player after MX) and the prompt. A rerun: ref.env MODE=panels
+    (~30 min with the lab APK rebuilt).
 - **1.64.87 IS OUT (21 Nov, the owner's "သေချာရင် Release လုပ်ပါ" after
   the sign-in question)**: main 01c05883 (pushed 16:25:37 UTC after the
   libmpv jar came whole 3 of 3, twice), Build 44924513260 green (Analyze,
