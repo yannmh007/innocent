@@ -1,5 +1,28 @@
 # Handoff, 26 Nov 2026: the player as MX's, and every screen size
 
+> **UPDATE, 26 Nov (second session)** — read this block first; the rest
+> below is the first session's handoff, still right except where this says.
+> DONE (on the branch, not released): §3.1 legibility (controls on
+> `BarShade` + `FilmInk`, the shortcut row on discs upright too, ⋮'s
+> labels white — 6 of 1440 ⋮ labels still 3.6-4.5:1 by the strict pixel
+> measure, 5.3-6.0 at their strokes); §3.3 (the owner's phone is 384x823 at
+> 2.8125; the harness fixed; player_screen.dart's "MX GEOMETRY" dp are
+> ~7 % large: re-measure in the lab); §2.1 (the owner took ♪'s
+> Synchronization only: "Audio delay" row → `AudioSyncSheet`); every
+> screen size (§4.1-§4.5: PLAYER_PHONES=all incl. new split screens, 4026
+> pass; app screens on SCREEN_PHONES=tablet,…,tv, 888 drawn, no problem;
+> fixed: the sleep keypad and the cut sheet in split screen, a D-pad that
+> left a panel for the player's full-screen focus node, the focus ring
+> two-tone). The owner: "desktop" = Chromebook / Android windows.
+> OPEN: §2.2 the sideways subtitle under ⋮ — MX's subtitle never shows in
+> the lab (its font cache prompt stays up; the next run gives MX an .srt);
+> §3.2 the accessibility root — API 34 with the owner's navigation reached
+> the whole screen (runs 37311495516, 44940085085); device lab A1 on API 36
+> failed on apt (fixed), to rerun; §4.6 MX on a tablet (PROBE_SIZE
+> 1600x2560, PROBE_DPI 320) not run yet; §5 below (the table is in §5.0).
+> Where each run stands: BACKLOG §0, the entry "26 Nov (later)".
+
+
 Written at the end of a long session (the reference lab, Phases 0-1, and the
 owner's MX decisions of 22-26 Nov) so the next session can start cold. Read
 this, BACKLOG §0 ("21 Nov: REFERENCE LAB ..."), skill `ui-design` (§1-§4)
@@ -142,6 +165,26 @@ Check, in order:
 
 ## 5. Next work B: MX parity for the rest of the player
 
+### 5.0 The table (26 Nov, from the lab's screens and Innocent's code)
+
+| # | MX 3.4.3 | in the lab? | Innocent | next |
+|---|---|---|---|---|
+| 1 | Top bar: ← title … (♪ CC sideways) HW ⋮; upright ← title … HW ⋮ | yes (controls) | ← title clock ♪ CC decoder ⋮, both ways | measure in dp (measure.py has no controls measure yet) |
+| 2 | Shortcut row: EQ, 1X, screenshot, background play, rotate, ›; discs both ways | yes | the viewer's own set; discs both ways (26 Nov) | measure slot pitch and disc size (Innocent's 63/44 came off 2.625) |
+| 3 | Seek bar, times at its ends | yes | elapsed, remaining | measure |
+| 4 | Bottom row: lock │ ⏮ ⏯ ⏭ │ screen mode, PiP | yes | the same | measure |
+| 5 | ⋮ tiles: 11 sideways (+♪ CC upright), the last "More ›" | yes | 16 tiles, no "More ›" | owner: MX's set and a second page? |
+| 6 | ⋮ lower part: Video Display, Shortcuts switches, (below: not seen) | partly | the two switches, then every shortcut as check boxes | lab: scroll MX's ⋮ |
+| 7 | ⋮ "More ›" → a second page | no | — | lab: open it |
+| 8 | Each tile's screen (Playing Queue, Aspect Ratio, Display Settings, Bookmark, Cut, Favourite, Add To Playlist, Information, Share, Tutorial) | no | a sheet or dialog each | lab: open each by its place in the grid |
+| 9 | ♪ Synchronization, Stereo mode, Open | no (♪ itself yes) | Audio delay (26 Nov) | lab: open Synchronization |
+| 10 | CC "Settings ▾" open, and its sheets | no | delay / text style / position | lab: open ▾ and each |
+| 11 | Gesture readouts: brightness, volume, seek, zoom, speed | no | an indicator each | lab: a held swipe, screen taken mid-way |
+| 12 | Lock screen; screen-mode toast; HW dialog; 1X speed panel; EQ | no | lock overlay, toast, decoder dialog, speed, audio effects | lab |
+
+Start with 1-4 (one controls measure, numbers only) and 6-7, then one
+screen at a time.
+
 The owner's next step: menus, layout, styles — all after MX (within §0's
 limits). Start small, one screen at a time, each with side-by-side
 pictures and the owner's word, as Phase 1 did.
@@ -201,6 +244,17 @@ pictures and the owner's word, as Phase 1 did.
   black square on the emulator, which the test harness did not show.
 - The owner judges from pictures of both apps side by side on the same
   frame; send those, not only numbers.
+
+Second session (26 Nov):
+- `git stash` while a flutter command has rewritten pubspec.lock: the pop
+  refuses; `git checkout pubspec.lock` first, then `git stash pop`.
+- `flutter analyze` with no path before a push (test_screens/ is only
+  read there; Stream bench 45796876440 failed on it).
+- The legibility test reads the drawn pixels: a halo darkens a thin
+  stroke's own edge pixels as much as the ground beside it, so a stronger
+  halo did not lift 12 sp Burmese (3.6 → 3.6); a darker ground does.
+- A full-screen focus node (the player's remote listener) is a candidate
+  for the D-pad's arrows unless it has `skipTraversal`.
 
 ## 8. The prompt for the next session (the owner pastes it)
 

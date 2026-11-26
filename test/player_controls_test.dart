@@ -520,6 +520,56 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets('a remote walks CC: the tracks, Online, "Settings ▾" opens '
+      'its rows; Esc puts the panel away and the film plays on',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    playerContainer!.read(playerControllerProvider.notifier).openSubtitleMenu();
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.subtitle);
+    // What the remote is on: the words under the focused control.
+    String? onFocus() {
+      final ctx = FocusManager.instance.primaryFocus?.context;
+      if (ctx == null) return null;
+      final words = <String>[];
+      void walk(Element e) {
+        final w = e.widget;
+        if (w is Text && w.data != null) words.add(w.data!);
+        e.visitChildElements(walk);
+      }
+
+      (ctx as Element).visitChildElements(walk);
+      return words.join(' ');
+    }
+
+    final seen = <String>[];
+    for (var i = 0; i < 8; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      final f = onFocus();
+      if (f != null && f.isNotEmpty) seen.add(f);
+      if (f != null && f.contains('Settings')) break;
+    }
+    expect(seen, contains(contains('English')),
+        reason: 'the remote reaches the tracks: $seen');
+    expect(seen, contains(contains('Online subtitles')), reason: '$seen');
+    expect(seen.last, contains('Settings'), reason: '$seen');
+    // Select opens "Settings ▾" below itself.
+    expect(find.text('Subtitle Delay'), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await _settle(tester);
+    expect(find.text('Subtitle Delay'), findsOneWidget);
+    // And on, into its rows.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(onFocus(), contains('Subtitle Delay'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
   testWidgets('a mouse: moving shows the controls, a right-click opens ⋮',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');

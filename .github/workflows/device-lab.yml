@@ -199,7 +199,9 @@ jobs:
           source test_device/config.env
           n=${LIBRARY:-0}
           [ "$n" -gt 0 ] || { echo "no library this run"; exit 0; }
-          sudo apt-get install -y -qq ffmpeg >/dev/null
+          # update first: the runner image's index named pipewire packages
+          # the mirror no longer had (404, run 45797540963, 26 Nov 2026).
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null
           mkdir -p lib_media/DCIM/Camera lib_media/Download lib_media/Movies/"Full Movies" lib_media/Movies/"Perf Test"
           # One short clip, copied under many names: what matters is how many
           # files the app has to list and thumbnail, not what is in them.
@@ -263,7 +265,7 @@ jobs:
         run: |
           source test_device/config.env
           [ "${NETLAB:-0}" = 1 ] || { echo "no netlab this run"; exit 0; }
-          sudo apt-get install -y -qq --no-install-recommends samba vsftpd openssh-server ffmpeg >/dev/null
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends samba vsftpd openssh-server ffmpeg >/dev/null
           sudo systemctl stop smbd nmbd vsftpd ssh 2>/dev/null || true
           sudo bash tool/netlab/servers.sh start
           mkdir -p out

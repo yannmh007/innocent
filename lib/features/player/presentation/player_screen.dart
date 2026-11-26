@@ -2848,7 +2848,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   //   up / down              → show the controls, focus on Play/Pause
   // While the controls are up, the arrows move between the buttons as on any
   // screen; when they hide again, focus comes back here.
-  final FocusNode _remoteFocus = FocusNode(debugLabel: 'player-remote');
+  // Skipped by the arrows' traversal: it covers the whole screen, so a
+  // D-pad's "down" took it for the nearest node below a panel's row and
+  // left the panel (CC: from the first track to here, never reaching the
+  // second, Online or "Settings ▾"; 26 Nov 2026, player_controls_test). It
+  // still takes focus when asked (the controls hide, a key comes here).
+  final FocusNode _remoteFocus =
+      FocusNode(debugLabel: 'player-remote', skipTraversal: true);
   final FocusNode _playFocus = FocusNode(debugLabel: 'player-play');
 
   KeyEventResult _onRemoteKey(FocusNode node, KeyEvent event) {

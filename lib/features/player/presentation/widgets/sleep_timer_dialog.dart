@@ -144,17 +144,15 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           const SizedBox(height: 6),
           const Divider(color: PlayerUi.hairline, height: 1, thickness: 1),
           const SizedBox(height: 8),
-          // Sideways the keypad gives way, not STOP and START: four rows of
-          // keys are 212 dp, more than a phone held sideways has left
-          // (test/player_layout_test.dart). Full size wherever they fit.
-          if (portrait)
-            Center(child: _keypad())
-          else
-            Flexible(
-              child: Center(
-                child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
-              ),
+          // The keypad gives way, not STOP and START: four rows of keys are
+          // 212 dp, more than a phone held sideways has left, or an upright
+          // window in split screen (384x411 dp: 104 px cut, 26 Nov 2026;
+          // test/player_layout_test.dart). Full size wherever they fit.
+          Flexible(
+            child: Center(
+              child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
             ),
+          ),
           const SizedBox(height: 4),
           _checkboxRow(),
           _actionsRow(),

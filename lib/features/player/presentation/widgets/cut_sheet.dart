@@ -513,19 +513,34 @@ class _PointRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Narrow (a side panel at its 280 dp floor: split screen, a small
+    // window), the name goes above its value: beside it, the value's box
+    // was left 16 dp and its marks ran past it (26 Nov 2026,
+    // test/player_layout_test.dart PLAYER_PHONES=split).
+    return LayoutBuilder(builder: (context, c) {
+      final narrow = c.maxWidth < 300;
+      final name = Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+      final row = _row(context, narrow ? null : name);
+      if (!narrow) return row;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [name, const SizedBox(height: 4), row],
+      );
+    });
+  }
+
+  Widget _row(BuildContext context, Widget? name) {
     return Row(
       children: [
-        SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        if (name != null) SizedBox(width: 80, child: name),
         Expanded(
           child: GestureDetector(
             onTap: onSeek,

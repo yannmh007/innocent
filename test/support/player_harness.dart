@@ -63,11 +63,22 @@ const largeScreens = <Phone>[
   Phone('540x960tv', 540, 960, 2.0, statusBar: 0, navBar: 0),
 ];
 
-/// PLAYER_PHONES=large photographs the large screens, =all both sets;
-/// the phones by default.
+/// Split screen and small windows (26 Nov 2026, handoff §4): the owner's
+/// phone split in two (upright the top half; held sideways, laid out by
+/// `landscape` as the half-width one), a tablet's half, a small freeform
+/// window on a Chromebook.
+const splitScreens = <Phone>[
+  Phone('384x411split', 384, 411, 2.8125, statusBar: 30, navBar: 0),
+  Phone('640x800split', 640, 800, 2.0, statusBar: 24, navBar: 48),
+  Phone('480x600window', 480, 600, 1.25, statusBar: 0, navBar: 0),
+];
+
+/// PLAYER_PHONES=large photographs the large screens, =split the split
+/// screens and small windows, =all every set; the phones by default.
 final phones = switch (Platform.environment['PLAYER_PHONES']) {
   'large' => largeScreens,
-  'all' => [...phonesOnly, ...largeScreens],
+  'split' => splitScreens,
+  'all' => [...phonesOnly, ...largeScreens, ...splitScreens],
   _ => phonesOnly,
 };
 

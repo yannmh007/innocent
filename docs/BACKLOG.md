@@ -53,9 +53,33 @@ does it.
   engine, a tap resets); player_layout_test 1416 (4 phones, my/en/th,
   1.0/1.3) and PLAYER_PHONES=all 2832, no overflow. Lab: ref.env note,
   probe.sh waits for MX's font cache prompt (up to 6 min) so MX's subtitle
-  shows. NEXT: the lab run's MX | Innocent sheets (the sideways subtitle
-  question), the accessibility root (handoff §3.2), every screen size
-  (§4), the rest of the player after MX (§5).
+  shows. PROVED ON THE EMULATOR, reference lab 45796876490 (b3c64012):
+  all 24 screens; Innocent's controls on their ground, the shortcut discs
+  upright, ♪'s "Audio delay"; MX's font cache prompt still up after 6 min,
+  so still no MX subtitle (the next run gives MX's films an .srt).
+  EVERY SCREEN SIZE (handoff §4): player_layout_test gains split screens
+  (PLAYER_PHONES=split: 384x411, 640x800, a 480x600 window); FOUND AND
+  FIXED there: the sleep timer's keypad cut 104-113 px in an upright split
+  window (it now gives way both ways), the cut sheet's point rows ran past
+  a 280 dp side panel (the name now goes above). PLAYER_PHONES=all (11
+  screens) 4026 pass. A REMOTE: in CC the D-pad went from the first track
+  to the player's full-screen focus node (its centre was "nearest below"),
+  never reaching the second track, Online or "Settings ▾" — the node is now
+  `skipTraversal` (new test: walk, select opens ▾, Esc closes). The focus
+  ring has a white inner line (blue alone 1.7:1 on the shade over a bright
+  film). PanelRow's value sat mid-row beside an Expanded title (two
+  flexibles): now at the end, ≤ 160 dp. App screens on SCREEN_PHONES=
+  tablet,tablet_land,fold,fold_land,chromebook,tv in Burmese: 888 drawn,
+  no problem (the fonts script needs `pip install fonttools brotli`).
+  ACCESSIBILITY ROOT (handoff §3.2): on API 34 with the owner's three
+  buttons and punch hole (device lab, PHONE_LIKE_OWNER=1) the root is the
+  whole screen and the bottom row has its bounds (runs 37311495516,
+  44940085085): the 96 dp gap is the reference lab's API 30 image. Device
+  lab A1 (API 36) failed before the emulator on an apt 404 (45797540963;
+  device-lab.yml now updates the index first): rerun. Stream bench
+  45796876440 failed on test_screens (a removed parameter; fixed; rule in
+  .claude/rules/flutter-app.md). NEXT: the lab's MX subtitle (.srt), MX on
+  a tablet (§4.6), the rest of the player (handoff §5.0's table).
 - **26 Nov: THE PLAYER'S MENUS AS MX'S, ON THE WORK BRANCH ONLY (not
   released)** — next session: docs/handoff_2026_11_26_mx_parity.md (the
   state, what is open, every screen size, the rest of the player after

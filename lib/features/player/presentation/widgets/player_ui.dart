@@ -610,7 +610,12 @@ class PanelRow extends StatelessWidget {
                 ),
                 if (value != null) ...[
                   const SizedBox(width: 12),
-                  Flexible(
+                  // At the row's end, up to 160 dp: as a Flexible beside
+                  // the Expanded title the two split the row and the value
+                  // sat in its middle (♪'s "Audio delay  0 ms" on the
+                  // emulator, run 45796876490).
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
                     child: Text(
                       value!,
                       maxLines: 1,

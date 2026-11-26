@@ -43,6 +43,12 @@ paths:
   such cuts (docs/player_ux_audit_2026_11.md). Check a player change with
   `test/player_layout_test.dart` (real fonts: `FONT_DIR`, see the doc) —
   320/360/411 dp, both orientations, `LANGS=my,en,th`, `SCALES=1.0,1.3`.
+- **`flutter analyze` with no path before a push.** CI's Analyze (Stream
+  bench, the Build) reads the whole project, `test_screens/` too, which
+  neither `flutter test` nor `flutter analyze lib/` reach: a parameter
+  removed from ShortcutRow broke test_screens/player_row_screens_test.dart
+  and failed Stream bench 45796876440 (26 Nov 2026). Errors only matter;
+  the ~180 infos are known.
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
   the release review. Name the files. And not a changed file that HEAD

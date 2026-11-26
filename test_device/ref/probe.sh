@@ -422,12 +422,13 @@ inn_software_decoding() {
 # its tree). In run 45781933354 the prompt was up on every MX screen after
 # a 25 s warm-up, so no MX screen showed MX's own subtitle; the owner wants
 # to see where MX puts it sideways under an open ⋮ (26 Nov). Wait for the
-# prompt to go, up to 6 min, with the film playing (reopened if it ends).
+# prompt to go, with the film playing (reopened if it ends). Run 45796876490
+# waited 6 min and it never went: 90 s now, and the films carry an .srt.
 warm_mx() {
   local t0=$SECONDS top
   open_film mx /sdcard/Movies/ref_land_black.mp4
   sleep 20
-  while [ $((SECONDS - t0)) -lt 360 ]; do
+  while [ $((SECONDS - t0)) -lt 90 ]; do
     top=$(adb shell dumpsys activity top 2>/dev/null || true)
     if ! printf '%s\n' "$top" | grep -q "ACTIVITY $MX_COMP "; then
       open_film mx /sdcard/Movies/ref_land_black.mp4
@@ -470,9 +471,15 @@ panels() {
   adb push "$FILM_P" /sdcard/Movies/ref_port_black.mp4 >/dev/null
   adb push "$FILM_PW" /sdcard/Movies/ref_port_white.mp4 >/dev/null
   adb shell "mkdir -p /sdcard/Movies/ref_warm && cp /sdcard/Movies/ref_land_black.mp4 /sdcard/Movies/ref_warm/innocent_lab_play.mp4"
+  # MX's copy also gets the English track as a sidecar .srt (MX opens a
+  # file's same-named .srt by itself): MX draws no embedded subtitle until
+  # its font cache is built, and on this image the cache never finished
+  # (run 45796876490: its prompt still up after 6 min). An .srt may reach
+  # MX's own text renderer instead. Innocent's copy keeps the film alone.
+  adb push "$T/film/sub0.srt" /sdcard/Movies/ref_sub.srt >/dev/null
   for o in port land; do for f in black white; do for sc in controls more audio cc; do
     dir=/sdcard/Movies/ref_${o}_${f}_${sc}; src=/sdcard/Movies/ref_${o}_${f}.mp4
-    adb shell "mkdir -p $dir && cp $src $dir/innocent_lab_play.mp4 && cp $src $dir/ref_$sc.mp4"
+    adb shell "mkdir -p $dir && cp $src $dir/innocent_lab_play.mp4 && cp $src $dir/ref_$sc.mp4 && cp /sdcard/Movies/ref_sub.srt $dir/ref_$sc.srt"
   done; done; done
   adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
   resolve_mx /sdcard/Movies/ref_land_black.mp4 || { kill "$LOGCAT" 2>/dev/null || true; say "PANELS: no MX player activity"; return 0; }
