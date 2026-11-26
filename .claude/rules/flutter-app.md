@@ -49,6 +49,11 @@ paths:
   removed from ShortcutRow broke test_screens/player_row_screens_test.dart
   and failed Stream bench 45796876440 (26 Nov 2026). Errors only matter;
   the ~180 infos are known.
+- **A widget's helpers that do not need `context` go outside the class.**
+  tool/context_scope.py (in check.py) read `context` in SpeedCard's build
+  as "the enclosing class has none" when an expression-bodied method
+  (`double _snap(double v) => …`) came before build, and the push gate
+  stopped (26 Nov 2026). A top-level function passes.
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
   the release review. Name the files. And not a changed file that HEAD

@@ -25,7 +25,12 @@ does it.
   Night mode grey 40 %; the speed card; the A-B bar. Left: Customise
   Items as MX's top-bar overlay; Sleep Timer and Audio Effect/EQ on the
   shade with Innocent's tokens; the controls geometry and the tablet
-  reach (the owner took both); the lab once more on the phone.
+  reach (the owner took both). PROVED ON THE EMULATOR, reference lab
+  45870615457 (adb1c24b): Innocent's open row in MX's order, the speed
+  card, the A-B bar, Night mode grey, ⋮'s ten tiles and More, beside
+  MX's. Fixed after it (not yet on the emulator): Customise Items on the
+  open row (second, as MX's); the film's subtitle lifted over the speed
+  card (it lay across the card's numbers).
 - **26 Nov (later): THE CONTROLS READ OVER ANY FILM; ♪'s AUDIO DELAY;
   THE OWNER'S PHONE IS 384x823 (work branch only, not released)** —
   session of docs/handoff_2026_11_26_mx_parity.md §2-§3. THE OWNER'S WORD

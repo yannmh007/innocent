@@ -4238,7 +4238,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // its own over an open panel (reference lab, 22 Nov 2026), so the
     // film's words stay readable while a menu is open. Sideways it stays
     // where it is (so does MX's).
-    if (size.height > size.width && menuUp) {
+    if (state.openPanel == SidePanel.speed) {
+      // MX's speed card at the foot (SpeedCard: 17 dp up, ~130 tall): the
+      // subtitle just above it, both ways; it lay across the card's
+      // numbers (reference lab, run 45870615457).
+      bottom = math.max(pad.bottom, pad.bottom + 17 + 140);
+    } else if (size.height > size.width && menuUp) {
       bottom = math.max(bottom, PlayerUi.panelExtent(size) + 8);
     }
     return EdgeInsets.only(top: pad.top, bottom: bottom);

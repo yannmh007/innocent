@@ -53,7 +53,7 @@ class ShortcutRow extends StatelessWidget {
   final LoopMode loopMode;
 
   /// All available items shown when expanded. Defaults to ShortcutItem.values
-  /// minus customiseItems (which lives in the More menu).
+  /// in MX's order (Customise Items among them, as on MX's open row).
   final List<ShortcutItem>? allItemsOverride;
 
   /// The viewer's own shortcuts (the collapsed row). Expanded, as MX's
@@ -77,9 +77,9 @@ class ShortcutRow extends StatelessWidget {
 
   List<ShortcutItem> get _expandedItems {
     if (allItemsOverride != null) return allItemsOverride!;
-    final all = ShortcutItem.available()
-        .where((i) => i != ShortcutItem.customiseItems)
-        .toList();
+    // Customise Items too, second, as on MX's open row (run 45862946745);
+    // it was left for ⋮, which no longer has it.
+    final all = ShortcutItem.available();
     return [
       ...all.where((i) => !pinned.contains(i)),
       ...all.where(pinned.contains),
