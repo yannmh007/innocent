@@ -78,8 +78,20 @@ does it.
   lab A1 (API 36) failed before the emulator on an apt 404 (45797540963;
   device-lab.yml now updates the index first): rerun. Stream bench
   45796876440 failed on test_screens (a removed parameter; fixed; rule in
-  .claude/rules/flutter-app.md). NEXT: the lab's MX subtitle (.srt), MX on
-  a tablet (§4.6), the rest of the player (handoff §5.0's table).
+  .claude/rules/flutter-app.md). LATER THE SAME DAY: reference lab
+  45805693393 — with an .srt MX's subtitle shows; sideways under ⋮ MX
+  leaves it at the foot, centred, across its last row, as Innocent does:
+  THE OWNER: KEEP IT. Device lab A1 45805693479 (Android 16, the owner's
+  navigation): every flow exit 0 (audits 55 and 52 checks), the
+  accessibility root the whole screen, ⋮ in the tree both ways — the 96 dp
+  gap is the API 30 lab image's (a TalkBack walk on the owner's phone
+  would close it). tool/ref/controls.py measures the controls screen (dp,
+  MX's view ids, Innocent's labels): THE OWNER TOOK MX's CONTROLS GEOMETRY
+  (26 Nov) — the numbers and where they go: the handoff's update block.
+  IN FLIGHT: the reference lab on a tablet (1600x2560 at 320 dpi; ref.env
+  back to the phone after it) and the device lab gate A2 (API 34). NEXT
+  SESSION: the controls geometry as MX's, the tablet reach, then the
+  handoff's §5.0 table.
 - **26 Nov: THE PLAYER'S MENUS AS MX'S, ON THE WORK BRANCH ONLY (not
   released)** — next session: docs/handoff_2026_11_26_mx_parity.md (the
   state, what is open, every screen size, the rest of the player after

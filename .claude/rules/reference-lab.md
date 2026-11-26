@@ -62,6 +62,16 @@ repository and a run's public log carry numbers and our own code.
   it again: run 45781933354 has no MX subtitle on any screen. probe.sh
   `warm_mx` waits for the prompt to go (up to 6 min, the film reopened if
   it ends); check its line in the summary before reading a subtitle's place.
+  It never went in 6 min (run 45796876490). What works: MX's copy of the
+  film carries a same-named .srt (probe.sh), and MX draws that without the
+  cache (run 45805693393).
+- **The controls screen in numbers: `python3 -I tool/ref/controls.py
+  <run dir>`** — each control's centre and size in dp, MX's found by its
+  view id (toolbar, audio, caption, decoder, screen_shortcut_list,
+  progressBar, posText, lock, prev, playpause, next, zb_left, zb_right),
+  Innocent's by its English TalkBack label; never by place. Innocent's
+  upright bottom row and sideways ⋮ are missing on the API 30 image (its
+  root stops 96 dp short there; API 34 and 36 reach the whole screen).
 - **The lab's dp are the owner's dp.** The emulator is 1080x2316 at 450 dpi
   (2.8125), as the owner's phone at its default zoom: 384x823 dp, a 48 dp
   navigation bar. Figures taken off the owner's own screenshots before

@@ -14,12 +14,34 @@
 > fixed: the sleep keypad and the cut sheet in split screen, a D-pad that
 > left a panel for the player's full-screen focus node, the focus ring
 > two-tone). The owner: "desktop" = Chromebook / Android windows.
-> OPEN: §2.2 the sideways subtitle under ⋮ — MX's subtitle never shows in
-> the lab (its font cache prompt stays up; the next run gives MX an .srt);
-> §3.2 the accessibility root — API 34 with the owner's navigation reached
-> the whole screen (runs 37311495516, 44940085085); device lab A1 on API 36
-> failed on apt (fixed), to rerun; §4.6 MX on a tablet (PROBE_SIZE
-> 1600x2560, PROBE_DPI 320) not run yet; §5 below (the table is in §5.0).
+> SETTLED: §2.2 — with an .srt MX's subtitle shows (run 45805693393):
+> sideways under ⋮ MX leaves it at the foot, centred, across its panel's
+> last row, as Innocent does; the owner: keep it. §3.2 — the root reaches
+> the whole screen on API 34 and on Android 16 (device lab A1 45805693479,
+> the owner's navigation: ⋮ in the tree both ways, the bottom row bounded;
+> every flow exit 0): the 96 dp gap is the API 30 lab image's. A TalkBack
+> walk on the owner's phone would close it for good.
+> THE OWNER'S WORD (26 Nov): TAKE MX's CONTROLS GEOMETRY. Start the next
+> session there: `python3 -I tool/ref/controls.py
+> /home/user/innocent-ref/runs/2026-11-26_45805693393` prints both apps'
+> controls in dp. Sideways: Innocent's top bar 3.9 dp low; its shortcut row
+> 12.3 dp low, slots 62.9 apart (MX 59.7), discs 44 (MX 42.7, chevron
+> 25.6); the seek bar from 122 to 701 dp (MX 108-668: MX's times sit 65 dp
+> in from both ends of the area left of the navigation bar); the bottom
+> row's ⏮ ⏯ ⏭ 104 dp apart (MX 96) and centred on the whole screen (MX on
+> the area left of the navigation bar: ⏯ at 387.6, Innocent's 406.9); lock
+> at 76 (MX 92), screen mode 680 (687), PiP 720 (740). Upright MX: the
+> row lock 26.7, ⏮ 138.7, ⏯ 192, ⏭ 245.3, mode 295.5, PiP 348.8 (53.3
+> apart), seek bar 704.5 dp down, times 38.4 and 345.6; Innocent's
+> upright row is not in the API 30 tree: read it off the screenshot or
+> the device lab's API 36 dump (test_device/results/latest/
+> ui_controls_port.xml, 1080x2400 at 2.625). The "MX GEOMETRY" block in
+> player_screen.dart (_BottomControls) and shortcut_row.dart's _slot/_circle
+> are where the numbers live. Then the lab again and MX | Innocent sheets.
+> IN FLIGHT at the end of this session: the reference lab on a TABLET
+> (ref.env PROBE_SIZE 1600x2560, PROBE_DPI 320; §4.6) — read it, decide
+> Innocent's tablet reach with the owner, then put ref.env BACK to
+> 1080x2316 at 450; the device lab gate A2 (API 34) on this work.
 > Where each run stands: BACKLOG §0, the entry "26 Nov (later)".
 
 
