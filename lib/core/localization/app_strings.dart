@@ -557,6 +557,8 @@ class AppStrings {
   String get permissionRationalePermanent => _s('permissionRationalePermanent');
   String get features => _s('features');
   String get faq => _s('faq');
+  String get pmTools => _s('pmTools');
+  String get pmCheckUpdates => _s('pmCheckUpdates');
   String get versionCheck => _s('versionCheck');
   String get sendBugReport => _s('sendBugReport');
   String get privacy => _s('privacy');
@@ -3451,6 +3453,8 @@ class AppStrings {
         'Innocent needs videos permission to scan your library. The system request can no longer be shown from here — please enable it in app settings, then come back. No data ever leaves your device.',
     'features': 'Features',
     'faq': 'FAQ',
+    'pmTools': 'Tools',
+    'pmCheckUpdates': 'Check for updates',
     'versionCheck': 'Version check',
     'sendBugReport': 'Send bug report',
     'privacy': 'Privacy',
@@ -5826,6 +5830,8 @@ class AppStrings {
         'သင့်စာကြည့်တိုက် စကင်ဖတ်ရန် Innocent သည် ဗီဒီယို ခွင့်ပြုချက် လိုအပ်သည်။ ဤနေရာမှ တောင်းဆိုချက် ပြန်မပြနိုင်တော့ပါ — အက်ပ် ဆက်တင်တွင် ဖွင့်ပြီး ပြန်လာပါ။ ဒေတာ မည်သည့်အခါမျှ သင့်စက်မှ ထွက်မသွားပါ။',
     'features': 'ဝိသေသများ',
     'faq': 'မေးလေ့ရှိသည်များ',
+    'pmTools': 'ကိရိယာများ',
+    'pmCheckUpdates': 'အပ်ဒိတ် စစ်မယ်',
     'versionCheck': 'ဗားရှင်း စစ်ရန်',
     'sendBugReport': 'အမှား တင်ပြရန်',
     'privacy': 'ကိုယ်ရေးလုံခြုံမှု',
@@ -8175,6 +8181,8 @@ class AppStrings {
         'Innocent ต้องการสิทธิ์วิดีโอเพื่อสแกนคลัง คำขอจากระบบไม่สามารถแสดงจากที่นี่ได้อีก โปรดเปิดใช้ในการตั้งค่าแอปแล้วกลับมา ไม่มีข้อมูลออกจากอุปกรณ์ของคุณ',
     'features': 'คุณสมบัติ',
     'faq': 'คำถามที่พบบ่อย',
+    'pmTools': 'เครื่องมือ',
+    'pmCheckUpdates': 'ตรวจหาอัปเดต',
     'versionCheck': 'ตรวจสอบเวอร์ชัน',
     'sendBugReport': 'ส่งรายงานข้อผิดพลาด',
     'privacy': 'ความเป็นส่วนตัว',

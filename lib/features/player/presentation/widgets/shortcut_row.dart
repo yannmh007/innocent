@@ -56,9 +56,9 @@ class ShortcutRow extends StatelessWidget {
   /// minus customiseItems (which lives in the More menu).
   final List<ShortcutItem>? allItemsOverride;
 
-  /// The viewer's own shortcuts (the collapsed row). Expanded, they stay
-  /// first, where the viewer last saw them: in the enum's order they moved
-  /// to the far end, behind nine rarely used ones.
+  /// The viewer's own shortcuts (the collapsed row). Expanded, as MX's
+  /// (run 45857557804): the others first, then these, last, beside the
+  /// chevron — each part in MX's order.
   final Set<ShortcutItem> pinned;
 
   const ShortcutRow({
@@ -81,8 +81,8 @@ class ShortcutRow extends StatelessWidget {
         .where((i) => i != ShortcutItem.customiseItems)
         .toList();
     return [
-      ...all.where(pinned.contains),
       ...all.where((i) => !pinned.contains(i)),
+      ...all.where(pinned.contains),
     ];
   }
 

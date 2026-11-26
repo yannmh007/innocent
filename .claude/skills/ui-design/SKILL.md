@@ -210,7 +210,11 @@ from MX but its reasoning).
   settings behind "Settings ▾", the ← upright, MX's spacing of titles and
   tiles (measured on the emulator, run 45775539414); on 26 Nov (later)
   ♪'s Synchronization (Innocent's "Audio delay" row under the tracks,
-  after a hairline, opening a stepper) and the shortcut discs upright.
+  after a hairline, opening a stepper) and the shortcut discs upright;
+  that night ⋮ as MX's (ten tiles, "More ›" turning the panel to "←
+  More" with Tools and Help in words) and the shortcuts' own screens:
+  the speed card (`SpeedCard`) and the A-B bar (`ABRepeatBar`), both on
+  the shade's black at 60 %, words with the halo.
   Kinds of control and their places only —
   drawn with Innocent's own icons and colours, never MX's.
 - Colour is tested against the film, not against MX: the player plays any

@@ -9,7 +9,9 @@ enum IndicatorType {
   subtitleSize,
   subtitlePosition,
 }
-enum SidePanel { none, more, subtitle }
+/// What is open over the picture. [speed] is MX's speed card (its "1X"
+/// shortcut, 26 Nov 2026).
+enum SidePanel { none, more, subtitle, speed }
 
 class GestureIndicator {
   final IndicatorType type;
@@ -325,18 +327,15 @@ class PlayerState {
     this.isBackgroundPlay = false,
     this.inSystemPip = false,
     this.decoder = DecoderType.defaultMode,
-    // PDF page 4 (verified from screenshot): the collapsed top row shows
-    // Screenshot, Background Play (headphones), Screen Rotation, Loop. The
-    // expand chevron reveals everything else. MX's row also opens with the
-    // speed as a tappable "1X" — it used to be a separate pill here that
-    // could not be tapped and pushed the row 70 dp to the right.
+    // MX 3.4.3's row shut, as a fresh install shows it (the reference
+    // lab, run 45857557804): Equalizer, Speed ("1X"), Screenshot,
+    // Background Play, Screen Rotation. The chevron opens the rest.
     this.visibleShortcuts = const {
+      ShortcutItem.equalizer,
       ShortcutItem.playbackSpeed,
       ShortcutItem.screenshot,
       ShortcutItem.backgroundPlay,
       ShortcutItem.screenRotation,
-      ShortcutItem.loop,
-      // The remaining items are still in `allItems` and become visible when expanded.
     },
     this.audioTracks = const [],
     this.subtitleTracks = const [],

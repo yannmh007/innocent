@@ -58,6 +58,9 @@ import '../../../core/utils/system_insets.dart';
 import '../../equalizer/presentation/audio_effect_sheet.dart';
 import '../../settings/presentation/subtitle_text_screen.dart';
 import '../../settings/presentation/subtitle_layout_screen.dart';
+import '../../settings/presentation/settings_player_screen.dart';
+import '../../me/presentation/help_screen.dart';
+import '../../updater/presentation/app_update_screen.dart';
 import 'aspect_ratio_mode.dart';
 import 'player_provider.dart';
 import 'player_stats_overlay.dart';
@@ -86,6 +89,8 @@ import 'widgets/seek_indicator.dart';
 import 'widgets/shortcut_row.dart';
 import 'widgets/sleep_timer_dialog.dart';
 import 'widgets/speed_indicator.dart';
+import 'widgets/speed_card.dart';
+import 'widgets/ab_repeat_bar.dart';
 import 'widgets/speed_slider.dart';
 import 'widgets/zoom_indicator.dart';
 import 'widgets/skip_markers_sheet.dart';
@@ -1981,16 +1986,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         }
         break;
       case ShortcutItem.loop:
-        // Phase 15: cycle Off → One → All → Off
-        // Phase 45: toast the new mode so the user sees what mode is
-        // active. Without this it's not obvious which of 3 modes the
-        // single icon represents.
+        // As MX 3.4.3's (the reference lab, run 45857557804): Off → All
+        // (the repeat icon on the accent disc) → One (repeat-one) → Off.
+        // It was Off → One → All. A toast names the mode.
         {
           final cur = ref.read(playerControllerProvider).loopMode;
           final next = cur == LoopMode.off
-              ? LoopMode.one
-              : cur == LoopMode.one
-                  ? LoopMode.all
+              ? LoopMode.all
+              : cur == LoopMode.all
+                  ? LoopMode.one
                   : LoopMode.off;
           controller.setLoopMode(next);
           final label = next == LoopMode.off
@@ -2046,17 +2050,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         }
         break;
       case ShortcutItem.playbackSpeed:
-        // Phase 45: compute the next speed value here instead of reading
-        // state after `cycleSpeed()` returns — `setSpeed` awaits libmpv's
-        // setRate before updating state, so a read-immediately-after
-        // would show the OLD speed in the toast.
-        {
-          const cycle = [0.5, 1.0, 1.25, 1.5, 2.0];
-          final current = ref.read(playerControllerProvider).playbackSpeed;
-          final next = nextSpeedInCycle(current, cycle);
-          controller.setSpeed(next);
-          _showOverlay(AppStrings.of(context).plSpeed('${formatSpeed(next)}x'));
-        }
+        // As MX 3.4.3's "1X" (the reference lab, run 45862946745): the
+        // speed card (SpeedCard), not a step through five speeds.
+        controller.openSpeedPanel();
         break;
       case ShortcutItem.screenRotation:
         // Auto → Portrait → Landscape → Auto, the way MX Player's does.
@@ -2102,15 +2098,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         showAudioEffectSheet(context, initialTab: 0);
         break;
       case ShortcutItem.abRepeat:
-        controller.cycleABRepeat();
-        final st = ref.read(playerControllerProvider);
-        if (st.abPointA != null && st.abPointB == null) {
-          _showOverlay(AppStrings.of(context).plAPoint);
-        } else if (st.abPointA != null && st.abPointB != null) {
-          _showOverlay(AppStrings.of(context).plAbOn);
-        } else {
-          _showOverlay(AppStrings.of(context).plAbCleared);
-        }
+        // As MX 3.4.3's (the reference lab, run 45862946745): the A-B bar
+        // under the row (ABRepeatBar), its A and B set the points. It was
+        // a cycle of three taps with a toast each.
+        setState(() => _abBarOpen = true);
         break;
     }
   }
@@ -2537,10 +2528,30 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   List<MoreMenuItemData> _buildMoreMenuItems(BuildContext context) {
     final controller = ref.read(playerControllerProvider.notifier);
     final s = AppStrings.of(context);
-
-    // Phase 18: Order and selection match real MX Player More panel
-    // (Function PDF page 5 reference).
+    // As MX's ⋮ (the owner, 26 Nov 2026: "11 tiles and More"; reference
+    // lab 45857557804): its ten in its order, then "More ›" (MoreMenuPanel).
+    // Upright MX puts its ♪ and CC first (its top bar keeps only HW and ⋮);
+    // Innocent keeps them on the top bar too.
+    final upright =
+        MediaQuery.orientationOf(context) == Orientation.portrait;
     return [
+      if (upright) ...[
+        MoreMenuItemData(
+          label: s.audioTrack,
+          category: MoreMenuCategory.playback,
+          icon: Icons.music_note,
+          onTap: () {
+            controller.closePanel();
+            _showAudioTracks(context);
+          },
+        ),
+        MoreMenuItemData(
+          label: s.subtitle,
+          category: MoreMenuCategory.playback,
+          icon: Icons.subtitles_outlined,
+          onTap: _openSubtitlePanel,
+        ),
+      ],
       MoreMenuItemData(
         label: s.playingQueue,
         category: MoreMenuCategory.playback,
@@ -2561,19 +2572,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 : (i) => controller.openVideo(q.videos[i].uri,
                     title: q.videos[i].title),
           );
-        },
-      ),
-      // Kids Lock (v0.49, MX parity): child-proof shield. Lives in the
-      // Action section next to the other "change how the screen reacts"
-      // switches.
-      MoreMenuItemData(
-        label: s.kidsLock,
-        category: MoreMenuCategory.action,
-        icon: Icons.child_care,
-        onTap: () {
-          controller.closePanel();
-          controller.toggleKidsLock();
-          _toast.show(AppStrings.of(context).kidsLockOnMsg, kind: PlayerToastKind.success, icon: Icons.lock_rounded);
         },
       ),
       MoreMenuItemData(
@@ -2655,26 +2653,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         },
       ),
       MoreMenuItemData(
-        label: s.tabTransfer,
-        category: MoreMenuCategory.action,
-        icon: Icons.send_to_mobile,
-        onTap: () {
-          controller.closePanel();
-          _transferVideo(context);
-        },
-      ),
-      MoreMenuItemData(
-        label: s.networkStream,
-        category: MoreMenuCategory.action,
-        icon: Icons.public,
-        onTap: () {
-          controller.closePanel();
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NetworkStreamScreen()),
-          );
-        },
-      ),
-      MoreMenuItemData(
         label: s.tutorial,
         category: MoreMenuCategory.info,
         icon: Icons.help_outline,
@@ -2688,32 +2666,84 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           }
         },
       ),
-      MoreMenuItemData(
-        label: s.subtitleDelayMenu,
-        category: MoreMenuCategory.playback,
-        icon: Icons.subtitles_outlined,
-        onTap: () {
-          controller.closePanel();
-          _showSubtitleDelay(context);
-        },
+    ];
+  }
+
+  /// ⋮'s "More ›" page, as MX's: its Tools and its Help, in words. What
+  /// Innocent had beyond MX's ten tiles is here, with Innocent's own
+  /// settings, help and update check where MX has its own.
+  List<MorePageSection> _buildMorePage(BuildContext context) {
+    final controller = ref.read(playerControllerProvider.notifier);
+    final s = AppStrings.of(context);
+    void open(Widget page) {
+      controller.closePanel();
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+    }
+
+    return [
+      MorePageSection(
+        label: s.pmTools,
+        rows: [
+          MorePageRow(
+            title: s.kidsLock.replaceAll('\n', ' '),
+            onTap: () {
+              controller.closePanel();
+              controller.toggleKidsLock();
+              _toast.show(AppStrings.of(context).kidsLockOnMsg, kind: PlayerToastKind.success, icon: Icons.lock_rounded);
+            },
+          ),
+          MorePageRow(
+            title: s.tabTransfer,
+            onTap: () {
+              controller.closePanel();
+              _transferVideo(context);
+            },
+          ),
+          MorePageRow(
+            title: s.networkStream,
+            onTap: () {
+              controller.closePanel();
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NetworkStreamScreen()),
+              );
+            },
+          ),
+          MorePageRow(
+            title: s.subtitleDelayMenu.replaceAll('\n', ' '),
+            onTap: () {
+              controller.closePanel();
+              _showSubtitleDelay(context);
+            },
+          ),
+          MorePageRow(
+            title: s.skipMarkers,
+            onTap: () {
+              controller.closePanel();
+              SkipMarkersSheet.show(context);
+            },
+          ),
+          MorePageRow(
+            title: s.customSpeed.replaceAll('\n', ' '),
+            onTap: () {
+              controller.closePanel();
+              _showCustomSpeed(context);
+            },
+          ),
+          MorePageRow(
+            title: s.settingsTitle,
+            onTap: () => open(const SettingsPlayerScreen()),
+          ),
+        ],
       ),
-      MoreMenuItemData(
-        label: s.skipMarkers,
-        category: MoreMenuCategory.edit,
-        icon: Icons.skip_next_outlined,
-        onTap: () {
-          controller.closePanel();
-          SkipMarkersSheet.show(context);
-        },
-      ),
-      MoreMenuItemData(
-        label: s.customSpeed,
-        category: MoreMenuCategory.playback,
-        icon: Icons.speed,
-        onTap: () {
-          controller.closePanel();
-          _showCustomSpeed(context);
-        },
+      MorePageSection(
+        label: s.help,
+        rows: [
+          MorePageRow(title: s.faq, onTap: () => open(const HelpScreen())),
+          MorePageRow(
+            title: s.pmCheckUpdates,
+            onTap: () => open(const AppUpdateScreen()),
+          ),
+        ],
       ),
     ];
   }
@@ -2820,10 +2850,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final adjust = ref.watch(videoAdjustProvider);
     List<double>? colour = adjust.isNeutral ? null : adjust.matrix;
     if (state.isNightMode) {
+      // As MX 3.4.3's Night Mode (the reference lab, run 45862946745: a
+      // white frame read 102 of 255 under it, grey, not tinted): the
+      // picture at 40 %, every colour alike. It was a warm filter that
+      // turned white orange (255, 102, 51).
       const night = <double>[
-        1, 0, 0, 0, 0,
+        0.4, 0, 0, 0, 0,
         0, 0.4, 0, 0, 0,
-        0, 0, 0.2, 0, 0,
+        0, 0, 0.4, 0, 0,
         0, 0, 0, 1, 0,
       ];
       colour = colour == null ? night : composeColorMatrices(night, colour);
@@ -2853,6 +2887,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   // left the panel (CC: from the first track to here, never reaching the
   // second, Online or "Settings ▾"; 26 Nov 2026, player_controls_test). It
   // still takes focus when asked (the controls hide, a key comes here).
+  /// MX's A-B bar is open (its shortcut, 26 Nov 2026).
+  bool _abBarOpen = false;
+
   final FocusNode _remoteFocus =
       FocusNode(debugLabel: 'player-remote', skipTraversal: true);
   final FocusNode _playFocus = FocusNode(debugLabel: 'player-play');
@@ -3735,9 +3772,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 10: Side panels ===
+          if (state.openPanel == SidePanel.speed)
+            Positioned.fill(
+              child: SpeedCard(
+                speed: state.playbackSpeed,
+                onSpeed: controller.setSpeed,
+                onEdit: () {
+                  controller.closePanel();
+                  _showCustomSpeed(context);
+                },
+                onDismiss: controller.closePanel,
+              ),
+            ),
           if (state.openPanel == SidePanel.more)
             MoreMenuPanel(
               items: _buildMoreMenuItems(context),
+              moreSections: _buildMorePage(context),
               videoDisplayEnabled: _videoDisplayEnabled,
               visibleShortcuts: state.visibleShortcuts,
               onVideoDisplayToggle: (v) =>
@@ -3916,7 +3966,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           // pill near the bottom-left that displays the loop range.
           // Users sometimes forget they set A-B and wonder why the
           // video is looping — this badge makes the state visible.
-          if (state.abPointA != null)
+          // With MX's A-B bar on screen its buttons carry the times.
+          if (state.abPointA != null && !(_abBarOpen && _chromeUp(state)))
             Positioned(
               // Above the seek bar and clear of the cutout. The window's own
               // padding is zero in full screen, so in portrait the badge
@@ -3943,6 +3994,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     ),
                   ),
                 ),
+              ),
+            ),
+
+          // === LAYER 13ab: MX's A-B bar, under the shortcut row, right ===
+          if (_abBarOpen && _chromeUp(state))
+            Positioned(
+              right: _controlsInsets(context).right + 12,
+              top: _controlsInsets(context).top +
+                  59 +
+                  (visibleShortcutList.isEmpty
+                      ? 0
+                      : (state.shortcutsExpanded ? 96 : 56)),
+              child: ABRepeatBar(
+                pointA: state.abPointA,
+                pointB: state.abPointB,
+                format: _fmt,
+                onA: () {
+                  controller.showControls();
+                  controller.setABPointA();
+                },
+                onB: () {
+                  controller.showControls();
+                  if (controller.setABPointB()) {
+                    _showOverlay(AppStrings.of(context).plAbOn);
+                  }
+                },
+                onClose: () {
+                  controller.clearABRepeat();
+                  setState(() => _abBarOpen = false);
+                },
               ),
             ),
 

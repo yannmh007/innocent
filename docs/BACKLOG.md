@@ -16,6 +16,16 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **26 Nov (night): ⋮ AND THE SHORTCUTS AS MX's (the owner: "11 tiles
+  and More"; "every shortcut as MX's, exactly")** — on the branch, not
+  released. The lab's SCREENS=shortcuts (runs 45857557804, 45862946745)
+  took both apps' every shortcut; the table and what is left are in the
+  handoff's update block. Done: ⋮'s ten tiles and "More ›" page; MX's
+  order and five shut; Vertical flip off the row; Loop Off → All → One;
+  Night mode grey 40 %; the speed card; the A-B bar. Left: Customise
+  Items as MX's top-bar overlay; Sleep Timer and Audio Effect/EQ on the
+  shade with Innocent's tokens; the controls geometry and the tablet
+  reach (the owner took both); the lab once more on the phone.
 - **26 Nov (later): THE CONTROLS READ OVER ANY FILM; ♪'s AUDIO DELAY;
   THE OWNER'S PHONE IS 384x823 (work branch only, not released)** —
   session of docs/handoff_2026_11_26_mx_parity.md §2-§3. THE OWNER'S WORD

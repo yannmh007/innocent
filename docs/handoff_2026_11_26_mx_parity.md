@@ -56,6 +56,39 @@
 > Device lab A2 45828625953 (API 34, the gate on this work): genres 37/37,
 > jumps 15/15, gestures 27/27 and 19/19, audits 52 and 52 — as U5.
 > Where each run stands: BACKLOG §0, the entry "26 Nov (later)".
+>
+> 26 NOV (NIGHT), THE OWNER: "⋮ as MX's 11 tiles and More", and "every
+> shortcut as MX's — what it does and the screen it brings, exactly".
+> The lab (SCREENS=shortcuts; runs 45857557804, 45862946745 over a white
+> film, a screen 1.2 s after each tap) took MX's and Innocent's every
+> shortcut. DONE on the branch: ⋮ = MX's ten tiles in MX's order (+ ♪ and
+> CC first upright) and "More ›", which turns the panel to "← More": Tools
+> (Kids Lock, Transfer, Network stream, Subtitle delay, Skip markers,
+> Custom speed, Settings), Help (FAQ, Check for updates); the shortcuts
+> in MX's order, MX's five shut (EQ, 1X, Screenshot, Background play,
+> Rotation), open = the others then those five; Vertical flip off the row
+> (MX has none); Loop Off → All → One; Night mode the picture at 40 %, grey
+> (it was orange); "1X" opens MX's speed card (SpeedCard); A-B opens MX's
+> bar (ABRepeatBar).
+>
+> | shortcut | MX 3.4.3 | Innocent now | left |
+> |---|---|---|---|
+> | Night Mode | picture 40 % grey, disc, toast | the same | — |
+> | Customise Items | an overlay on the controls: which top-bar icons (HW, Playing Queue, Audio Track, Subtitles, Popup Window, Zoom), Cancel / APPLY | Innocent's page; not on the open row | build MX's overlay (a top bar the viewer chooses) |
+> | Shuffle, Mute, Background Play | disc; Background Play's toast | disc and a toast each | check Background Play's toast shows (not in the lab's 1.2 s screen) |
+> | Loop | Off → All → One | the same | — |
+> | Sleep Timer | right panel on the shade, keypad | right panel on frosted glass | the shade |
+> | A-B Repeat | bar under the row, [A] → [B], × | the same | — |
+> | Audio Effect / Equalizer | right panel on the shade, two tabs; EQ: switch, presets, five bands, Reverb | the same layout on glass, in colours named `_mx*` (audio_effect_sheet.dart) | the shade and Innocent's tokens; no box round the bands |
+> | Speed | card: − [1.00x ✎] +, 0.25-4.0x, reset | the same | — |
+> | Screenshot | toast "saved to …" at the foot | toast at the top | — |
+> | Screen Rotation | turns the screen | the same | — |
+> | Mirror Mode | not on MX's row in HW | a toggle | — |
+>
+> Proof: whole suite, player_controls_test (+3: the speed card, the A-B
+> bar, the remote in CC), player_layout_test PLAYER_PHONES=all with the
+> new scenes (more_page, speed_tap, ab_bar). Not yet on the emulator: the
+> next phone run of the lab (SCREENS=shortcuts) shows Innocent's new ones.
 
 
 Written at the end of a long session (the reference lab, Phases 0-1, and the

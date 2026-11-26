@@ -18,6 +18,8 @@ import 'package:innocent/features/player/presentation/widgets/display_settings_s
 import 'package:innocent/features/player/presentation/widgets/gestures_help_overlay.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
 import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
+import 'package:innocent/features/player/presentation/widgets/speed_card.dart';
+import 'package:innocent/features/player/presentation/widgets/ab_repeat_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -157,9 +159,10 @@ void main() {
       await tester.tap(find.text('Video Display'));
       await _settle(tester);
       expect(_state().openPanel, SidePanel.more);
-      // The sixteen actions stay: the switch used to hide them as well.
+      // The actions stay: the switch used to hide them as well. (MX's ten
+      // and "More ›" since 26 Nov 2026.)
       expect(find.byIcon(Icons.queue_music), findsOneWidget);
-      expect(find.byIcon(Icons.speed), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
       await leavePlayer(tester);
     });
 
@@ -668,6 +671,69 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(delay(), 0);
     expect(find.text('0 ms'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('"1X" opens MX\'s speed card: the controls give way, ± a '
+      '20th, reset, a tap above puts it away', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.tap(find.byKey(const ValueKey('playbackSpeed')).first);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.speed);
+    expect(find.byType(SpeedCard), findsOneWidget);
+    expect(find.text('1.00x'), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsNothing,
+        reason: 'the controls give way to the card');
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, closeTo(1.05, 1e-9));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, closeTo(0.95, 1e-9));
+    await tester.tap(find.byIcon(Icons.restart_alt_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, 1.0);
+    await tester.tapAt(const Offset(400, 40));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("A-B opens MX's bar: A, then B after it, the loop; close lets "
+      'both go', (tester) async {
+    final svc = FakePlayerService();
+    await pumpPlayer(
+        tester, phone: _phone, landscape: true, lang: 'en', engine: svc);
+    // A-B is on the open row.
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await _settle(tester);
+    final ab = find.byKey(const ValueKey('abRepeat'));
+    await tester.ensureVisible(ab.first);
+    await tester.pump();
+    await tester.tap(ab.first);
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsOneWidget);
+    expect(_state().abPointA, isNull, reason: 'the bar opens; no point yet');
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.text('A')));
+    await _settle(tester);
+    expect(_state().abPointA, isNotNull);
+    await svc.seek((_state().abPointA ?? Duration.zero) +
+        const Duration(seconds: 30));
+    await _settle(tester);
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.text('B')));
+    await _settle(tester);
+    expect(_state().abPointB, isNotNull);
+    expect(_state().abPointB! > _state().abPointA!, isTrue);
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.byIcon(Icons.close_rounded)));
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsNothing);
+    expect(_state().abPointA, isNull);
+    expect(_state().abPointB, isNull);
     await leavePlayer(tester);
   });
 

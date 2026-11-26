@@ -19,6 +19,7 @@ import 'package:innocent/core/services/video_player/models/audio_track_info.dart
 import 'package:innocent/core/services/video_player/models/subtitle_track_info.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -102,10 +103,22 @@ final scenes = <Scene>[
     await t.longPress(find.byIcon(Icons.skip_next).first, warnIfMissed: false);
     await _settle(t);
   }),
+  // MX's speed card (the "1X" shortcut).
   Scene('speed_tap', (t, c, svc) async {
     await t.tap(find.byKey(const ValueKey('playbackSpeed')).first,
         warnIfMissed: false);
-    await t.pump(const Duration(milliseconds: 200));
+    await _settle(t);
+  }),
+  // MX's A-B bar: the row opened, its A-B tapped, A set.
+  Scene('ab_bar', (t, c, svc) async {
+    await _tapIcon(t, Icons.chevron_right);
+    final ab = find.byKey(const ValueKey('abRepeat'));
+    await t.ensureVisible(ab.first);
+    await t.pump();
+    await t.tap(ab.first, warnIfMissed: false);
+    await _settle(t);
+    c.setABPointA();
+    await _settle(t);
   }),
   Scene('aspect_tap', (t, c, svc) async {
     await t.tap(find.byIcon(Icons.crop_landscape_outlined).first,
@@ -125,18 +138,50 @@ Future<void> _moreItem(WidgetTester t, IconData icon) async {
   await _settle(t);
 }
 
+/// Opens ⋮, then its "More ›" page (as MX's, 26 Nov 2026), and taps its
+/// [index]th row (0 Kids Lock, 1 Transfer, 2 Network stream, 3 Subtitle
+/// delay, 4 Skip markers, 5 Custom speed, 6 Settings, 7 FAQ, 8 updates).
+Future<void> _morePageRow(WidgetTester t, int index) async {
+  await _tapIcon(t, Icons.more_vert);
+  final more = find.descendant(
+      of: find.byType(MoreMenuPanel),
+      matching: find.byIcon(Icons.chevron_right_rounded));
+  await t.ensureVisible(more.first);
+  await t.pump();
+  await t.tap(more.first, warnIfMissed: false);
+  await _settle(t);
+  final row = find
+      .descendant(of: find.byType(MoreMenuPanel), matching: find.byType(PanelRow))
+      .at(index);
+  await t.ensureVisible(row);
+  await t.pump();
+  await t.tap(row, warnIfMissed: false);
+  await _settle(t);
+}
+
 final scenes2 = <Scene>[
   Scene('queue', (t, c, svc) => _moreItem(t, Icons.queue_music)),
-  Scene('kids_lock', (t, c, svc) => _moreItem(t, Icons.child_care)),
+  Scene('kids_lock', (t, c, svc) => _morePageRow(t, 0)),
+  // ⋮'s "More ›" page itself.
+  Scene('more_page', (t, c, svc) async {
+    await _tapIcon(t, Icons.more_vert);
+    final more = find.descendant(
+        of: find.byType(MoreMenuPanel),
+        matching: find.byIcon(Icons.chevron_right_rounded));
+    await t.ensureVisible(more.first);
+    await t.pump();
+    await t.tap(more.first, warnIfMissed: false);
+    await _settle(t);
+  }),
   Scene('aspect_menu', (t, c, svc) => _moreItem(t, Icons.aspect_ratio)),
   Scene('display', (t, c, svc) => _moreItem(t, Icons.tune)),
   Scene('bookmarks', (t, c, svc) => _moreItem(t, Icons.bookmark_outline)),
   Scene('cut', (t, c, svc) => _moreItem(t, Icons.content_cut)),
   Scene('info', (t, c, svc) => _moreItem(t, Icons.info_outline)),
   Scene('help', (t, c, svc) => _moreItem(t, Icons.help_outline)),
-  Scene('sub_delay', (t, c, svc) => _moreItem(t, Icons.subtitles_outlined)),
-  Scene('skip_markers', (t, c, svc) => _moreItem(t, Icons.skip_next_outlined)),
-  Scene('custom_speed', (t, c, svc) => _moreItem(t, Icons.speed)),
+  Scene('sub_delay', (t, c, svc) => _morePageRow(t, 3)),
+  Scene('skip_markers', (t, c, svc) => _morePageRow(t, 4)),
+  Scene('custom_speed', (t, c, svc) => _morePageRow(t, 5)),
   Scene('ab_badge', (t, c, svc) async {
     c.cycleABRepeat();
     await svc.seek(const Duration(minutes: 14, seconds: 2));

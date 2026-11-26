@@ -189,12 +189,17 @@ class PlayerPanel extends StatelessWidget {
     required this.onDismiss,
     this.title,
     this.trailing,
+    this.onBack,
   });
 
   final String? title;
   final Widget? trailing;
   final List<Widget> children;
   final VoidCallback onDismiss;
+
+  /// A page inside a panel (⋮'s "More", as MX's): its ← goes back a page,
+  /// both ways round. Without it, upright the ← closes the panel.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -225,7 +230,7 @@ class PlayerPanel extends StatelessWidget {
                 title: title!,
                 trailing: trailing,
                 top: portrait ? 4 : 6,
-                onBack: portrait ? onDismiss : null,
+                onBack: onBack ?? (portrait ? onDismiss : null),
               ),
             Flexible(
               child: _FadingScroll(
