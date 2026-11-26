@@ -278,6 +278,20 @@ def tiles(base, panel, package):
         print('%d %d' % c)
 
 
+def labelled(dump, pattern):
+    """The centre of the first node whose TalkBack label (content-desc, or
+    its text) matches PATTERN, case aside: "x y". Innocent's ⋮ tiles read
+    clickable="false" in uiautomator (run 45885319037), so tiles() and
+    grid() never see them; their English labels find them."""
+    r = re.compile(pattern, re.I)
+    for n in nodes(dump):
+        label = (n.get('content-desc') or n.get('text') or '').replace('\n', ' ')
+        c = centre(n)
+        if c and r.search(label):
+            print('%d %d' % c)
+            return
+
+
 def grid(base, panel, package, dpi):
     """The panel's tiles alone, top row first, left to right: "x y" each.
     A tile is a clickable new node about as tall as it is wide and under
@@ -368,6 +382,8 @@ def main(argv):
         added(argv[1], argv[2], argv[3])
     elif len(argv) == 4 and argv[0] == 'tiles':
         tiles(argv[1], argv[2], argv[3])
+    elif len(argv) == 3 and argv[0] == 'labelled':
+        labelled(argv[1], argv[2])
     elif len(argv) == 5 and argv[0] == 'grid':
         grid(argv[1], argv[2], argv[3], int(argv[4]))
     elif len(argv) == 4 and argv[0] == 'shortcuts':

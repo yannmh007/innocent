@@ -736,15 +736,23 @@ panel_screens() {
             if [ -z "${BTNS[$idx]:-}" ]; then
               # MX upright keeps only HW and ⋮ in its top bar; ♪ and CC are
               # the first two buttons of its ⋮ panel (run 44999637142).
-              if [ "$app" = mx ] && [ -n "${BTNS[0]:-}" ]; then
+              # Innocent's ♪ and CC are on its bar both ways; if a narrow
+              # bar ever leaves them to ⋮, its tiles read clickable="false"
+              # in uiautomator (run 45885319037): found by their labels.
+              if [ -n "${BTNS[0]:-}" ]; then
                 # shellcheck disable=SC2086
                 adb shell input tap ${BTNS[0]}
                 for k in 1 2 3 4 5 6; do
                   sleep 1
                   quick_tree "$app" "$OUT/raw/quick.xml"
-                  [ "$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE" || echo 0)" -ge 3 ] && break
+                  [ "$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$app")" || echo 0)" -ge 3 ] && break
                 done
-                mapfile -t TILES < <(UI tiles "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE")
+                if [ "$app" = mx ]; then
+                  mapfile -t TILES < <(UI tiles "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE")
+                else
+                  TILES=("$(UI labelled "$OUT/raw/quick.xml" '^Audio track' || true)"
+                         "$(UI labelled "$OUT/raw/quick.xml" '^Subtitle' || true)")
+                fi
                 if [ "$sc" = audio ]; then xy=${TILES[0]:-}; else xy=${TILES[1]:-}; fi
                 [ -n "$xy" ] || { note "$app $o $f $sc: not in the top bar, and ⋮ held no button for it"; break; }
                 note "$app $o $f $sc: not in the top bar; opened from ⋮"

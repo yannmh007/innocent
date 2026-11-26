@@ -3617,13 +3617,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               // Landscape: clear of the cutout and side nav bar, as MX is.
               left: _controlsInsets(context).left,
               right: _controlsInsets(context).right,
-              // MX, both orientations: the row's centre sits 59 dp below the
-              // back arrow's (top bar 56 high, row 56 high).
-              // MX (run 45805693393): the row's centre 50.7 dp below the
-              // back arrow's sideways, 54.8 upright (it was 59).
+              // MX (controls.py, runs 45805693393 and 45885319037): the
+              // row's centre 74.7 dp under the status bar sideways, 82.8
+              // upright (the row is 56 high; it was 59 below both ways).
               top: _controlsInsets(context).top +
                   (MediaQuery.orientationOf(context) == Orientation.landscape
-                      ? 50.7
+                      ? 46.8
                       : 54.8),
               child: Listener(
                 // MX Player parity: any touch on the shortcut strip —
@@ -4044,7 +4043,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               right: _controlsInsets(context).right + 12,
               top: _controlsInsets(context).top +
                   (MediaQuery.orientationOf(context) == Orientation.landscape
-                      ? 50.7
+                      ? 46.8
                       : 54.8) +
                   (visibleShortcutList.isEmpty
                       ? 0
@@ -4379,11 +4378,20 @@ class _TopBar extends StatelessWidget {
     // 384 dp one too) has room for a readable title or the clock, not
     // both, now that audio and subtitles are on it: the title wins.
     final size = MediaQuery.sizeOf(context);
-    final narrow = size.width < size.height && size.width < 400;
+    final upright = size.width < size.height;
+    final narrow = upright && size.width < 400;
+    // MX 3.4.3's bar (reference lab 45885319037 on the owner's phone, and
+    // 45828625924 on a 10" tablet): sideways 48 dp high, ← 56 wide, the
+    // title 4 dp after it, ♪ CC HW and ⋮ 48 each; upright 56 high, the
+    // title 16 dp after ←, ⋮ 56 wide. Upright MX keeps only HW there, ♪
+    // and CC in ⋮; Innocent keeps them on the bar too, one tap (the lab's
+    // decision table: Innocent's better, keep), and in ⋮ as MX's.
+    final moreWidth = upright ? 56.0 : 48.0;
     // As many of the chosen icons as the bar holds beside the ←, ⋮ and a
-    // readable title (80 dp), ♪, CC and the decoder first: six on a 320 dp
+    // readable title (64 dp), ♪, CC and the decoder first: six on a 320 dp
     // phone held upright ran the title to nothing.
-    final room = size.width - insets.left - insets.right - 48 - 48 - 80;
+    final room =
+        size.width - insets.left - insets.right - 56 - moreWidth - 64;
     final fits = (room / 48).floor().clamp(0, TopBarItem.values.length);
     const priority = [
       TopBarItem.audio,
@@ -4408,14 +4416,16 @@ class _TopBar extends StatelessWidget {
         right: insets.right,
       ),
       child: SizedBox(
-        height: 56,
+        height: upright ? 56 : 48,
         child: Row(
           children: [
             IconButton(
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
+              constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
               onPressed: onBack,
             ),
+            SizedBox(width: upright ? 16 : 4),
             Expanded(
               // Each text in the controls is its own TalkBack node: loose,
               // they all joined one full-screen node with the subtitle
@@ -4601,10 +4611,12 @@ class _TopBar extends StatelessWidget {
             if (onDecoder != null && shown.contains(TopBarItem.decoder))
               TextButton(
                 onPressed: onDecoder,
+                // 48 wide, as MX's HW (it was up to 56).
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: const Size(40, 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  minimumSize: const Size(48, 48),
+                  maximumSize: const Size(48, 48),
                 ),
                 // "HW+" is three letters; "Default" in Thai is eleven, and
                 // it took the title's room. Never wider than this: a longer
@@ -4644,6 +4656,7 @@ class _TopBar extends StatelessWidget {
               ),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
+              constraints: BoxConstraints(minWidth: moreWidth, minHeight: 48),
               onPressed: onMore,
               tooltip: AppStrings.of(context).moreOptions,
             ),

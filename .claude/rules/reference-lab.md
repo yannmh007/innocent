@@ -72,6 +72,13 @@ repository and a run's public log carry numbers and our own code.
   Innocent's by its English TalkBack label; never by place. Innocent's
   upright bottom row and sideways ⋮ are missing on the API 30 image (its
   root stops 96 dp short there; API 34 and 36 reach the whole screen).
+- **Innocent's ⋮ tiles read clickable="false" in uiautomator** (run
+  45885319037; its switch rows read true): `ui.py tiles`/`grid` never see
+  them. Find one by its English label: `ui.py labelled <dump> '^Audio
+  track'`.
+- **controls.py's "shortcut 1/2" pair MX's first slots with Innocent's
+  "Speed" and "Screenshot"**: Innocent's open row starts with EQ, so x reads
+  +59.7 (one slot) when the places are equal; the pitch row is the check.
 - **The lab's dp are the owner's dp.** The emulator is 1080x2316 at 450 dpi
   (2.8125), as the owner's phone at its default zoom: 384x823 dp, a 48 dp
   navigation bar. Figures taken off the owner's own screenshots before

@@ -114,6 +114,17 @@
 >   part keeps those switches).
 > - Legibility: a panel row's value and a switch row's icon white (♪'s
 >   "0 ms" read 2.35:1 over white, ⋮'s Video Display icon 2.6).
+> - PROVED ON THE EMULATOR, reference lab 45885319037 (SCREENS=panels,
+>   `controls.py`): Innocent - MX within 0.5 dp for the seek bar, both
+>   times, lock, ⏮ ⏯ ⏭, screen mode, the row's pitch, both ways; the
+>   panels 47 % / 48 %. Left then and fixed after it: the top bar
+>   sideways 3.9 dp low (MX's bar is 48 high sideways, 56 upright), ←
+>   56 wide (title 4 dp after it sideways, 16 upright), HW 48 wide (it
+>   was 54), ⋮ 56 wide upright; the row 4 dp low sideways (46.8, not
+>   50.7). Kept on purpose: ♪ and CC on Innocent's bar upright too, one
+>   tap (MX's upright bar has HW only, at 800 dp too: the lab's decision
+>   table read it "Innocent's better, keep"); they are ⋮'s first tiles as
+>   well, as MX's. Next run (SCREENS=panels) shows the bar.
 > Proof: flutter analyze clean; player_controls_test 44 (+2: the
 > Customise card, the 320 dp top bar); player_layout_test PLAYER_PHONES=all
 > my/en/th x1.0/x1.3 4554 pass (new scene `customise`); legibility my/en/th
