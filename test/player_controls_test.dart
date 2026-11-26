@@ -97,14 +97,20 @@ void main() {
       // the same icon).
       await tester.tap(find.byIcon(Icons.subtitles_outlined).first);
       await _settle(tester);
+      // As MX (the owner, 26 Nov 2026): the tracks are check boxes in a
+      // box, the one showing checked; tapped again, none shows.
       final englishRow = find.ancestor(
           of: find.text('English'), matching: find.byType(InkWell));
       expect(
           find.descendant(
-              of: englishRow.first, matching: find.byIcon(Icons.check_rounded)),
+              of: englishRow.first,
+              matching: find.byWidgetPredicate(
+                  (w) => w is PanelCheckMark && w.value)),
           findsOneWidget,
           reason: 'the chosen track is not marked');
-      await tester.tap(find.text('Off'));
+      expect(find.byType(PanelCheckBox), findsOneWidget);
+      expect(find.text('Off'), findsNothing, reason: 'MX has no Off row');
+      await tester.tap(find.text('English'));
       await _settle(tester);
       expect(_state().currentSubtitleTrack, isNull);
       await leavePlayer(tester);

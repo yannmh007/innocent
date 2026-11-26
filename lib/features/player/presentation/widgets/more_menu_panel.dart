@@ -71,8 +71,9 @@ class MoreMenuPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    // No title, upright or sideways: MX's ⋮ has none, the tiles are the
+    // first thing (the owner, 26 Nov 2026: "hide the word More").
     return PlayerPanel(
-      title: s.moreOptions,
       onDismiss: onDismiss,
       children: [
         PanelGrid(

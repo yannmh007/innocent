@@ -106,6 +106,18 @@ class PlayerUi {
   /// the shade, so the icon keeps its ground over a bright film.
   static const Color tileDisc = Color(0x4D000000);
 
+  /// The ring round a tile's disc, as MX rings its tiles (the owner, 26 Nov
+  /// 2026); the box round the subtitle tracks; an idle radio or check box.
+  static const Color tileRing = Color(0x8CFFFFFF);
+  static const Color boxEdge = Color(0x66FFFFFF);
+  static const Color markIdle = Color(0xB3FFFFFF);
+
+  /// The dark ground under a radio or a check box, as [shadeInk] is under
+  /// a word.
+  static const List<BoxShadow> markHalo = <BoxShadow>[
+    BoxShadow(color: Color(0x99000000), blurRadius: 4),
+  ];
+
   static const Color hairline = Color(0x1AFFFFFF);
   static const Color textPrimary = Color(0xEBFFFFFF);
   static const Color textSecondary = Color(0x9EFFFFFF);
@@ -542,9 +554,10 @@ class PanelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The choice is marked by a white ✓ and a heavier white title, not by
-    // blue: on the see-through shade, over a bright film, the blue title
-    // read 1.3:1 and the blue ✓ 1.4:1 (the legibility test, 22 Nov 2026).
+    // A choice is marked as MX and Android mark one (the owner, 26 Nov
+    // 2026: "as MX, all of it"): a ring, a dot in it when chosen. The
+    // title stays white: a blue title over a bright film read 1.3:1 on the
+    // see-through shade (the legibility test, 22 Nov).
     const colour = PlayerUi.textPrimary;
     return Semantics(
       selected: selected,
@@ -560,12 +573,7 @@ class PanelRow extends StatelessWidget {
                 if (choice)
                   SizedBox(
                     width: 22,
-                    child: selected
-                        ? const Icon(Icons.check_rounded,
-                            size: 22,
-                            color: PlayerUi.textPrimary,
-                            shadows: PlayerUi.shadeInk)
-                        : null,
+                    child: Center(child: PanelRadio(selected: selected)),
                   )
                 else if (icon != null)
                   Icon(icon,
@@ -575,9 +583,7 @@ class PanelRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: PlayerUi.rowTitle.copyWith(
-                        color: colour,
-                        fontWeight: selected ? FontWeight.w600 : null),
+                    style: PlayerUi.rowTitle.copyWith(color: colour),
                   ),
                 ),
                 if (value != null) ...[
@@ -608,6 +614,195 @@ class PanelRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A choice's mark (the owner, 26 Nov 2026: "as MX, all of it"): a ring,
+/// with a dot in it when chosen — the mark MX and Android give one choice
+/// of a list. White on a dark halo, so it holds over a bright film.
+class PanelRadio extends StatelessWidget {
+  const PanelRadio({super.key, required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+            color: selected ? PlayerUi.textPrimary : PlayerUi.markIdle,
+            width: 2),
+        boxShadow: PlayerUi.markHalo,
+      ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                    color: PlayerUi.accent, shape: BoxShape.circle),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+/// A check box's mark: a rounded square, filled with a ✓ when on — as
+/// MX draws its subtitle tracks (the owner, 26 Nov 2026).
+class PanelCheckMark extends StatelessWidget {
+  const PanelCheckMark({super.key, required this.value});
+
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: value ? PlayerUi.accent : null,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+            color: value ? PlayerUi.accent : PlayerUi.markIdle, width: 2),
+        boxShadow: PlayerUi.markHalo,
+      ),
+      child: value
+          ? const Icon(Icons.check_rounded,
+              size: 16, color: Colors.white, shadows: <Shadow>[])
+          : null,
+    );
+  }
+}
+
+/// One row of a [PanelCheckBox] group.
+class PanelCheck {
+  const PanelCheck({required this.title, required this.value, required this.onTap});
+
+  final String title;
+  final bool value;
+  final VoidCallback onTap;
+}
+
+/// Check box rows in a box (the owner, 26 Nov 2026: "English, Burmese in a
+/// rectangle, as MX"): the film's subtitle tracks, each a check box and its
+/// name, inside a thin rectangle. The row takes the tap.
+class PanelCheckBox extends StatelessWidget {
+  const PanelCheckBox({super.key, required this.rows});
+
+  final List<PanelCheck> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: PlayerUi.boxEdge),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final r in rows)
+            MergeSemantics(
+              child: Semantics(
+                checked: r.value,
+                child: InkWell(
+                  onTap: r.onTap,
+                  borderRadius: BorderRadius.circular(6),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      child: Row(
+                        children: [
+                          PanelCheckMark(value: r.value),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(r.title,
+                                style: PlayerUi.rowTitle
+                                    .copyWith(color: PlayerUi.textPrimary)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A row that opens below itself, as MX's subtitle "Settings ▾" does (the
+/// owner, 26 Nov 2026): an icon, a title and a caret; its rows show while
+/// it is open. Shut when the panel opens.
+class PanelExpandRow extends StatefulWidget {
+  const PanelExpandRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  State<PanelExpandRow> createState() => _PanelExpandRowState();
+}
+
+class _PanelExpandRowState extends State<PanelExpandRow> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(widget.icon, size: 22, color: PlayerUi.textPrimary),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(widget.title,
+                          style: PlayerUi.rowTitle
+                              .copyWith(color: PlayerUi.textPrimary)),
+                    ),
+                    Icon(
+                        _open
+                            ? Icons.arrow_drop_up_rounded
+                            : Icons.arrow_drop_down_rounded,
+                        size: 26,
+                        color: PlayerUi.textPrimary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open) ...widget.children,
+      ],
     );
   }
 }
@@ -698,13 +893,17 @@ class PanelTile extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      // A dark tonal disc: on the see-through shade a light
-                      // one lifted the ground under a white icon over a
-                      // bright film to 2.9:1 (22 Nov 2026).
+                      // A dark disc in a thin ring, as MX rings its tiles
+                      // (the owner, 26 Nov 2026). Dark: on the see-through
+                      // shade a light disc lifted the ground under a white
+                      // icon over a bright film to 2.9:1 (22 Nov).
                       color: selected
                           ? PlayerUi.accentContainer
                           : PlayerUi.tileDisc,
                       shape: BoxShape.circle,
+                      border: Border.all(
+                          color: selected ? PlayerUi.accent : PlayerUi.tileRing,
+                          width: 1.2),
                     ),
                     child: Icon(icon,
                         size: 22,
@@ -812,7 +1011,9 @@ class PlayerSheetHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.trailing,
-    this.divider = true,
+    // No line under the title, as MX's sheets have none (the owner, 26 Nov
+    // 2026: "as MX, all of it").
+    this.divider = false,
   });
 
   final String title;

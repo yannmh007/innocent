@@ -209,6 +209,21 @@ does it.
     the same grey (102 of 255 both). Sideways the subtitle sits at the
     picture's foot and may touch a long panel's last row, as MX's would
     (MX does not move it sideways).
+  - 26 NOV, THE OWNER: "English, Burmese in a rectangle — as MX, all of
+    it; Innocent's UI is not pro, so make it as MX", and "hide the word
+    More sideways". MX's KINDS OF CONTROL, drawn with Innocent's own icons
+    and colours (skill ui-design §4): CC in MX's order — open a file, the
+    subtitle tracks as check boxes in a thin rectangle (tapped again, none
+    shows; no "Off" row), online subtitles, "Settings ▾" opening below
+    itself to delay / text style / position; one choice of a list (♪
+    tracks, speed, …) a radio ring with a dot; tiles ringed; ⋮ with no
+    title upright or sideways; no line under a sheet's title. Tests: whole
+    suite 1873 pass; player_layout_test 1062 (320/360/411 dp, my/en/th,
+    1.0/1.3); legibility: CC 20/20 and ♪ 6/6 on all five frames, ⋮ as
+    before (white 42/48, lowest 3.7; colour 46/48, 4.1). Not done: MX's
+    ♪ "Disable" (no audio) — the engines' setAudioTrack needs a track; it
+    wants an engine change. The emulator side by side: the ref.env run of
+    26 Nov.
   - FOUND ON THE WAY (22 Nov, not fixed yet; each needs the owner's word):
     (1) INNOCENT'S ACCESSIBILITY ROOT IS 96 DP SHORT of the screen on the
     owner-like emulator (API 30, 3-button nav, punch hole): [0,0][1080,2045]
