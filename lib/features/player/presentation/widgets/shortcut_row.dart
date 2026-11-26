@@ -32,8 +32,11 @@ import '../../../../core/localization/app_strings.dart';
 /// MX geometry (measured on its portrait and landscape screenshots): one
 /// slot every 63 dp from the left edge, so the first item sits under the back
 /// arrow; 44 dp circles; the "1X" text at 15 sp.
-const double _slot = 63;
-const double _circle = 44;
+// As MX 3.4.3 on the owner's phone (the reference lab, tool/ref/
+// controls.py on run 45805693393): a slot every 59.7 dp, 42.7 dp discs, the
+// chevron's 25.6. They were 63 and 44, off screenshots read at 2.625.
+const double _slot = 59.7;
+const double _circle = 42.7;
 
 class ShortcutRow extends StatelessWidget {
   final List<ShortcutItem> visibleItems;
@@ -355,9 +358,9 @@ class _ExpandButton extends StatelessWidget {
           children: [
             if (expanded) const SizedBox(height: 6),
             Container(
-              width: 28,
-              height: 28,
-              margin: const EdgeInsets.symmetric(vertical: 8),
+              width: 25.6,
+              height: 25.6,
+              margin: const EdgeInsets.symmetric(vertical: 8.5),
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: AppColors.shortcutInactive,

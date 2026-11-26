@@ -16,6 +16,15 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **26 Nov (late night): THE REST AS MX's (the owner: "every device and
+  screen, exactly")** — on the branch, not released. Done: MX's controls
+  geometry (row, discs, ⏮ ⏯ ⏭, lock, times); the tablet reach (480 dp,
+  full width upright); Sleep and AE/EQ on the shade; toasts at the foot
+  2 s; Customise Items as MX's top-bar card (`CustomiseTopBarCard`,
+  `StringSetting.playerTopBar`). Details and proof: the handoff's update
+  block ("26 NOV (LATE NIGHT)"). Next: the reference lab on the phone
+  (SCREENS=panels for controls.py, then SCREENS=shortcuts) to set these
+  beside MX's on the emulator.
 - **26 Nov (night): ⋮ AND THE SHORTCUTS AS MX's (the owner: "11 tiles
   and More"; "every shortcut as MX's, exactly")** — on the branch, not
   released. The lab's SCREENS=shortcuts (runs 45857557804, 45862946745)
@@ -28,9 +37,9 @@ does it.
   reach (the owner took both). PROVED ON THE EMULATOR, reference lab
   45870615457 (adb1c24b): Innocent's open row in MX's order, the speed
   card, the A-B bar, Night mode grey, ⋮'s ten tiles and More, beside
-  MX's. Fixed after it (not yet on the emulator): Customise Items on the
-  open row (second, as MX's); the film's subtitle lifted over the speed
-  card (it lay across the card's numbers).
+  MX's. Fixed after it: Customise Items on the open row (second, as
+  MX's); the film's subtitle lifted over the speed card (it lay across
+  the card's numbers). What was "left" here is done: the entry above.
 - **26 Nov (later): THE CONTROLS READ OVER ANY FILM; ♪'s AUDIO DELAY;
   THE OWNER'S PHONE IS 384x823 (work branch only, not released)** —
   session of docs/handoff_2026_11_26_mx_parity.md §2-§3. THE OWNER'S WORD

@@ -72,7 +72,6 @@ import 'widgets/account_mark.dart';
 import 'widgets/brightness_indicator.dart';
 import 'widgets/bookmarks_sheet.dart';
 import 'widgets/custom_speed_dialog.dart';
-import 'widgets/customise_items_screen.dart';
 import 'widgets/cut_sheet.dart';
 import 'widgets/decoder_dialog.dart';
 import 'widgets/display_settings_sheet.dart';
@@ -90,6 +89,7 @@ import 'widgets/shortcut_row.dart';
 import 'widgets/sleep_timer_dialog.dart';
 import 'widgets/speed_indicator.dart';
 import 'widgets/speed_card.dart';
+import 'widgets/customise_top_bar.dart';
 import 'widgets/ab_repeat_bar.dart';
 import 'widgets/speed_slider.dart';
 import 'widgets/zoom_indicator.dart';
@@ -2075,11 +2075,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         _applyRotationMode(announce: true);
         break;
       case ShortcutItem.customiseItems:
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => const CustomiseItemsScreen(),
-          ),
-        );
+        // As MX 3.4.3's (the reference lab, run 45862946745): a card
+        // choosing the top bar's icons (CustomiseTopBarCard). The
+        // shortcuts themselves are chosen in ⋮, as in MX's.
+        controller.openCustomisePanel();
         break;
       case ShortcutItem.screenshot:
         _captureScreenshot(context);
@@ -2129,7 +2128,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void _showOverlay(String msg) {
     _overlayMsg.value = msg;
     _overlayTimer?.cancel();
-    _overlayTimer = Timer(const Duration(milliseconds: 1200), () {
+    // Two seconds at the foot, as MX's toasts (Android's short one; the
+    // reference lab, run 45862946745): it was 1.2 s in the middle.
+    _overlayTimer = Timer(const Duration(milliseconds: 2000), () {
       if (mounted) _overlayMsg.value = null;
     });
   }
@@ -2525,6 +2526,30 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
   }
 
+  /// The playing queue: what Next plays through, the film's folder.
+  Future<void> _openPlayingQueue(BuildContext context) async {
+    final controller = ref.read(playerControllerProvider.notifier);
+    controller.closePanel();
+    final q = await controller.folderQueue();
+    if (!context.mounted) return;
+    await PlayingQueueSheet.show(
+      context,
+      currentTitle: _title,
+      queue: [for (final v in q.videos) v.title],
+      durations: [for (final v in q.videos) v.duration],
+      currentIndex: q.current < 0 ? 0 : q.current,
+      onPick: q.videos.isEmpty
+          ? null
+          : (i) =>
+              controller.openVideo(q.videos[i].uri, title: q.videos[i].title),
+    );
+  }
+
+  /// The top bar's optional icons (MX's Customise Items).
+  Set<TopBarItem> _topBarItems() => TopBarItem.parse(ref
+      .watch(extraSettingsProvider)
+      .getStr(StringSetting.playerTopBar));
+
   List<MoreMenuItemData> _buildMoreMenuItems(BuildContext context) {
     final controller = ref.read(playerControllerProvider.notifier);
     final s = AppStrings.of(context);
@@ -2556,23 +2581,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         label: s.playingQueue,
         category: MoreMenuCategory.playback,
         icon: Icons.queue_music,
-        onTap: () async {
-          controller.closePanel();
-          // What Next plays through: the film's folder, in order.
-          final q = await controller.folderQueue();
-          if (!context.mounted) return;
-          await PlayingQueueSheet.show(
-            context,
-            currentTitle: _title,
-            queue: [for (final v in q.videos) v.title],
-            durations: [for (final v in q.videos) v.duration],
-            currentIndex: q.current < 0 ? 0 : q.current,
-            onPick: q.videos.isEmpty
-                ? null
-                : (i) => controller.openVideo(q.videos[i].uri,
-                    title: q.videos[i].title),
-          );
-        },
+        onTap: () => _openPlayingQueue(context),
       ),
       MoreMenuItemData(
         label: s.aspectRatioMenu,
@@ -3546,6 +3555,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                     ? null
                     : controller.openDecoderDialog,
                 onMore: controller.openMoreMenu,
+                items: _topBarItems(),
+                onQueue: () => _openPlayingQueue(context),
+                onPip: () => _enterPip(context),
+                onScreenMode: controller.cycleAspectRatio,
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onQuality: () => _showQualitySheet(context),
                 activeUri:
@@ -3606,7 +3619,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               right: _controlsInsets(context).right,
               // MX, both orientations: the row's centre sits 59 dp below the
               // back arrow's (top bar 56 high, row 56 high).
-              top: _controlsInsets(context).top + 59,
+              // MX (run 45805693393): the row's centre 50.7 dp below the
+              // back arrow's sideways, 54.8 upright (it was 59).
+              top: _controlsInsets(context).top +
+                  (MediaQuery.orientationOf(context) == Orientation.landscape
+                      ? 50.7
+                      : 54.8),
               child: Listener(
                 // MX Player parity: any touch on the shortcut strip —
                 // scrolling through the icons to find one, or a slow
@@ -3715,8 +3733,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 valueListenable: _overlayMsg,
                 builder: (_, msg, __) {
                   if (msg == null) return const SizedBox.shrink();
-                  return Center(
-                    child: Container(
+                  // At the foot, centred, as MX's toasts ("Night Mode",
+                  // "Background playback enabled."): 64 dp up.
+                  return Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                          bottom: 64 + MediaQuery.paddingOf(context).bottom,
+                          left: 24,
+                          right: 24),
+                      child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
                       decoration: BoxDecoration(
                         color: const Color(0x9E000000), // black ~62%
@@ -3724,12 +3750,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       ),
                       child: Text(
                         msg,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ),
                     ),
                   );
                 },
@@ -3772,6 +3800,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 10: Side panels ===
+          if (state.openPanel == SidePanel.customise)
+            Positioned.fill(
+              child: CustomiseTopBarCard(
+                initial: _topBarItems(),
+                onApply: (items) {
+                  // ignore: discarded_futures
+                  ref.read(extraSettingsProvider.notifier).setStr(
+                      StringSetting.playerTopBar, TopBarItem.write(items));
+                  controller.closePanel();
+                },
+                onCancel: controller.closePanel,
+              ),
+            ),
           if (state.openPanel == SidePanel.speed)
             Positioned.fill(
               child: SpeedCard(
@@ -4002,7 +4043,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             Positioned(
               right: _controlsInsets(context).right + 12,
               top: _controlsInsets(context).top +
-                  59 +
+                  (MediaQuery.orientationOf(context) == Orientation.landscape
+                      ? 50.7
+                      : 54.8) +
                   (visibleShortcutList.isEmpty
                       ? 0
                       : (state.shortcutsExpanded ? 96 : 56)),
@@ -4265,6 +4308,13 @@ class _TopBar extends StatelessWidget {
   final VoidCallback? onDecoder;
   final VoidCallback onMore;
 
+  /// Which optional icons it carries (MX's Customise Items), and what the
+  /// ones that are not otherwise on it do.
+  final Set<TopBarItem> items;
+  final VoidCallback? onQueue;
+  final VoidCallback? onPip;
+  final VoidCallback? onScreenMode;
+
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
   /// for what is playing — a catalogue film with streaming copies.
   final VoidCallback? onQuality;
@@ -4298,6 +4348,10 @@ class _TopBar extends StatelessWidget {
     required this.onSubtitle,
     required this.onDecoder,
     required this.onMore,
+    this.items = const {TopBarItem.audio, TopBarItem.subtitle, TopBarItem.decoder},
+    this.onQueue,
+    this.onPip,
+    this.onScreenMode,
     this.onQuality,
     this.activeUri,
     required this.fmtTimer,
@@ -4326,6 +4380,20 @@ class _TopBar extends StatelessWidget {
     // both, now that audio and subtitles are on it: the title wins.
     final size = MediaQuery.sizeOf(context);
     final narrow = size.width < size.height && size.width < 400;
+    // As many of the chosen icons as the bar holds beside the ←, ⋮ and a
+    // readable title (80 dp), ♪, CC and the decoder first: six on a 320 dp
+    // phone held upright ran the title to nothing.
+    final room = size.width - insets.left - insets.right - 48 - 48 - 80;
+    final fits = (room / 48).floor().clamp(0, TopBarItem.values.length);
+    const priority = [
+      TopBarItem.audio,
+      TopBarItem.subtitle,
+      TopBarItem.decoder,
+      TopBarItem.queue,
+      TopBarItem.pip,
+      TopBarItem.screenMode,
+    ];
+    final shown = priority.where(items.contains).take(fits).toSet();
     // Its ground: black, at least 50 % under the words, thinning out below
     // (BarShade: over a white film the title read 2.2:1 on the old
     // gradient).
@@ -4452,18 +4520,27 @@ class _TopBar extends StatelessWidget {
             // subtitles and its other audio could not be chosen at all
             // (test/player_controls_test.dart). The dot: more than one track
             // to choose from. PiP is on the bottom row, as in MX.
-            _IconWithDot(
-              icon: Icons.music_note,
-              tooltip: AppStrings.of(context).audioTrack,
-              showDot: hasMultipleAudioTracks,
-              onPressed: onAudio,
-            ),
-            _IconWithDot(
-              icon: Icons.subtitles_outlined,
-              tooltip: AppStrings.of(context).subtitle,
-              showDot: hasMultipleSubtitleTracks,
-              onPressed: onSubtitle,
-            ),
+            if (shown.contains(TopBarItem.queue) && onQueue != null)
+              IconButton(
+                icon: const Icon(Icons.queue_music, color: Colors.white),
+                tooltip:
+                    AppStrings.of(context).playingQueue.replaceAll('\n', ' '),
+                onPressed: onQueue,
+              ),
+            if (shown.contains(TopBarItem.audio))
+              _IconWithDot(
+                icon: Icons.music_note,
+                tooltip: AppStrings.of(context).audioTrack,
+                showDot: hasMultipleAudioTracks,
+                onPressed: onAudio,
+              ),
+            if (shown.contains(TopBarItem.subtitle))
+              _IconWithDot(
+                icon: Icons.subtitles_outlined,
+                tooltip: AppStrings.of(context).subtitle,
+                showDot: hasMultipleSubtitleTracks,
+                onPressed: onSubtitle,
+              ),
             // QUALITY, where YouTube keeps it: one tap from the picture, in
             // both orientations. Shows what was chosen — "Auto", "720p",
             // "Original" — so the viewer can see the state without opening
@@ -4521,7 +4598,7 @@ class _TopBar extends StatelessWidget {
                   );
                 },
               ),
-            if (onDecoder != null)
+            if (onDecoder != null && shown.contains(TopBarItem.decoder))
               TextButton(
                 onPressed: onDecoder,
                 style: TextButton.styleFrom(
@@ -4550,6 +4627,20 @@ class _TopBar extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            if (shown.contains(TopBarItem.pip) && onPip != null)
+              IconButton(
+                icon: const Icon(Icons.picture_in_picture_alt_outlined,
+                    color: Colors.white),
+                tooltip: AppStrings.of(context).pmPip,
+                onPressed: onPip,
+              ),
+            if (shown.contains(TopBarItem.screenMode) && onScreenMode != null)
+              IconButton(
+                icon: const Icon(Icons.crop_landscape_outlined,
+                    color: Colors.white),
+                tooltip: AppStrings.of(context).pmScreenMode,
+                onPressed: onScreenMode,
               ),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -4911,9 +5002,11 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
   Widget build(BuildContext context) {
     final hasDuration = widget.duration.inMilliseconds > 0;
     final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
-    // Spacing between Prev/Play/Next: portrait is already comfortable; landscape
-    // gets much wider so the three buttons aren't cramped together (MX parity).
-    final transportSpacing = isLandscape ? 56.0 : 8.0;
+    // Between Prev, Play and Next, as MX's on the owner's phone (the
+    // reference lab, tool/ref/controls.py on run 45805693393): their
+    // centres 96 dp apart sideways, 53.3 upright (48 dp buttons). They
+    // were 104 and 56, measured off screenshots read at the wrong density.
+    final transportSpacing = isLandscape ? 48.0 : 5.3;
     // Smooth scoped position: the controller only writes position into
     // its state once per second (to keep whole-screen rebuilds low), so
     // for a fluid seek bar we read the engine's position stream directly
@@ -4965,26 +5058,26 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,
     )..layout();
-    final timeWidth = math.max(56.0, timePainter.width.ceilToDouble() + 2);
+    // MX's labels are 42.7 dp ("00:03"); longer times take their width.
+    final timeWidth = math.max(42.7, timePainter.width.ceilToDouble() + 2);
     timePainter.dispose();
     // Its ground: BarShade from the bottom (the elapsed time read 1.5:1 over
     // a white film on the old gradient).
     return BarShade(
       fromTop: false,
       child: Container(
-      // MX GEOMETRY, measured on its screenshots taken on the owner's phone
-      // (1080x2316, read then as 2.625: a 51.4 dp bar; it is 2.8125, a
-      // 48 dp bar, so these dp are ~7 % large — to measure again on the
-      // reference lab's emulator, 26 Nov 2026) — each
-      // row's centre above the edge of the space the controls may use:
-      //   portrait : buttons 19.4 dp, seek bar 62.5 dp above the nav bar
-      //   landscape: buttons 24 dp,   seek bar 67 dp above the screen edge
-      //              (the nav bar sits at the side there)
-      // This used to reserve the PORTRAIT nav bar in both orientations and
-      // pad the button row 8 dp above and below: 12 dp too high in portrait,
-      // ~58 dp too high in landscape (owner's screenshots, 2026-10-04).
+      // MX GEOMETRY, measured on the reference lab's emulator at the
+      // owner's phone's size (1080x2316 at 2.8125; tool/ref/controls.py,
+      // run 45805693393; the owner, 26 Nov 2026: "take MX's controls
+      // geometry"): the buttons' centre 23 dp above the edge of the space
+      // the controls may use, the seek bar's 71 (upright above the
+      // navigation bar; sideways above the screen's edge, the navigation
+      // bar at the side). Earlier figures, read off screenshots as 2.625,
+      // were ~7 % large.
       padding: EdgeInsets.only(
-        bottom: widget.insets.bottom + (landscape ? 4 : 0),
+        // MX: the buttons' centre 23 dp above the screen's edge (upright,
+        // above the navigation buttons), the seek bar's 71.
+        bottom: widget.insets.bottom + 3,
         left: widget.insets.left,
         right: widget.insets.right,
       ),
@@ -5046,9 +5139,16 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
           // the screen edge and the bar's ends sit 79.6 dp in — the labels
           // used to hug the edges (4 dp) and the bar ran 20 dp longer.
           // 18 + 56 + the thumb's 5.5 dp inset = 79.5.
+          // MX (the reference lab, run 45805693393): each time label 65 dp
+          // in from the screen's edge sideways (from the navigation
+          // buttons on the right), 17 upright; the bar between them.
           if (widget.showSeekBar)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18),
+            padding: landscape
+                ? EdgeInsets.only(
+                    left: math.max(8.0, 65.4 - widget.insets.left),
+                    right: 65.1)
+                : const EdgeInsets.symmetric(horizontal: 17),
             child: Row(
               children: [
                 SizedBox(
@@ -5135,7 +5235,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
               ],
             ),
           ),
-          if (landscape) const SizedBox(height: 1),
+          const SizedBox(height: 6),
           // MX (portrait, measured): lock centred 28 dp from the left edge,
           // fill-screen 37.7 dp from the right, aspect 56.8 dp left of that.
           // The row is laid out 40 dp tall (MX's geometry above), but its
@@ -5147,19 +5247,35 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
           // centre line instead.
           Container(
             height: 40,
-            padding: const EdgeInsets.only(left: 4, right: 14),
+            // MX: picture-in-picture's 53.3 dp ends 8.5 dp from the edge.
+            padding: const EdgeInsets.only(left: 4, right: 11),
             child: OverflowBox(
               minHeight: 48,
               maxHeight: 48,
               child: LayoutBuilder(builder: (context, box) {
                 final s = AppStrings.of(context);
                 final stepping = _kShowFrameStepButtons && !widget.isPlaying;
+                // MX centres Play on the screen less the navigation buttons
+                // (sideways 387.6 of 775.5 dp), not on this row: Innocent's
+                // sat 19 dp right sideways and 5 left upright. The shift is
+                // taken from the room the fit has, so no two buttons share
+                // a touch (player_controls_test).
+                final screenW = MediaQuery.sizeOf(context).width;
+                final rowLeft = widget.insets.left + 4;
+                final centreShift = (screenW - widget.insets.right) / 2 -
+                    (rowLeft + box.maxWidth / 2);
                 final fit = transportLayout(
-                  width: box.maxWidth,
+                  width: box.maxWidth - 2 * centreShift.abs(),
                   transportButtons:
                       (widget.showPrevNext ? 3 : 1) + (stepping ? 2 : 0),
                   spacing: transportSpacing,
+                  // MX's screen mode and PiP: 53.3 dp apart.
+                  sideGap: 5.3,
                 );
+                // MX's lock: its centre 92.1 dp in sideways (its edge at
+                // the time label's), 26.7 upright.
+                final lockX = math.max(
+                    24.0, (landscape ? 92.1 : 26.7) - rowLeft);
                 final transport = <Widget>[
                   if (widget.showPrevNext) ...[
                     IconButton(
@@ -5289,11 +5405,14 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                 return Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Primary transport — prev / play / next — pinned to the
-                    // centre of the screen as the main (major) controls.
-                    Row(mainAxisSize: MainAxisSize.min, children: transport),
-                    // Lock — far left.
-                    Align(alignment: Alignment.centerLeft, child: lock),
+                    // Primary transport — prev / play / next — at MX's centre.
+                    Transform.translate(
+                      offset: Offset(centreShift, 0),
+                      child: Row(
+                          mainAxisSize: MainAxisSize.min, children: transport),
+                    ),
+                    // Lock — at MX's place on the left.
+                    Positioned(left: lockX - 24, child: lock),
                     // Aspect ratio + picture-in-picture — far right.
                     Align(
                       alignment: Alignment.centerRight,

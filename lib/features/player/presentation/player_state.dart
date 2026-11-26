@@ -10,8 +10,8 @@ enum IndicatorType {
   subtitlePosition,
 }
 /// What is open over the picture. [speed] is MX's speed card (its "1X"
-/// shortcut, 26 Nov 2026).
-enum SidePanel { none, more, subtitle, speed }
+/// shortcut), [customise] MX's Customise Items card (26 Nov 2026).
+enum SidePanel { none, more, subtitle, speed, customise }
 
 class GestureIndicator {
   final IndicatorType type;

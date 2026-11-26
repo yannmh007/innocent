@@ -87,13 +87,20 @@ class PlayerUi {
   /// screen, upright and sideways alike; reference lab, 22 Nov 2026), never
   /// more than 46.6 % of the long side (a tablet). It was 55 % upright, 46 %
   /// sideways.
+  ///
+  /// On a tablet (the owner, 26 Nov 2026, from MX on a 10" tablet,
+  /// reference lab 45828625924): MX's panels were 480 dp exactly, both ways
+  /// (37.5 % of 1280): the short side, at most 480. With the 46.6 % of the
+  /// phone measure still a cap (a split window: MX was not measured there).
   static double panelExtent(Size size) {
     final cap = size.longestSide * 0.466;
-    return size.shortestSide < cap ? size.shortestSide : cap;
+    final reach = size.shortestSide < cap ? size.shortestSide : cap;
+    return reach < 480 ? reach : 480;
   }
 
-  /// Sideways, a side panel is no wider than a phone's (a tablet).
-  static double sideWidth(Size size) => panelExtent(size).clamp(280.0, 440.0);
+  /// Sideways, a side panel's width: the reach, 480 at most (MX's on a
+  /// tablet), 280 at least (a narrow window).
+  static double sideWidth(Size size) => panelExtent(size).clamp(280.0, 480.0);
 
   /// How many player sheets are open (showPlayerSheet): the player lifts
   /// the subtitle over an upright one, as over an open panel.
@@ -145,8 +152,11 @@ class PlayerUi {
     color: textPrimary,
     fontSize: 15,
   );
+  // A row's value is told from its title by size, not by grey: on the
+  // shade over a white film the 62 % grey read 2.35:1 (♪'s "0 ms", the
+  // legibility test, 26 Nov 2026); white (with the shade's ink) passes.
   static const TextStyle rowValue = TextStyle(
-    color: textSecondary,
+    color: textPrimary,
     fontSize: 13,
   );
   static const TextStyle body = TextStyle(
@@ -167,8 +177,12 @@ class PlayerUi {
   /// 24, as MX Player's panels keep their content about 26 dp in (the
   /// reference lab, 22 Nov 2026, on the owner's 384 dp phone; the owner
   /// chose MX's spacing): it was 20.
-  static double pad(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide < 360 ? 20 : 24;
+  /// On a tablet (short side 600 dp or more) 32, as MX's there (reference
+  /// lab 45828625924: its rows 32 dp in, its panel the screen's width).
+  static double pad(BuildContext context) {
+    final short = MediaQuery.sizeOf(context).shortestSide;
+    return short >= 600 ? 32 : (short < 360 ? 20 : 24);
+  }
 
   /// A dialog's surface: the panel's colour and corners.
   static ShapeBorder get dialogShape => RoundedRectangleBorder(
@@ -274,16 +288,16 @@ class PlayerPanel extends StatelessWidget {
               bottom: 0,
               child: FractionalTranslation(
                 translation: Offset(0, 1 - t),
-                // No wider than 640, centred: on a tablet held upright the
-                // tiles stood 200 dp apart across the screen (Google's
-                // large-screen guideline: no full-width bottom sheets).
+                // The screen's width, as MX's on a tablet held upright
+                // (reference lab 45828625924; the owner took it over the
+                // 640 dp cap of Google's large-screen guideline, 26 Nov).
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   heightFactor: 1,
                   child: SizedBox(
                     // MX's reach, the same for every panel (panelExtent):
                     // what it covers below its words is shade, not glass.
-                    width: size.width < 640 ? size.width : 640,
+                    width: size.width,
                     height: extent,
                     child: Opacity(opacity: t, child: panel),
                   ),
@@ -963,7 +977,9 @@ class PanelSwitchRow extends StatelessWidget {
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 22, color: PlayerUi.textSecondary),
+                    // White, as the row's words: grey read 2.5:1 over a
+                    // white film (⋮'s Video Display, 26 Nov 2026).
+                    Icon(icon, size: 22, color: PlayerUi.textPrimary),
                     const SizedBox(width: 16),
                   ],
                   Expanded(child: Text(title, style: PlayerUi.rowTitle)),
@@ -1173,7 +1189,7 @@ class PlayerSheetHeader extends StatelessWidget {
 
 /// A sheet of the player. Upright, a bottom sheet on the [PlayerShade], as
 /// tall as every panel ([PlayerUi.panelExtent], MX's reach: 22 Nov 2026),
-/// no wider than 640 dp, dragged or flicked down to close. Sideways, the
+/// the screen's width (MX's, 26 Nov 2026), dragged or flicked down to close. Sideways, the
 /// same content in a panel from the right, the whole height — as ⋮ and the
 /// subtitle panel are: a bottom sheet on a phone held sideways had some
 /// 300 dp and cut the lists, the sliders and the buttons (12 Nov). The
@@ -1276,7 +1292,7 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
     // screen's short side tall, sideways as wide.
     final width = sideways
         ? PlayerUi.sideWidth(size) + padding.right
-        : size.width.clamp(0.0, 640.0);
+        : size.width;
     final extent = PlayerUi.panelExtent(size);
     return Align(
       alignment: sideways ? Alignment.centerRight : Alignment.bottomCenter,

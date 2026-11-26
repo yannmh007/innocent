@@ -50,15 +50,6 @@ final Map<String, AppBar Function()> _bars = <String, AppBar Function()>{
               icon: const Icon(Icons.tune_rounded, size: 22), onPressed: () {}),
         ],
       ),
-  // lib/features/player/presentation/widgets/customise_items_screen.dart
-  'customise_items_screen': () => AppBar(
-        backgroundColor: AppColors.darkBackground,
-        foregroundColor: Colors.white,
-        title: const Text('Shortcuts', style: TextStyle(color: Colors.white)),
-        actions: <Widget>[
-          IconButton(icon: const Icon(Icons.tune_rounded), onPressed: () {}),
-        ],
-      ),
   // lib/features/transfer/presentation/folder_send_picker.dart
   'folder_send_picker': () => AppBar(
         backgroundColor: AppColors.darkBackground,

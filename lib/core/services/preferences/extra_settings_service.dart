@@ -107,6 +107,11 @@ enum StringSetting {
   /// "never customised" and the four defaults would reappear.
   playerShortcuts(default_: ''),
 
+  /// Which of the optional icons the player's top bar shows (MX's
+  /// Customise Items, 26 Nov 2026): a pipe-separated list of
+  /// `TopBarItem` names. ♪, CC and the decoder by default, as before.
+  playerTopBar(default_: 'audio|subtitle|decoder'),
+
   /// Audit fix (standard high-quality): subtitle background colour
   /// as a libmpv-compatible ARGB hex string, e.g. '#80000000'
   /// (50 % black). Empty string = no background (transparent).

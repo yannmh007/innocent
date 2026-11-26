@@ -558,6 +558,10 @@ class AppStrings {
   String get features => _s('features');
   String get faq => _s('faq');
   String get pmTools => _s('pmTools');
+  String get pmDecoder => _s('pmDecoder');
+  String get pmScreenMode => _s('pmScreenMode');
+  String get pmCustomiseHint => _s('pmCustomiseHint');
+  String get pmPip => _s('pmPip');
   String get pmCheckUpdates => _s('pmCheckUpdates');
   String get versionCheck => _s('versionCheck');
   String get sendBugReport => _s('sendBugReport');
@@ -3454,6 +3458,10 @@ class AppStrings {
     'features': 'Features',
     'faq': 'FAQ',
     'pmTools': 'Tools',
+    'pmDecoder': 'Decoder',
+    'pmScreenMode': 'Screen mode',
+    'pmCustomiseHint': 'Tap an icon to put it on the top bar or take it off',
+    'pmPip': 'Picture-in-picture',
     'pmCheckUpdates': 'Check for updates',
     'versionCheck': 'Version check',
     'sendBugReport': 'Send bug report',
@@ -5831,6 +5839,10 @@ class AppStrings {
     'features': 'ဝိသေသများ',
     'faq': 'မေးလေ့ရှိသည်များ',
     'pmTools': 'ကိရိယာများ',
+    'pmDecoder': 'ဒီကုဒါ',
+    'pmScreenMode': 'မျက်နှာပြင် ပုံစံ',
+    'pmCustomiseHint': 'အပေါ်တန်းမှာ တင်ဖို့ (သို့) ဖြုတ်ဖို့ icon ကို နှိပ်ပါ',
+    'pmPip': 'ဝင်းဒိုးသေး',
     'pmCheckUpdates': 'အပ်ဒိတ် စစ်မယ်',
     'versionCheck': 'ဗားရှင်း စစ်ရန်',
     'sendBugReport': 'အမှား တင်ပြရန်',
@@ -8182,6 +8194,10 @@ class AppStrings {
     'features': 'คุณสมบัติ',
     'faq': 'คำถามที่พบบ่อย',
     'pmTools': 'เครื่องมือ',
+    'pmDecoder': 'ตัวถอดรหัส',
+    'pmScreenMode': 'โหมดหน้าจอ',
+    'pmCustomiseHint': 'แตะไอคอนเพื่อเพิ่มหรือนำออกจากแถบด้านบน',
+    'pmPip': 'ภาพซ้อนภาพ',
     'pmCheckUpdates': 'ตรวจหาอัปเดต',
     'versionCheck': 'ตรวจสอบเวอร์ชัน',
     'sendBugReport': 'ส่งรายงานข้อผิดพลาด',

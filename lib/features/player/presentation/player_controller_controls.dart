@@ -257,6 +257,13 @@ extension PlayerControls on PlayerController {
     state = state.copyWith(openPanel: SidePanel.speed, controlsVisible: true);
   }
 
+  /// MX's Customise Items: which icons the top bar carries.
+  void openCustomisePanel() {
+    _hideControlsTimer?.cancel();
+    state =
+        state.copyWith(openPanel: SidePanel.customise, controlsVisible: true);
+  }
+
   void closePanel() {
     state = state.copyWith(openPanel: SidePanel.none);
     _scheduleHideControls();

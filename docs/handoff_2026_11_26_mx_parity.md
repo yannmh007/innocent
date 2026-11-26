@@ -74,14 +74,14 @@
 > | shortcut | MX 3.4.3 | Innocent now | left |
 > |---|---|---|---|
 > | Night Mode | picture 40 % grey, disc, toast | the same | — |
-> | Customise Items | an overlay on the controls: which top-bar icons (HW, Playing Queue, Audio Track, Subtitles, Popup Window, Zoom), Cancel / APPLY | Innocent's page; not on the open row | build MX's overlay (a top bar the viewer chooses) |
+> | Customise Items | an overlay on the controls: which top-bar icons (HW, Playing Queue, Audio Track, Subtitles, Popup Window, Zoom), Cancel / APPLY | the same (`CustomiseTopBarCard`): queue, ♪, CC, decoder, PiP, screen mode; the bar shows what fits | — |
 > | Shuffle, Mute, Background Play | disc; Background Play's toast | disc and a toast each | check Background Play's toast shows (not in the lab's 1.2 s screen) |
 > | Loop | Off → All → One | the same | — |
-> | Sleep Timer | right panel on the shade, keypad | right panel on frosted glass | the shade |
+> | Sleep Timer | right panel on the shade, keypad | the same (`PlayerShade`, no scrim) | — |
 > | A-B Repeat | bar under the row, [A] → [B], × | the same | — |
-> | Audio Effect / Equalizer | right panel on the shade, two tabs; EQ: switch, presets, five bands, Reverb | the same layout on glass, in colours named `_mx*` (audio_effect_sheet.dart) | the shade and Innocent's tokens; no box round the bands |
+> | Audio Effect / Equalizer | right panel on the shade, two tabs; EQ: switch, presets, five bands, Reverb | the same, on the shade (`showPlayerSheet`), Innocent's tokens, no box round the bands | — |
 > | Speed | card: − [1.00x ✎] +, 0.25-4.0x, reset | the same | — |
-> | Screenshot | toast "saved to …" at the foot | toast at the top | — |
+> | Screenshot | toast "saved to …" at the foot | the same: every shortcut's toast at the foot, 2 s | — |
 > | Screen Rotation | turns the screen | the same | — |
 > | Mirror Mode | not on MX's row in HW | a toggle | — |
 >
@@ -89,6 +89,37 @@
 > bar, the remote in CC), player_layout_test PLAYER_PHONES=all with the
 > new scenes (more_page, speed_tap, ab_bar). Not yet on the emulator: the
 > next phone run of the lab (SCREENS=shortcuts) shows Innocent's new ones.
+>
+> 26 NOV (LATE NIGHT), THE OWNER: "the rest, all of it, every device and
+> screen, exactly as MX". DONE on the branch (not released):
+> - MX's CONTROLS GEOMETRY (controls.py, run 45805693393; the owner's
+>   phone sideways / upright): the shortcut row's centre 50.7 / 54.8 dp
+>   under the bar's top, slots 59.7, discs 42.7, chevron 25.6, 8.5 in;
+>   ⏮ ⏯ ⏭ 96 / 53.3 dp apart, ⏯ at the middle of the screen less the
+>   navigation strip; lock's centre 92.1 / 26.7; the times 65 / 17 dp in,
+>   42.7 wide; the bottom row 3 dp over the inset. The A-B bar under the
+>   row's new place.
+> - THE TABLET REACH (MX's, lab 45828625924): `panelExtent` = min(short
+>   side, 0.466 x long side, 480); upright panels and sheets the full
+>   width, content `PlayerUi.pad` in (32 dp from 600).
+> - Sleep Timer and Audio Effect / Equalizer on the shade (`PlayerShade`,
+>   `showPlayerSheet`), no scrim; AE/EQ in Innocent's tokens.
+> - Every shortcut's toast at the foot, centred, 2 s (MX's).
+> - CUSTOMISE ITEMS AS MX's: its shortcut opens `CustomiseTopBarCard`
+>   under the top bar — queue, ♪, CC, decoder, PiP, screen mode, each
+>   with a check while on the bar; Cancel / Apply; kept in
+>   `StringSetting.playerTopBar` (default ♪, CC, decoder: MX's bar). The
+>   bar carries what fits beside ←, ⋮ and an 80 dp title, ♪, CC and the
+>   decoder first. The old page of shortcut switches is gone (⋮'s lower
+>   part keeps those switches).
+> - Legibility: a panel row's value and a switch row's icon white (♪'s
+>   "0 ms" read 2.35:1 over white, ⋮'s Video Display icon 2.6).
+> Proof: flutter analyze clean; player_controls_test 44 (+2: the
+> Customise card, the 320 dp top bar); player_layout_test PLAYER_PHONES=all
+> my/en/th x1.0/x1.3 4554 pass (new scene `customise`); legibility my/en/th
+> over five frames: controls 915, ♪ 255, subtitle 480 all pass, ⋮ 1099
+> pass, 11 thin Burmese/Thai tile words over white 3.5-4.4 (as before:
+> 5.3-6.0 at their strokes).
 
 
 Written at the end of a long session (the reference lab, Phases 0-1, and the

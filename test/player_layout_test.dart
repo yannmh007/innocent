@@ -109,15 +109,27 @@ final scenes = <Scene>[
         warnIfMissed: false);
     await _settle(t);
   }),
+  // The Audio Effect / Equalizer sheet (MX's two tabs), from the row.
+  Scene('equalizer', (t, c, svc) async {
+    await t.tap(find.byKey(const ValueKey('equalizer')).first,
+        warnIfMissed: false);
+    await _settle(t);
+  }),
   // MX's A-B bar: the row opened, its A-B tapped, A set.
   Scene('ab_bar', (t, c, svc) async {
     await _tapIcon(t, Icons.chevron_right);
-    final ab = find.byKey(const ValueKey('abRepeat'));
+    // Past a narrow screen's edge the button is built but offstage.
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
     await t.ensureVisible(ab.first);
     await t.pump();
     await t.tap(ab.first, warnIfMissed: false);
     await _settle(t);
     c.setABPointA();
+    await _settle(t);
+  }),
+  // MX's Customise Items: the top bar's icons on a card under the bar.
+  Scene('customise', (t, c, svc) async {
+    c.openCustomisePanel();
     await _settle(t);
   }),
   Scene('aspect_tap', (t, c, svc) async {

@@ -20,6 +20,7 @@ import 'package:innocent/features/player/presentation/widgets/more_menu_panel.da
 import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:innocent/features/player/presentation/widgets/speed_card.dart';
 import 'package:innocent/features/player/presentation/widgets/ab_repeat_bar.dart';
+import 'package:innocent/features/player/presentation/widgets/customise_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -709,7 +710,7 @@ void main() {
     // A-B is on the open row.
     await tester.tap(find.byIcon(Icons.chevron_right).first);
     await _settle(tester);
-    final ab = find.byKey(const ValueKey('abRepeat'));
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
     await tester.ensureVisible(ab.first);
     await tester.pump();
     await tester.tap(ab.first);
@@ -734,6 +735,98 @@ void main() {
     expect(find.byType(ABRepeatBar), findsNothing);
     expect(_state().abPointA, isNull);
     expect(_state().abPointB, isNull);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("Customise Items opens MX's card: a tap takes an icon on or "
+      'off the top bar, Cancel keeps the bar, Apply sets it', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    Future<void> open() async {
+      final key = find.byKey(const ValueKey('customiseItems'),
+          skipOffstage: false);
+      if (key.evaluate().isEmpty) {
+        await tester.tap(find.byIcon(Icons.chevron_right).first);
+        await _settle(tester);
+      }
+      await tester.ensureVisible(key.first);
+      await tester.pump();
+      await tester.tap(key.first);
+      await _settle(tester);
+    }
+
+    String saved() => playerContainer!
+        .read(extraSettingsProvider)
+        .getStr(StringSetting.playerTopBar);
+    final card = find.byType(CustomiseTopBarCard);
+    Finder inCard(Finder f) => find.descendant(of: card, matching: f);
+
+    expect(find.byIcon(Icons.queue_music), findsNothing,
+        reason: 'the bar starts as MX\'s: ♪, CC, the decoder');
+    await open();
+    expect(_state().openPanel, SidePanel.customise);
+    expect(card, findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsNothing,
+        reason: 'the controls give way to the card');
+    for (final i in TopBarItem.values) {
+      expect(inCard(find.byIcon(i.icon)), findsOneWidget);
+    }
+    // ♪, CC and the decoder are on: three checks.
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(3));
+
+    // Cancel: whatever was tapped, the bar is as it was.
+    await tester.tap(inCard(find.byIcon(Icons.queue_music)));
+    await tester.pump();
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(4));
+    await tester.tap(inCard(find.text('Cancel')));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(saved(), 'audio|subtitle|decoder');
+
+    // Apply: the queue on, CC off.
+    await open();
+    await tester.tap(inCard(find.byIcon(Icons.queue_music)));
+    await tester.tap(inCard(find.byIcon(Icons.subtitles_outlined)));
+    await tester.pump();
+    await tester.tap(inCard(find.text('Apply')));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(saved(), 'queue|audio|decoder');
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(400, 200));
+      await _settle(tester);
+    }
+    expect(find.byIcon(Icons.queue_music), findsOneWidget);
+    expect(find.byIcon(Icons.subtitles_outlined), findsNothing);
+    expect(find.byIcon(Icons.music_note), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a 320 dp phone held upright keeps the title: the top bar '
+      'carries what fits, ♪, CC and the decoder first', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await pumpPlayer(tester,
+        phone: const Phone('320x640', 320, 640, 2.0), landscape: false,
+        lang: 'en');
+    await playerContainer!
+        .read(extraSettingsProvider.notifier)
+        .setStr(StringSetting.playerTopBar,
+            TopBarItem.write(TopBarItem.values.toSet()));
+    await _settle(tester);
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(160, 320));
+      await _settle(tester);
+    }
+    final bar = find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_TopBar');
+    Finder onBar(IconData i) =>
+        find.descendant(of: bar, matching: find.byIcon(i));
+    expect(onBar(Icons.music_note), findsOneWidget);
+    expect(onBar(Icons.subtitles_outlined), findsOneWidget);
+    expect(onBar(Icons.picture_in_picture_alt_outlined), findsNothing,
+        reason: 'six icons on 320 dp ran the title to nothing');
+    expect(onBar(Icons.crop_landscape_outlined), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    expect(tester.takeException(), isNull);
     await leavePlayer(tester);
   });
 

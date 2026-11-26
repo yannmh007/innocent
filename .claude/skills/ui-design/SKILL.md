@@ -50,7 +50,7 @@ on a phone. The player's building blocks live in
 | shortcut row | every shortcut on a dark translucent disc (`AppColors.shortcutInactive`), upright and sideways, the speed's "1X" too; the chevron on a 28 dp one — as MX 3.4.3 (its discs vanish over a black frame: the Phase 45 audit read "none upright" off a dark film) |
 | scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |
 | surface of a dialog or card | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
-| reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side — upright that tall, sideways that wide (≤ 440) plus the navigation strip |
+| reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side and at most 480 dp — upright that tall and the full width, the content `PlayerUi.pad` in (24 dp, 20 under 360, 32 from 600); sideways that wide (`sideWidth`, 280-480) plus the navigation strip |
 | raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
 | hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
@@ -123,8 +123,19 @@ caption 11 sp.
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other
   plain; max width 360–420.
+- **On the shade, not glass**: every right panel the shortcuts open —
+  Sleep Timer, Audio Effect / Equalizer — as MX's (26 Nov): `PlayerShade`,
+  no scrim, the panel's reach; their colours from `PlayerUi` (accent,
+  accentContainer, raised), never a copy of MX's blue.
+- **Over the picture, the controls gone** (MX's): the speed card
+  (`SpeedCard`, at the foot), the A-B bar (`ABRepeatBar`, under the row),
+  Customise Items (`CustomiseTopBarCard`, under the top bar: which icons
+  the top bar carries, Cancel / Apply; the bar shows what fits, ♪, CC and
+  the decoder first). A tap outside puts each away.
 - **Messages**: a passing message is the player toast
-  (`PlayerToastController.current` reaches it from a sheet); an error is
+  (`PlayerToastController.current` reaches it from a sheet); a shortcut's
+  answer (Night mode, Screenshot, Background play) is the badge at the
+  foot, centred, 2 s, as MX's toasts (`_showOverlay`); an error is
   `PlayerErrorCard` — a card on the scrim, the engine's text through
   `scrubPlaybackError` (never a signed address on screen).
 - **On the film**: the controls' bars sit in `BarShade`; anything else
@@ -156,7 +167,8 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
   expanded 840–1200, large 1200+. The shell's rail takes over at 600.
 - A list or form page caps its width (`TabletConstrainedWidth`, 840; a
   reading page 640); hero, rails and grids use the width. A sheet or
-  panel is never full width on a large screen (≤ 640).
+  panel is never full width on a large screen (≤ 640) — but the player's,
+  below.
 - A screen that is a list of things to open shows two panes from 840 dp of
   window (`core/ui/list_detail.dart`: Settings, the Video tab's folders):
   `ListDetailPanes` (list 360–400 dp, white-10 % hairline, each pane its
@@ -167,8 +179,8 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
 - The player's panels and sheets on a large screen (the owner, 26 Nov
   2026, from MX on a tablet, reference lab 45828625924): MX's reach — the
   short side, at most 480 dp, both ways — and upright the full width, the
-  content 32 dp in; not the 640 cap above. TO BUILD (the handoff's update
-  block); until then `panelExtent` is 0.466 x the long side, ≤ 640 wide.
+  content 32 dp in; not the 640 cap above. Built 26 Nov (night):
+  `panelExtent` = min(short side, 0.466 x long side, 480), `PlayerUi.pad`.
 - A grid adds columns with width (`Responsive.gridColumns`; posters
   `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
   cell stays about a phone's size.

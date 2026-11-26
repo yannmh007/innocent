@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
@@ -160,24 +161,22 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       ),
     );
 
-    final surface = PlayerGlass(
-      borderRadius: portrait
-          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-          : const BorderRadius.horizontal(
-              left: Radius.circular(PlayerUi.radius)),
+    // On the shade, as MX's Sleep Timer and every other panel (the
+    // reference lab, run 45862946745; the owner, 26 Nov 2026: "as MX"):
+    // sideways a panel from the right, the whole height, MX's reach wide;
+    // upright a bottom panel the screen's width, MX's reach tall. Nothing
+    // dims the film behind it. It was frosted glass over a dimmed film.
+    final surface = PlayerShade(
+      sideways: !portrait,
       child: Padding(
         padding: EdgeInsets.only(
-          top: portrait ? 0 : padding.top,
+          top: portrait ? 8 : padding.top,
           right: portrait ? 0 : padding.right,
           bottom: padding.bottom,
         ),
         child: Column(
-          mainAxisSize: portrait ? MainAxisSize.min : MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (portrait) const PlayerDragHandle(),
-            Flexible(child: content),
-          ],
+          children: [Flexible(child: content)],
         ),
       ),
     );
@@ -192,7 +191,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             child: GestureDetector(
               onTap: widget.onDismiss,
               behavior: HitTestBehavior.opaque,
-              child: const ColoredBox(color: PlayerUi.scrim),
+              child: const SizedBox.expand(),
             ),
           ),
         ),
@@ -201,22 +200,20 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Center(
-              child: ConstrainedBox(
-                // Capped so the column stays tidy on tablets.
-                constraints: BoxConstraints(
-                    maxWidth: 560, maxHeight: size.height * 0.85),
-                child: surface,
-              ),
-            ),
+            // MX's reach, but never under 320 dp (the keys, the box and
+            // STOP / START): a split window's reach is ~190 (layout test,
+            // 384x411). No taller than the window.
+            height: (math.max(PlayerUi.panelExtent(size), 320.0) +
+                    padding.bottom)
+                .clamp(0.0, size.height),
+            child: surface,
           )
         else
           Positioned(
             right: 0,
             top: 0,
             bottom: 0,
-            width: math.min(400.0, math.max(300.0, size.width * 0.46)) +
-                padding.right,
+            width: PlayerUi.sideWidth(size) + padding.right,
             child: surface,
           ),
       ],
