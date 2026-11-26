@@ -234,7 +234,13 @@ does it.
     line the see-through was read along, and a median took the discs for
     the shade. measure.py now reads three lines and the shade's upper
     level: every Innocent panel 47.9 % on runs 45035203039, 45038350235
-    and 45775539414, every other figure the same. ♪ beside MX's: MX also has
+    and 45775539414, every other figure the same. PROVED, run
+    45781933354 (the build of c3669a9b): titles where MX's are (CC's first
+    row 78 dp down sideways, MX's 79), upright "← title" as MX's, idle
+    marks outlines, ⋮'s tiles where MX's start, rows ~92 dp apart (MX 83;
+    Innocent's rows stay 48-52 dp, MX's 45-47). Sideways the film's
+    subtitle crosses ⋮'s last, faded tile row (it is not lifted sideways,
+    22 Nov; MX's own was not showing in the run). ♪ beside MX's: MX also has
     Disable, "Use SW audio decoder", Open (an audio file), Stereo mode,
     Synchronization (audio delay: Innocent has it in Settings > Audio) —
     the owner to choose which to bring into ♪.
