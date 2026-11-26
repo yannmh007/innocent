@@ -104,14 +104,21 @@
 >   width, content `PlayerUi.pad` in (32 dp from 600).
 > - Sleep Timer and Audio Effect / Equalizer on the shade (`PlayerShade`,
 >   `showPlayerSheet`), no scrim; AE/EQ in Innocent's tokens.
-> - Every shortcut's toast at the foot, centred, 2 s (MX's).
-> - CUSTOMISE ITEMS AS MX's: its shortcut opens `CustomiseTopBarCard`
->   under the top bar — queue, ♪, CC, decoder, PiP, screen mode, each
->   with a check while on the bar; Cancel / Apply; kept in
->   `StringSetting.playerTopBar` (default ♪, CC, decoder: MX's bar). The
->   bar carries what fits beside ←, ⋮ and an 80 dp title, ♪, CC and the
->   decoder first. The old page of shortcut switches is gone (⋮'s lower
->   part keeps those switches).
+> - Every shortcut's toast at the foot, centred, 2 s, 24 dp up (Android's
+>   toast, as MX's: over the bottom row; lab 45886561831).
+> - CUSTOMISE ITEMS AS MX's EDIT VIEW (lab 45886561831, MX's tree): the
+>   controls stay over a dimmed film, the shortcut row goes, each optional
+>   control in a dashed 40.5 dp box (`EditSlot`); `CustomiseTopBarCard`
+>   2.6 dp under the bar, ≤ 568 wide, six 86 dp choices in MX's order —
+>   decoder (HW), queue, ♪, CC (the top bar), PiP (Popup Window) and
+>   screen mode (Zoom) (the bottom row's last two) — each checked while
+>   shown; Cancel / Apply; kept in `StringSetting.playerTopBar`, MX's
+>   default all but the queue. The bar carries what fits beside ←, ⋮ and
+>   a 64 dp title, ♪, CC and the decoder first. The old page of shortcut
+>   switches is gone (⋮'s lower part keeps those switches).
+> - SLEEP TIMER AS MX's (its tree, same run): no close ×; MX's × is
+>   `iv_clear`, at the time's end, and clears the entry; keys 32 dp, 74.6
+>   across, 49.1 down; the title's middle 28 dp from the top.
 > - Legibility: a panel row's value and a switch row's icon white (♪'s
 >   "0 ms" read 2.35:1 over white, ⋮'s Video Display icon 2.6).
 > - PROVED ON THE EMULATOR, reference lab 45885319037 (SCREENS=panels,

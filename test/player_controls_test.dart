@@ -738,8 +738,9 @@ void main() {
     await leavePlayer(tester);
   });
 
-  testWidgets("Customise Items opens MX's card: a tap takes an icon on or "
-      'off the top bar, Cancel keeps the bar, Apply sets it', (tester) async {
+  testWidgets("Customise Items opens MX's card over the controls: a tap "
+      'takes one on or off, Cancel keeps them, Apply sets them — the top '
+      "bar's and the bottom row's", (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
     Future<void> open() async {
       final key = find.byKey(const ValueKey('customiseItems'),
@@ -761,36 +762,41 @@ void main() {
     Finder inCard(Finder f) => find.descendant(of: card, matching: f);
 
     expect(find.byIcon(Icons.queue_music), findsNothing,
-        reason: 'the bar starts as MX\'s: ♪, CC, the decoder');
+        reason: "MX's default: all but the playing queue");
     await open();
     expect(_state().openPanel, SidePanel.customise);
     expect(card, findsOneWidget);
-    expect(find.byIcon(Icons.more_vert), findsNothing,
-        reason: 'the controls give way to the card');
+    // As MX's edit view: the controls stay, each optional one in a dashed
+    // box (♪, CC, the decoder, the screen mode, PiP), the row goes.
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    final dashed =
+        find.byWidgetPredicate((w) => w is EditSlot && w.editing);
+    expect(dashed, findsNWidgets(5));
+    expect(find.byKey(const ValueKey('nightMode')), findsNothing);
     for (final i in TopBarItem.values) {
       expect(inCard(find.byIcon(i.icon)), findsOneWidget);
     }
-    // ♪, CC and the decoder are on: three checks.
-    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(3));
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(5));
 
-    // Cancel: whatever was tapped, the bar is as it was.
+    // Cancel: whatever was tapped, the controls are as they were.
     await tester.tap(inCard(find.byIcon(Icons.queue_music)));
     await tester.pump();
-    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(4));
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(6));
     await tester.tap(inCard(find.text('Cancel')));
     await _settle(tester);
     expect(_state().openPanel, SidePanel.none);
-    expect(saved(), 'audio|subtitle|decoder');
+    expect(saved(), 'decoder|audio|subtitle|pip|screenMode');
 
-    // Apply: the queue on, CC off.
+    // Apply: the queue on; CC and PiP off.
     await open();
     await tester.tap(inCard(find.byIcon(Icons.queue_music)));
     await tester.tap(inCard(find.byIcon(Icons.subtitles_outlined)));
+    await tester.tap(inCard(find.byIcon(Icons.picture_in_picture_alt_outlined)));
     await tester.pump();
     await tester.tap(inCard(find.text('Apply')));
     await _settle(tester);
     expect(_state().openPanel, SidePanel.none);
-    expect(saved(), 'queue|audio|decoder');
+    expect(saved(), 'decoder|queue|audio|screenMode');
     if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
       await tester.tapAt(const Offset(400, 200));
       await _settle(tester);
@@ -798,6 +804,10 @@ void main() {
     expect(find.byIcon(Icons.queue_music), findsOneWidget);
     expect(find.byIcon(Icons.subtitles_outlined), findsNothing);
     expect(find.byIcon(Icons.music_note), findsOneWidget);
+    expect(find.byIcon(Icons.picture_in_picture_alt_outlined), findsNothing,
+        reason: "Popup Window off: the bottom row's PiP goes");
+    expect(find.byIcon(Icons.crop_landscape_outlined), findsOneWidget);
+    expect(dashed, findsNothing);
     await leavePlayer(tester);
   });
 
@@ -822,9 +832,8 @@ void main() {
         find.descendant(of: bar, matching: find.byIcon(i));
     expect(onBar(Icons.music_note), findsOneWidget);
     expect(onBar(Icons.subtitles_outlined), findsOneWidget);
-    expect(onBar(Icons.picture_in_picture_alt_outlined), findsNothing,
-        reason: 'six icons on 320 dp ran the title to nothing');
-    expect(onBar(Icons.crop_landscape_outlined), findsNothing);
+    expect(onBar(Icons.queue_music), findsNothing,
+        reason: 'four icons on 320 dp ran the title to nothing');
     expect(find.byIcon(Icons.more_vert), findsOneWidget);
     expect(tester.takeException(), isNull);
     await leavePlayer(tester);

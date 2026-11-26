@@ -128,14 +128,16 @@ caption 11 sp.
   no scrim, the panel's reach; their colours from `PlayerUi` (accent,
   accentContainer, raised), never a copy of MX's blue.
 - **Over the picture, the controls gone** (MX's): the speed card
-  (`SpeedCard`, at the foot), the A-B bar (`ABRepeatBar`, under the row),
-  Customise Items (`CustomiseTopBarCard`, under the top bar: which icons
-  the top bar carries, Cancel / Apply; the bar shows what fits, ♪, CC and
-  the decoder first). A tap outside puts each away.
+  (`SpeedCard`, at the foot), the A-B bar (`ABRepeatBar`, under the row).
+  Customise Items is MX's edit view: the controls stay over a dimmed film
+  (`PlayerUi.scrim`), the optional ones in dashed boxes (`EditSlot`), the
+  card (`CustomiseTopBarCard`) under the top bar; the top bar shows what
+  fits, ♪, CC and the decoder first. A tap outside puts each away.
 - **Messages**: a passing message is the player toast
   (`PlayerToastController.current` reaches it from a sheet); a shortcut's
   answer (Night mode, Screenshot, Background play) is the badge at the
-  foot, centred, 2 s, as MX's toasts (`_showOverlay`); an error is
+  foot, centred, 24 dp up, 2 s, as MX's (Android's) toasts
+  (`_showOverlay`); an error is
   `PlayerErrorCard` — a card on the scrim, the engine's text through
   `scrubPlaybackError` (never a signed address on screen).
 - **On the film**: the controls' bars sit in `BarShade`; anything else

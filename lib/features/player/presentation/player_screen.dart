@@ -2473,10 +2473,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// aside — the clock, ♪, "Default" and the seek bar showed through ⋮
   /// and the subtitle panel (owner's screenshots, 12 Nov 2026).
   bool _chromeUp(PlayerState state) =>
-      state.controlsVisible &&
+      (state.controlsVisible || _customising(state)) &&
       !state.isLocked &&
-      !_menuOpen(state) &&
+      (!_menuOpen(state) || _customising(state)) &&
       !_routeOnTop;
+
+  /// MX's Customise Items is open: its card over the controls, which stay
+  /// (dimmed film, dashed boxes) so the viewer sees what each choice is.
+  bool _customising(PlayerState state) =>
+      state.openPanel == SidePanel.customise;
 
   /// A sheet or dialog route the player opened (audio, loop, bookmarks,
   /// aspect ratio…) is over it: the controls step aside under it too.
@@ -3521,6 +3526,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               ),
             ),
 
+          // === LAYER 3b: Customise Items: the film dimmed under the
+          // controls, as MX's edit view ===
+          if (_customising(state))
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: ColoredBox(color: PlayerUi.scrim),
+              ),
+            ),
+
           // === LAYER 4: Top bar ===
           // Audit fix (standard high-quality): toolbar position
           // toggleable. When set to 'bottom', the bar sits just
@@ -3557,8 +3571,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onMore: controller.openMoreMenu,
                 items: _topBarItems(),
                 onQueue: () => _openPlayingQueue(context),
-                onPip: () => _enterPip(context),
-                onScreenMode: controller.cycleAspectRatio,
+                editing: _customising(state),
                 // Phase 45 (audit): PiP icon is in the TOP bar (MX V3 parity).
                 onQuality: () => _showQualitySheet(context),
                 activeUri:
@@ -3612,7 +3625,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
 
           // === LAYER 6: Shortcut row ===
-          if (_chromeUp(state) && visibleShortcutList.isNotEmpty)
+          // Not under Customise Items' card: MX's edit view has none.
+          if (_chromeUp(state) &&
+              !_customising(state) &&
+              visibleShortcutList.isNotEmpty)
             Positioned(
               // Landscape: clear of the cutout and side nav bar, as MX is.
               left: _controlsInsets(context).left,
@@ -3671,6 +3687,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               child: _BottomControls(
                 insets: _controlsInsets(context),
                 onEnterPip: () => _enterPip(context),
+                showScreenMode:
+                    _topBarItems().contains(TopBarItem.screenMode),
+                showPip: _topBarItems().contains(TopBarItem.pip),
+                editing: _customising(state),
                 playFocus: _playFocus,
                 position: state.position,
                 duration: state.duration,
@@ -3733,12 +3753,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 builder: (_, msg, __) {
                   if (msg == null) return const SizedBox.shrink();
                   // At the foot, centred, as MX's toasts ("Night Mode",
-                  // "Background playback enabled."): 64 dp up.
+                  // "Background playback enabled."): Android's, 24 dp up
+                  // (reference lab 45886561831), over the bottom row.
                   return Align(
                     alignment: Alignment.bottomCenter,
                     child: Padding(
                       padding: EdgeInsets.only(
-                          bottom: 64 + MediaQuery.paddingOf(context).bottom,
+                          bottom: 24 + MediaQuery.paddingOf(context).bottom,
                           left: 24,
                           right: 24),
                       child: Container(
@@ -3803,6 +3824,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             Positioned.fill(
               child: CustomiseTopBarCard(
                 initial: _topBarItems(),
+                // 2.6 dp under the top bar, as MX's (run 45886561831).
+                top: _controlsInsets(context).top +
+                    (MediaQuery.orientationOf(context) == Orientation.landscape
+                        ? 48
+                        : 56) +
+                    2.6,
                 onApply: (items) {
                   // ignore: discarded_futures
                   ref.read(extraSettingsProvider.notifier).setStr(
@@ -4307,12 +4334,13 @@ class _TopBar extends StatelessWidget {
   final VoidCallback? onDecoder;
   final VoidCallback onMore;
 
-  /// Which optional icons it carries (MX's Customise Items), and what the
-  /// ones that are not otherwise on it do.
+  /// Which of its optional icons it carries (MX's Customise Items), and
+  /// the playing queue's, which is on it only when chosen.
   final Set<TopBarItem> items;
   final VoidCallback? onQueue;
-  final VoidCallback? onPip;
-  final VoidCallback? onScreenMode;
+
+  /// Customise Items is open: each optional icon in MX's dashed box.
+  final bool editing;
 
   /// The Quality menu. Drawn only while [StreamRenewal.quality] has a menu
   /// for what is playing — a catalogue film with streaming copies.
@@ -4347,10 +4375,9 @@ class _TopBar extends StatelessWidget {
     required this.onSubtitle,
     required this.onDecoder,
     required this.onMore,
-    this.items = const {TopBarItem.audio, TopBarItem.subtitle, TopBarItem.decoder},
+    this.items = TopBarItem.defaults,
     this.onQueue,
-    this.onPip,
-    this.onScreenMode,
+    this.editing = false,
     this.onQuality,
     this.activeUri,
     required this.fmtTimer,
@@ -4392,15 +4419,13 @@ class _TopBar extends StatelessWidget {
     // phone held upright ran the title to nothing.
     final room =
         size.width - insets.left - insets.right - 56 - moreWidth - 64;
-    final fits = (room / 48).floor().clamp(0, TopBarItem.values.length);
     const priority = [
       TopBarItem.audio,
       TopBarItem.subtitle,
       TopBarItem.decoder,
       TopBarItem.queue,
-      TopBarItem.pip,
-      TopBarItem.screenMode,
     ];
+    final fits = (room / 48).floor().clamp(0, priority.length);
     final shown = priority.where(items.contains).take(fits).toSet();
     // Its ground: black, at least 50 % under the words, thinning out below
     // (BarShade: over a white film the title read 2.2:1 on the old
@@ -4531,25 +4556,35 @@ class _TopBar extends StatelessWidget {
             // (test/player_controls_test.dart). The dot: more than one track
             // to choose from. PiP is on the bottom row, as in MX.
             if (shown.contains(TopBarItem.queue) && onQueue != null)
-              IconButton(
-                icon: const Icon(Icons.queue_music, color: Colors.white),
-                tooltip:
-                    AppStrings.of(context).playingQueue.replaceAll('\n', ' '),
-                onPressed: onQueue,
+              EditSlot(
+                editing: editing,
+                child: IconButton(
+                  icon: const Icon(Icons.queue_music, color: Colors.white),
+                  tooltip: AppStrings.of(context)
+                      .playingQueue
+                      .replaceAll('\n', ' '),
+                  onPressed: onQueue,
+                ),
               ),
             if (shown.contains(TopBarItem.audio))
-              _IconWithDot(
-                icon: Icons.music_note,
-                tooltip: AppStrings.of(context).audioTrack,
-                showDot: hasMultipleAudioTracks,
-                onPressed: onAudio,
+              EditSlot(
+                editing: editing,
+                child: _IconWithDot(
+                  icon: Icons.music_note,
+                  tooltip: AppStrings.of(context).audioTrack,
+                  showDot: hasMultipleAudioTracks,
+                  onPressed: onAudio,
+                ),
               ),
             if (shown.contains(TopBarItem.subtitle))
-              _IconWithDot(
-                icon: Icons.subtitles_outlined,
-                tooltip: AppStrings.of(context).subtitle,
-                showDot: hasMultipleSubtitleTracks,
-                onPressed: onSubtitle,
+              EditSlot(
+                editing: editing,
+                child: _IconWithDot(
+                  icon: Icons.subtitles_outlined,
+                  tooltip: AppStrings.of(context).subtitle,
+                  showDot: hasMultipleSubtitleTracks,
+                  onPressed: onSubtitle,
+                ),
               ),
             // QUALITY, where YouTube keeps it: one tap from the picture, in
             // both orientations. Shows what was chosen — "Auto", "720p",
@@ -4609,50 +4644,40 @@ class _TopBar extends StatelessWidget {
                 },
               ),
             if (onDecoder != null && shown.contains(TopBarItem.decoder))
-              TextButton(
-                onPressed: onDecoder,
-                // 48 wide, as MX's HW (it was up to 56).
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  minimumSize: const Size(48, 48),
-                  maximumSize: const Size(48, 48),
-                ),
-                // "HW+" is three letters; "Default" in Thai is eleven, and
-                // it took the title's room. Never wider than this: a longer
-                // word is set smaller.
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 44),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      decoderLabel,
-                      maxLines: 1,
-                      // A button sets its own text style, not merged with
-                      // FilmInk's: the halo is named here.
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        shadows: PlayerUi.shadeInk,
+              EditSlot(
+                editing: editing,
+                child: TextButton(
+                  onPressed: onDecoder,
+                  // 48 wide, as MX's HW (it was up to 56).
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    minimumSize: const Size(48, 48),
+                    maximumSize: const Size(48, 48),
+                  ),
+                  // "HW+" is three letters; "Default" in Thai is eleven, and
+                  // it took the title's room. Never wider than this: a longer
+                  // word is set smaller.
+                  // Inside MX's 40.5 dp edit box, as its "HW".
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 38),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        decoderLabel,
+                        maxLines: 1,
+                        // A button sets its own text style, not merged with
+                        // FilmInk's: the halo is named here.
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          shadows: PlayerUi.shadeInk,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            if (shown.contains(TopBarItem.pip) && onPip != null)
-              IconButton(
-                icon: const Icon(Icons.picture_in_picture_alt_outlined,
-                    color: Colors.white),
-                tooltip: AppStrings.of(context).pmPip,
-                onPressed: onPip,
-              ),
-            if (shown.contains(TopBarItem.screenMode) && onScreenMode != null)
-              IconButton(
-                icon: const Icon(Icons.crop_landscape_outlined,
-                    color: Colors.white),
-                tooltip: AppStrings.of(context).pmScreenMode,
-                onPressed: onScreenMode,
               ),
             IconButton(
               icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -4707,6 +4732,12 @@ class _BottomControls extends ConsumerStatefulWidget {
 
   /// Picture-in-picture — the last button on the row, as in MX.
   final VoidCallback onEnterPip;
+
+  /// MX's Customise Items: the screen mode ("Zoom") and picture-in-picture
+  /// ("Popup Window") shown or not, and in dashed boxes while it is open.
+  final bool showScreenMode;
+  final bool showPip;
+  final bool editing;
 
   /// Play/Pause, which a TV remote lands on when the controls come up.
   final FocusNode? playFocus;
@@ -4767,6 +4798,9 @@ class _BottomControls extends ConsumerStatefulWidget {
   const _BottomControls({
     required this.insets,
     required this.onEnterPip,
+    this.showScreenMode = true,
+    this.showPip = true,
+    this.editing = false,
     this.playFocus,
     required this.position,
     required this.duration,
@@ -5375,34 +5409,43 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
                   // went up into the full-screen node above, and the
                   // lab's taps on "the button" landed mid-screen (run
                   // 37308309328). One node, read "Fit to screen, button".
-                  Semantics(
-                    container: true,
-                    // A stable id for automation (Android resource-id).
-                    identifier: 'player-screen-mode',
-                    label: widget.aspectRatioMode.labelIn(s),
-                    button: true,
-                    onTap: widget.onCycleAspectRatio,
-                    excludeSemantics: true,
-                    child: IconButton(
-                      icon: const Icon(Icons.crop_landscape_outlined,
-                          color: Colors.white),
-                      onPressed: widget.onCycleAspectRatio,
-                      tooltip: widget.aspectRatioMode.labelIn(s),
+                  if (widget.showScreenMode)
+                    EditSlot(
+                      editing: widget.editing,
+                      child: Semantics(
+                        container: true,
+                        // A stable id for automation (Android resource-id).
+                        identifier: 'player-screen-mode',
+                        label: widget.aspectRatioMode.labelIn(s),
+                        button: true,
+                        onTap: widget.onCycleAspectRatio,
+                        excludeSemantics: true,
+                        child: IconButton(
+                          icon: const Icon(Icons.crop_landscape_outlined,
+                              color: Colors.white),
+                          onPressed: widget.onCycleAspectRatio,
+                          tooltip: widget.aspectRatioMode.labelIn(s),
+                        ),
+                      ),
                     ),
-                  ),
-                  SizedBox(width: fit.sideGap),
+                  if (widget.showScreenMode && widget.showPip)
+                    SizedBox(width: fit.sideGap),
                   // MX's row ends aspect ratio, picture-in-picture.
                   // The fit/zoom toggle that sat here duplicated the
                   // aspect button (its cycle includes Zoom); pinch zoom
                   // is unchanged.
-                  IconButton(
-                    icon: const Icon(
-                      Icons.picture_in_picture_alt_outlined,
-                      color: Colors.white,
+                  if (widget.showPip)
+                    EditSlot(
+                      editing: widget.editing,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.picture_in_picture_alt_outlined,
+                          color: Colors.white,
+                        ),
+                        tooltip: s.spBgPip,
+                        onPressed: widget.onEnterPip,
+                      ),
                     ),
-                    tooltip: s.spBgPip,
-                    onPressed: widget.onEnterPip,
-                  ),
                 ];
                 if (!fit.centred) {
                   // Too narrow for Play at the screen's centre: one row,

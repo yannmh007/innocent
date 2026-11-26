@@ -3,18 +3,28 @@ import 'package:flutter/material.dart';
 import '../../../../core/localization/app_strings.dart';
 import 'player_ui.dart';
 
-/// The icons the player's top bar can carry, in their order on the bar
-/// (before ⋮). As MX 3.4.3's Customise Items offers them (the reference
-/// lab, run 45862946745: Hardware Acceleration, Playing Queue, Audio Track,
-/// Subtitles, Popup Window, Zoom), Innocent's own: the decoder, the playing
-/// queue, ♪, CC, picture-in-picture, the screen mode.
+/// The controls the viewer may show or hide, in MX 3.4.3's Customise
+/// Items order (the reference lab, runs 45862946745 and 45886561831:
+/// Hardware Acceleration, Playing Queue, Audio Track, Subtitles, Popup
+/// Window, Zoom). The first four sit on the top bar (in the bar's order:
+/// queue, ♪, CC, decoder, before ⋮); Popup Window and Zoom are the bottom
+/// row's last two buttons, picture-in-picture and the screen mode.
 enum TopBarItem {
+  decoder,
   queue,
   audio,
   subtitle,
-  decoder,
   pip,
   screenMode;
+
+  /// MX's own: every one but the playing queue.
+  static const Set<TopBarItem> defaults = {
+    decoder,
+    audio,
+    subtitle,
+    pip,
+    screenMode,
+  };
 
   static Set<TopBarItem> parse(String raw) {
     final byName = {for (final e in TopBarItem.values) e.name: e};
@@ -28,40 +38,48 @@ enum TopBarItem {
       TopBarItem.values.where(items.contains).map((e) => e.name).join('|');
 
   IconData get icon => switch (this) {
+        TopBarItem.decoder => Icons.memory_rounded,
         TopBarItem.queue => Icons.queue_music,
         TopBarItem.audio => Icons.music_note,
         TopBarItem.subtitle => Icons.subtitles_outlined,
-        TopBarItem.decoder => Icons.memory_rounded,
         TopBarItem.pip => Icons.picture_in_picture_alt_outlined,
         TopBarItem.screenMode => Icons.crop_landscape_outlined,
       };
 
   String labelIn(AppStrings s) => switch (this) {
+        TopBarItem.decoder => s.pmDecoder,
         TopBarItem.queue => s.playingQueue,
         TopBarItem.audio => s.audioTrack,
         TopBarItem.subtitle => s.subtitle,
-        TopBarItem.decoder => s.pmDecoder,
         TopBarItem.pip => s.pmPip,
         TopBarItem.screenMode => s.pmScreenMode,
       }
           .replaceAll('\n', ' ');
 }
 
-/// MX's Customise Items (its shortcut, 26 Nov 2026: "as MX"): a card over
-/// the picture, its hint, then the top bar's icons in a row, each with a
-/// check on it while it is on the bar; a tap takes it on or off; Cancel
-/// leaves the bar as it was, Apply sets it. MX's card sits under the top
-/// bar, centred, Cancel and APPLY at its foot. Innocent's colours: the card
-/// on the shade's black, a chosen icon's check on the accent.
+/// MX's Customise Items (its shortcut; the owner, 26 Nov 2026: "as MX"):
+/// the controls stay, the film dimmed under them, each place a control
+/// can be shown in marked with a dashed box ([EditSlot]); over them a card
+/// with its hint, the six controls in a row, each with a check while it is
+/// shown, and Cancel / Apply. A tap on one takes it on or off; Cancel (or
+/// a tap outside) leaves the controls as they were. MX's measures on the
+/// owner's phone sideways (run 45886561831): the card 567.5 dp wide,
+/// centred, 2.6 dp under the top bar; 25.6 dp in; a control 86 dp wide,
+/// its disc 40.5. Innocent's colours: the shade's black, the accent's
+/// check, Innocent's dialog buttons.
 class CustomiseTopBarCard extends StatefulWidget {
   const CustomiseTopBarCard({
     super.key,
     required this.initial,
+    required this.top,
     required this.onApply,
     required this.onCancel,
   });
 
   final Set<TopBarItem> initial;
+
+  /// Where the card's top goes: just under the top bar.
+  final double top;
   final ValueChanged<Set<TopBarItem>> onApply;
   final VoidCallback onCancel;
 
@@ -70,7 +88,7 @@ class CustomiseTopBarCard extends StatefulWidget {
 }
 
 class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
-  late Set<TopBarItem> _on = {...widget.initial};
+  late final Set<TopBarItem> _on = {...widget.initial};
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +96,8 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
     final pad = MediaQuery.paddingOf(context);
     return Stack(
       children: [
+        // Everything under it: a tap cancels (MX's), and the controls
+        // under the card take no tap meanwhile.
         Positioned.fill(
           child: Semantics(
             label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -88,10 +108,10 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
             ),
           ),
         ),
-        // Under the top bar, as MX's; it scrolls rather than run off a
-        // short window (a phone sideways at 1.3x text, a split screen).
+        // It scrolls rather than run off a short window (a phone sideways
+        // at 1.3x text, a split screen).
         Positioned(
-          top: pad.top + 64,
+          top: widget.top,
           left: 16 + pad.left,
           right: 16 + pad.right,
           bottom: pad.bottom + 8,
@@ -99,14 +119,14 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
             alignment: Alignment.topCenter,
             child: SingleChildScrollView(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: const BoxConstraints(maxWidth: 568),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: const Color(0xB3000000),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    padding: const EdgeInsets.all(24),
                     child: DefaultTextStyle.merge(
                       style: const TextStyle(shadows: PlayerUi.shadeInk),
                       child: Column(
@@ -118,10 +138,9 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                             style: const TextStyle(
                                 color: PlayerUi.textPrimary, fontSize: 14),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 16),
                           Wrap(
                             alignment: WrapAlignment.center,
-                            spacing: 4,
                             runSpacing: 8,
                             children: [
                               for (final item in TopBarItem.values)
@@ -136,7 +155,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -146,7 +165,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                                   onPressed: widget.onCancel,
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 17),
                               Flexible(
                                 child: PlayerDialogButton(
                                   label: s.apply,
@@ -170,7 +189,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
   }
 }
 
-/// One icon of the card: a disc, its name, a check while it is on the bar.
+/// One control of the card: a disc, its name, a check while it is shown.
 class _Choice extends StatelessWidget {
   const _Choice({required this.item, required this.on, required this.onTap});
 
@@ -188,10 +207,10 @@ class _Choice extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: SizedBox(
-          // Six to a row on MX's 480 dp card, as its one row.
-          width: 68,
+          // MX's 86: six to a row on its card.
+          width: 86,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 2),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -199,8 +218,8 @@ class _Choice extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 40.5,
+                      height: 40.5,
                       decoration: BoxDecoration(
                         color: const Color(0x4D000000),
                         shape: BoxShape.circle,
@@ -213,8 +232,8 @@ class _Choice extends StatelessWidget {
                     ),
                     if (on)
                       const Positioned(
-                        right: -4,
-                        top: -4,
+                        right: -2,
+                        top: -2,
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: PlayerUi.accent,
@@ -223,13 +242,13 @@ class _Choice extends StatelessWidget {
                           child: Padding(
                             padding: EdgeInsets.all(1),
                             child: Icon(Icons.check_rounded,
-                                size: 14, color: Colors.white),
+                                size: 12, color: Colors.white),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
                 Text(
                   item.labelIn(s),
                   textAlign: TextAlign.center,
@@ -244,4 +263,54 @@ class _Choice extends StatelessWidget {
       ),
     );
   }
+}
+
+/// While Customise Items is open: a control the viewer can show or hide,
+/// in MX's dashed 40.5 dp box (its edit_p1..p5).
+class EditSlot extends StatelessWidget {
+  const EditSlot({super.key, required this.editing, required this.child});
+
+  final bool editing;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!editing) return child;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        child,
+        const IgnorePointer(
+          child: SizedBox(
+            width: 40.5,
+            height: 40.5,
+            child: CustomPaint(painter: _DashedBox()),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashedBox extends CustomPainter {
+  const _DashedBox();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = PlayerUi.textPrimary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+          Offset.zero & size, const Radius.circular(4)));
+    for (final metric in path.computeMetrics()) {
+      for (var d = 0.0; d < metric.length; d += 7) {
+        canvas.drawPath(metric.extractPath(d, d + 4), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBox oldDelegate) => false;
 }
