@@ -46,6 +46,8 @@ on a phone. The player's building blocks live in
 |---|---|
 | behind a panel or sheet | nothing: the picture is not dimmed (22 Nov) |
 | panel, sheet | **the shade** (`PlayerShade`): black at 60 % within the menu (40 % of the film shows, as MX's), 20 % at 160 dp before its edge, 0 at 360 dp; no blur, edge or corners; words and icons with `PlayerUi.shadeInk` (black rim 1 + 3, a soft 10); tile discs black 30 %. Black, not `#1C1C1E`: the grey left words 15 % less contrast over a bright film |
+| under the controls | `BarShade` (26 Nov): black 80 % at the screen's edge, held at 50 % across the top bar and the bottom row (where the words are), then to nothing over 64 dp beyond, taking no taps; their words and icons in `FilmInk` (the halo). MX's gradients ramp to nothing across the bar and fail over a white film (title 2.2:1, the elapsed time 1.5); held at 50 % the lowest word reads 5.8:1 |
+| shortcut row | every shortcut on a dark translucent disc (`AppColors.shortcutInactive`), upright and sideways, the speed's "1X" too; the chevron on a 28 dp one — as MX 3.4.3 (its discs vanish over a black frame: the Phase 45 audit read "none upright" off a dark film) |
 | scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |
 | surface of a dialog or card | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
 | reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side — upright that tall, sideways that wide (≤ 440) plus the navigation strip |
@@ -62,8 +64,9 @@ on a phone. The player's building blocks live in
 Type (Roboto; Burmese falls back to Noto Sans Myanmar, nearly twice as tall
 per line — never a fixed height around text, see .claude/rules/flutter-app.md):
 panel title 18 sp w600 · section label 12.5 sp w600, secondary colour ·
-row title 15 sp w500 · row value 13 sp secondary · tile label 12 sp w500,
-two lines at most · caption 11 sp.
+row title 15 sp w500 · row value 13 sp secondary · tile label 12 sp w500
+white (not 92 %: the smallest word on the shade), two lines at most ·
+caption 11 sp.
 
 ## 3. Components (all in player_ui.dart)
 - **Panel** (`PlayerPanel`, in the player's own Stack): MX's reach
@@ -93,6 +96,10 @@ two lines at most · caption 11 sp.
 - **Expanding row** (`PanelExpandRow`): icon, title and a caret; its rows
   open below it (CC's "Settings": delay, text style, position). Shut when
   the panel opens.
+- **Stepper** (`PanelStepperRow`): icon, name, then − value + (40 dp
+  tonal circles); a tap on the value puts it back. The subtitle's timing,
+  size and position; the audio delay (`AudioSyncSheet`, 50 ms a step, on
+  a sheet that lets the film through).
 - **Tile** (`PanelTile` in a `PanelGrid`): 44 dp circle (black 30 % disc,
   a 1.2 dp white 55 % ring, as MX rings its tiles; MX's is 45), 22 dp icon,
   label 6 dp below, up to three lines; rows ~88 dp apart in English (MX's
@@ -120,6 +127,12 @@ two lines at most · caption 11 sp.
   (`PlayerToastController.current` reaches it from a sheet); an error is
   `PlayerErrorCard` — a card on the scrim, the engine's text through
   `scrubPlaybackError` (never a signed address on screen).
+- **On the film**: the controls' bars sit in `BarShade`; anything else
+  that writes straight on the picture (the shortcut row's labels) takes
+  `FilmInk`. Measure it: `LEGIBILITY_OUT=dir flutter test
+  test/player_legibility_test.dart` — orientations `port` (a wide film
+  upright: on its black bars), `tall` (an upright film: on the picture),
+  `land`.
 - **The controls under a layer**: `_chromeUp` in player_screen.dart hides
   the top bar, shortcut row and bottom row while a panel, a dialog, the
   error card or a route the player opened is up.
@@ -190,7 +203,10 @@ from MX but its reasoning).
   as MX, all of it"): radio rings, the subtitle tracks as boxed check
   boxes, ringed tiles, no ⋮ title, no line under a sheet's title, CC's
   settings behind "Settings ▾", the ← upright, MX's spacing of titles and
-  tiles (measured on the emulator, run 45775539414). Kinds of control and their places only —
+  tiles (measured on the emulator, run 45775539414); on 26 Nov (later)
+  ♪'s Synchronization (Innocent's "Audio delay" row under the tracks,
+  after a hairline, opening a stepper) and the shortcut discs upright.
+  Kinds of control and their places only —
   drawn with Innocent's own icons and colours, never MX's.
 - Colour is tested against the film, not against MX: the player plays any
   video, so every icon, label and panel must read over a dark, a bright, a

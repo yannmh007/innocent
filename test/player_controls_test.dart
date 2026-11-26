@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/services/preferences/extra_settings_service.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/ui/device_profile.dart';
 import 'package:innocent/features/player/domain/engine_check.dart';
@@ -575,6 +576,48 @@ void main() {
     expect(find.textContaining('Track no'), findsNothing);
     expect(find.text('Stereo · English'), findsOneWidget);
     expect(find.text('Commentary · English'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('♪ has the audio delay under its tracks, as MX: + moves it '
+      '50 ms and the engine hears it; a tap on the value puts it back',
+      (tester) async {
+    final svc = FakePlayerService(audioTracks: const [
+      AudioTrackInfo(id: '1', title: 'Stereo', language: 'eng'),
+      AudioTrackInfo(id: '2', title: 'Commentary', language: 'eng'),
+    ]);
+    await pumpPlayer(tester,
+        phone: _phone, landscape: false, lang: 'en', engine: svc);
+    int delay() => playerContainer!
+        .read(extraSettingsProvider)
+        .getInt(IntSetting.audioDelay);
+    await tester.tap(find.byIcon(Icons.music_note));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    expect(find.text('Audio delay'), findsOneWidget);
+    expect(find.text('0 ms'), findsOneWidget);
+    await tester.tap(find.text('Audio delay'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    // ♪ gave way to the delay's own sheet.
+    expect(find.text('Stereo · English'), findsNothing);
+    svc.calls.clear();
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('+50 ms'), findsOneWidget);
+    expect(delay(), 50);
+    expect(svc.calls, contains('Symbol("setAudioDelayMs")'));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('−50 ms'), findsOneWidget);
+    expect(delay(), -50);
+    await tester.tap(find.text('−50 ms'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(delay(), 0);
+    expect(find.text('0 ms'), findsOneWidget);
     await leavePlayer(tester);
   });
 

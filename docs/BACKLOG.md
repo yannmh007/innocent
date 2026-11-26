@@ -16,6 +16,46 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **26 Nov (later): THE CONTROLS READ OVER ANY FILM; ♪'s AUDIO DELAY;
+  THE OWNER'S PHONE IS 384x823 (work branch only, not released)** —
+  session of docs/handoff_2026_11_26_mx_parity.md §2-§3. THE OWNER'S WORD
+  (26 Nov, from MX | Innocent pictures): ♪ takes MX's Synchronization only
+  (not Disable, Open, Stereo mode, SW decoder); the controls' new ground
+  taken; the sideways subtitle under ⋮ waits for MX's own in the lab;
+  "desktop" = Chromebook / Android windows (no Windows/Mac/web app).
+  DONE: (1) `BarShade` under the top bar and bottom row — black 80 % at
+  the edge, held at 50 % across the words, to nothing over 64 dp beyond —
+  and `FilmInk` (the halo) on their words and icons; MX's gradients (as
+  ours were, within a few grey levels: run 45781933354) fail over a white
+  film. (2) The shortcut row on discs upright too: MX 3.4.3 has them both
+  ways (they vanish over black; the Phase 45 audit read "none upright" off
+  a dark film); upright over a white film the row was invisible (1.0:1).
+  (3) ⋮'s tile labels white (92 % before). (4) ♪: a hairline, then "Audio
+  delay" (Settings > Audio's value) opening `AudioSyncSheet` (− 50 ms +, a
+  tap on the value resets; the film shows through), `PanelStepperRow`
+  shared with the subtitle tune panel. (5) The legibility test measures an
+  upright film too (`tall`), and words a FittedBox sets smaller (Thai's
+  decoder label read 1.0 over black: the copy was laid unscaled).
+  (6) test/support/player_harness.dart: the owner's phone 384x823 at
+  2.8125, 48 dp nav (diagnostic reports name the model; at its default
+  1080x2316 it is 450 dpi; the 4 Oct screenshots' 135 px bar is 48.0 dp at
+  2.8125, 51.4 at 2.625), plus a 412 dp phone. player_screen.dart's "MX
+  GEOMETRY" dp were divided by 2.625: ~7 % large, to measure again in the
+  lab (§5 of the handoff). LEGIBILITY (my/en/th, five frames, before →
+  after, same test): controls sideways 48 → 0 failing of 315, upright
+  film 62 → 0 of 300, upright wide film 0; ⋮ 32 → 6 of 1440 (four
+  Burmese and one Thai 12 sp label over pure white, 3.6-4.5:1; measured
+  off the screenshot's bright pixels alone they read 5.3-6.0 — thin
+  strokes' antialiasing; 12.5/13 sp or bolder only moved which labels
+  fail); CC, ♪ all pass. Lowest control word 5.8:1 (hold 45 %: 5.1,
+  62 %: 7.8). Tests: whole suite 2010 pass (62 skipped);
+  player_controls_test 39 (a new one: ♪'s delay +50 ms reaches the
+  engine, a tap resets); player_layout_test 1416 (4 phones, my/en/th,
+  1.0/1.3) and PLAYER_PHONES=all 2832, no overflow. Lab: ref.env note,
+  probe.sh waits for MX's font cache prompt (up to 6 min) so MX's subtitle
+  shows. NEXT: the lab run's MX | Innocent sheets (the sideways subtitle
+  question), the accessibility root (handoff §3.2), every screen size
+  (§4), the rest of the player after MX (§5).
 - **26 Nov: THE PLAYER'S MENUS AS MX'S, ON THE WORK BRANCH ONLY (not
   released)** — next session: docs/handoff_2026_11_26_mx_parity.md (the
   state, what is open, every screen size, the rest of the player after

@@ -20,6 +20,8 @@
 //   LEGIBILITY_OUT=<dir> flutter test test/player_legibility_test.dart
 // writes one line per element to <dir>/legibility.tsv and a photograph of
 // every case. Narrow with SCENES=controls,more FRAMES=white,busy; LANGS=my,en.
+// Orientations: port (a wide film upright: the controls on its black bars),
+// tall (an upright 9:16 film: the controls on the picture), land.
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -118,12 +120,14 @@ final _scenes = <String, Future<void> Function(WidgetTester, PlayerController)>{
 
 const _frames = ['black', 'white', 'grey', 'busy', 'colour'];
 
-double _lin(int c8) {
+final List<double> _linTable = List<double>.generate(256, (c8) {
   final c = c8 / 255.0;
   return c <= 0.04045
       ? c / 12.92
       : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
-}
+});
+
+double _lin(int c8) => _linTable[c8];
 
 double _lum(int r, int g, int b) =>
     0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b);
@@ -233,8 +237,15 @@ Future<List<_Element>> _measure(
       if (_hasPlaceholder(para.text)) continue;
       final o = para.localToGlobal(Offset.zero, ancestor: boundary) * dpr;
       final ox = o.dx.floor(), oy = o.dy.floor();
-      final mw = (para.size.width * dpr).ceil() + 2,
-          mh = (para.size.height * dpr).ceil() + 2;
+      // A word set smaller by a FittedBox (the decoder's label, Thai's
+      // "ค่าเริ่มต้น") is drawn scaled: lay the copy out at that scale, or
+      // it misses the glyphs (it read 1.0:1 over black).
+      final t = para.getTransformTo(boundary);
+      // The x axis's scale (getMaxScaleOnAxis counts z, always 1).
+      final k = dpr *
+          math.sqrt(t.entry(0, 0) * t.entry(0, 0) + t.entry(1, 0) * t.entry(1, 0));
+      final mw = (para.size.width * k).ceil() + 2,
+          mh = (para.size.height * k).ceil() + 2;
       if (mw <= 2 || mh <= 2 || mw * mh > 4000000) continue;
       final tp = TextPainter(
         text: _bare(para.text),
@@ -251,7 +262,7 @@ Future<List<_Element>> _measure(
       final rec = ui.PictureRecorder();
       final canvas = Canvas(rec)
         ..translate(o.dx - ox, o.dy - oy)
-        ..scale(dpr);
+        ..scale(k);
       tp.paint(canvas, Offset.zero);
       tp.dispose();
       final img = await rec.endRecording().toImage(mw, mh);
@@ -372,11 +383,14 @@ void main() {
 
   for (final scene in _scenes.entries) {
     if (onlyScenes != null && !onlyScenes.contains(scene.key)) continue;
-    for (final landscape in [false, true]) {
+    // port: a wide film upright (the controls sit on its black bars);
+    // tall: an upright 9:16 film upright, the controls on the picture;
+    // land: a wide film sideways, the controls on the picture.
+    for (final o in ['port', 'tall', 'land']) {
+      final landscape = o == 'land';
       for (final lang in langs) {
         for (final frame in _frames) {
           if (onlyFrames != null && !onlyFrames.contains(frame)) continue;
-          final o = landscape ? 'land' : 'port';
           testWidgets('${scene.key} $o $lang over $frame', (tester) async {
             // A measuring tool, not a gate: it runs when asked.
             if (outDir == null) {
@@ -389,6 +403,8 @@ void main() {
             }
             final svc = FakePlayerService(
               frame: _Frame(frame),
+              videoSize:
+                  o == 'tall' ? const Size(1080, 1920) : const Size(1920, 1080),
               audioTracks: const [
                 AudioTrackInfo(id: '1', title: 'Stereo', language: 'eng'),
                 AudioTrackInfo(id: '2', title: 'Commentary', language: 'eng'),

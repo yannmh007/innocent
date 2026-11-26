@@ -417,6 +417,36 @@ inn_software_decoding() {
   say "Innocent: software decoding set for the lab ($(grep -c 'devDisableHwAccel" value="true' "$x.after" || true) of 1)"
 }
 
+# MX builds a font cache for its subtitles once ("Building font cache...",
+# a prompt at the foot of its player: FontCachePromptBasePromotionView in
+# its tree). In run 45781933354 the prompt was up on every MX screen after
+# a 25 s warm-up, so no MX screen showed MX's own subtitle; the owner wants
+# to see where MX puts it sideways under an open ⋮ (26 Nov). Wait for the
+# prompt to go, up to 6 min, with the film playing (reopened if it ends).
+warm_mx() {
+  local t0=$SECONDS top
+  open_film mx /sdcard/Movies/ref_land_black.mp4
+  sleep 20
+  while [ $((SECONDS - t0)) -lt 360 ]; do
+    top=$(adb shell dumpsys activity top 2>/dev/null || true)
+    if ! printf '%s\n' "$top" | grep -q "ACTIVITY $MX_COMP "; then
+      open_film mx /sdcard/Movies/ref_land_black.mp4
+      sleep 10
+      continue
+    fi
+    if ! printf '%s\n' "$top" | grep -q 'FontCachePromptBasePromotionView'; then
+      say "MX's font cache prompt gone after $((SECONDS - t0)) s"
+      grab mx warm_mx
+      adb shell am force-stop "$MX_PACKAGE"
+      return 0
+    fi
+    sleep 10
+  done
+  say "MX's font cache prompt still up after $((SECONDS - t0)) s"
+  grab mx warm_mx
+  adb shell am force-stop "$MX_PACKAGE"
+}
+
 # PHASE 1: the panels that rise (⋮, ♪, CC) of both apps, upright and
 # sideways, over a black and a white frame. Each screen from a fresh open of
 # its own copy of the film (neither app resumes or asks), so the frame is
@@ -452,7 +482,7 @@ panels() {
   # One open of each first: MX's one-time font cache for subtitles, the
   # Innocent lab build's start (which writes its preferences); a screen of
   # each for the record.
-  open_film mx /sdcard/Movies/ref_land_black.mp4; sleep 25; grab mx warm_mx; adb shell am force-stop "$MX_PACKAGE"
+  warm_mx
   open_film inn /sdcard/Movies/ref_warm/innocent_lab_play.mp4; sleep 20; grab inn warm_inn
   inn_software_decoding
 

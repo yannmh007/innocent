@@ -2402,6 +2402,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               kind: PlayerToastKind.success, icon: Icons.music_note);
         }
       },
+      // MX's ♪ has its Synchronization under the tracks: the owner took it
+      // (26 Nov 2026). The value is Settings > Audio's; the player applies
+      // it as it changes (player_provider.dart, IntSetting.audioDelay).
+      delayMs: ref.read(extraSettingsProvider).getInt(IntSetting.audioDelay),
+      onDelay: () {
+        if (!context.mounted) return;
+        final extras = ref.read(extraSettingsProvider.notifier);
+        // ignore: discarded_futures
+        AudioSyncSheet.show(
+          context,
+          initialMs:
+              ref.read(extraSettingsProvider).getInt(IntSetting.audioDelay),
+          // ignore: discarded_futures
+          onChanged: (ms) => extras.setInt(IntSetting.audioDelay, ms),
+        ).whenComplete(() {
+          if (mounted) _applySystemUiMode();
+        });
+      },
     );
   }
 
@@ -3563,12 +3581,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 pinned: state.visibleShortcuts,
                 onItemTap: (item) => _onShortcutTap(context, item),
                 onToggleExpand: controller.toggleShortcutsExpanded,
-                // Phase 45 (audit): MX Player styling rules — portrait
-                // uses plain white icons (no circle bg); the speed
-                // shortcut shows a "1X"/"1.5X" text label; Audio Effect
-                // shows a red dot when an effect is engaged.
-                isPortrait: MediaQuery.of(context).orientation ==
-                    Orientation.portrait,
+                // MX Player styling: every shortcut on a disc, both ways;
+                // the speed shortcut shows a "1X"/"1.5X" label; Audio
+                // Effect shows a red dot when an effect is engaged.
                 currentSpeed: state.playbackSpeed,
                 // Audio Effect "active" indicator (red dot) — MX Player
                 // shows it when an audio effect is engaged. We read the
@@ -4214,25 +4229,23 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A portrait bar under 400 dp (most phones held upright) has room for a
-    // readable title or the clock, not both, now that audio and subtitles
-    // are on it: the title wins. The owner's 411 dp phone keeps the clock.
+    // A portrait bar under 400 dp (most phones held upright, the owner's
+    // 384 dp one too) has room for a readable title or the clock, not
+    // both, now that audio and subtitles are on it: the title wins.
     final size = MediaQuery.sizeOf(context);
     final narrow = size.width < size.height && size.width < 400;
-    return Container(
+    // Its ground: black, at least 50 % under the words, thinning out below
+    // (BarShade: over a white film the title read 2.2:1 on the old
+    // gradient).
+    return BarShade(
+      fromTop: true,
+      child: Container(
       // Landscape keeps the back arrow and the menu clear of the status bar,
       // the side nav bar and the camera cutout, as MX does.
       padding: EdgeInsets.only(
         top: insets.top,
         left: insets.left,
         right: insets.right,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.playerOverlayDark, Colors.transparent],
-        ),
       ),
       child: SizedBox(
         height: 56,
@@ -4434,10 +4447,13 @@ class _TopBar extends StatelessWidget {
                     child: Text(
                       decoderLabel,
                       maxLines: 1,
+                      // A button sets its own text style, not merged with
+                      // FilmInk's: the halo is named here.
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
+                        shadows: PlayerUi.shadeInk,
                       ),
                     ),
                   ),
@@ -4450,6 +4466,7 @@ class _TopBar extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -4858,9 +4875,15 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     )..layout();
     final timeWidth = math.max(56.0, timePainter.width.ceilToDouble() + 2);
     timePainter.dispose();
-    return Container(
+    // Its ground: BarShade from the bottom (the elapsed time read 1.5:1 over
+    // a white film on the old gradient).
+    return BarShade(
+      fromTop: false,
+      child: Container(
       // MX GEOMETRY, measured on its screenshots taken on the owner's phone
-      // (1080x2316, 2.625 dpi, 3-button navigation: a 51.4 dp bar) — each
+      // (1080x2316, read then as 2.625: a 51.4 dp bar; it is 2.8125, a
+      // 48 dp bar, so these dp are ~7 % large — to measure again on the
+      // reference lab's emulator, 26 Nov 2026) — each
       // row's centre above the edge of the space the controls may use:
       //   portrait : buttons 19.4 dp, seek bar 62.5 dp above the nav bar
       //   landscape: buttons 24 dp,   seek bar 67 dp above the screen edge
@@ -4872,13 +4895,6 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
         bottom: widget.insets.bottom + (landscape ? 4 : 0),
         left: widget.insets.left,
         right: widget.insets.right,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.transparent, AppColors.playerOverlayDark],
-        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -5199,6 +5215,7 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

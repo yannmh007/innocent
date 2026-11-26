@@ -55,3 +55,16 @@ repository and a run's public log carry numbers and our own code.
   once its title went and its tiles reached the line. measure.py reads
   three lines and keeps the edge farthest out. After a layout change,
   check the panel figures against the screenshots before they go out.
+- **MX shows no subtitle until its font cache is built.** Its player puts a
+  "Building font cache…" prompt at its foot (FontCachePromptBasePromotionView
+  in `dumpsys activity top`) and draws no subtitle meanwhile. Under ARM
+  translation that outlasted a 25 s warm-up, and every force-stop started
+  it again: run 45781933354 has no MX subtitle on any screen. probe.sh
+  `warm_mx` waits for the prompt to go (up to 6 min, the film reopened if
+  it ends); check its line in the summary before reading a subtitle's place.
+- **The lab's dp are the owner's dp.** The emulator is 1080x2316 at 450 dpi
+  (2.8125), as the owner's phone at its default zoom: 384x823 dp, a 48 dp
+  navigation bar. Figures taken off the owner's own screenshots before
+  26 Nov were divided by 2.625 and read ~7 % large (player_screen.dart's
+  "MX GEOMETRY"); measure MX's controls here, not off those.
+

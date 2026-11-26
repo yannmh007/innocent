@@ -58,6 +58,12 @@ final scenes = <Scene>[
   }),
   Scene('audio_sheet', (t, c, svc) async => _tapIcon(t, Icons.music_note),
       portrait: false),
+  // ♪'s audio delay row (as MX's Synchronization), then its own sheet.
+  Scene('audio_sync', (t, c, svc) async {
+    await _tapIcon(t, Icons.music_note);
+    await t.tap(find.text('0 ms').last, warnIfMissed: false);
+    await _settle(t);
+  }),
   Scene('subtitle_tracks', (t, c, svc) async {
     // A track chosen in the CC panel, then the panel again: the choice is
     // checked.

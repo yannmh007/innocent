@@ -150,8 +150,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
     return '${sec > 0 ? '+' : ''}${sec.toStringAsFixed(1)}s';
   }
 
-  /// One setting: its name on the left, − value + on the right, every
-  /// row's steppers in one column. A tap on the value puts it back.
+  /// One setting (PanelStepperRow): its name, then − value +.
   Widget _row({
     required IconData icon,
     required String label,
@@ -160,43 +159,15 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
     required VoidCallback onPlus,
     required VoidCallback onReset,
   }) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 56),
-      child: Row(
-        children: [
-          Icon(icon, color: PlayerUi.textSecondary, size: 22),
-          const SizedBox(width: 16),
-          Expanded(child: Text(label, style: PlayerUi.rowTitle)),
-          _StepButton(
-            icon: Icons.remove_rounded,
-            onPressed: onMinus,
-            tooltip: AppStrings.of(context).pwDecrease(label),
-          ),
-          SizedBox(
-            width: 76,
-            child: GestureDetector(
-              // Tapping the number resets that one row. Cheap to reach, and
-              // obvious once found — the value is the thing you are staring at.
-              onTap: onReset,
-              child: Text(
-                value,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: PlayerUi.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFeatures: [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-          ),
-          _StepButton(
-            icon: Icons.add_rounded,
-            onPressed: onPlus,
-            tooltip: AppStrings.of(context).pwIncrease(label),
-          ),
-        ],
-      ),
+    return PanelStepperRow(
+      icon: icon,
+      label: label,
+      value: value,
+      onMinus: onMinus,
+      onPlus: onPlus,
+      onReset: onReset,
+      minusTooltip: AppStrings.of(context).pwDecrease(label),
+      plusTooltip: AppStrings.of(context).pwIncrease(label),
     );
   }
 
@@ -272,34 +243,6 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// − or + of a stepper: a 40 dp tonal circle.
-class _StepButton extends StatelessWidget {
-  const _StepButton({
-    required this.icon,
-    required this.onPressed,
-    required this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      icon: Icon(icon, size: 20),
-      style: IconButton.styleFrom(
-        backgroundColor: PlayerUi.raised,
-        foregroundColor: PlayerUi.textPrimary,
-        fixedSize: const Size(40, 40),
-        minimumSize: const Size(40, 40),
       ),
     );
   }

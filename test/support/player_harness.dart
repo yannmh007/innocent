@@ -41,8 +41,14 @@ class Phone {
 const phonesOnly = <Phone>[
   // A 720p budget phone: the most common screen among this app's viewers.
   Phone('360x800', 360, 800, 2.0, statusBar: 28, navBar: 48),
-  // The owner's phone (1080x2316 at 2.625), three-button navigation.
-  Phone('411x882', 411.4, 882.3, 2.625, statusBar: 30, navBar: 51.4, cutout: 30),
+  // The owner's phone: 1080x2316 at 450 dpi (2.8125), three-button
+  // navigation, a punch hole. It was 411x882 at 2.625 here: the 4 Oct
+  // screenshots' 135 px navigation bar read as 51.4 dp, where Android's is
+  // 48 — 135 px is 48.0 dp at 2.8125, the density the reference lab gives
+  // the same screen, and the model's default (26 Nov 2026).
+  Phone('384x823', 384, 823.5, 2.8125, statusBar: 30, navBar: 48, cutout: 30),
+  // A wide phone (a Pixel's 412 dp), gesture navigation.
+  Phone('412x915', 411.4, 914.3, 2.625, statusBar: 24, navBar: 24),
   // A small screen, or a large "display size" setting on a 360 dp phone.
   Phone('320x640', 320, 640, 2.0, statusBar: 24, navBar: 48),
 ];

@@ -154,8 +154,11 @@ class PlayerUi {
     fontSize: 14,
     height: 1.45,
   );
+  /// White, not [textPrimary]: the smallest word on the shade (26 Nov
+  /// 2026: ⋮'s labels over a white film read 3.7-4.3:1 at 92 % white, 11
+  /// below 4.5 sideways; at 100 %, 2).
   static const TextStyle tileLabel = TextStyle(
-    color: textPrimary,
+    color: Colors.white,
     fontSize: 12,
     fontWeight: FontWeight.w500,
   );
@@ -824,6 +827,102 @@ class _PanelExpandRowState extends State<PanelExpandRow> {
   }
 }
 
+/// A value set by steps: its name on the left, − value + on the right
+/// (every stepper of a sheet in one column). A tap on the value puts it
+/// back. The subtitle's timing, size and position; the audio's delay.
+class PanelStepperRow extends StatelessWidget {
+  const PanelStepperRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+    required this.onReset,
+    required this.minusTooltip,
+    required this.plusTooltip,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+  final VoidCallback onReset;
+  final String minusTooltip;
+  final String plusTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 56),
+      child: Row(
+        children: [
+          Icon(icon, color: PlayerUi.textSecondary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: PlayerUi.rowTitle)),
+          _StepButton(
+            icon: Icons.remove_rounded,
+            onPressed: onMinus,
+            tooltip: minusTooltip,
+          ),
+          SizedBox(
+            width: 76,
+            child: GestureDetector(
+              // Tapping the number resets that one row. Cheap to reach, and
+              // obvious once found — the value is the thing you are staring at.
+              onTap: onReset,
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: PlayerUi.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+          _StepButton(
+            icon: Icons.add_rounded,
+            onPressed: onPlus,
+            tooltip: plusTooltip,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// − or + of a stepper: a 40 dp tonal circle.
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        backgroundColor: PlayerUi.raised,
+        foregroundColor: PlayerUi.textPrimary,
+        fixedSize: const Size(40, 40),
+        minimumSize: const Size(40, 40),
+      ),
+    );
+  }
+}
+
 /// A row with a switch: the row takes the tap, the switch shows the state.
 class PanelSwitchRow extends StatelessWidget {
   const PanelSwitchRow({
@@ -1198,6 +1297,93 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The dark ground under the controls' top bar (from the top) or bottom
+/// row (from the bottom): black at [edge] at the screen's edge, at least
+/// [hold] across the bar, where its words and icons are, then thinning out
+/// to nothing over [fade] dp beyond it (drawn outside the bar, taking no
+/// taps), so it has no edge. Its words and icons carry [PlayerUi.shadeInk]
+/// too (as a panel's).
+///
+/// Why (26 Nov 2026): the bars' gradients ran from 80 % black at the edge
+/// to nothing across the bar itself, as light as MX's (the reference lab,
+/// run 45781933354: within a few grey levels of each other), and over a
+/// white, busy or colourful frame the title read 2.2:1, ♪ and CC 2.0, the
+/// elapsed time 1.5 (test/player_legibility_test.dart; 4.5:1 text, 3:1
+/// icons). A halo alone lifted them to 2.0-3.7: two or three pixels off a
+/// thin stroke it is too faint. Held at 50 % black across the bar (MX's
+/// level where its title sits, but held, not ramped), the lowest word
+/// reads 5.8:1 over a white film (45 %: 5.1; 62 %: 7.8); over a dark one
+/// nothing changes.
+class BarShade extends StatelessWidget {
+  const BarShade({super.key, required this.fromTop, required this.child});
+
+  /// The top bar; else the bottom row.
+  final bool fromTop;
+  final Widget child;
+
+  static const double edge = 0.80;
+  static const double hold = 0.50;
+  static const double fade = 64;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          top: fromTop ? 0 : -fade,
+          bottom: fromTop ? -fade : 0,
+          child: IgnorePointer(
+            child: LayoutBuilder(builder: (context, c) {
+              final total = c.maxHeight;
+              final bar = (total - fade).clamp(0.0, total);
+              final at = total > 0 ? bar / total : 1.0;
+              final half = total > 0 ? (bar + fade * 0.45) / total : 1.0;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: fromTop ? Alignment.topCenter : Alignment.bottomCenter,
+                    end: fromTop ? Alignment.bottomCenter : Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: edge),
+                      Colors.black.withValues(alpha: hold),
+                      Colors.black.withValues(alpha: hold * 0.4),
+                      Colors.black.withValues(alpha: 0),
+                    ],
+                    stops: [0, at, half, 1],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        FilmInk(child: child),
+      ],
+    );
+  }
+}
+
+/// Words and icons drawn straight on the film carry [PlayerUi.shadeInk], as
+/// a panel's do: the controls' bars (inside [BarShade]) and the shortcut
+/// row, whose labels hang on the film under its discs when it is open.
+class FilmInk extends StatelessWidget {
+  const FilmInk({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTextStyle.merge(
+      style: const TextStyle(shadows: PlayerUi.shadeInk),
+      child: IconTheme.merge(
+        data: const IconThemeData(shadows: PlayerUi.shadeInk),
+        child: child,
       ),
     );
   }
