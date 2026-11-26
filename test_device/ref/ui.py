@@ -332,14 +332,23 @@ def shortcuts(dump, package, dpi):
             out.append((b, 'chevron' if small else 'item', '-'))
     else:
         chev = next((n for n in ns if re.match(r'^(Expand|Collapse)$', n.get('content-desc') or '')), None)
-        if chev is None:
+        # Expanded, the chevron can lie past the end of the row (and of the
+        # accessibility root on API 30): the row is then found by one of
+        # its shortcuts' names.
+        anchor = chev if chev is not None and box(chev) and box(chev)[2] > box(chev)[0] else next(
+            (n for n in ns if re.search(r'(Speed|Screenshot|Background Play|Night Mode|Shuffle|Mute)',
+                                        n.get('content-desc') or '') and n.get('clickable') == 'true'
+             and box(n) and box(n)[2] > box(n)[0]), None)
+        if anchor is None:
             return
-        cb = box(chev)
+        cb = box(anchor)
         for n in ns:
             b = box(n)
             if n.get('clickable') != 'true' or not b or abs(b[1] - cb[1]) > 3 * dp:
                 continue
             if b[2] - b[0] > 140 * dp or b[3] - b[1] > 1.5 * (cb[3] - cb[1]) + 2:
+                continue
+            if b[2] <= b[0]:
                 continue
             out.append((b, 'chevron' if n is chev else 'item', label(n)))
     for b, kind, lab in sorted(out, key=lambda t: t[0][0]):

@@ -536,17 +536,23 @@ sc_ready() {  # $1 app, $2 copy, $3 pass: the row expanded (ITEMS), at its end i
   sc_fresh "$1" "$2" || return 1
   mapfile -t SLOTS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI")
   line=$(printf '%s\n' "${SLOTS[@]}" | grep ' chevron ' | head -1 || true)
-  [ -n "$line" ] || return 1
-  read -r cx cy _ <<< "$line"
-  adb shell input tap "$cx" "$cy"
-  sleep 1.5
-  quick_tree "$1" "$OUT/raw/quick.xml"
+  # More than six on the row: it is open already (Innocent keeps it open
+  # from the last film, run 45857557804); else open it.
+  if [ "$(printf '%s\n' "${SLOTS[@]}" | grep -c ' item ' || true)" -le 6 ]; then
+    [ -n "$line" ] || return 1
+    read -r cx cy _ <<< "$line"
+    adb shell input tap "$cx" "$cy"
+    sleep 1.5
+    quick_tree "$1" "$OUT/raw/quick.xml"
+  fi
   mapfile -t ITEMS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI" | grep ' item ' || true)
   if [ "$3" = 2 ] && [ "${#ITEMS[@]}" -gt 0 ]; then
+    # A slow drag, not a fling: a fast swipe across MX's open row closed it
+    # (run 45857557804).
     read -r x y _ <<< "${ITEMS[0]}"
-    adb shell input swipe $((SW * 85 / 100)) "$y" $((SW * 15 / 100)) "$y" 400
+    adb shell input swipe $((SW * 80 / 100)) "$y" $((SW * 20 / 100)) "$y" 1500
     sleep 1
-    adb shell input swipe $((SW * 85 / 100)) "$y" $((SW * 15 / 100)) "$y" 400
+    adb shell input swipe $((SW * 80 / 100)) "$y" $((SW * 20 / 100)) "$y" 1500
     sleep 1.5
     quick_tree "$1" "$OUT/raw/quick.xml"
     mapfile -t ITEMS < <(UI shortcuts "$OUT/raw/quick.xml" "$(pkg_of "$1")" "$PROBE_DPI" | grep ' item ' || true)
@@ -575,7 +581,9 @@ shortcut_screens() {
   local app i pass k n idx got name x y kind lab added dir src tiles
   local TILES=()
   SW=$ph; SH=$pw
-  src=/sdcard/Movies/ref_land_black.mp4
+  # The white-first film: a shade, a dimming (Night Mode) and a toast show
+  # over white, where over black they did not (run 45857557804).
+  src=/sdcard/Movies/ref_land_white.mp4
   for i in $(seq 0 27); do
     dir=/sdcard/Movies/ref_sc_$i
     adb shell "mkdir -p $dir && cp $src $dir/innocent_lab_play.mp4 && cp $src $dir/ref_sc$i.mp4 && cp /sdcard/Movies/ref_sub.srt $dir/ref_sc$i.srt"
@@ -593,7 +601,13 @@ shortcut_screens() {
       n=${#ITEMS[@]}
       grab "$app" "${app}_land_expanded_$pass"
       note "$app pass $pass: $n shortcuts on screen ($(printf '%s ' "${ITEMS[@]##* }"))"
-      for k in $(seq 0 $((n - 1))); do
+      # From the last to the first: a toggle left on moves out of the open
+      # row's first part (MX's Loop, run 45857557804) and shifts the ones
+      # after it, never the ones before. Pass 2 (the row dragged to its
+      # end): only the last three, past the edge in pass 1.
+      local ks
+      if [ "$pass" = 1 ]; then ks=$(seq $((n - 1)) -1 0); else ks=$(seq $((n - 1)) -1 $((n > 3 ? n - 3 : 0))); fi
+      for k in $ks; do
         idx=$((idx + 1))
         [ "$idx" -le 27 ] || break
         sc_ready "$app" "$idx" "$pass" || { note "$app pass $pass slot $k: the row never opened"; continue; }
@@ -603,7 +617,10 @@ shortcut_screens() {
         [ "$app" = inn ] && name="${name}_${lab}"
         cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
         adb shell input tap "$x" "$y"
-        sleep 2.5
+        # A toast lasts 2-3.5 s: the screen at once, the tree after.
+        sleep 1.2
+        adb exec-out screencap -p > "$OUT/${name}_t.png" 2>/dev/null || true
+        sleep 1.3
         quick_tree "$app" "$OUT/raw/quick.xml"
         added=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$(pkg_of "$app")" || echo 0)
         grab "$app" "$name"
@@ -634,6 +651,9 @@ shortcut_screens() {
         adb shell input tap ${TILES[$((tiles - 1))]}
         sleep 3
         grab mx mx_land_more2
+        adb shell input swipe $((SW * 80 / 100)) $((SH * 85 / 100)) $((SW * 80 / 100)) $((SH * 15 / 100)) 800
+        sleep 1.5
+        grab mx mx_land_more2_low
       fi
     else
       note "$app ⋮: never opened"
