@@ -1,419 +1,775 @@
 LAB device kind=DeviceKind.phone sw=411.0
 LAB engine update ok ALREADY_UP_TO_DATE 2026.11.23 -> 2026.11.23
-LAB cpu app 26% · 0.2fps · pool-thread 12% | 1.raster 11% | RenderThread 2%
-LAB phase layout_portrait start
-LAB cpu app 1% · 0.3fps · -
-LAB cpu app 11% · 3.3fps · 1.raster 6% | .innocent.media 3%
+LAB cpu app 42% · 0.2fps · pool-thread 29% | 1.raster 10% | RenderThread 2% | .innocent.media 1%
+LAB phase genres start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 10% · 0.3fps · 1.raster 6% | .innocent.media 2% | RenderThread 2%
+LAB cpu app 14% · 4.6fps · 1.raster 8% | .innocent.media 3%
+LAB cpu app 3% · 0.4fps · 1.raster 2% | .innocent.media 1%
+LAB cpu app 23% · 4.4fps · 1.raster 14% | .innocent.media 5% | 1.io 2% | estorage.worker 1%
+LAB cpu app 6% · 1.0fps · 1.raster 4% | .innocent.media 1%
+LAB    0.0 stream lanes=6 peak=window
+LAB    0.1 stream cache: a new film, sealed
+LAB    1.1 stream index 0.0 MB at 0.0 MB
+LAB    2.2 measured 15463 kbps
+LAB    2.2 warm: 2.0 MB of the opening held
+LAB    2.2 stream stretch 2.0 MB in 1100 ms lanes=6
+LAB cpu app 19% · 1.0fps · 1.raster 10% | .innocent.media 5% | DartWorker 1%
+LAB phase jumps start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB    0.0 LAB jump rule spare on (the build's own)
+LAB    6.2 LAB title: opening Big Buck Bunny
+LAB engine update ok ALREADY_UP_TO_DATE 2026.11.23 -> 2026.11.23
+LAB    7.4 play server granted in 1243 ms, 2 rungs
+LAB    7.4 play rung 360p 546 kbps (choice auto, measured - kbps)
+LAB hls start +0 ms: register
+LAB    7.4 stream lanes=6 peak=window
+LAB    7.6 stream cache: a new film, sealed
+LAB hls start +337 ms: rungs registered
+LAB hls start +358 ms: 360p head asked
+LAB    7.8 play through the ladder on ExoPlayer
+LAB    7.8 play: opening the player
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB    8.4 hwdec -> auto
+LAB    8.5 open ladder (exo) start=0s autoplay=true rung=auto first=360
+LAB    8.5 wakelock playing=true bg=false priv=false pos=0ms
+LAB    8.5 open ok
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB hls start +1158 ms: master asked
+LAB cpu app 57% · 7.3fps · 1.raster 30% | pool-thread 19% | .innocent.media 4% | RenderThread 3%
+LAB    9.2 stream index 0.0 MB at 0.0 MB
+LAB hls start +1823 ms: 360p length checked
+LAB hls start +1825 ms: 360p head/init asked
+LAB    9.4 fg stream: watching
+LAB hls start +2035 ms: 360p index
+LAB    9.4 hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+LAB hls start +2038 ms: master served
+LAB hls start +2042 ms: 360p playlist asked
+LAB    9.5 hls: 360p playlist, 299 segments
+LAB hls start +2043 ms: 240p head asked
+LAB hls start +2052 ms: 360p playlist served
+LAB hls start +2141 ms: 360p head/init asked
+LAB    9.6 exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+LAB    9.6 hls jump: answer 203 ms, first byte 207 ms, segment 326 ms (65536 B); conn kept 0 ms, wait 203 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+LAB hls start +2152 ms: 360p head/init in
+LAB hls start +2161 ms: 360p head/init in
+LAB hls start +2171 ms: 360p segment asked
+LAB    9.7 exo rung 360p 600 kbps
+LAB   10.0 first frame 2059 ms
+LAB hls start +2701 ms: 360p segment in
+LAB   10.1 hls start (ms): rungs registered 337, 360p head asked 358, master asked 1158, 360p length checked 1823, 360p head/init asked 1825, 360p index 2035, master served 2038, 360p playlist asked 2042, 240p head asked 2043, 360p playlist served 2052, 360p head/init in 2152, 360p segment asked 2171, 360p segment in 2701
+LAB hls start +3101 ms: 360p segment asked
+LAB   10.5 stream index 0.0 MB at 0.0 MB
+LAB hls start +3103 ms: 240p head/init asked
+LAB hls start +3376 ms: 360p segment in
+LAB hls start +3452 ms: 360p segment asked
+LAB hls start +3644 ms: 360p segment in
+LAB hls start +3656 ms: 360p segment asked
+LAB hls start +3862 ms: 360p segment in
+LAB hls start +3865 ms: 360p segment asked
+LAB hls start +4022 ms: 360p segment in
+LAB hls start +4025 ms: 360p segment asked
+LAB hls start +4077 ms: 240p index
+LAB   11.5 hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+LAB   11.7 hls jump: answer 927 ms, first byte 971 ms, segment 1161 ms (65536 B); conn new 491 ms (dns 125, tcp 146, tls 220), wait 436 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+LAB hls start +4266 ms: 240p head/init in
+LAB hls start +4300 ms: 360p segment in
+LAB hls start +4308 ms: 360p segment asked
+LAB hls start +4457 ms: 360p segment in
+LAB hls start +4491 ms: 360p segment asked
+LAB   11.9 line 3860 kbps, in a read
+LAB hls start +4620 ms: 360p segment in
+LAB hls start +4630 ms: 360p segment asked
+LAB hls start +4685 ms: 360p segment in
+LAB hls start +4691 ms: 360p segment asked
+LAB hls start +4716 ms: 360p segment in
+LAB hls start +4721 ms: 360p segment asked
+LAB hls start +4855 ms: 360p segment in
+LAB hls start +4863 ms: 360p segment asked
+LAB hls start +4929 ms: 360p segment in
+LAB hls start +4932 ms: 360p segment asked
+LAB hls start +5042 ms: 360p segment in
+LAB hls start +5113 ms: 360p segment asked
+LAB hls start +5152 ms: 360p segment in
+LAB hls start +5158 ms: 360p segment asked
+LAB hls start +5211 ms: 360p segment in
+LAB hls start +5280 ms: 360p segment asked
+LAB   12.9 line 5575 kbps, a read
+LAB   12.9 measured 5575 kbps
+LAB hls start +5848 ms: 360p segment in
+LAB   16.0 preview pack: 149 pictures, header 988 ms
+LAB   16.0 preview pack header ahead: 988 ms (at +5 s, ahead 34631 ms)
+LAB   16.1 jump fill start (ahead 0 ms)
+LAB   16.4 line 3584 kbps, a read
+LAB   16.4 measured 3584 kbps
+LAB   17.0 exo picture after seek 1000 ms
+LAB   17.2 hls jump: answer 442 ms, first byte 484 ms, segment 826 ms (82646 B); conn kept 3 ms, wait 439 ms, before 65 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.4 s ago
+LAB   17.2 jump fill end 1054 ms
+LAB   18.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 58% · 9.6fps · 1.raster 33% | .innocent.media 9% | ExoPlayer:Playb 4% | MediaCodec_loop 3% | DartWorker 2% | flutter-worker- 2%
+LAB   20.2 LAB check seek PASS want=238 got=239 ready=3107 ms playing=yes, moving by 3207 ms frozen=907 ms engine=exo rung=360p
+LAB   20.2 exo steer quality target=240 made=1 rungs=[360, 240] picks=240
+LAB   20.3 quality -> 240 on the ladder (no reopen)
+LAB   20.3 hls: 240p playlist, 299 segments
+LAB   20.7 measured 2879 kbps
+LAB   22.1 LAB check quality->240 PASS want=240 got=241 ready=600 ms playing=yes, moving by 932 ms frozen=249 ms engine=exo rung=360p
+LAB   22.4 hls jump: answer 1328 ms, first byte 1464 ms, segment 1788 ms (100582 B); conn new 654 ms (dns 67, tcp 75, tls 512), wait 664 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 4.2 s ago), the other reading, last whole on it 8.9 s ago
+LAB   22.5 exo rung 240p 300 kbps
+LAB   22.7 LAB check shown 240p after 2458 ms
+LAB   22.7 jump fill start (ahead 0 ms)
+LAB   23.6 exo picture after seek 879 ms
+LAB   23.7 hls jump: answer 198 ms, first byte 213 ms, segment 861 ms (70552 B); conn kept 2 ms, wait 196 ms, before 72 ms, tries 1; a read cut, pool 1, lost (cut, 2.3 s ago), the other reading, last whole on it 6.9 s ago
+LAB   24.2 jump fill end 1451 ms
+LAB   26.0 LAB check skip+30 PASS want=273 got=274 ready=294 ms playing=yes, moving by 2312 ms frozen=1279 ms engine=exo rung=240p
+LAB   26.1 exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+LAB   26.5 line 4877 kbps, a read
+LAB   26.5 measured 4877 kbps
+LAB   27.1 exo held 1083 ms (scrubbing) at 275s
+LAB   27.1 jump fill start (ahead 0 ms)
+LAB   27.4 exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+LAB   27.7 line 9980 kbps, a read
+LAB   28.6 hls jump: answer 538 ms, first byte 747 ms, segment 1030 ms (45656 B); conn kept 1 ms, wait 537 ms, before 175 ms, tries 1; a read cut, pool 1, open, the other reading, last whole on it 0.2 s ago
+LAB cpu app 44% · 9.7fps · 1.raster 26% | .innocent.media 7% | ExoPlayer:Playb 3% | HwBinder:7159 2% | DartWorker 1% | flutter-worker- 1%
+LAB   28.9 preview drag: pack, pictures pack 1, fragment 0, none 0; ms first 1298, median 1298, slowest 1298; line 1 requests, 6 KB
+LAB   28.9 exo picture after seek 1829 ms
+LAB   29.0 jump fill end 1863 ms
+LAB   30.1 line 1951 kbps, in a read
+LAB   30.8 LAB check swipe-120 PASS want=155 got=156 ready=532 ms playing=yes, moving by 2739 ms frozen=1617 ms engine=exo rung=240p
+LAB   30.9 exo steer quality target=auto made=3 rungs=[360, 240] picks=360
+LAB   30.9 quality -> auto on the ladder (no reopen)
+LAB   32.4 LAB check quality->auto PASS want=157 got=157 ready=284 ms playing=yes, moving by 548 ms frozen=247 ms engine=exo rung=240p
+LAB   32.4 LAB tour: 360 240 original auto (menu Auto, 360p, 240p, Original)
+LAB   32.4 exo steer quality target=360 made=3 rungs=[360, 240] picks=360
+LAB   32.5 quality -> 360 on the ladder (no reopen)
+LAB   32.6 hls jump: answer 1194 ms, first byte 1429 ms, segment 1644 ms (103844 B); conn new 581 ms (dns 10, tcp 38, tls 533), wait 613 ms, before 0 ms, tries 1; no read cut, pool 2, lost (cut, 3.4 s ago), the other reading, last whole on it 19.3 s ago
+LAB   33.0 line 5760 kbps, a read
+LAB   33.8 hls jump: answer 271 ms, first byte 399 ms, segment 856 ms (161701 B); conn kept 1 ms, wait 270 ms, before 15 ms, tries 1; a read cut, pool 1, lost (cut, 2.0 s ago), the other reading, last whole on it 5.5 s ago
+LAB   33.9 LAB check tour->360 PASS want=158 got=159 ready=378 ms playing=yes, moving by 463 ms frozen=212 ms engine=exo rung=240p
+LAB   33.9 exo steer quality target=240 made=3 rungs=[360, 240] picks=240
+LAB   33.9 quality -> 240 on the ladder (no reopen)
+LAB   34.5 exo rung 360p 600 kbps
+LAB   35.0 rebuffer start (ahead 12459 ms)
+LAB   35.1 rebuffer end 68 ms
+LAB   36.0 rebuffer start (ahead 15059 ms)
+LAB   36.0 rebuffer end 63 ms
+LAB   36.1 hls jump: answer 573 ms, first byte 699 ms, segment 706 ms (50692 B); conn kept 0 ms, wait 572 ms, before 0 ms, tries 1; no read cut, pool 1, open, the other lost (cut, 2.4 s ago), last whole on it 0.8 s ago
+LAB   36.6 LAB check tour->240 PASS want=160 got=161 ready=564 ms playing=yes, moving by 1731 ms frozen=363 ms engine=exo rung=360p
+LAB   36.7 renewal: copies from the grant held 28 s
+LAB   36.7 rebuffer start (ahead 19461 ms)
+LAB   36.8 stream lanes=6 peak=window
+LAB   37.0 rebuffer end 287 ms
+LAB   37.0 stream cache: a new film, sealed
+LAB   37.7 exo rung 240p 300 kbps
+LAB   38.0 stream index 0.3 MB at 0.0 MB
+LAB   38.7 rebuffer start (ahead 46090 ms)
+LAB   38.8 rebuffer end 69 ms
+LAB cpu app 44% · 9.6fps · 1.raster 24% | .innocent.media 7% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:7159 2% | DartWorker 2%
+LAB   39.8 measured 4418 kbps
+LAB   42.9 quality -> original at 167s
+LAB   42.9 open file (exo) start=167s autoplay=true
+LAB   43.2 jump fill start (ahead 0 ms)
+LAB   43.2 open ok
+LAB   43.4 exo tracks 360 selected=1 adaptive=false peaks=697 kbps
+LAB   43.8 exo rung 360p 697 kbps
+LAB   46.4 jump fill end 3290 ms
+LAB   47.0 measured 2998 kbps
+LAB cpu app 43% · 9.9fps · 1.raster 28% | .innocent.media 8% | DartWorker 2% | HwBinder:7159 2% | ExoPlayer:Playb 1%
+LAB   49.0 measured 7865 kbps
+LAB   49.7 LAB check tour->original PASS want=162 got=169 ready=11705 ms playing=yes, moving by 12094 ms frozen=3632 ms engine=exo rung=360p
+LAB hls start +0 ms: register
+LAB   49.9 stream lanes=6 peak=window
+LAB hls start +249 ms: rungs registered
+LAB hls start +249 ms: 360p head asked
+LAB   50.1 quality -> auto at 171s
+LAB   50.5 open ladder (exo) start=171s autoplay=true rung=auto first=360
+LAB   50.6 jump fill start (ahead 0 ms)
+LAB   50.6 open ok
+LAB   50.6 measured 5742 kbps
+LAB   50.6 stream stretch 4.4 MB in 6662 ms lanes=6
+LAB hls start +869 ms: master asked
+LAB   50.8 stream index 0.0 MB at 0.0 MB
+LAB hls start +1101 ms: 360p length checked
+LAB hls start +1101 ms: 360p head/init asked
+LAB hls start +1105 ms: 360p head/init in
+LAB hls start +1106 ms: 360p index
+LAB   50.9 hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+LAB hls start +1107 ms: master served
+LAB hls start +1110 ms: 360p playlist asked
+LAB   50.9 hls: 360p playlist, 299 segments
+LAB hls start +1111 ms: 240p head asked
+LAB hls start +1113 ms: 360p playlist served
+LAB   50.9 exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
+LAB hls start +1130 ms: 360p head/init asked
+LAB hls start +1137 ms: 360p head/init in
+LAB hls start +1141 ms: 360p segment asked
+LAB hls start +1151 ms: 360p segment in
+LAB   50.9 hls start (ms): rungs registered 249, 360p head asked 249, master asked 869, 360p length checked 1101, 360p head/init asked 1101, 360p head/init in 1105, 360p index 1106, master served 1107, 360p playlist asked 1110, 240p head asked 1111, 360p playlist served 1113, 360p segment asked 1141, 360p segment in 1151
+LAB   51.0 exo rung 360p 600 kbps
+LAB hls start +1487 ms: 360p segment asked
+LAB hls start +1564 ms: 360p segment in
+LAB   51.3 stream index 0.0 MB at 0.0 MB
+LAB hls start +1569 ms: 240p head/init asked
+LAB hls start +1575 ms: 240p head/init in
+LAB hls start +1796 ms: 240p index
+LAB   51.5 hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+LAB hls start +1826 ms: 360p segment asked
+LAB hls start +1896 ms: 360p segment in
+LAB hls start +2023 ms: 360p segment asked
+LAB hls start +2243 ms: 360p segment in
+LAB   52.0 jump fill end 1422 ms
+LAB hls start +2402 ms: 360p segment asked
+LAB hls start +2476 ms: 360p segment in
+LAB hls start +2527 ms: 360p segment asked
+LAB   53.0 hls jump: answer 420 ms, first byte 493 ms, segment 535 ms (32051 B); conn kept 0 ms, wait 419 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+LAB hls start +3233 ms: 360p segment in
+LAB   53.0 jump fill start (ahead 9953 ms)
+LAB   53.1 jump fill end 5 ms
+LAB hls start +3438 ms: 360p segment asked
+LAB hls start +3535 ms: 360p segment in
+LAB hls start +3631 ms: 360p segment asked
+LAB hls start +3816 ms: 360p segment in
+LAB hls start +3821 ms: 360p segment asked
+LAB hls start +4064 ms: 360p segment in
+LAB hls start +4073 ms: 360p segment asked
+LAB   54.0 LAB check tour->auto PASS want=170 got=171 ready=2970 ms playing=yes, moving by 3266 ms frozen=1621 ms engine=exo rung=360p
+LAB hls start +4292 ms: 360p segment in
+LAB hls start +4318 ms: 360p segment asked
+LAB hls start +4558 ms: 360p segment in
+LAB hls start +4583 ms: 360p segment asked
+LAB   54.6 LAB check preview-far PASS at=447 bytes=9719 ms=602
+LAB   54.6 LAB check preview-again PASS at=447 bytes=9719 ms=0
+LAB hls start +5148 ms: 360p segment in
+LAB   55.0 line 4051 kbps, in a read
+LAB hls start +5234 ms: 360p segment asked
+LAB   55.1 LAB check preview-next PASS at=453 bytes=7574 ms=428
+LAB   55.1 jump fill start (ahead 0 ms)
+LAB hls start +5368 ms: 360p segment cut
+LAB hls start +5370 ms: 360p head/init asked
+LAB hls start +5384 ms: 360p head/init in
+LAB hls start +5388 ms: 360p segment asked
+LAB   55.2 measured 3812 kbps
+LAB   56.6 preview drag: pack, pictures pack 3, fragment 0, none 0; ms first 602, median 428, slowest 602; line 2 requests, 17 KB
+LAB   56.7 exo picture after seek 1686 ms
+LAB   56.7 exo landing picture held 1563 ms, first frame
+LAB   56.8 hls jump: answer 1235 ms, first byte 1292 ms, segment 1651 ms (88179 B); conn new 647 ms (dns 38, tcp 103, tls 506), wait 588 ms, before 70 ms, tries 1; a read cut, pool 2, never, the other reading, last whole on it never
+LAB hls start +7041 ms: 360p segment in
+LAB   56.8 jump fill end 1709 ms
+LAB hls start +7057 ms: 360p segment asked
+LAB hls start +7287 ms: 360p segment in
+LAB   58.3 LAB check far-jump PASS want=447 got=448 ready=298 ms playing=yes, moving by 2253 ms frozen=1698 ms engine=exo rung=360p
+LAB   58.3 LAB check landing PASS held 1563 ms, first frame
+LAB cpu app 41% · 11.0fps · 1.raster 22% | .innocent.media 8% | MediaCodec_loop 2% | HwBinder:7159 2% | DartWorker 2% | ExoPlayer:Playb 2%
+LAB   60.4 line 2637 kbps, in a read
+LAB   61.1 line 3552 kbps, a read
+LAB   61.1 measured 3552 kbps
+LAB   66.6 measured 3692 kbps
+LAB cpu app 46% · 11.1fps · 1.raster 24% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | HwBinder:7159 2% | DartWorker 2%
+LAB   70.0 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 43% · 12.9fps · 1.raster 30% | MediaCodec_loop 4% | HwBinder:7159 3% | ExoPlayer:Playb 3% | .innocent.media 2%
+LAB cpu app 42% · 12.8fps · 1.raster 29% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:7159 2%
+LAB   96.0 rebuffer start (ahead 32056 ms)
+LAB   96.0 rebuffer end 2 ms
+LAB   98.8 fg stream: watching
+LAB cpu app 41% · 11.7fps · 1.raster 29% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | HwBinder:7159 2% | .innocent.media 2%
+LAB  102.1 line 4960 kbps, a read
+LAB  102.1 measured 4960 kbps
+LAB  102.7 rebuffer start (ahead 51692 ms)
+LAB  102.8 rebuffer end 55 ms
+LAB  104.3 line 9962 kbps, a read
+LAB  104.3 measured 9962 kbps
+LAB cpu app 44% · 12.5fps · 1.raster 24% | .innocent.media 7% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | HwBinder:7159 2% | flutter-worker- 1%
+LAB  108.9 rebuffer start (ahead 55952 ms)
+LAB  108.9 rebuffer end 16 ms
+LAB  112.9 rebuffer start (ahead 52240 ms)
+LAB  112.9 rebuffer end 4 ms
+LAB  118.5 rebuffer start (ahead 46907 ms)
+LAB  118.5 rebuffer end 1 ms
+LAB cpu app 39% · 11.4fps · 1.raster 26% | MediaCodec_loop 4% | HwBinder:7159 3% | ExoPlayer:Playb 3% | .innocent.media 2%
+LAB  128.1 rebuffer start (ahead 37592 ms)
+LAB  128.1 rebuffer end 2 ms
+LAB cpu app 35% · 12.0fps · 1.raster 23% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:7159 2% | .innocent.media 2%
+LAB away: home
+LAB  133.5 rebuffer start (ahead 32784 ms)
+LAB  133.6 rebuffer end 80 ms
+LAB  135.0 lifecycle hidden mounted=true
+LAB  135.0 lifecycle paused mounted=true
+LAB  135.1 wakelock playing=false bg=false priv=false pos=155137ms
+LAB cpu app 18% · 5.6fps · 1.raster 11% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:7159 2% | ExoPlayer:Playb 2%
+LAB away: back
+LAB  142.7 lifecycle detached mounted=true
+LAB  142.7 lifecycle resumed mounted=true
+LAB  142.7 lifecycle inactive mounted=true
+LAB  142.7 LAB back at 522s (left at 521s)
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  143.1 lifecycle resumed mounted=true
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  144.7 wakelock playing=true bg=false priv=false pos=155137ms
+LAB  147.2 fg stream: watching
+LAB  148.3 measured 9984 kbps
+LAB cpu app 20% · 4.8fps · 1.raster 10% | .innocent.media 3% | MediaCodec_loop 2% | RenderThread 1% | HwBinder:7159 1% | ExoPlayer:Playb 1%
+LAB  148.8 LAB check back PASS frames=+75 moved=3182 ms at=526s left=521s
+LAB  148.8 LAB check summary pass=15 fail=0
+LAB  148.8 LAB proxy upstream 51 requests 26.3 MB (1.94 a MB), steps back 0, handed over 0, bind {ok: 56}
+LAB cpu app 39% · 16.3fps · 1.raster 26% | MediaCodec_loop 5% | HwBinder:7159 3% | ExoPlayer:Playb 2% | .innocent.media 2% | ExoPlayer:Media 1%
+LAB cpu app 40% · 16.7fps · 1.raster 26% | MediaCodec_loop 5% | HwBinder:7159 3% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB cpu app 44% · 16.7fps · 1.raster 29% | MediaCodec_loop 6% | HwBinder:7159 3% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB cpu app 43% · 16.8fps · 1.raster 29% | MediaCodec_loop 6% | .innocent.media 2% | HwBinder:7159 2% | ExoPlayer:Playb 2% | ExoPlayer:Media 1%
+LAB cpu app 41% · 16.9fps · 1.raster 27% | MediaCodec_loop 5% | HwBinder:7159 3% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB  205.4 rebuffer start (ahead 14080 ms)
+LAB  205.4 rebuffer end 27 ms
+LAB  208.3 rebuffer start (ahead 11600 ms)
+LAB  208.3 rebuffer end 11 ms
+LAB cpu app 31% · 14.9fps · 1.raster 21% | MediaCodec_loop 4% | ExoPlayer:Playb 2% | HwBinder:7159 2% | .innocent.media 2%
+LAB cpu app 34% · 14.4fps · 1.raster 22% | MediaCodec_loop 4% | HwBinder:7159 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB  220.3 wakelock playing=false bg=false priv=false pos=155137ms
+LAB  220.5 lifecycle inactive mounted=true
+LAB cpu app 8% · 4.6fps · 1.raster 5% | .innocent.media 1%
+LAB phase jumps end
+LAB phase gestures start
+LAB device kind=DeviceKind.phone sw=411.0
+LAB cpu app 22% · 3.3fps · 1.raster 15% | .innocent.media 4% | RenderThread 2%
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB    0.0 hwdec -> auto
-LAB    0.1 open scheme=path len=54 hwdec=auto start=0s autoplay=true
-LAB    0.1 wakelock playing=false bg=false priv=false pos=0ms
-LAB    0.1 wakelock playing=true bg=false priv=false pos=0ms
-LAB    0.1 open ok
-LAB    0.2 first frame 1018 ms
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB    1.0 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB    1.0 wakelock playing=false bg=false priv=false pos=0ms
+LAB    1.0 wakelock playing=true bg=false priv=false pos=0ms
+LAB    1.0 open ok
+LAB    1.2 first frame 1245 ms
 LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 36% · 5.4fps · 1.raster 27% | RenderThread 5% | .innocent.media 3%
-LAB    8.3 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB    7.6 jump fill start
+LAB    7.6 jump fill end 5 ms
 LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 43% · 5.1fps · 1.raster 35% | .innocent.media 6%
+LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=544 of 914 font=20.6 box=12..399
+LAB    8.0 jump fill start
+LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=544 of 914 font=20.6 box=12..399
+LAB    8.1 jump fill end 33 ms
+LAB gesture seek 36 s
+LAB    8.3 jump fill start
+LAB    8.3 jump fill end 2 ms
+LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=544 of 914 font=20.6 box=12..399
+LAB    9.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture volume 0.46
+LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture brightness 0.46
+LAB cpu app 23% · 6.1fps · .innocent.media 13% | 1.raster 9%
+LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture double tap right 1
+LAB   20.0 jump fill start
+LAB   20.0 jump fill end 7 ms
+LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=544 of 914 font=20.6 box=12..399
 LAB gesture tap
-LAB sem controls 1 after 500 ms: view Instance of 'Fg' dpr 2.625
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture double tap left 1
+LAB   26.2 jump fill start
+LAB   26.2 jump fill end 6 ms
+LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 11% · 2.7fps · 1.raster 7% | .innocent.media 2%
+LAB gesture long press
+LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture long press end
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=544 of 914 font=20.6 box=12..399
+LAB sem controls 2 after 500 ms: view Instance of 'Fg' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
 LAB sem   #1 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #73 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #74 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #103 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3"
-LAB sem         #100 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #104 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #105 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
-LAB sem         #106 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:13"
-LAB sem         #107 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #108 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #109 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #110 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #111 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #118 0,283 1080x147 own=0,0 411x56 
-LAB sem             #112 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #113 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #114 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #115 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #116 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #117 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #119 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:10"
-LAB sem         #120 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #121 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:49"
-LAB sem         #122 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #123 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
-LAB sem         #124 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #125 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #126 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #127 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB sem     #74 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #75 0,0 1080x2400 own=0,0 411x914 label="Video"
+LAB sem         #161 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18"
+LAB sem         #101 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #137 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #138 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #139 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="13:35"
+LAB sem         #140 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
+LAB sem         #141 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
+LAB sem         #142 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
+LAB sem         #143 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #144 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #151 0,283 1080x147 own=0,0 411x56 
+LAB sem             #145 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #146 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #147 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #148 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #149 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #150 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #152 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="01:08"
+LAB sem         #153 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
+LAB sem         #154 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-01:51"
+LAB sem         #155 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
+LAB sem         #156 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
+LAB sem         #157 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
+LAB sem         #158 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
+LAB sem         #159 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #160 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB cpu app 39% · 3.9fps · .innocent.media 20% | 1.raster 17%
+LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture double tap right 1
+LAB   46.2 jump fill start
+LAB   46.2 jump fill end 2 ms
+LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture double tap right 2
+LAB   46.3 jump fill start
+LAB   46.3 jump fill end 2 ms
+LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture double tap right 3
+LAB   46.6 jump fill start
+LAB   46.6 jump fill end 5 ms
+LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 18% · 3.0fps · 1.raster 15% | .innocent.media 2%
+LAB subtitle "စာတန်းထိုး 29 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 29" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 30 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 30" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 4% · 1.5fps · 1.raster 2% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=544 of 914 font=20.6 box=12..399
+LAB phase gestures_land start
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=383 of 411 font=20.6 box=113..801
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB   61.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB subtitle "စာတန်းထိုး 32 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 32" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 33 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 33" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 4% · 1.1fps · .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 34 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 34" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 35 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 35" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 36 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 36" bottom=383 of 411 font=20.6 box=113..801
+LAB   77.0 jump fill start
+LAB   77.0 jump fill end 5 ms
+LAB subtitle "စာတန်းထိုး 37 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 37" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 39 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 39" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 41 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 41" bottom=383 of 411 font=20.6 box=113..801
+LAB   77.4 jump fill start
+LAB   77.4 jump fill end 8 ms
+LAB subtitle "စာတန်းထိုး 43 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 43" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 44 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 44" bottom=383 of 411 font=20.6 box=113..801
+LAB   77.6 jump fill start
+LAB   77.6 jump fill end 5 ms
+LAB   77.6 wakelock playing=false bg=false priv=false pos=180023ms
+LAB   77.6 jump fill start
+LAB cpu app 8% · 0.8fps · 1.raster 3% | .innocent.media 3%
+LAB subtitle "စာတန်းထိုး 45 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 45" bottom=383 of 411 font=20.6 box=113..801
+LAB gesture seek 55 s
+LAB gesture volume 0.40
+LAB cpu app 38% · 13.2fps · 1.raster 28% | .innocent.media 8%
+LAB gesture brightness 0.40
+LAB gesture double tap right 1
+LAB gesture tap
+LAB sem controls 3 after 500 ms: view Instance of 'Fg' dpr 2.625
+LAB sem #0 0,0 2400x1080 own=0,0 2400x1080 
+LAB sem   #174 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #175 0,0 2400x1080 own=0,0 914x411 
+LAB sem       #176 0,0 2400x1080 own=0,0 914x411 label="Video"
+LAB sem         #183 0,0 2400x1080 own=0,0 914x411 tap
+LAB sem         #184 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
+LAB sem         #185 254,113 1376x47 own=0,0 524x18 T=[sx 1 sy 1 tx 96.76 ty 43] label="aaa_play_720p"
+LAB sem         #186 1646,112 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 627.02 ty 42.50] label="13:36"
+LAB sem         #187 1752,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 667.52 ty 28] tip="Audio track" tap
+LAB sem         #188 1878,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 715.52 ty 28] tip="Subtitle" tap
+LAB sem         #189 2004,74 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 763.52 ty 28] label="Default" tap
+LAB sem         #190 2148,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 818.29 ty 28] tip="More" tap
+LAB sem         #191 128,218 2146x147 own=0,0 818x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
+LAB sem           #198 128,218 2146x147 own=0,0 818x56 
+LAB sem             #192 128,218 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #193 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #194 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #195 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #196 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #197 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #199 175,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 66.76 ty 334.93] label="03:00"
+LAB sem         #200 322,846 1757x116 own=0,0 670x44 T=[sx 1 sy 1 tx 122.76 ty 322.43] 
+LAB sem         #201 2080,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 792.29 ty 334.93] label="-00:00"
+LAB sem         #202 852,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 324.52 ty 363.43] tip="Previous video" tap
+LAB sem         #203 1125,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 428.52 ty 363.43] tip="Play" tap
+LAB sem         #204 1398,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 532.52 ty 363.43] label="Next video (hold for loop options)" tap
+LAB sem         #205 139,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 363.43] tip="Lock controls" tap
+LAB sem         #206 1962,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 747.29 ty 363.43] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #207 2111,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 804.29 ty 363.43] tip="Picture-in-picture" tap
+LAB gesture tap
+LAB cpu app 39% · 14.0fps · 1.raster 32% | .innocent.media 5%
+LAB gesture tap
+LAB gesture tap
+LAB gesture long press
+LAB cpu app 42% · 15.0fps · 1.raster 35% | .innocent.media 7%
+LAB gesture long press end
+LAB gesture tap
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
+LAB  117.2 player teardown done keepPlaying=false
+LAB cpu app 46% · 11.6fps · 1.raster 39% | .innocent.media 6%
+LAB cpu app 5% · 0.6fps · 1.raster 5%
+LAB phase layout_portrait start
+LAB cpu app 2% · 0.6fps · -
+LAB cpu app 2% · 0.3fps · -
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB  165.9 open scheme=path len=54 hwdec=auto start=0s autoplay=true
+LAB  166.0 wakelock playing=false bg=false priv=false pos=0ms
+LAB  166.0 open ok
+LAB  166.0 wakelock playing=true bg=false priv=false pos=0ms
+LAB  166.2 first frame 334 ms
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB subtitle "စာတန်းထိုး 1 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 1" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 15% · 1.3fps · 1.raster 12% | .innocent.media 2%
+LAB subtitle "စာတန်းထိုး 2 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 2" bottom=544 of 914 font=20.6 box=12..399
+LAB  174.2 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB subtitle "စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3" bottom=544 of 914 font=20.6 box=12..399
+LAB gesture tap
+LAB cpu app 24% · 3.5fps · 1.raster 19% | .innocent.media 4%
+LAB sem controls 1 after 500 ms: view Instance of 'Fg' dpr 2.625
+LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
+LAB sem   #389 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #441 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #442 0,0 1080x2400 own=0,0 411x914 label="Video"
+LAB sem         #470 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 3 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 3"
+LAB sem         #443 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #471 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #472 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #473 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="13:37"
+LAB sem         #474 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
+LAB sem         #475 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
+LAB sem         #476 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
+LAB sem         #477 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #478 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #485 0,283 1080x147 own=0,0 411x56 
+LAB sem             #479 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #480 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #481 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #482 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #483 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #484 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #486 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:11"
+LAB sem         #487 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
+LAB sem         #488 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:48"
+LAB sem         #489 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
+LAB sem         #490 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
+LAB sem         #491 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
+LAB sem         #492 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
+LAB sem         #493 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #494 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
 LAB subtitle "စာတန်းထိုး 4 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 4" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 5 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 5" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 25% · 3.8fps · 1.raster 23% | .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 6 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 6" bottom=544 of 914 font=20.6 box=12..399
-LAB phase player_audit start
+LAB cpu app 25% · 3.3fps · 1.raster 21% | .innocent.media 3%
 LAB subtitle "စာတန်းထိုး 7 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 7" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 2% · 1.5fps · -
+LAB phase player_audit start
 LAB subtitle "စာတန်းထိုး 8 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 8" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 3% · 1.3fps · 1.raster 1%
 LAB subtitle "စာတန်းထိုး 9 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 9" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 10 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 10" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 2% · 1.0fps · .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 3% · 1.0fps · .innocent.media 1%
 LAB gesture tap
 LAB sem controls 2 after 500 ms: view Instance of 'Fg' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #138 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #139 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #140 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #144 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 10 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 10"
-LAB sem         #142 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #145 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #146 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
-LAB sem         #147 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:13"
-LAB sem         #148 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #149 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #150 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #151 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #152 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #159 0,283 1080x147 own=0,0 411x56 
-LAB sem             #153 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #154 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #155 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #156 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #157 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #158 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #160 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:37"
-LAB sem         #161 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #162 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:22"
-LAB sem         #163 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #164 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
-LAB sem         #165 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #166 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #167 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #168 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB sem   #506 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #507 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #508 0,0 1080x2400 own=0,0 411x914 label="Video"
+LAB sem         #512 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11"
+LAB sem         #510 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #513 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #514 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #515 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="13:37"
+LAB sem         #516 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
+LAB sem         #517 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
+LAB sem         #518 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
+LAB sem         #519 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #520 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #527 0,283 1080x147 own=0,0 411x56 
+LAB sem             #521 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #522 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #523 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #524 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #525 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #526 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #528 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:43"
+LAB sem         #529 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
+LAB sem         #530 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:16"
+LAB sem         #531 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
+LAB sem         #532 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
+LAB sem         #533 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
+LAB sem         #534 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
+LAB sem         #535 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #536 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=544 of 914 font=20.6 box=12..399
 LAB gesture tap
 LAB gesture tap
-LAB subtitle "စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11" bottom=544 of 914 font=20.6 box=12..399
 LAB sem controls 3 after 500 ms: view Instance of 'Fg' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #138 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #139 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #140 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #193 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11"
-LAB sem         #142 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #169 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #170 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
-LAB sem         #171 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:13"
-LAB sem         #172 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #173 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #174 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #175 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #176 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #183 0,283 1080x147 own=0,0 411x56 
-LAB sem             #177 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #178 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #179 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #180 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #181 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #182 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #184 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:40"
-LAB sem         #185 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #186 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:19"
-LAB sem         #187 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #188 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
-LAB sem         #189 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #190 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #191 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #192 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB sem   #506 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #507 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #508 0,0 1080x2400 own=0,0 411x914 label="Video"
+LAB sem         #510 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #538 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #539 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #540 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="13:37"
+LAB sem         #541 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
+LAB sem         #542 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
+LAB sem         #543 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
+LAB sem         #544 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #545 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #552 0,283 1080x147 own=0,0 411x56 
+LAB sem             #546 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #547 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #548 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #549 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #550 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #551 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #553 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:47"
+LAB sem         #554 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
+LAB sem         #555 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:12"
+LAB sem         #556 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
+LAB sem         #557 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
+LAB sem         #558 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
+LAB sem         #559 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
+LAB sem         #560 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #561 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
+LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=544 of 914 font=20.6 box=12..399
 LAB gesture tap
+LAB cpu app 39% · 5.6fps · 1.raster 34% | .innocent.media 4%
 LAB gesture tap
 LAB sem controls 4 after 500 ms: view Instance of 'Fg' dpr 2.625
 LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #138 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #139 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #140 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #193 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 11 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 11"
-LAB sem         #142 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #194 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #195 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
-LAB sem         #196 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:13"
-LAB sem         #197 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #198 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #199 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #200 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #201 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #208 0,283 1080x147 own=0,0 411x56 
-LAB sem             #202 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #203 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #204 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #205 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #206 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #207 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #209 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:43"
-LAB sem         #210 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #211 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:16"
-LAB sem         #212 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #213 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
-LAB sem         #214 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #215 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #216 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #217 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
-LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=544 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=493 of 914 font=20.6 box=12..399
-LAB cpu app 34% · 5.7fps · 1.raster 30% | .innocent.media 3%
-LAB subtitle "စာတန်းထိုး 12 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 12" bottom=544 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13" bottom=544 of 914 font=20.6 box=12..399
+LAB sem   #506 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
+LAB sem     #507 0,0 1080x2400 own=0,0 411x914 
+LAB sem       #508 0,0 1080x2400 own=0,0 411x914 label="Video"
+LAB sem         #562 32,1287 1015x142 own=0,0 387x54 T=[sx 1 sy 1 tx 12.34 ty 490.29] label="စာတန်းထိုး 13 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 13"
+LAB sem         #510 0,0 1080x2400 own=0,0 411x914 tap
+LAB sem         #563 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
+LAB sem         #564 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="aaa_play_720p"
+LAB sem         #565 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="13:38"
+LAB sem         #566 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
+LAB sem         #567 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
+LAB sem         #568 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
+LAB sem         #569 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
+LAB sem         #570 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
+LAB sem           #577 0,283 1080x147 own=0,0 411x56 
+LAB sem             #571 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
+LAB sem             #572 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
+LAB sem             #573 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
+LAB sem             #574 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
+LAB sem             #575 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
+LAB sem             #576 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
+LAB sem         #578 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:51"
+LAB sem         #579 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
+LAB sem         #580 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-02:08"
+LAB sem         #581 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
+LAB sem         #582 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
+LAB sem         #583 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
+LAB sem         #584 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
+LAB sem         #585 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
+LAB sem         #586 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
 LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 14 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 14" bottom=493 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=493 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 15 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 15" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 26% · 6.3fps · 1.raster 23% | .innocent.media 2%
-LAB gesture tap
 LAB subtitle "စာတန်းထိုး 16 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 16" bottom=544 of 914 font=20.6 box=12..399
-LAB gesture tap
+LAB cpu app 61% · 7.7fps · 1.raster 54% | .innocent.media 5%
 LAB subtitle "စာတန်းထိုး 17 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 17" bottom=544 of 914 font=20.6 box=12..399
 LAB gesture tap
-LAB cpu app 28% · 7.0fps · 1.raster 25% | .innocent.media 2%
-LAB gesture tap
 LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=544 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 18 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 18" bottom=493 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=493 of 914 font=20.6 box=12..399
+LAB cpu app 36% · 4.0fps · 1.raster 30% | .innocent.media 4%
 LAB subtitle "စာတန်းထိုး 19 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 19" bottom=544 of 914 font=20.6 box=12..399
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB gesture tap
+LAB gesture tap
 LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 19% · 4.5fps · 1.raster 16% | .innocent.media 3%
+LAB gesture tap
+LAB subtitle "စာတန်းထိုး 20 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 20" bottom=493 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=493 of 914 font=20.6 box=12..399
+LAB cpu app 48% · 6.2fps · 1.raster 33% | .innocent.media 14%
 LAB subtitle "စာတန်းထိုး 21 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 21" bottom=544 of 914 font=20.6 box=12..399
-LAB gesture tap
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB subtitle "စာတန်းထိုး 22 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 22" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 20% · 4.9fps · 1.raster 18% | .innocent.media 2%
-LAB gesture tap
 LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=544 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=493 of 914 font=20.6 box=12..399
-LAB subtitle "စာတန်းထိုး 23 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 23" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 8% · 1.1fps · .innocent.media 6% | 1.raster 1%
 LAB subtitle "စာတန်းထိုး 24 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 24" bottom=544 of 914 font=20.6 box=12..399
 LAB gesture tap
 LAB subtitle "စာတန်းထိုး 25 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 25" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 40% · 8.3fps · 1.raster 37% | .innocent.media 3%
 LAB gesture tap
 LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=544 of 914 font=20.6 box=12..399
-LAB gesture tap
+LAB cpu app 47% · 5.9fps · 1.raster 42% | .innocent.media 4%
+LAB subtitle "စာတန်းထိုး 26 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 26" bottom=493 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=493 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 27 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 27" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 33% · 6.4fps · 1.raster 30% | .innocent.media 2%
 LAB subtitle "စာတန်းထိုး 28 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 28" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 50% · 7.3fps · 1.raster 46% | .innocent.media 4%
 LAB subtitle "စာတန်းထိုး 29 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 29" bottom=544 of 914 font=20.6 box=12..399
 LAB subtitle "စာတန်းထိုး 30 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 30" bottom=544 of 914 font=20.6 box=12..399
-LAB phase screen_modes start
-LAB cpu app 11% · 2.6fps · 1.raster 9%
+LAB gesture tap
 LAB subtitle "စာတန်းထိုး 31 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 31" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 29% · 4.0fps · 1.raster 25% | .innocent.media 3%
+LAB gesture tap
 LAB subtitle "စာတန်းထိုး 32 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 32" bottom=544 of 914 font=20.6 box=12..399
-LAB cpu app 1% · 0.4fps · -
-LAB device kind=DeviceKind.phone sw=411.0
-LAB    0.0 library folders: cache trusted
-LAB    0.6 library all: cache trusted
-LAB cpu app 11% · 1.1fps · 1.raster 8% | .innocent.media 2% | RenderThread 2%
-LAB cpu app 2% · 0.2fps · -
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB   34.6 hwdec -> auto
-LAB   34.6 open scheme=path len=38 hwdec=auto start=0s autoplay=true
-LAB   34.6 wakelock playing=false bg=false priv=false pos=0ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB   35.6 wakelock playing=true bg=false priv=false pos=0ms
-LAB   35.6 open ok
-LAB   35.8 first frame 1402 ms
-LAB cpu app 26% · 3.2fps · 1.raster 23% | .innocent.media 2%
-LAB   43.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   45.5 rebuffer start
-LAB   45.5 wakelock playing=false bg=false priv=false pos=3148ms
-LAB   45.5 rebuffer end 0 ms
-LAB   45.5 open scheme=path len=39 hwdec=auto start=0s autoplay=true
-LAB   45.7 wakelock playing=true bg=false priv=false pos=0ms
-LAB   45.7 open ok
-LAB   45.8 first frame 361 ms
-LAB gesture tap
-LAB sem controls 1 after 1000 ms: view Instance of 'Fg' dpr 2.625
-LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #74 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #75 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #76 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #77 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #78 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #79 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="movie_10"
-LAB sem         #80 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:16"
-LAB sem         #81 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #82 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #83 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #84 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #85 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #92 0,283 1080x147 own=0,0 411x56 
-LAB sem             #86 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #87 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #88 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #89 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #90 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #91 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #93 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:01"
-LAB sem         #94 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #95 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-00:08"
-LAB sem         #96 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #97 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Pause" tap
-LAB sem         #98 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #99 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #100 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #101 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
-LAB cpu app 14% · 3.9fps · 1.raster 12% | .innocent.media 1%
-LAB   53.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB   55.4 rebuffer start
-LAB   55.4 wakelock playing=false bg=false priv=false pos=4055ms
-LAB   55.4 rebuffer end 0 ms
-LAB gesture tap
-LAB sem controls 2 after 750 ms: view Instance of 'Fg' dpr 2.625
-LAB sem #0 0,0 1080x2400 own=0,0 1080x2400 
-LAB sem   #102 0,0 1080x2400 own=0,0 411x914 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #103 0,0 1080x2400 own=0,0 411x914 
-LAB sem       #104 0,0 1080x2400 own=0,0 411x914 label="Video"
-LAB sem         #105 0,0 1080x2400 own=0,0 411x914 tap
-LAB sem         #106 0,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 0 ty 52.76] tip="Back" tap
-LAB sem         #107 126,178 310x47 own=0,0 118x18 T=[sx 1 sy 1 tx 48 ty 67.76] label="movie_10"
-LAB sem         #108 452,177 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 172.16 ty 67.26] label="11:16"
-LAB sem         #109 558,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 212.66 ty 52.76] tip="Audio track" tap
-LAB sem         #110 684,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 260.66 ty 52.76] tip="Subtitle" tap
-LAB sem         #111 810,139 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 308.66 ty 52.76] label="Default" tap
-LAB sem         #112 954,139 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 363.43 ty 52.76] tip="More" tap
-LAB sem         #113 0,283 1080x147 own=0,0 411x56 T=[sx 1 sy 1 tx 0 ty 107.76] 
-LAB sem           #120 0,283 1080x147 own=0,0 411x56 
-LAB sem             #114 0,283 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #115 165,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #116 331,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #117 496,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #118 662,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #119 827,283 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #121 47,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 18 ty 794.79] label="00:09"
-LAB sem         #122 194,2054 692x116 own=0,0 263x44 T=[sx 1 sy 1 tx 74 ty 782.29] 
-LAB sem         #123 886,2086 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 337.43 ty 794.79] label="-00:00"
-LAB sem         #124 317,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 120.71 ty 822.29] tip="Previous video" tap
-LAB sem         #125 464,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 176.71 ty 822.29] tip="Play" tap
-LAB sem         #126 611,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 232.71 ty 822.29] label="Next video (hold for loop options)" tap
-LAB sem         #127 11,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 4 ty 822.29] tip="Lock controls" tap
-LAB sem         #128 768,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 292.43 ty 822.29] id=player-screen-mode label="Fit to screen" tap
-LAB sem         #129 917,2159 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 349.43 ty 822.29] tip="Picture-in-picture" tap
-LAB   59.4 screen crop x3.95
-LAB cpu app 7% · 2.7fps · 1.raster 6%
-LAB   60.8 screen original x0.59
-LAB   62.3 screen custom x1.00
-LAB   63.7 screen fit x1.00
-LAB   65.2 screen crop x3.95
-LAB cpu app 11% · 2.6fps · 1.raster 10%
+LAB subtitle "စာတန်းထိုး 33 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 33" bottom=544 of 914 font=20.6 box=12..399
+LAB cpu app 30% · 4.0fps · 1.raster 26% | .innocent.media 3%
+LAB subtitle "စာတန်းထိုး 34 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 34" bottom=544 of 914 font=20.6 box=12..399
+LAB subtitle "စာတန်းထိုး 35 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 35" bottom=544 of 914 font=20.6 box=12..399
 LAB phase layout_landscape start
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=0.0 r=0.0 b=0.0 bar=48.0
-LAB cpu app 6% · 1.5fps · 1.raster 4%
-LAB cpu app 1% · 0.4fps · -
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB subtitle "စာတန်းထိုး 35 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 35" bottom=383 of 411 font=20.6 box=113..801
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
+LAB subtitle "စာတန်းထိုး 36 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 36" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 6% · 1.8fps · 1.raster 3% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 37 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 37" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 38 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 38" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 3% · 0.6fps · .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 39 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 39" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 40 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 40" bottom=383 of 411 font=20.6 box=113..801
 LAB gesture tap
-LAB   95.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 1% · 0.4fps · -
+LAB subtitle "စာတန်းထိုး 40 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 40" bottom=301 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 41 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 41" bottom=301 of 411 font=20.6 box=113..801
+LAB cpu app 22% · 2.7fps · 1.raster 18% | .innocent.media 3%
+LAB subtitle "စာတန်းထိုး 41 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 41" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 42 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 42" bottom=383 of 411 font=20.6 box=113..801
+LAB subtitle "စာတန်းထိုး 43 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 43" bottom=383 of 411 font=20.6 box=113..801
+LAB cpu app 10% · 1.6fps · 1.raster 8% | .innocent.media 1%
+LAB subtitle "စာတန်းထိုး 44 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 44" bottom=383 of 411 font=20.6 box=113..801
 LAB phase player_audit_land start
-LAB cpu app 1% · 0.7fps · -
-LAB gesture tap
-LAB sem controls 3 after 500 ms: view Instance of 'Fg' dpr 2.625
-LAB sem #0 0,0 2400x1080 own=0,0 2400x1080 
-LAB sem   #250 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #251 0,0 2400x1080 own=0,0 914x411 
-LAB sem       #252 0,0 2400x1080 own=0,0 914x411 label="Video"
-LAB sem         #253 0,0 2400x1080 own=0,0 914x411 tap
-LAB sem         #254 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
-LAB sem         #255 254,113 1376x47 own=0,0 524x18 T=[sx 1 sy 1 tx 96.76 ty 43] label="movie_10"
-LAB sem         #256 1646,112 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 627.02 ty 42.50] label="11:17"
-LAB sem         #257 1752,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 667.52 ty 28] tip="Audio track" tap
-LAB sem         #258 1878,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 715.52 ty 28] tip="Subtitle" tap
-LAB sem         #259 2004,74 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 763.52 ty 28] label="Default" tap
-LAB sem         #260 2148,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 818.29 ty 28] tip="More" tap
-LAB sem         #261 128,218 2146x147 own=0,0 818x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
-LAB sem           #268 128,218 2146x147 own=0,0 818x56 
-LAB sem             #262 128,218 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #263 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #264 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #265 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #266 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #267 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #269 175,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 66.76 ty 334.93] label="00:09"
-LAB sem         #270 322,846 1757x116 own=0,0 670x44 T=[sx 1 sy 1 tx 122.76 ty 322.43] 
-LAB sem         #271 2080,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 792.29 ty 334.93] label="-00:00"
-LAB sem         #272 852,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 324.52 ty 363.43] tip="Previous video" tap
-LAB sem         #273 1125,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 428.52 ty 363.43] tip="Play" tap
-LAB sem         #274 1398,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 532.52 ty 363.43] label="Next video (hold for loop options)" tap
-LAB sem         #275 139,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 363.43] tip="Lock controls" tap
-LAB sem         #276 1962,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 747.29 ty 363.43] id=player-screen-mode label="Crop" tap
-LAB sem         #277 2111,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 804.29 ty 363.43] tip="Picture-in-picture" tap
-LAB cpu app 3% · 0.3fps · .innocent.media 2% | 1.raster 1%
-LAB gesture tap
-LAB gesture tap
-LAB sem controls 4 after 500 ms: view Instance of 'Fg' dpr 2.625
-LAB sem #0 0,0 2400x1080 own=0,0 2400x1080 
-LAB sem   #250 0,0 2400x1080 own=0,0 914x411 T=[sx 2.63 sy 2.63 tx 0 ty 0] 
-LAB sem     #251 0,0 2400x1080 own=0,0 914x411 
-LAB sem       #252 0,0 2400x1080 own=0,0 914x411 label="Video"
-LAB sem         #253 0,0 2400x1080 own=0,0 914x411 tap
-LAB sem         #278 128,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 48.76 ty 28] tip="Back" tap
-LAB sem         #279 254,113 1376x47 own=0,0 524x18 T=[sx 1 sy 1 tx 96.76 ty 43] label="movie_10"
-LAB sem         #280 1646,112 91x50 own=0,0 34x19 T=[sx 1 sy 1 tx 627.02 ty 42.50] label="11:17"
-LAB sem         #281 1752,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 667.52 ty 28] tip="Audio track" tap
-LAB sem         #282 1878,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 715.52 ty 28] tip="Subtitle" tap
-LAB sem         #283 2004,74 144x126 own=0,0 55x48 T=[sx 1 sy 1 tx 763.52 ty 28] label="Default" tap
-LAB sem         #284 2148,74 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 818.29 ty 28] tip="More" tap
-LAB sem         #285 128,218 2146x147 own=0,0 818x56 T=[sx 1 sy 1 tx 48.76 ty 83] 
-LAB sem           #292 128,218 2146x147 own=0,0 818x56 
-LAB sem             #286 128,218 165x147 own=0,0 63x56 label="Speed / 1X" tap
-LAB sem             #287 293,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 63 ty 0] label="Screenshot" tap
-LAB sem             #288 459,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 126 ty 0] label="Background Play" tap
-LAB sem             #289 624,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 189 ty 0] label="Screen Rotation" tap
-LAB sem             #290 790,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 252 ty 0] label="Loop" tap
-LAB sem             #291 955,218 165x147 own=0,0 63x56 T=[sx 1 sy 1 tx 315 ty 0] label="Expand" tap
-LAB sem         #293 175,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 66.76 ty 334.93] label="00:09"
-LAB sem         #294 322,846 1757x116 own=0,0 670x44 T=[sx 1 sy 1 tx 122.76 ty 322.43] 
-LAB sem         #295 2080,879 147x50 own=0,0 56x19 T=[sx 1 sy 1 tx 792.29 ty 334.93] label="-00:00"
-LAB sem         #296 852,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 324.52 ty 363.43] tip="Previous video" tap
-LAB sem         #297 1125,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 428.52 ty 363.43] tip="Play" tap
-LAB sem         #298 1398,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 532.52 ty 363.43] label="Next video (hold for loop options)" tap
-LAB sem         #299 139,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 52.76 ty 363.43] tip="Lock controls" tap
-LAB sem         #300 1962,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 747.29 ty 363.43] id=player-screen-mode label="Crop" tap
-LAB sem         #301 2111,954 126x126 own=0,0 48x48 T=[sx 1 sy 1 tx 804.29 ty 363.43] tip="Picture-in-picture" tap
+LAB subtitle "စာတန်းထိုး 45 ဘယ်သူမှ မသိခဲ့ကြဘူး / Subtitle line 45" bottom=383 of 411 font=20.6 box=113..801
+LAB  346.2 rebuffer start
+LAB  346.3 wakelock playing=false bg=false priv=false pos=161046ms
+LAB  346.3 rebuffer end 3 ms
+LAB cpu app 4% · 1.6fps · 1.raster 2% | .innocent.media 1%
+LAB cpu app 2% · 0.3fps · -
 LAB gesture tap
 LAB gesture tap
 LAB gesture tap
 LAB gesture tap
-LAB cpu app 11% · 1.8fps · 1.raster 9% | .innocent.media 1%
 LAB gesture tap
-LAB gesture tap
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
-LAB gesture tap
-LAB cpu app 8% · 1.2fps · 1.raster 6% | .innocent.media 2%
+LAB cpu app 10% · 1.2fps · 1.raster 9% | .innocent.media 1%
 LAB gesture tap
 LAB gesture tap
 LAB gesture tap
-LAB cpu app 6% · 1.2fps · 1.raster 5%
-LAB phase screen_modes_land start
-LAB cpu app 3% · 0.9fps · 1.raster 2%
-LAB cpu app 1% · 0.3fps · -
-LAB  178.6 screen original x0.33
-LAB cpu app 6% · 0.9fps · 1.raster 6%
-LAB  180.0 screen custom x1.00
-LAB  181.5 screen fit x1.00
-LAB  182.9 screen crop x1.25
-LAB  184.4 screen original x0.33
-LAB  187.8 lifecycle inactive mounted=true
-LAB  188.6 lifecycle hidden mounted=true
-LAB  188.6 lifecycle paused mounted=true
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
-LAB insets stable l=48.761905670166016 t=24.0 r=48.0 b=0.0 padding l=48.76190476190476 t=24.0 r=48.0 b=0.0 bar=48.0
-LAB cpu app 13% · 2.7fps · 1.raster 11% | .innocent.media 1%
+LAB gesture tap
+LAB cpu app 13% · 1.0fps · 1.raster 7% | .innocent.media 6%
+LAB gesture tap
+LAB gesture tap
+LAB cpu app 20% · 1.3fps · .innocent.media 16% | 1.raster 4%
+LAB gesture tap
+LAB gesture tap
+LAB cpu app 6% · 0.8fps · 1.raster 4%
