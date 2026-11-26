@@ -119,6 +119,8 @@
 > - SLEEP TIMER AS MX's (its tree, same run): no close ×; MX's × is
 >   `iv_clear`, at the time's end, and clears the entry; keys 32 dp, 74.6
 >   across, 49.1 down; the title's middle 28 dp from the top.
+>   Proved beside MX's: reference lab 45896496134 (the edit view, Sleep,
+>   the toast).
 > - Legibility: a panel row's value and a switch row's icon white (♪'s
 >   "0 ms" read 2.35:1 over white, ⋮'s Video Display icon 2.6).
 > - PROVED ON THE EMULATOR, reference lab 45885319037 (SCREENS=panels,
@@ -131,7 +133,8 @@
 >   50.7). Kept on purpose: ♪ and CC on Innocent's bar upright too, one
 >   tap (MX's upright bar has HW only, at 800 dp too: the lab's decision
 >   table read it "Innocent's better, keep"); they are ⋮'s first tiles as
->   well, as MX's. Next run (SCREENS=panels) shows the bar.
+>   well, as MX's. Run 45892311848 (SCREENS=panels): the bar too within 0.5 dp both
+>   ways (←, ♪, CC, HW); every control measured now matches.
 > Proof: flutter analyze clean; player_controls_test 44 (+2: the
 > Customise card, the 320 dp top bar); player_layout_test PLAYER_PHONES=all
 > my/en/th x1.0/x1.3 4554 pass (new scene `customise`); legibility my/en/th

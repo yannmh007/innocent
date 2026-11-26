@@ -22,9 +22,16 @@ does it.
   full width upright); Sleep and AE/EQ on the shade; toasts at the foot
   2 s; Customise Items as MX's top-bar card (`CustomiseTopBarCard`,
   `StringSetting.playerTopBar`). Details and proof: the handoff's update
-  block ("26 NOV (LATE NIGHT)"). Next: the reference lab on the phone
-  (SCREENS=panels for controls.py, then SCREENS=shortcuts) to set these
-  beside MX's on the emulator.
+  block ("26 NOV (LATE NIGHT)"). PROVED ON THE EMULATOR: reference lab
+  45885319037 and 45892311848 (SCREENS=panels, controls.py): every
+  control within 0.5 dp of MX's, both ways. Lab 45886561831
+  (SCREENS=shortcuts) showed MX's Customise Items is an edit view, its
+  Sleep × clears, its toasts 24 dp up: built after it (30c127f1) and
+  proved beside MX's in run 45896496134. Left (small): the sleep keys
+  still scale to ~0.87 of MX's sideways (Innocent keeps 48 dp rows for
+  the box and Stop/Start, MX's are 32); 11 thin Burmese/Thai ⋮ words over
+  a white film read 3.5-4.4:1 by the strict measure; the Audio Effect
+  tab's cards are centred sideways (MX's own was not seen: HW mode).
 - **26 Nov (night): ⋮ AND THE SHORTCUTS AS MX's (the owner: "11 tiles
   and More"; "every shortcut as MX's, exactly")** — on the branch, not
   released. The lab's SCREENS=shortcuts (runs 45857557804, 45862946745)
