@@ -39,9 +39,6 @@ class SpeedCard extends StatelessWidget {
   /// 255 over a white frame, as its panels do).
   static const Color _ground = Color(0x99000000);
 
-  double _snap(double v) =>
-      ((v.clamp(min, max) / step).round() * step).clamp(min, max).toDouble();
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
@@ -85,7 +82,7 @@ class SpeedCard extends StatelessWidget {
                             _Round(
                               icon: Icons.remove_rounded,
                               tooltip: s.pwDecrease(s.playbackSpeed),
-                              onTap: () => onSpeed(_snap(speed - step)),
+                              onTap: () => onSpeed(snapSpeed(speed - step)),
                             ),
                             const Spacer(),
                             _Pill(value: speed, onTap: onEdit),
@@ -93,7 +90,7 @@ class SpeedCard extends StatelessWidget {
                             _Round(
                               icon: Icons.add_rounded,
                               tooltip: s.pwIncrease(s.playbackSpeed),
-                              onTap: () => onSpeed(_snap(speed + step)),
+                              onTap: () => onSpeed(snapSpeed(speed + step)),
                             ),
                             // Over the reset's column, as MX's +.
                             const SizedBox(width: 26),
@@ -105,7 +102,7 @@ class SpeedCard extends StatelessWidget {
                             Expanded(
                               child: _Scale(
                                 value: speed.clamp(min, max).toDouble(),
-                                onChanged: (v) => onSpeed(_snap(v)),
+                                onChanged: (v) => onSpeed(snapSpeed(v)),
                               ),
                             ),
                             IconButton(
@@ -294,3 +291,10 @@ class _Scale extends StatelessWidget {
     });
   }
 }
+
+/// A speed on the card's steps (a 20th), within 0.25x-4.0x.
+double snapSpeed(double v) =>
+    ((v.clamp(SpeedCard.min, SpeedCard.max) / SpeedCard.step).round() *
+            SpeedCard.step)
+        .clamp(SpeedCard.min, SpeedCard.max)
+        .toDouble();
