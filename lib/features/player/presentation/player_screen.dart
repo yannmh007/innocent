@@ -80,6 +80,7 @@ import 'widgets/gestures_help_overlay.dart';
 import 'widgets/kids_lock_overlay.dart';
 import 'widgets/lock_overlay.dart';
 import 'widgets/more_menu_panel.dart';
+import 'lab/smooth_lab.dart';
 import 'widgets/player_error_card.dart';
 import 'widgets/player_ui.dart';
 import 'widgets/playing_queue_sheet.dart';
@@ -352,6 +353,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void initState() {
     super.initState();
     PlayerToastController.current = _toast;
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      SmoothLab.open = _labOpen;
+      SmoothLab.close = _labClose;
+      SmoothLab.playing = _labPlaying;
+    }
     // Can this phone afford the menus' frosted glass? (Asked once.)
     // ignore: discarded_futures
     PlayerUi.probeGlass();
@@ -1270,6 +1276,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // FIRST, before anything that could throw. A leaked observer is the one
     // failure that outlives the screen and keeps firing forever.
     _disposed = true;
+    if (const bool.fromEnvironment('INNOCENT_LAB') &&
+        SmoothLab.open == _labOpen) {
+      SmoothLab.open = null;
+      SmoothLab.close = null;
+      SmoothLab.playing = null;
+    }
     if (identical(_onTop, this)) _onTop = null;
     if (PlayerToastController.current == _toast) {
       PlayerToastController.current = null;
@@ -1912,6 +1924,70 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// notices they are wrong. Each change is written straight to libmpv AND
   /// persisted, so it survives the next video rather than being a temporary
   /// nudge the user has to make again.
+  // LAB BUILDS ONLY (INNOCENT_LAB): the smoothness lab's hands on the
+  // player (lab/smooth_lab.dart) — each menu opened the way its button
+  // opens it.
+  Future<bool> _labOpen(String menu) async {
+    if (!mounted) return false;
+    final c = ref.read(playerControllerProvider.notifier);
+    switch (menu) {
+      case 'controls':
+        c.showControls();
+      case 'more':
+        c.openMoreMenu();
+      case 'morepage':
+        c.openMoreMenu();
+        await Future<void>.delayed(const Duration(milliseconds: 600));
+        return SmoothLab.tap((w) =>
+            w is PanelTile && w.icon == Icons.chevron_right_rounded);
+      case 'cc':
+        _openSubtitlePanel();
+      case 'audio':
+        unawaited(_showAudioTracks(context));
+      case 'queue':
+        unawaited(_openPlayingQueue(context));
+      case 'display':
+        unawaited(DisplaySettingsSheet.show(context));
+      case 'eq':
+        unawaited(showAudioEffectSheet(context, initialTab: 1));
+      case 'sleep':
+        c.openSleepTimerDialog();
+      case 'bookmarks':
+        unawaited(_showBookmarks(context));
+      case 'shortcuts':
+        c.showControls();
+        if (!ref.read(playerControllerProvider).shortcutsExpanded) {
+          c.toggleShortcutsExpanded();
+        }
+      default:
+        return false;
+    }
+    return true;
+  }
+
+  Future<void> _labClose() async {
+    if (!mounted) return;
+    final c = ref.read(playerControllerProvider.notifier);
+    final route = ModalRoute.of(context);
+    Navigator.of(context).popUntil((r) => r == route || r.isFirst);
+    c.closePanel();
+    if (ref.read(playerControllerProvider).sleepTimerDialogOpen) {
+      c.closeSleepTimerDialog();
+    }
+    if (ref.read(playerControllerProvider).shortcutsExpanded) {
+      c.toggleShortcutsExpanded();
+    }
+    c.hideControls();
+  }
+
+  Future<void> _labPlaying(bool play) async {
+    if (!mounted) return;
+    final c = ref.read(playerControllerProvider.notifier);
+    final now = ref.read(playerControllerProvider).isPlaying;
+    if (play && !now) await c.play();
+    if (!play && now) await c.pause();
+  }
+
   void _showSubtitleDelay(BuildContext context) {
     final extras = ref.read(extraSettingsProvider);
     final svc = ref.read(videoPlayerServiceProvider);
@@ -4779,11 +4855,11 @@ class _TopBar extends StatelessWidget {
                         maxLines: 1,
                         // A button sets its own text style, not merged with
                         // FilmInk's: the halo is named here.
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          shadows: PlayerUi.shadeInk,
+                          shadows: PlayerUi.ink,
                         ),
                       ),
                     ),

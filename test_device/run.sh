@@ -958,6 +958,52 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # THE PLAYER'S SMOOTHNESS (27 Nov 2026, the owner on 1.64.89: "⋮'s menu
+  # stutters when scrolled"). The open film plays; the app itself opens
+  # each menu, flings its list up and down and times every frame
+  # (lib/features/player/presentation/lab/smooth_lab.dart: one `LAB frames
+  # STATE/MENU/LOOK …` line a step — build and raster p50/p90/p99/worst,
+  # the frames over 16.7 ms, the threads' CPU). SMOOTH_PLAN: its steps, or
+  # empty for its default (every menu, 1.64.89's drawing beside the
+  # build's own, playing and paused). gfxinfo's framestats and
+  # SurfaceFlinger's record of the player's surface are kept too; the
+  # emulator's GPU is the runner's CPU: before/after on one run, not a
+  # phone's numbers.
+  case "$flow" in smooth)
+    jt="${JUMPS_TITLE:-${CLIMB_TITLE:-}}"
+    if [ -z "$jt" ]; then log "flow smooth: no JUMPS_TITLE in config.env — skipped"; continue; fi
+    adb shell am force-stop "$PKG"
+    adb shell pm clear "$PKG" >/dev/null 2>&1 || true
+    d="/sdcard/Android/data/$PKG/files"
+    adb shell mkdir -p "$d" >/dev/null 2>&1
+    adb shell "echo title:$jt > $d/lab_stream_url"
+    adb shell "echo '${SMOOTH_PLAN:-1}' > $d/lab_smooth"
+    log "smooth: $jt, plan ${SMOOTH_PLAN:-default}"
+    adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
+    sleep 20
+    adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1 || true
+    # Until the app says it is done, at most SMOOTH_S seconds.
+    waited=20
+    while [ "$waited" -lt "${SMOOTH_S:-420}" ]; do
+      sleep 10; waited=$((waited + 10))
+      if grep -q 'LAB smooth: done\|LAB smooth: stopped' "$OUT/logcat_raw.txt" 2>/dev/null; then break; fi
+      if [ $((waited % 60)) -eq 0 ]; then adb exec-out screencap -p > "$OUT/shots/9_smooth_${waited}s.png"; fi
+    done
+    adb shell dumpsys gfxinfo "$PKG" framestats > "$OUT/smooth_gfxinfo.txt" 2>&1 || true
+    layer=$(adb shell dumpsys SurfaceFlinger --list 2>/dev/null | tr -d '\r' | grep -m1 "SurfaceView.*$PKG" || true)
+    if [ -n "$layer" ]; then
+      { echo "layer: $layer"; adb shell dumpsys SurfaceFlinger --latency "'$layer'"; } > "$OUT/smooth_surfaceflinger.txt" 2>&1 || true
+    fi
+    awk '/LAB phase smooth start/{on=1} on' "$OUT/logcat_raw.txt" 2>/dev/null \
+      | grep -o 'LAB frames.*\|LAB smooth.*\|LAB cpu.*' | tee "$OUT/smooth.txt" | grep -c 'LAB frames' \
+      | sed 's/^/  frames lines: /' || true
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    adb shell am force-stop "$PKG"
+    adb shell rm -f "$d/lab_stream_url" "$d/lab_smooth" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # A MAN IN THE MIDDLE (2026-10-26). The emulator was started behind
   # mitmproxy (MITM=on in config.env, `-http-proxy` in device-lab.yml), so
   # every connection the app opens reaches the proxy, which answers with a

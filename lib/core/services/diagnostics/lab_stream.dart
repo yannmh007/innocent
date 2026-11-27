@@ -59,6 +59,18 @@ class LabStream {
     }
   }
 
+  /// The smoothness lab's plan (`lab_smooth`, SmoothLab's steps; "1" for
+  /// its default), run once the title the lab named has started: the
+  /// player's menus scrolled and timed. Null when the lab asked for none.
+  static Future<String?> smoothPlan() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return null;
+    try {
+      return await _read('lab_smooth');
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// The pass's word (`lab_jump`), written by the weakjumps flow before
   /// each pass, echoed on every `LAB autojump` line so the flow can check
   /// the app saw it; the jump switch for an A/B reads it too ([jumpRule]).

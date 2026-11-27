@@ -42,7 +42,7 @@ class ABRepeatBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: DefaultTextStyle.merge(
-          style: const TextStyle(shadows: PlayerUi.shadeInk),
+          style: TextStyle(shadows: PlayerUi.ink),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -65,9 +65,9 @@ class ABRepeatBar extends StatelessWidget {
                   IconButton(
                     tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                     onPressed: onClose,
-                    icon: const Icon(Icons.close_rounded,
+                    icon: Icon(Icons.close_rounded,
                         size: 20, color: PlayerUi.textPrimary,
-                        shadows: PlayerUi.shadeInk),
+                        shadows: PlayerUi.ink),
                   ),
                 ],
               ),

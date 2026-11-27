@@ -82,6 +82,64 @@ class PlayerUi {
     Shadow(color: Color(0x80000000), blurRadius: 10),
   ];
 
+  /// The halo every word and icon on the shade and on the film carries:
+  /// [shadeInk] — or, in a lab build, the look the smoothness lab asked for
+  /// ([labLook]).
+  static List<Shadow> get ink {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return shadeInk;
+    return switch (_labInk) {
+      'none' => const <Shadow>[],
+      'rim' => rimInk,
+      _ => shadeInk,
+    };
+  }
+
+  /// A candidate for [shadeInk] that the GPU draws without a blur: the
+  /// dark rim as unblurred copies of the word round it (the smoothness lab,
+  /// 27 Nov 2026).
+  static const List<Shadow> rimInk = <Shadow>[
+    Shadow(color: Color(0xB3000000), offset: Offset(0.9, 0)),
+    Shadow(color: Color(0xB3000000), offset: Offset(-0.9, 0)),
+    Shadow(color: Color(0xB3000000), offset: Offset(0, 0.9)),
+    Shadow(color: Color(0xB3000000), offset: Offset(0, -0.9)),
+  ];
+
+  // LAB BUILDS ONLY (INNOCENT_LAB): the smoothness lab's switches
+  // (lab/smooth_lab.dart), so one run on one phone times 1.64.89's drawing
+  // beside each change. A store build never reads them: [ink], [labMask],
+  // [labBoundary] and [labTick] fold to the build's own choices.
+  static String? _labInk;
+  static bool? _labMask;
+  static bool? _labBoundary;
+  static bool? _labTick;
+
+  /// Whether a panel's list fades at its edges through a mask.
+  static bool get labMask => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labMask ?? true)
+      : true;
+
+  /// Whether a panel's list draws into a layer of its own.
+  static bool get labBoundary => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labBoundary ?? false)
+      : false;
+
+  /// Whether the player screen rebuilds on every position tick.
+  static bool get labTick => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labTick ?? true)
+      : true;
+
+  /// Sets the lab's switches from a look (SmoothLab.looks); an empty look
+  /// is the build's own.
+  static void labLook(Map<String, Object> look) {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    _labInk = look['ink'] as String?;
+    _labMask = look['mask'] as bool?;
+    _labBoundary = look['rb'] as bool?;
+    _labTick = look['tick'] as bool?;
+  }
+
+  static void labReset() => labLook(const <String, Object>{});
+
   /// How far a panel or sheet reaches from its edge: as MX's (one square,
   /// the screen's short side — 384 dp, 46.6 % of the owner's 823 dp
   /// screen, upright and sideways alike; reference lab, 22 Nov 2026), never
@@ -471,28 +529,38 @@ class _FadingScrollState extends State<_FadingScroll> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
         return false;
       },
-      child: ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (r) => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _moreAbove ? Colors.transparent : Colors.white,
-            Colors.white,
-            Colors.white,
-            _moreBelow ? Colors.transparent : Colors.white,
-          ],
-          stops: const [0, 0.07, 0.88, 1],
-        ).createShader(r),
-        child: SingleChildScrollView(
+      child: _mask(
+        SingleChildScrollView(
           controller: _ctl,
           padding: widget.padding,
-          child: Column(
+          child: _boundary(Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: widget.children,
-          ),
+          )),
         ),
       ),
+    );
+  }
+
+  Widget _boundary(Widget child) =>
+      PlayerUi.labBoundary ? RepaintBoundary(child: child) : child;
+
+  Widget _mask(Widget child) {
+    if (!PlayerUi.labMask) return child;
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (r) => LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          _moreAbove ? Colors.transparent : Colors.white,
+          Colors.white,
+          Colors.white,
+          _moreBelow ? Colors.transparent : Colors.white,
+        ],
+        stops: const [0, 0.07, 0.88, 1],
+      ).createShader(r),
+      child: child,
     );
   }
 }
@@ -659,10 +727,10 @@ class PanelRow extends StatelessWidget {
                 ],
                 if (selected && !choice) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.check_rounded,
+                  Icon(Icons.check_rounded,
                       size: 22,
                       color: PlayerUi.textPrimary,
-                      shadows: PlayerUi.shadeInk),
+                      shadows: PlayerUi.ink),
                 ] else if (chevron) ...[
                   const SizedBox(width: 8),
                   const Icon(Icons.chevron_right_rounded,
@@ -1419,9 +1487,9 @@ class FilmInk extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(shadows: PlayerUi.shadeInk),
+      style: TextStyle(shadows: PlayerUi.ink),
       child: IconTheme.merge(
-        data: const IconThemeData(shadows: PlayerUi.shadeInk),
+        data: IconThemeData(shadows: PlayerUi.ink),
         child: child,
       ),
     );
@@ -1486,9 +1554,9 @@ class PlayerShade extends StatelessWidget {
               // The halo on every word and icon of the menu: the film shows
               // through the shade, so a word may sit on white.
               child: DefaultTextStyle.merge(
-                style: const TextStyle(shadows: PlayerUi.shadeInk),
+                style: TextStyle(shadows: PlayerUi.ink),
                 child: IconTheme.merge(
-                  data: const IconThemeData(shadows: PlayerUi.shadeInk),
+                  data: IconThemeData(shadows: PlayerUi.ink),
                   child: child,
                 ),
               ),

@@ -33,6 +33,7 @@ import 'features/player/presentation/ladder_preview_loader.dart';
 import 'features/player/presentation/player_provider.dart';
 import 'features/player/presentation/shortcut_item.dart';
 import 'core/services/diagnostics/lab_stream.dart';
+import 'features/player/presentation/lab/smooth_lab.dart';
 import 'core/services/diagnostics/playback_log.dart';
 import 'core/services/video_player/media_kit_player_service.dart';
 import 'core/services/video_player/stream_renewal.dart';
@@ -96,6 +97,9 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       final plan = await LabStream.startPlan();
       if (plan.at != null) LabStream.applyStartRule(plan.word);
       await _labTitle(titleId, plan: plan);
+      // The player's menus scrolled and timed (run.sh, flow smooth).
+      final smooth = await LabStream.smoothPlan();
+      if (smooth != null) await SmoothLab.run(smooth);
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
       // Jumps in Auto on a weak line (run.sh, flow weakjumps).
@@ -802,6 +806,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // lab_stream_url instead, to take this same path on the emulator.
         const built = String.fromEnvironment('INNOCENT_LAB_TITLE');
         const autoJumps = String.fromEnvironment('INNOCENT_LAB_AUTOJUMPS');
+        // Test Lab's smoothness run (cloud.env STREAM_SMOOTH): the player's
+        // menus scrolled and timed on the phone (SmoothLab), in place of
+        // the jumps.
+        const smooth = String.fromEnvironment('INNOCENT_LAB_SMOOTH');
         unawaited(() async {
           final id = built.isNotEmpty
               ? built
@@ -820,6 +828,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             PlaybackLog.add('LAB jump rule spare on (Test Lab: the jumps in Auto alternate)');
           }
           await _labTitle(id);
+          if (built.isNotEmpty && smooth.isNotEmpty) {
+            // The film a few seconds in, its first rung settled.
+            await Future<void>.delayed(const Duration(seconds: 12));
+            await SmoothLab.run(smooth);
+            PlaybackLog.add('LAB script: smoothness done');
+            Timer(const Duration(seconds: 3), () => exit(0));
+            return;
+          }
           // Test Lab only (the title compiled in): the jumps a viewer
           // makes, each checked for where it landed.
           if (built.isNotEmpty) await _labJumpScript(homeTrip: false);
@@ -830,8 +846,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           }
         }());
         if (built.isNotEmpty) {
-          // Test Lab's game loop has 360 s; the jumps in Auto take ~140.
-          Timer(Duration(seconds: autoJumps.isEmpty ? 240 : 330), () => exit(0));
+          // Test Lab's game loop has 360 s; the jumps in Auto take ~140,
+          // the smoothness run ~250 (it closes the app itself when done).
+          Timer(
+              Duration(
+                  seconds: smooth.isNotEmpty
+                      ? 345
+                      : (autoJumps.isEmpty ? 240 : 330)),
+              () => exit(0));
         }
         return;
       }

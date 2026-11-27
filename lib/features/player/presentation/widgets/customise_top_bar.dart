@@ -128,7 +128,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: DefaultTextStyle.merge(
-                      style: const TextStyle(shadows: PlayerUi.shadeInk),
+                      style: TextStyle(shadows: PlayerUi.ink),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
