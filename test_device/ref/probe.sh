@@ -646,12 +646,17 @@ sg_hold_diag() {  # per mapping: a finger held at the screen's centre-right, wit
       echo "sleep 2.5"
       echo "sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 1 325 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
     adb push "$OUT/raw/se.sh" /data/local/tmp/se.sh >/dev/null 2>&1
+    local g h
     adb shell "timeout 4 getevent -lt $TDEV" > "$OUT/raw/getevent_$m.txt" 2>&1 &
+    g=$!
     sleep 0.5
     adb shell sh /data/local/tmp/se.sh > "$OUT/raw/se_out_$m.txt" 2>&1 &
+    h=$!
     sleep 1.5
     adb exec-out screencap -p > "$OUT/sg_hold_$m.png" 2>/dev/null || true
-    wait
+    # These two only: a bare `wait` waits for the logcat reader too, which
+    # never ends (run 46051981906 sat at the job's limit).
+    wait "$h" "$g" || true
     sg_say "SUBGEST hold $m: raw $r; events read back $(grep -c 'ABS_MT_POSITION' "$OUT/raw/getevent_$m.txt" || true); sendevent said: $(head -c 120 "$OUT/raw/se_out_$m.txt" | tr '\n' ' ')"
   done
   adb shell getevent -p "$TDEV" > "$OUT/raw/touch_axes.txt" 2>&1 || true
