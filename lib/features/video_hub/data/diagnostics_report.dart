@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/app_version.dart';
 import '../../../core/services/diagnostics/cpu_probe.dart';
@@ -115,9 +116,22 @@ class DiagnosticsReport {
         'sdk': a.version.sdkInt,
         'abis': a.supportedAbis.take(3).toList(),
         'ram_low': a.isLowRamDevice,
+        // The display's rates and what the app last asked of it (P2/P3,
+        // 27 Nov 2026: whether the owner's 120 Hz phone ran the film at
+        // its own rate and the menus at 120).
+        'display': await _display(),
       };
     } catch (_) {
       return <String, Object?>{'os': 'android'};
+    }
+  }
+
+  static Future<Object?> _display() async {
+    try {
+      return await const MethodChannel('innocent/display')
+          .invokeMapMethod<String, Object?>('rates');
+    } catch (_) {
+      return null;
     }
   }
 

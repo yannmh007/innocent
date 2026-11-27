@@ -17,6 +17,7 @@ import 'core/di/core_providers.dart';
 import 'core/di/preferences_provider.dart';
 import 'core/localization/app_strings.dart';
 import 'core/localization/locale_provider.dart';
+import 'core/services/display/display_rate.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/downloader/engine_readiness.dart';
@@ -1025,7 +1026,13 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         // The D-pad's focus ring sits over everything, the PiP window too.
         // On a TV, the overscan margins as insets (tv_safe_area.dart). The
         // D-pad leaves a text field (tv_focus.dart: Flutter's own keeps it).
-        return DpadLeavesTextFields(
+        // The display's highest rate while touched (P3, DisplayRate).
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: (_) => DisplayRate.pointerDown(),
+          onPointerUp: (_) => DisplayRate.pointerUp(),
+          onPointerCancel: (_) => DisplayRate.pointerUp(),
+          child: DpadLeavesTextFields(
           child: FocusRingLayer(
           child: TvSafeArea(
             child: Stack(
@@ -1034,6 +1041,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
                 const FloatingPipOverlay(),
               ],
             ),
+          ),
           ),
           ),
         );

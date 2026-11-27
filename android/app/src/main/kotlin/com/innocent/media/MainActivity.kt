@@ -320,6 +320,9 @@ class MainActivity : AudioServiceFragmentActivity() {
         PlayerLab.register(flutterEngine)
         // ♪'s Night mode and levelling on libmpv's audio session.
         SessionDynamics.register(flutterEngine)
+        // The display's rate: the film's own while it plays, the highest
+        // while touched (P2, P3).
+        DisplayVote.register(flutterEngine)
         // Catalogue films with a ladder: ExoPlayer, as HLS (ExoStreamEngine).
         ExoStreamEngine.register(flutterEngine, applicationContext)
         PreviewFrames.register(flutterEngine)
@@ -2611,6 +2614,8 @@ class MainActivity : AudioServiceFragmentActivity() {
         super.onResume()
         // Expanded back into the app (or normal resume) — not a PiP dismiss.
         justLeftPip = false
+        // A new surface after the home screen: the display's rate asked again.
+        DisplayVote.reapply()
     }
 
     // Phase 63: SAF folder-picker result. Persist the grant so it survives

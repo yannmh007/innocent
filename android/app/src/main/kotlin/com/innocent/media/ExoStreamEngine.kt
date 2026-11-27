@@ -88,6 +88,9 @@ class ExoStreamEngine private constructor(
     private var audioDelayUs = 0L
     private var tracksNow: Tracks? = null
 
+    /** The film's frame rate as its video declares it (P2), 0 unknown. */
+    private var filmFps = 0f
+
     /** Scrubbing mode as last asked ([scrubbing]): what a suppressed playback is put down to. */
     private var scrubOn = false
     private var lastRung = -1
@@ -190,7 +193,11 @@ class ExoStreamEngine private constructor(
         }
         p.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) = sendState()
-            override fun onIsPlayingChanged(isPlaying: Boolean) = sendState()
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                sendState()
+                // P2: the display at the film's rate while it plays.
+                DisplayVote.film(if (isPlaying) filmFps else 0f)
+            }
             override fun onPlaybackSuppressionReasonChanged(reason: Int) = sendState()
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {
@@ -246,6 +253,10 @@ class ExoStreamEngine private constructor(
                 format: Format,
                 decoderReuseEvaluation: DecoderReuseEvaluation?,
             ) {
+                if (format.frameRate > 0f) {
+                    filmFps = format.frameRate
+                    if (player?.isPlaying == true) DisplayVote.film(filmFps)
+                }
                 if (format.height == lastRung) return
                 lastRung = format.height
                 emit(mapOf("id" to id, "e" to "rung", "h" to format.height,
@@ -603,6 +614,7 @@ class ExoStreamEngine private constructor(
 
     fun release(keepSurface: Boolean = false) {
         main.removeCallbacks(ticker)
+        DisplayVote.film(0f)
         try {
             enhancer?.release()
         } catch (_: Throwable) {

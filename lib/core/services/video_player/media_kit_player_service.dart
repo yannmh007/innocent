@@ -880,7 +880,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       if (!_exoActive) _duration = d;
     });
     _playingSub = _player.stream.playing.listen((p) {
-      if (!_exoActive) _isPlaying = p;
+      if (!_exoActive) {
+        _isPlaying = p;
+        // ignore: discarded_futures
+        _voteFilm(p);
+      }
     });
     // libmpv's first picture of a file: video-params, set when the decoder
     // has a frame. media_kit's open() writes an empty one as it resets.
@@ -3015,6 +3019,28 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (_exoActive) await _exo?.audioDelay(clamped);
     await _setMpvProperty(
         'audio-delay', (clamped / 1000.0).toStringAsFixed(3));
+  }
+
+  // ── The display at the film's rate (P2, 27 Nov 2026) ──────────────────
+  // While libmpv plays, its film's rate is asked of the display (seamless
+  // switches only, DisplayVote.kt); ExoPlayer asks for its own natively.
+  static const MethodChannel _display = MethodChannel('innocent/display');
+
+  Future<void> _voteFilm(bool playing) async {
+    try {
+      var fps = 0.0;
+      if (playing) {
+        fps = double.tryParse((await _getMpvProperty('container-fps'))?.trim() ?? '') ?? 0;
+        if (!(fps > 0)) {
+          fps = double.tryParse((await _getMpvProperty('estimated-vf-fps'))?.trim() ?? '') ?? 0;
+        }
+      }
+      if (_exoActive) return;
+      final asked = await _display.invokeMethod<String>('film', <String, Object?>{'fps': fps});
+      PlaybackLog.add('display: ${asked ?? '?'}');
+    } catch (_) {
+      // No such channel (a test, an old build): nothing to ask.
+    }
   }
 
   // ── ♪: Stereo mode, Night mode, Disable (P4, 27 Nov 2026) ─────────────
