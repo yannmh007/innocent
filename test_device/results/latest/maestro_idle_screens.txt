@@ -1,0 +1,125 @@
+Running on test
+ > Flow idle_local
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/runner/.maestro/lib/protobuf-java-3.21.9.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+Launch app "com.innocent.media"... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "Skip"... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Allow.*"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Allow.*
+Tap on (Optional) "Skip"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Skip
+Tap on (Optional) "Video"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Video
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot s1_local... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Running on test
+ > Flow idle_hub
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/runner/.maestro/lib/protobuf-java-3.21.9.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+Tap on (Optional) "Video"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Video
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on "Movies"... COMPLETED
+Wait for animation to end within 10000 ms... COMPLETED
+Tap on (Optional) "I am 18 or older.*"... COMPLETED
+Wait for animation to end within 15000 ms... COMPLETED
+Take screenshot s2_hub... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Running on test
+ > Flow idle_movies
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/runner/.maestro/lib/protobuf-java-3.21.9.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+Tap on "Movies"... COMPLETED
+Assert that "Sintel" is visible... COMPLETED
+Take screenshot s3_movies... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Running on test
+ > Flow idle_me
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor (file:/home/runner/.maestro/lib/protobuf-java-3.21.9.jar)
+WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Press back... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on (Optional) "Me"... WARNED
+
+
+ Warning: Element not found: Text matching regex: Me
+Wait for animation to end within 5000 ms... COMPLETED
+Take screenshot s4_me... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,80%) to (50%,30%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Swipe from (50%,30%) to (50%,80%) in 250 ms... COMPLETED
+Assert that (Optional) "__nothing_has_this_text__" is visible... WARNED
+
+
+ Warning: Assertion is false: "__nothing_has_this_text__" is visible

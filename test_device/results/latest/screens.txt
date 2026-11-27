@@ -1,0 +1,26 @@
+LAB screen local start
+LAB cpu app 17% · 2.9fps · b90 12 r90 84 ms · late 29 · 1.raster 13% | .innocent.media 3% | RenderThread 1%
+LAB cpu app 1% · 0.0fps · -
+LAB cpu app 1% · 0.0fps · .innocent.media 1%
+LAB cpu app 6% · 0.0fps · .innocent.media 6%
+LAB cpu app 8% · 0.6fps · b90 0.1 r90 29 ms · late 1 · .innocent.media 7%
+LAB screen local end
+LAB screen hub start
+LAB cpu app 1% · 0.1fps · b90 0.7 r90 55 ms · late 1 · -
+LAB cpu app 1% · 0.2fps · b90 0.7 r90 42 ms · late 2 · -
+LAB cpu app 14% · 2.6fps · b90 8.6 r90 99 ms · late 23 · 1.raster 7% | .innocent.media 3% | 1.io 1%
+LAB cpu app 1% · 0.2fps · b90 0.8 r90 59 ms · late 2 · .innocent.media 1%
+LAB cpu app 1% · 0.0fps · .innocent.media 1%
+LAB cpu app 31% · 4.5fps · b90 3.2 r90 125 ms · late 45 · 1.raster 22% | .innocent.media 8%
+LAB cpu app 1% · 0.0fps · .innocent.media 1%
+LAB screen hub end
+LAB screen movies start
+LAB cpu app 1% · 0.3fps · b90 13 r90 75 ms · late 3 · -
+LAB cpu app 5% · 1.6fps · b90 6.8 r90 73 ms · late 16 · 1.raster 4% | .innocent.media 2%
+LAB cpu app 1% · 0.0fps · .innocent.media 1%
+LAB cpu app 22% · 2.3fps · b90 0.6 r90 140 ms · late 23 · 1.raster 16% | .innocent.media 5%
+LAB cpu app 13% · 4.6fps · b90 3.4 r90 125 ms · late 46 · 1.raster 10% | .innocent.media 3%
+LAB screen movies end
+LAB screen me start
+LAB cpu app 1% · 0.1fps · b90 6.5 r90 86 ms · late 1 · -
+LAB screen me end
