@@ -1477,6 +1477,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       final image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
+        PlaybackLog.add('screenshot: no picture');
         // `toImage` / `toByteData` above are both awaits, so match the
         // `context.mounted` guard this method already uses on its success and
         // error paths. The screenshot has failed either way; the only question
@@ -1497,12 +1498,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       try {
         await PhotoManager.editor.saveImage(bytes,
             filename: 'Innocent_$ts.png', relativePath: 'Pictures/Innocent');
+        PlaybackLog.add('screenshot: in the gallery (${bytes.length} B)');
         if (!context.mounted) return;
         _showOverlay(AppStrings.of(context).plSavedGallery);
         return;
-      } catch (_) {
+      } catch (e) {
         // Android 9 and older (no permission to write there): the app's
         // own folder, as before.
+        PlaybackLog.add('screenshot: not in the gallery '
+            '(${e.runtimeType}); the app\'s own folder');
       }
       final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/screenshot_$ts.png');
@@ -1511,6 +1515,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       if (!context.mounted) return;
       _showOverlay(AppStrings.of(context).plSaved(p.basename(file.path)));
     } catch (e) {
+      PlaybackLog.add('screenshot: failed (${e.runtimeType})');
       if (!context.mounted) return;
       _showSnack(context, AppStrings.of(context).plScreenshotError(e));
     }

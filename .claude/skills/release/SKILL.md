@@ -14,8 +14,14 @@ files, minus what must not ship. Nothing is merged.
   (`git rev-list HEAD -- f` and compare blobs). Only `pubspec.yaml` and
   `lib/core/app_version.dart` should differ on main alone; anything else is
   main-only work and must be kept.
-- Never ship: `test_device/results/**`; lab hooks (`lib/app.dart` tour skip,
-  `ExoEngine.rungKbps`, `MediaKitPlayerService.ladderRungKbps`); the Google
+- Never ship: `test_device/results/**`; lab hooks (`lib/app.dart` tour skip
+  and its SmoothLab branch, `ExoEngine.rungKbps`,
+  `MediaKitPlayerService.ladderRungKbps`; the smoothness lab:
+  `lib/features/player/presentation/lab/` and player_screen.dart's
+  `_labOpen`/`_labClose`/`_labPlaying` with their registration — PlayerUi's
+  lab switches (`labLook`, `ink`, `labMask`, `labBoundary`, `labTick`)
+  fold to the build's own values without INNOCENT_LAB and may ship, as
+  CpuProbe's FrameWindow and markStart/markEnd do); the Google
   sign-in nonce (`api_account_repository.dart`, `test/google_sign_in_gate_test.dart`)
   until the owner has signed in once with a build that carries it. Check
   BACKLOG §0 "Next app release" for the current list.

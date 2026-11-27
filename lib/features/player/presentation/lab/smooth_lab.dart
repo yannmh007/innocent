@@ -338,8 +338,25 @@ class SmoothLab {
       return;
     }
     await _wait(900);
-    final before = _look();
-    if (!await tap(match)) {
+    var before = _look();
+    var tapped = await tap(match);
+    if (!tapped && menu == 'shortcuts') {
+      // The open row is a lazy list: its far end is not built until it is
+      // scrolled to.
+      for (final e in _all((w) => w is Scrollable)) {
+        if (e is StatefulElement && e.state is ScrollableState) {
+          final st = e.state as ScrollableState;
+          if (axisDirectionToAxis(st.axisDirection) == Axis.horizontal &&
+              st.position.hasContentDimensions) {
+            st.position.jumpTo(st.position.maxScrollExtent);
+          }
+        }
+      }
+      await _wait(500);
+      before = _look();
+      tapped = await tap(match);
+    }
+    if (!tapped) {
       PlaybackLog.add('LAB fn $name: not on screen');
       return;
     }
