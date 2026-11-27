@@ -16,6 +16,105 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **27 Nov (evening): 1.64.90 IS OUT — THE PLAYER'S MENUS SMOOTH (the
+  owner: "release everything done and proven")**. RELEASED: main 956e2518
+  (pushed 12:31:55 UTC, the libmpv jars whole 3 of 3 and the arm32's, md5
+  right), Build 45999419600 green (Analyze, Test, both APKs, the CDN, the
+  GitHub release); GitHub release v1.64.90-403: arm64 95742864 B
+  `a8247ff2…b1e4`, arm32 87728476 B `f9341e22…c4f1` (the assets' digests =
+  the release body); app_releases id 1 moved 13:25:02 UTC after a
+  rolled-back dry run (anon reads 1.64.90; notes: the menus scroll
+  smoothly even while a film plays and use less battery; Screenshot to the
+  Gallery, off for private and protected videos); Playback check
+  46006953639 and transport check 46006948518 dispatched after the row
+  moved: both green. The tree: main + 22 files (the player's
+  presentation files of the smoothness work, app_strings, cpu_probe,
+  audio_effect_sheet, the three tests and the harness, the rules and two
+  skills) and the version; left out by design: the smoothness lab
+  (SmoothLab, player_screen's lab hooks, app.dart's lab branch,
+  LabStream) and the lab hooks already off main. PROOF: the smoothness
+  entry below (Test Lab 45965335653, 45969983812, 45979430510; device lab
+  gate S6 45985816711: genres 37/37, jumps 15/15, gestures 27/27 and
+  19/19, audits 52 and 52); the tree's whole suite 2159 pass, analyze,
+  check.py; branch Build 45991793978 green. RELEASE REVIEW (reviewer):
+  SHIP AFTER FIXES — the bottom row's Consumer shadowed the screen's
+  context (the PiP button after the permission dialog: the floating window
+  would not open) and the screenshot refusal had no test; both fixed
+  (bd6e8c58), the delta reviewed: SHIP, its two test notes done (8d67034a:
+  the screenshot test waits for its picture, 3 of 3 under load). NOT RUN on
+  this code: Test Lab's sixteen stream checks (the day's five tests went to
+  the smoothness runs) — first thing next session. THE OWNER TO SEE ON THE
+  PHONE: update, open a film, fling ⋮ and its More page, CC, ♪, Display —
+  playing and paused; the Screenshot shortcut, then Gallery → Pictures/
+  Innocent; then Report a problem (its CPU lines now carry the frames'
+  timing). NEXT: docs/handoff_2026_11_27_beyond_mx.md (the plan and the
+  prompt).
+- **27 Nov (later): THE PLAYER'S SMOOTHNESS — FOUND, FIXED, MEASURED ON
+  THE PHONES (the owner, on 1.64.89: "⋮'s menu stutters when scrolled")**
+  — RELEASED as 1.64.90 (the entry above).
+  THE CAUSE (Flutter 3.32.8's engine source and the lab): every word and
+  icon on the shade carried a halo of three BLURRED shadows; Impeller keeps
+  a word's blurred shadow (TextShadowCache) only while the same recorded
+  paragraph is drawn again — keyed by the TextFrame, made anew each time a
+  paragraph is painted — and ⋮'s list had no layer of its own, so each
+  frame of a scroll painted it again: 44 paragraphs, 132 Gaussian blurs a
+  frame. And the screen watched the whole PlayerState: each second of the
+  film rebuilt it, ⋮ open, 707 elements a tick.
+  FIXED: lists and bars in layers of their own (`PlayerUi.ownLayer`: every
+  panel and sheet list, the top bar, the bottom row); `PlayerState.look`
+  (the screen rebuilds on everything but the position; the bottom row
+  alone follows it; the top bar's clock has its own minute timer); the
+  halo two blurs, not three (legibility 4 words under 4.5:1 of 2820
+  against 5, the lowest over white 4.04 against 3.77). The fade mask and
+  Android's stretch at a list's end stay: neither cost anything beyond a
+  run's spread (the stretch, realme, Test Lab 45979430510: 2.8 % late with
+  it, 2.2 % without, eight pairs).
+  Suspect 4 (the slide-in's Opacity at 1): no cost (LayerStateStack skips
+  an opaque saveLayer). Suspect 5 (the decode): the film alone draws 25
+  frames a second at raster p50 4-5 ms, none late.
+  PROOF — Test Lab 45969983812 (fifty-fourth: 1.64.89's drawing `base`
+  beside `now` in one run per phone, 60 Hz displays; "late" = frames over
+  16.7 ms): ⋮ flung while Sintel plays, realme 13.1 fps / 77.9 % late /
+  raster p50 74 ms -> 49.2 fps / 1.8 % / 6.3 ms, OPPO 16.7 / 57.7 % / 50
+  -> 49.5 / 3.9 % / 5.3 (fps counts the pauses between flings); paused
+  10.2 / 98.3 % -> 28.8 / 4.8 % and 11.4 / 97.0 % -> 37.9 / 1.8 %; the
+  controls up over the film 15.7 -> 2.6 % and 11.2 -> 2.4 % late; More page,
+  CC, Display, the shortcut row 0-2 % late; app CPU while ⋮ scrolls realme
+  175 -> 87 %, paused 123 -> 43 %. The variants (45965335653): no halo
+  alone 1 % late, a layer alone 9 %, no fade mask or no rebuild alone
+  nothing. The emulator: S1 45954710201, S2 45965335565, S3 45969983743,
+  S4 45975152578 (CPU-drawn: shares only). FUNCTIONS: every ⋮ tile, More
+  row and shortcut tapped on the realme, the OPPO and the emulator
+  (SmoothLab `fn:` steps, LAB fn lines) and in test/player_functions_test.dart
+  (52 checks): all do something. Found and fixed on the way: the
+  Screenshot shortcut saved into the app's own folder, which nothing on
+  the phone shows — now Pictures/Innocent (MediaStore; S4: "in the
+  gallery"); and it copied out a vault or protected film's picture — now
+  refused. Tests: test/player_smoothness_test.dart (rebuilds, layers),
+  player_functions_test.dart; whole suite 2163 pass, layout matrix
+  (PLAYER_PHONES=all, my/en/th, 1.0/1.3) 4686 pass, check.py, analyze.
+  THE GATE on the final code a3b9b4a4, device lab S6 45985816711: genres
+  37/37, jumps 15/15, gestures 27/27 and 19/19, player audits 52 and 52
+  (as G2 45940757774). S5's genres and jumps stops were the runner's line
+  (master playlist 8 s, HttpDataSourceException); S3/S4's upright audit
+  stop at "Loop one" the auto-hide race (the long press 4.6 s after the
+  tap). Test Lab 45979430510 (the realme, the fifty-fifth): all thirteen
+  shortcuts, the screenshot "in the gallery". Today's Test Lab: five of
+  five used (51st-52nd before 08:00 UTC were yesterday's quota).
+  NOT DONE (found): ♪ on a catalogue film (ExoPlayer) says "no audio
+  tracks" — the ladder reports none — and the audio delay acts on libmpv
+  only; a thick subtitle outline (stroke over 4 dp) is drawn as a path,
+  tessellated every frame; locked album tiles blur (σ 14) every frame of
+  a scroll; Flutter does not ask Android for 120 Hz (CpuProbe's lines now
+  name the display's rate: the owner's report will say). The lab and its
+  numbers: SmoothLab (lib/features/player/presentation/lab/), cloud.env
+  STREAM_SMOOTH, flow `smooth`, `idle_screens` (the app's screens still:
+  0 frames; flung). NEXT RELEASE: the lib/ and test/ files of commits
+  3de15c8b..061554a4 and f3ba50b8 (CpuProbe's frame times ship: Report a
+  problem carries `b90 … r90 … · late N`); left out by design: lib/features/
+  player/presentation/lab/, player_screen.dart's `_labOpen/_labClose/
+  _labPlaying` and their registration, app.dart's smooth branch,
+  LabStream.smoothPlan (skill release's list).
 - **27 Nov: 1.64.89 IS OUT — THE PLAYER AS MX PLAYER'S (the owner: "as
   MX, every device and screen"; "CC as Innocent's"; "release")**.
   RELEASED: main 6ee04134 (pushed 05:15:51 UTC after the libmpv jars came
