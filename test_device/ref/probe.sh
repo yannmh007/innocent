@@ -612,18 +612,18 @@ se_run() {  # the sendevent script in $OUT/raw/se.sh, on the device
 se_tap() {  # $1 $2: one finger down and up there
   local r; r=$(raw_xy "$1" "$2")
   { echo "d=$TDEV"
-    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7001; sendevent \$d 3 53 ${r% *}; sendevent \$d 3 54 ${r#* }; sendevent \$d 1 330 1; sendevent \$d 0 0 0"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7001; sendevent \$d 3 53 ${r% *}; sendevent \$d 3 54 ${r#* }; sendevent \$d 3 58 50; sendevent \$d 3 48 5; sendevent \$d 1 330 1; sendevent \$d 1 325 1; sendevent \$d 0 0 0"
     echo "sleep 0.08"
-    echo "sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
+    echo "sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 1 325 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
   se_run
 }
 se_pinch() {  # $1 $2 centre, $3 $4 half-spread from/to (px, along the line), $5 steps
   local cx=$1 cy=$2 a=$3 b=$4 n=${5:-15} k sp r0 r1
   r0=$(raw_xy $((cx - a)) "$cy"); r1=$(raw_xy $((cx + a)) "$cy")
   { echo "d=$TDEV"
-    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7101; sendevent \$d 3 53 ${r0% *}; sendevent \$d 3 54 ${r0#* }; sendevent \$d 1 330 1; sendevent \$d 0 0 0"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7101; sendevent \$d 3 53 ${r0% *}; sendevent \$d 3 54 ${r0#* }; sendevent \$d 3 58 50; sendevent \$d 3 48 5; sendevent \$d 1 330 1; sendevent \$d 1 325 1; sendevent \$d 0 0 0"
     echo "sleep 0.05"
-    echo "sendevent \$d 3 47 1; sendevent \$d 3 57 7102; sendevent \$d 3 53 ${r1% *}; sendevent \$d 3 54 ${r1#* }; sendevent \$d 0 0 0"
+    echo "sendevent \$d 3 47 1; sendevent \$d 3 57 7102; sendevent \$d 3 53 ${r1% *}; sendevent \$d 3 54 ${r1#* }; sendevent \$d 3 58 50; sendevent \$d 3 48 5; sendevent \$d 0 0 0"
     for k in $(seq 1 "$n"); do
       sp=$(( a + (b - a) * k / n ))
       r0=$(raw_xy $((cx - sp)) "$cy"); r1=$(raw_xy $((cx + sp)) "$cy")
@@ -633,8 +633,29 @@ se_pinch() {  # $1 $2 centre, $3 $4 half-spread from/to (px, along the line), $5
     # Held a second at the end (the screen in the middle of it), then up.
     echo "sleep 1.2"
     echo "sendevent \$d 3 47 1; sendevent \$d 3 57 -1; sendevent \$d 0 0 0"
-    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 1 325 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
   se_run
+}
+sg_hold_diag() {  # per mapping: a finger held at the screen's centre-right, with show_touches on
+  local m r
+  adb shell settings put system show_touches 1 >/dev/null 2>&1 || true
+  for m in 0 1 3; do
+    TMAP=$m; r=$(raw_xy $((SW * 3 / 4)) $((SH / 4)))
+    { echo "d=$TDEV"
+      echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7201; sendevent \$d 3 53 ${r% *}; sendevent \$d 3 54 ${r#* }; sendevent \$d 3 58 50; sendevent \$d 3 48 5; sendevent \$d 1 330 1; sendevent \$d 1 325 1; sendevent \$d 0 0 0"
+      echo "sleep 2.5"
+      echo "sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 1 325 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
+    adb push "$OUT/raw/se.sh" /data/local/tmp/se.sh >/dev/null 2>&1
+    adb shell "timeout 4 getevent -lt $TDEV" > "$OUT/raw/getevent_$m.txt" 2>&1 &
+    sleep 0.5
+    adb shell sh /data/local/tmp/se.sh > "$OUT/raw/se_out_$m.txt" 2>&1 &
+    sleep 1.5
+    adb exec-out screencap -p > "$OUT/sg_hold_$m.png" 2>/dev/null || true
+    wait
+    sg_say "SUBGEST hold $m: raw $r; events read back $(grep -c 'ABS_MT_POSITION' "$OUT/raw/getevent_$m.txt" || true); sendevent said: $(head -c 120 "$OUT/raw/se_out_$m.txt" | tr '\n' ' ')"
+  done
+  adb shell getevent -p "$TDEV" > "$OUT/raw/touch_axes.txt" 2>&1 || true
+  TMAP=""
 }
 sg_calibrate() {  # TMAP: the mapping whose sendevent tap on ⋮ opens ⋮'s panel
   local m n x y
@@ -725,18 +746,24 @@ subtitle_gestures() {
   # MX's own settings about subtitles and gestures, before (private).
   adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
     | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_before.txt" || true
-  if sg_touch && sg_calibrate; then :; else sg_say "SUBGEST: no two-finger mapping found; the pinches are skipped"; fi
+  sg_touch && sg_hold_diag
+  if sg_touch && sg_calibrate; then :; else sg_say "SUBGEST: no two-finger mapping found; each mapping's pinch tried"; fi
   # Run 46047544023 (27 Nov) measured the swipes and drags; this one: the
   # previous line, where the band ends above the words, the shortest swipe
   # that steps, and the pinches (the right touch panel now).
   # Runs 46047544023 and 46049383870 measured the swipes and drags; this
   # one the pinches (mapping 0 tried first) and whether a short swipe steps
   # when it is quick (49 dp in 80 ms; 70 dp slowly).
-  sg_one pinch_out pause pinch 120 420
-  sg_one pinch_in pause pinch 420 120
-  sg_one pinch_out_playing play pinch 100 500
-  sg_one swipe_left_49dp_fast pause swipe 53 47 80
-  sg_one swipe_left_70dp_slow pause swipe 54 46 700
+  # Run 46050792610: 49 dp in 80 ms did not step, 70 dp in 700 ms did.
+  # The pinches: by the calibrated mapping, else under each in turn.
+  if [ -n "$TMAP" ]; then
+    sg_one pinch_out pause pinch 120 420
+    sg_one pinch_in pause pinch 420 120
+  else
+    local mm
+    for mm in 0 1 3; do TMAP=$mm; sg_one "pinch_out_m$mm" pause pinch 120 420; done
+    TMAP=""
+  fi
   adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
     | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_after.txt" || true
   sg_say "SUBGEST MX's settings about subtitles and gestures: $(wc -l < "$OUT/raw/mx_prefs_sub_before.txt") lines before, $(diff "$OUT/raw/mx_prefs_sub_before.txt" "$OUT/raw/mx_prefs_sub_after.txt" | grep -c '^[<>]' || true) changed after (private)"
