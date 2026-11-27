@@ -29,7 +29,9 @@ Wait for animation to end within 1500 ms... COMPLETED
 Take screenshot 72_audit_more_closed_by_back... COMPLETED
 Assert that "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*" is not visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
-Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
   Wait for animation to end within 800 ms... COMPLETED
@@ -57,4 +59,4 @@ Possible causes:
 
 ==== Debug output (logs & screenshots) ====
 
-/home/runner/work/innocent/innocent/out/maestro_out/2026-11-27_092837
+/home/runner/work/innocent/innocent/out/maestro_out/2026-11-27_095812

@@ -1,84 +1,24 @@
-LAB smooth: 21 steps, display 60 Hz
-LAB cpu app 53% · 11.1fps · b90 2.0 r90 104 ms · late 110 · 1.raster 32% | pool-thread 15% | .innocent.media 3% | RenderThread 2%
-LAB frames play/film/now n=39 fps=9.7 hz=60 build=0.1/2.3/9.1/9.1 raster=62/222/541/541 ms over16=39 (100.0%) · app 39% · 9.7fps · 1.raster 21% | .innocent.media 7% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | DartWorker 2%
-LAB cpu app 26% · 7.0fps · b90 1.6 r90 121 ms · late 70 · 1.raster 13% | .innocent.media 6% | DartWorker 2% | ExoPlayer:Playb 1%
-LAB frames pause/film/now n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB frames play/controls/base n=45 fps=15.0 hz=60 build=0.1/4.4/9.0/9.0 raster=59/142/290/290 ms over16=45 (100.0%) · app 61% · 15.0fps · 1.raster 47% | MediaCodec_loop 6% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB cpu app 47% · 11.1fps · b90 2.4 r90 119 ms · late 109 · 1.raster 35% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB frames play/controls/now n=48 fps=16.0 hz=60 build=0.1/2.2/15/15 raster=57/137/149/149 ms over16=48 (100.0%) · app 51% · 16.0fps · 1.raster 37% | MediaCodec_loop 4% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:6150 2% | Jit thread pool 2%
-LAB frames play/more-still/base n=40 fps=10.0 hz=60 build=0.1/2.3/20/20 raster=89/99/112/112 ms over16=40 (100.0%) · app 53% · 10.0fps · 1.raster 43% | MediaCodec_loop 3% | HwBinder:6150 2% | .innocent.media 2% | ExoPlayer:Playb 2%
-LAB cpu app 54% · 13.6fps · b90 1.6 r90 103 ms · late 136 · 1.raster 42% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB frames play/more-still/now n=42 fps=10.5 hz=60 build=0.1/0.3/4.1/4.1 raster=83/96/125/125 ms over16=42 (100.0%) · app 54% · 10.5fps · 1.raster 42% | MediaCodec_loop 5% | HwBinder:6150 3% | .innocent.media 2% | ExoPlayer:Playb 2%
-LAB cpu app 61% · 9.5fps · b90 1.2 r90 175 ms · late 95 · 1.raster 50% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB frames play/more/base n=35 fps=5.9 hz=60 build=1.2/5.4/11/11 raster=184/340/468/468 ms over16=35 (100.0%) · app 75% · 5.9fps · 1.raster 66% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB cpu app 67% · 9.2fps · b90 2.6 r90 199 ms · late 92 · 1.raster 55% | MediaCodec_loop 3% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:6150 2%
-LAB frames play/more/ink3 n=48 fps=8.8 hz=60 build=0.1/0.4/7.3/7.3 raster=101/124/161/161 ms over16=48 (100.0%) · app 69% · 8.8fps · 1.raster 54% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 2% | ExoPlayer:Media 1%
-LAB frames play/more/now n=49 fps=9.0 hz=60 build=0.1/0.8/5.3/5.3 raster=89/127/144/144 ms over16=49 (100.0%) · app 61% · 9.0fps · 1.raster 51% | MediaCodec_loop 3% | HwBinder:6150 2% | .innocent.media 2% | ExoPlayer:Playb 1%
-LAB cpu app 50% · 10.6fps · b90 0.5 r90 110 ms · late 106 · 1.raster 40% | MediaCodec_loop 3% | HwBinder:6150 2% | .innocent.media 2% | ExoPlayer:Playb 1%
-LAB frames pause/more/base n=29 fps=5.0 hz=60 build=1.2/1.7/4.5/4.5 raster=160/188/217/217 ms over16=28 (96.6%) · app 89% · 5.0fps · 1.raster 87% | .innocent.media 2%
-LAB cpu app 68% · 5.9fps · b90 1.7 r90 182 ms · late 57 · 1.raster 65% | .innocent.media 2%
-LAB frames pause/more/now n=53 fps=10.5 hz=60 build=0.2/0.3/37/37 raster=90/108/166/166 ms over16=52 (98.1%) · app 59% · 10.5fps · 1.raster 55% | .innocent.media 2%
-LAB cpu app 51% · 12.7fps · b90 0.6 r90 104 ms · late 126 · 1.raster 44% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6150 2%
-LAB frames play/morepage/now n=79 fps=14.4 hz=60 build=0.1/0.4/53/53 raster=70/90/109/109 ms over16=79 (100.0%) · app 53% · 14.4fps · 1.raster 42% | MediaCodec_loop 5% | HwBinder:6150 3% | .innocent.media 2%
-LAB cpu app 47% · 13.0fps · b90 0.4 r90 87 ms · late 130 · 1.raster 37% | MediaCodec_loop 4% | HwBinder:6150 2% | .innocent.media 2%
-LAB frames play/cc/now n=64 fps=11.5 hz=60 build=0.1/0.4/58/58 raster=66/93/220/220 ms over16=64 (100.0%) · app 47% · 11.5fps · 1.raster 37% | MediaCodec_loop 4% | HwBinder:6150 2% | .innocent.media 2%
-LAB frames play/display/now n=97 fps=16.7 hz=60 build=0.1/1.5/46/46 raster=66/99/212/212 ms over16=97 (100.0%) · app 49% · 16.7fps · 1.raster 36% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB cpu app 49% · 14.8fps · b90 1.3 r90 97 ms · late 148 · 1.raster 37% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB frames play/shortcuts/now n=47 fps=15.4 hz=60 build=0.4/2.9/13/13 raster=70/99/248/248 ms over16=47 (100.0%) · app 62% · 15.4fps · 1.raster 48% | MediaCodec_loop 5% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB cpu app 60% · 12.0fps · b90 1.6 r90 107 ms · late 120 · 1.raster 48% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB frames play/more/now n=51 fps=9.5 hz=60 build=0.1/0.3/3.7/3.7 raster=95/113/133/133 ms over16=51 (100.0%) · app 65% · 9.5fps · 1.raster 53% | MediaCodec_loop 5% | HwBinder:6150 2% | .innocent.media 2% | ExoPlayer:Playb 1%
-LAB frames play/more/ink3 n=46 fps=9.1 hz=60 build=0.2/0.3/21/21 raster=100/129/372/372 ms over16=46 (100.0%) · app 67% · 9.1fps · 1.raster 56% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB cpu app 59% · 12.0fps · b90 0.3 r90 114 ms · late 120 · 1.raster 49% | MediaCodec_loop 4% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB frames play/more/base n=37 fps=7.4 hz=60 build=1.2/5.5/7.0/7.0 raster=165/196/297/297 ms over16=37 (100.0%) · app 88% · 7.4fps · 1.raster 76% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB fn more: 13 to tap
-LAB cpu app 74% · 8.7fps · b90 5.4 r90 184 ms · late 87 · 1.raster 64% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
-LAB fn more/Audio track: says Big Buck Bunny / 1X / 01:46
-LAB fn more/Subtitle: says Load external subtitle... / Online subtitles / Settings
-LAB fn more/Playing Queue: says Playing Queue / 1 item / Big Buck Bunny
-LAB cpu app 57% · 11.8fps · b90 2.9 r90 103 ms · late 118 · 1.raster 47% | MediaCodec_loop 4% | HwBinder:6150 2% | .innocent.media 2% | ExoPlayer:Playb 1%
-LAB fn more/Aspect Ratio: says Aspect ratio / Default / 1:1
-LAB fn more/Display Settings: says Display Settings / Brightness / 0
-LAB fn more/Bookmark: says This title can only be opened from its own page. / Bookmarks / No bookmarks for this video. Tap ⋮ → Bookmark while it plays.
-LAB cpu app 52% · 8.6fps · b90 4.3 r90 190 ms · late 86 · 1.raster 43% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn more/Cut: says Mark a clip by setting a start (A) and end (B) point. / The clip is copied as it is: at once and without loss, from the key frame at or before A. Exact start, below, begins at A itself. / Start (A)
-LAB fn more/Favourite: says Big Buck Bunny / 1X / 02:07
-LAB fn more/Add To Playlist: says Big Buck Bunny / 1X / 02:11
-LAB cpu app 59% · 11.6fps · b90 4.0 r90 135 ms · late 116 · 1.raster 50% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn more/Information: says Big Buck Bunny / File / Size
-LAB fn more/Tutorial: says Player gestures / Tap to show or hide controls / Tap the screen once.
-LAB fn morepage: 9 to tap
-LAB cpu app 61% · 10.8fps · b90 3.7 r90 163 ms · late 108 · 1.raster 48% | .innocent.media 5% | MediaCodec_loop 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn morepage/Kids Lock: says Hold to unlock / Kids Lock on — all controls are disabled
-LAB fn morepage/Transfer: says Big Buck Bunny / 1X / 02:31
-LAB cpu app 58% · 11.3fps · b90 6.0 r90 148 ms · late 113 · 1.raster 47% | MediaCodec_loop 5% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn morepage/Network Stream: says Stream URL / https://example.com/stream.m3u8 / Play
-LAB fn morepage/Subtitle Delay: says Done / Drag anywhere on this panel: sideways for timing, up and down for position. Tap a value to reset it. / Timing
-LAB cpu app 50% · 10.6fps · b90 4.1 r90 171 ms · late 106 · 1.raster 41% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:6150 1% | ExoPlayer:Playb 1%
-LAB fn morepage/Skip Markers: says Skip Intro / Outro / Set a marker at the current position; it is skipped automatically next time. / Intro ends at
-LAB fn morepage/Custom Speed: says 1.00 / x / Range: 0.25x - 4.00x
-LAB cpu app 60% · 10.6fps · b90 4.3 r90 156 ms · late 106 · 1.raster 47% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn morepage/Settings: says Interface / Style / Screen
-LAB fn morepage/FAQ: says How do I play a video? / How do I change the decoder? / How do I add subtitles?
-LAB cpu app 57% · 13.6fps · b90 3.6 r90 121 ms · late 136 · 1.raster 47% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn morepage/Check for updates: says An update is available / - The player's controls and menus now sit as in MX Player: the ⋮ menu with a More page, the shortcut row, a speed card and an A-B repeat bar. - Customise Items: choose which buttons the player shows. - Menus fit tablets and split screens, and read more easily over bright films. / Installed version
-LAB fn shortcut/nightMode: says 03:10 / -06:45 / Night mode on
-LAB cpu app 59% · 11.1fps · b90 3.1 r90 133 ms · late 111 · 1.raster 48% | MediaCodec_loop 5% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn shortcut/customiseItems: says 03:14 / -06:42 / Tap an icon to show it on the controls or hide it
-LAB fn shortcut/shuffle: says 03:17 / -06:38 / Shuffle on
-LAB fn shortcut/loop: says 03:21 / -06:34 / Loop all
-LAB cpu app 63% · 12.9fps · b90 4.6 r90 145 ms · late 129 · 1.raster 49% | .innocent.media 4% | MediaCodec_loop 4% | HwBinder:6150 3% | ExoPlayer:Playb 2%
-LAB fn shortcut/mute: says Background Play / 03:25 / -06:31
+LAB cpu app 36% · 8.2fps · b90 3.3 r90 179 ms · late 80 · 1.raster 16% | pool-thread 14% | .innocent.media 3% | RenderThread 2%
+LAB smooth: 1 steps, display 60 Hz
+LAB fn shortcut/nightMode: says Night mode on
+LAB cpu app 45% · 7.4fps · b90 17 r90 200 ms · late 73 · 1.raster 28% | .innocent.media 8% | DartWorker 2% | ExoPlayer:Playb 2% | MediaCodec_loop 1%
+LAB fn shortcut/customiseItems: says 00:04 / -09:52 / Tap an icon to show it on the controls or hide it
+LAB fn shortcut/shuffle: says 00:07 / -09:48 / Shuffle on
+LAB fn shortcut/loop: says 00:11 / -09:44 / Loop all
+LAB cpu app 51% · 8.7fps · b90 15 r90 171 ms · late 86 · 1.raster 25% | .innocent.media 9% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | DartWorker 2% | HwBinder:6052 2%
+LAB fn shortcut/mute: says Background Play / 00:15 / -09:40
 LAB fn shortcut/sleepTimer: says 1 / 2 / 3
-LAB cpu app 59% · 12.3fps · b90 6.3 r90 131 ms · late 123 · 1.raster 47% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 1%
-LAB fn shortcut/abRepeat: says Background Play / Screen Rotation / 03:32
+LAB fn shortcut/abRepeat: says Background Play / Screen Rotation / 00:23
+LAB cpu app 36% · 8.0fps · b90 9.1 r90 236 ms · late 80 · 1.raster 24% | .innocent.media 4% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6052 2%
 LAB fn shortcut/audioEffect: says Audio effect / Original / Clarity
 LAB fn shortcut/equalizer: says Audio effect / Off / Custom
-LAB cpu app 59% · 12.2fps · b90 4.5 r90 129 ms · late 122 · 1.raster 47% | MediaCodec_loop 4% | .innocent.media 3% | HwBinder:6150 2% | ExoPlayer:Playb 2%
+LAB cpu app 42% · 6.5fps · b90 35 r90 200 ms · late 65 · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:6052 2%
 LAB fn shortcut/playbackSpeed: says 1.00x / 0.25x / 1.0x
-LAB fn shortcut/screenshot: says Background Play / Screen Rotation / 03:48
-LAB fn shortcut/backgroundPlay: not on screen
-LAB cpu app 72% · 10.3fps · b90 8.9 r90 161 ms · late 103 · 1.raster 57% | .innocent.media 4% | MediaCodec_loop 3% | HwBinder:6150 2% | 1.io 2% | ExoPlayer:Playb 2%
-LAB fn shortcut/mirrorMode: says Background Play / Screen Rotation / 03:53
+LAB fn shortcut/screenshot: says Background Play / Screen Rotation / 00:39
+LAB fn shortcut/backgroundPlay: says 00:43 / -09:13 / Background play on
+LAB cpu app 46% · 7.0fps · b90 25 r90 270 ms · late 70 · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | 1.io 2% | HwBinder:6052 2%
+LAB fn shortcut/mirrorMode: says Background Play / Screen Rotation / 00:47
 LAB smooth: done
+LAB cpu app 54% · 8.7fps · b90 5.2 r90 172 ms · late 87 · 1.raster 37% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | HwBinder:6052 2%
 screenshots in MediaStore:
   none
