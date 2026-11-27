@@ -100,6 +100,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
         extra: <String, dynamic>{'uri': path, 'title': path.split('/').last}));
   }
 
+  /// LAB ONLY (SmoothLab's step `title`): the player closed and the lab's
+  /// title opened again, as from its page.
+  Future<void> _labReopenTitle(String id) async {
+    ref.read(routerProvider).pop();
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await _labTitle(id);
+  }
+
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
     if (titleId != null) {
@@ -112,6 +120,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       final smooth = await LabStream.smoothPlan();
       if (smooth != null) {
         SmoothLab.openFile = _labOpenFile;
+        SmoothLab.openTitle = () => _labReopenTitle(titleId);
         await SmoothLab.run(smooth);
       }
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
@@ -846,6 +855,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             // The film a few seconds in, its first rung settled.
             await Future<void>.delayed(const Duration(seconds: 12));
             SmoothLab.openFile = _labOpenFile;
+            SmoothLab.openTitle = () => _labReopenTitle(id);
             await SmoothLab.run(smooth);
             PlaybackLog.add('LAB script: smoothness done');
             Timer(const Duration(seconds: 3), () => exit(0));

@@ -61,6 +61,10 @@ class SmoothLab {
   /// (the step `local`: libmpv, as a viewer's own video plays).
   static Future<void> Function(String path)? openFile;
 
+  /// The app's, in a lab build: the lab's title opened again (the step
+  /// `title`: back to ExoPlayer after `local`).
+  static Future<void> Function()? openTitle;
+
   /// The player service's, in a lab build: libmpv's picture moved to a
   /// SurfaceView behind the window (the look `mpvsv`); false when refused.
   static Future<bool> Function()? mpvSurface;
@@ -204,6 +208,19 @@ class SmoothLab {
       for (final step in steps) {
         if (step == 'local') {
           if (!await _playLocal()) break;
+          continue;
+        }
+        if (step == 'title') {
+          final o = openTitle;
+          if (o == null) {
+            PlaybackLog.add('LAB title: nothing opens it');
+            break;
+          }
+          await close?.call();
+          await o();
+          // The film's page, its start, the first rung settled.
+          await _wait(14000);
+          PlaybackLog.add('LAB title: playing again');
           continue;
         }
         final p = step.split(':');
