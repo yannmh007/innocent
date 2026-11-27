@@ -16,8 +16,8 @@ files, minus what must not ship. Nothing is merged.
   main-only work and must be kept.
 - Never ship: `test_device/results/**`; lab hooks (`lib/app.dart` tour skip
   and its SmoothLab branch, `ExoEngine.rungKbps`,
-  `MediaKitPlayerService.ladderRungKbps`; the smoothness lab:
-  `lib/features/player/presentation/lab/` and player_screen.dart's
+  `MediaKitPlayerService.ladderRungKbps`; the smoothness lab: the
+  player's lab/ folder (SmoothLab, branch only) and player_screen.dart's
   `_labOpen`/`_labClose`/`_labPlaying` with their registration — PlayerUi's
   lab switches (`labLook`, `ink`, `labMask`, `labBoundary`, `labTick`)
   fold to the build's own values without INNOCENT_LAB and may ship, as
