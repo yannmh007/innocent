@@ -67,7 +67,7 @@ String _stateWords(PlayerState s) => [
 
 /// Taps [target] and returns what changed.
 Future<String> _effect(WidgetTester tester, Finder target,
-    List<String> channels) async {
+    List<String> channels, {bool Function(List<String> calls)? until}) async {
   final before = _look(tester);
   final stateBefore = _stateWords(_state());
   channels.clear();
@@ -80,7 +80,9 @@ Future<String> _effect(WidgetTester tester, Finder target,
   // finishes in real time.
   final seenTypes = <String>{}..addAll(_look(tester).types);
   final seenWords = <String>{}..addAll(_look(tester).words);
-  for (var i = 0; i < 3; i++) {
+  // A picture is taken and encoded in real time: on a loaded runner that
+  // can take seconds, so [until] waits for its call, up to about 6 s.
+  for (var i = 0; i < 3 || (until != null && !until(channels) && i < 30); i++) {
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)));
     await _settle(tester);
@@ -165,6 +167,9 @@ void main() {
   // (every glyph a full em wide).
   setUpAll(() async => loadPlayerFonts());
   tearDownAll(() {
+    try {
+      _scratch.deleteSync(recursive: true);
+    } catch (_) {}
     final out = Platform.environment['FUNCTIONS_OUT'];
     if (out != null) {
       File(out).writeAsStringSync(
@@ -308,7 +313,10 @@ void main() {
                   .first);
         }
         expect(key, findsWidgets, reason: 'no ${item.name} on the row');
-        final e = await _effect(tester, key, channels);
+        final e = await _effect(tester, key, channels,
+            until: item == ShortcutItem.screenshot
+                ? (c) => c.any((x) => x.contains('saveImage'))
+                : null);
         _log.add('$o shortcut ${item.name}: ${e.isEmpty ? 'NOTHING' : e}');
         expect(e, isNotEmpty, reason: 'the ${item.name} shortcut did nothing');
         switch (item) {
