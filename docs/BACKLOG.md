@@ -16,9 +16,42 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **27 Nov (evening): 1.64.90 IS OUT — THE PLAYER'S MENUS SMOOTH (the
+  owner: "release everything done and proven")**. RELEASED: main 956e2518
+  (pushed 12:31:55 UTC, the libmpv jars whole 3 of 3 and the arm32's, md5
+  right), Build 45999419600 green (Analyze, Test, both APKs, the CDN, the
+  GitHub release); GitHub release v1.64.90-403: arm64 95742864 B
+  `a8247ff2…b1e4`, arm32 87728476 B `f9341e22…c4f1` (the assets' digests =
+  the release body); app_releases id 1 moved 13:25:02 UTC after a
+  rolled-back dry run (anon reads 1.64.90; notes: the menus scroll
+  smoothly even while a film plays and use less battery; Screenshot to the
+  Gallery, off for private and protected videos); Playback check
+  46006953639 and transport check 46006948518 dispatched after the row
+  moved: both green. The tree: main + 22 files (the player's
+  presentation files of the smoothness work, app_strings, cpu_probe,
+  audio_effect_sheet, the three tests and the harness, the rules and two
+  skills) and the version; left out by design: the smoothness lab
+  (SmoothLab, player_screen's lab hooks, app.dart's lab branch,
+  LabStream) and the lab hooks already off main. PROOF: the smoothness
+  entry below (Test Lab 45965335653, 45969983812, 45979430510; device lab
+  gate S6 45985816711: genres 37/37, jumps 15/15, gestures 27/27 and
+  19/19, audits 52 and 52); the tree's whole suite 2159 pass, analyze,
+  check.py; branch Build 45991793978 green. RELEASE REVIEW (reviewer):
+  SHIP AFTER FIXES — the bottom row's Consumer shadowed the screen's
+  context (the PiP button after the permission dialog: the floating window
+  would not open) and the screenshot refusal had no test; both fixed
+  (bd6e8c58), the delta reviewed: SHIP, its two test notes done (8d67034a:
+  the screenshot test waits for its picture, 3 of 3 under load). NOT RUN on
+  this code: Test Lab's sixteen stream checks (the day's five tests went to
+  the smoothness runs) — first thing next session. THE OWNER TO SEE ON THE
+  PHONE: update, open a film, fling ⋮ and its More page, CC, ♪, Display —
+  playing and paused; the Screenshot shortcut, then Gallery → Pictures/
+  Innocent; then Report a problem (its CPU lines now carry the frames'
+  timing). NEXT: docs/handoff_2026_11_27_beyond_mx.md (the plan and the
+  prompt).
 - **27 Nov (later): THE PLAYER'S SMOOTHNESS — FOUND, FIXED, MEASURED ON
   THE PHONES (the owner, on 1.64.89: "⋮'s menu stutters when scrolled")**
-  — on the work branch, NOT released (the owner says "release").
+  — RELEASED as 1.64.90 (the entry above).
   THE CAUSE (Flutter 3.32.8's engine source and the lab): every word and
   icon on the shade carried a halo of three BLURRED shadows; Impeller keeps
   a word's blurred shadow (TextShadowCache) only while the same recorded
