@@ -552,6 +552,7 @@ fps_votes() {
 # picks how a sideways point maps to the panel's axes.
 SUB=()
 TDEV=""; TMX=0; TMY=0; TMAP=""; ORI=""
+sg_say() { say "$*"; printf '%s\n' "$*" >> "$OUT/subgest.txt"; }
 sg_sub() {  # MX's subtitle box now into SUB (x1 y1 x2 y2 views); false when none
   quick_tree mx "$OUT/raw/quick.xml"
   read -r -a SUB <<< "$(UI sub "$OUT/raw/quick.xml" || true)"
@@ -582,11 +583,16 @@ sg_open() {  # $1 copy, $2 play|pause: MX on it with a line of the subtitle up (
 sg_touch() {
   local out
   out=$(adb shell getevent -pl 2>/dev/null | tr -d '\r')
-  TDEV=$(printf '%s\n' "$out" | awk '/^add device/{d=$4} /ABS_MT_POSITION_X/{print d; exit}')
+  # The panel of display 0: the emulator lists one multi-touch device per
+  # possible display (run 46047544023 took event11, display 0's is
+  # `…multi_touch_1`); else the first with the axes.
+  TDEV=$(printf '%s\n' "$out" | awk '/^add device/{d=$4} /name:/ && /multi_touch_1"/{print d; exit}')
+  [ -n "$TDEV" ] || TDEV=$(printf '%s\n' "$out" | awk '/^add device/{d=$4} /ABS_MT_POSITION_X/{print d; exit}')
+  printf '%s\n' "$out" | grep -E '^add device|name:' > "$OUT/raw/touch_devices.txt" || true
   TMX=$(printf '%s\n' "$out" | awk -v d="$TDEV" '/^add device/{on=($4==d)} on && /ABS_MT_POSITION_X/{for(i=1;i<=NF;i++) if($i=="max"){v=$(i+1); gsub(/,/,"",v); print v; exit}}')
   TMY=$(printf '%s\n' "$out" | awk -v d="$TDEV" '/^add device/{on=($4==d)} on && /ABS_MT_POSITION_Y/{for(i=1;i<=NF;i++) if($i=="max"){v=$(i+1); gsub(/,/,"",v); print v; exit}}')
   ORI=$(adb shell dumpsys input 2>/dev/null | tr -d '\r' | grep -m1 -oE 'Viewport INTERNAL:.*' | grep -oE 'orientation=[0-9]' | cut -d= -f2 || true)
-  say "SUBGEST touch screen: ${TDEV:-none}, axes 0..${TMX:-?} x 0..${TMY:-?}, viewport orientation ${ORI:-?}"
+  sg_say "SUBGEST touch screen: ${TDEV:-none}, axes 0..${TMX:-?} x 0..${TMY:-?}, viewport orientation ${ORI:-?}"
   [ -n "$TDEV" ] && [ "${TMX:-0}" -gt 0 ] && [ "${TMY:-0}" -gt 0 ]
 }
 raw_xy() {  # $1 $2: a point on the sideways screen -> the panel's raw "x y" (TMAP 1 or 3)
@@ -640,7 +646,7 @@ sg_calibrate() {  # TMAP: the mapping whose sendevent tap on ⋮ opens ⋮'s pan
     quick_tree mx "$OUT/raw/quick.xml"
     n=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE" || echo 0)
     grab mx "sg_calibrate_$m"
-    say "SUBGEST calibration: mapping $m, a sendevent tap on ⋮ added ${n:-0} views"
+    sg_say "SUBGEST calibration: mapping $m, a sendevent tap on ⋮ added ${n:-0} views"
     [ "${n:-0}" -ge 3 ] && return 0
   done
   TMAP=""
@@ -655,7 +661,7 @@ sg_one() {
   shift 3
   SGN=$((SGN + 1))
   if ! sg_open "$SGN" "$how"; then
-    say "SUBGEST $name: no subtitle line came up"; grab mx "sg_${name}_none"; return 0
+    sg_say "SUBGEST $name: no subtitle line came up"; grab mx "sg_${name}_none"; return 0
   fi
   b0="${SUB[*]}"; p0=$(sg_pos)
   grab mx "sg_${name}_0"
@@ -676,8 +682,17 @@ sg_one() {
       sleep "$(awk -v t="$2" 'BEGIN{printf "%.1f", t / 1600}')"
       adb exec-out screencap -p > "$OUT/sg_${name}_mid.png" 2>/dev/null || true
       wait "$bg" || true ;;
+    seq)    # $@: L or R per swipe along the line (62 <-> 38 %), each grabbed after
+      local k=0 w
+      for w in "$@"; do
+        k=$((k + 1))
+        if [ "$w" = L ]; then adb shell input swipe $((SW * 62 / 100)) "$cy" $((SW * 38 / 100)) "$cy" 300
+        else adb shell input swipe $((SW * 38 / 100)) "$cy" $((SW * 62 / 100)) "$cy" 300; fi
+        sleep 1.5
+        adb exec-out screencap -p > "$OUT/sg_${name}_s$k.png" 2>/dev/null || true
+      done ;;
     pinch)  # $1 $2 half-spread from/to (px)
-      if [ -z "$TMAP" ]; then say "SUBGEST $name: no two-finger mapping, skipped"; return 0; fi
+      if [ -z "$TMAP" ]; then sg_say "SUBGEST $name: no two-finger mapping, skipped"; return 0; fi
       se_pinch "$cx" "$cy" "$1" "$2" 15 &
       bg=$!
       sleep 1.4
@@ -688,7 +703,7 @@ sg_one() {
   sg_sub || SUB=()
   a0="${SUB[*]}"; p1=$(sg_pos)
   grab mx "sg_${name}_1"
-  say "SUBGEST $name: subtitle ${b0:-none} -> ${a0:-none}; position ${p0} -> ${p1} ms"
+  sg_say "SUBGEST $name: subtitle ${b0:-none} -> ${a0:-none}; position ${p0} -> ${p1} ms"
 }
 subtitle_gestures() {
   local i dir src
@@ -702,27 +717,26 @@ subtitle_gestures() {
   adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
   adb shell settings put system user_rotation 1 >/dev/null 2>&1 || true
   sleep 2
+  sg_say "SUBGEST MX's preference files: $(adb shell "ls /data/data/$MX_PACKAGE/shared_prefs/ 2>&1" | tr -d '\r' | grep -c '\.xml$' || true) (root $ROOT)"
   # MX's own settings about subtitles and gestures, before (private).
   adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
     | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_before.txt" || true
-  if sg_touch && sg_calibrate; then :; else say "SUBGEST: no two-finger mapping found; the pinches are skipped"; fi
-  sg_one look pause none
-  sg_one swipe_left pause swipe 62 38 300
-  sg_one swipe_right pause swipe 38 62 300
-  sg_one swipe_left_short pause swipe 53 47 200
-  sg_one swipe_left_long pause swipe 85 15 400
-  sg_one swipe_left_slow pause swipe 62 38 1500
-  sg_one swipe_left_besides pause swipe 22 8 300
-  sg_one swipe_left_above pause swipe 62 38 300 -260
-  sg_one swipe_left_playing play swipe 62 38 300
-  sg_one drag_up pause drag -300 2000
-  sg_one drag_down pause drag 120 1500
+  if sg_touch && sg_calibrate; then :; else sg_say "SUBGEST: no two-finger mapping found; the pinches are skipped"; fi
+  # Run 46047544023 (27 Nov) measured the swipes and drags; this one: the
+  # previous line, where the band ends above the words, the shortest swipe
+  # that steps, and the pinches (the right touch panel now).
+  sg_one prev pause seq L L R R R
+  sg_one band_above_60 pause swipe 62 38 300 -60
+  sg_one band_above_130 pause swipe 62 38 300 -130
+  sg_one swipe_left_90dp pause swipe 55 44 250
+  sg_one swipe_left_140dp pause swipe 58 41 250
   sg_one pinch_out pause pinch 120 420
   sg_one pinch_in pause pinch 420 120
-  sg_one drag_up_playing play drag -300 2000
+  sg_one pinch_out_playing play pinch 100 500
+  sg_one drag_short pause drag -90 900
   adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
     | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_after.txt" || true
-  say "SUBGEST MX's settings about subtitles and gestures: $(wc -l < "$OUT/raw/mx_prefs_sub_before.txt") lines before, $(diff "$OUT/raw/mx_prefs_sub_before.txt" "$OUT/raw/mx_prefs_sub_after.txt" | grep -c '^[<>]' || true) changed after (private)"
+  sg_say "SUBGEST MX's settings about subtitles and gestures: $(wc -l < "$OUT/raw/mx_prefs_sub_before.txt") lines before, $(diff "$OUT/raw/mx_prefs_sub_before.txt" "$OUT/raw/mx_prefs_sub_after.txt" | grep -c '^[<>]' || true) changed after (private)"
   adb shell am force-stop "$MX_PACKAGE"
   adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
   adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
