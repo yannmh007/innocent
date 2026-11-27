@@ -240,7 +240,7 @@ jobs:
           # Which screens MODE=panels takes: the panels (default) or every
           # shortcut and ⋮'s pages (probe.sh shortcut_screens).
           SCREENS=${SCREENS:-panels}
-          [[ "$SCREENS" =~ ^(panels|shortcuts)$ ]] || { echo "bad SCREENS"; exit 1; }
+          [[ "$SCREENS" =~ ^(panels|shortcuts|fps)$ ]] || { echo "bad SCREENS"; exit 1; }
           for v in MODE MX_PACKAGE MX_VERSION MX_ASSET MX_SIZE MX_SHA256 MX_CERT PROBE_API PROBE_TARGET PROBE_SIZE PROBE_DPI SCREENS; do
             echo "$v=${!v}" >> "$GITHUB_ENV"
           done
@@ -283,7 +283,7 @@ jobs:
       # No token: the trees into numbers (into this summary), the screens
       # into sheets and the decision table (kept with them in innocent-ref).
       - name: Measure and compare (MODE=panels)
-        if: always() && env.MODE == 'panels' && env.SCREENS != 'shortcuts'
+        if: always() && env.MODE == 'panels' && env.SCREENS != 'shortcuts' && env.SCREENS != 'fps'
         run: |
           out="$RUNNER_TEMP/ref_out"
           [ -f "$out/display.txt" ] || { echo "no panels were taken"; exit 0; }

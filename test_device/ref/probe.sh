@@ -494,7 +494,9 @@ panels() {
   inn_software_decoding
 
   local total=0
-  if [ "${SCREENS:-panels}" = shortcuts ]; then
+  if [ "${SCREENS:-panels}" = fps ]; then
+    fps_votes
+  elif [ "${SCREENS:-panels}" = shortcuts ]; then
     shortcut_screens
   else
     panel_screens
@@ -505,8 +507,35 @@ panels() {
     | awk -v u="$MX_UID" '$0 ~ ("owner UID match " u "( |$)") {print $1; exit}')
   kill "$LOGCAT" 2>/dev/null || true
   say "crashes: SIGILL $(grep -c 'SIGILL' "$L" || true), fatal signal $(grep -c 'Fatal signal' "$L" || true), fatal exception $(grep -c 'FATAL EXCEPTION' "$L" || true); Innocent playback failed $(grep -c 'engine stuck' "$L" || true); packets MX tried and was refused: ${blocked:-?}"
-  [ "${SCREENS:-panels}" = shortcuts ] || say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
+  [ "${SCREENS:-panels}" = panels ] && say "PANELS: $total of 24 panel screens taken (2 apps x 2 orientations x 2 frames x 3 panels)"
   gzip -9 "$L"
+}
+
+# SCREENS=fps (27 Nov 2026, docs/handoff_2026_11_27_beyond_mx.md P2/P3):
+# does MX tell Android the film's frame rate (Surface.setFrameRate, a vote
+# SurfaceFlinger keeps per layer) or ask the window for a display mode or
+# refresh rate (preferredDisplayModeId / preferredRefreshRate)? The 24 fps
+# measuring film playing sideways in each app, 12 s in: SurfaceFlinger's
+# whole dump and the window's attributes to innocent-ref (MX's dumps stay
+# private); the summary says only the votes' values, per app.
+fps_votes() {
+  local app pkg d w votes
+  for app in mx inn; do
+    pkg=$(pkg_of "$app")
+    adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
+    open_film "$app" /sdcard/Movies/ref_land_black.mp4
+    sleep 12
+    d="$OUT/raw/fps_${app}_sf.txt"; w="$OUT/raw/fps_${app}_window.txt"
+    adb shell dumpsys SurfaceFlinger 2>/dev/null | tr -d '\r' > "$d" || true
+    adb shell dumpsys window windows 2>/dev/null | tr -d '\r' > "$w" || true
+    grab "$app" "fps_$app"
+    # The votes: SurfaceFlinger's per-layer frame rate (named
+    # frameRate=/FrameRate in API 30-36 dumps), values only.
+    votes=$(grep -ioE 'frame ?rate[=: ]+\{?[0-9.]+[^,}]*' "$d" | grep -vE '[=: ]0(\.0+)?( |$)' | sort | uniq -c | tr '\n' ';' || true)
+    say "FPS $app: layer votes ${votes:-none}; window asks $(grep -oE 'preferred(RefreshRate|DisplayModeId|MinDisplayRefreshRate|MaxDisplayRefreshRate)=[0-9.]+' "$w" | grep -vE '=0(\.0)?$' | sort -u | tr '\n' ' ' || true)"
+    say "FPS $app: display $(grep -m1 -oE '(activeMode|mActiveMode|refresh-rate)[^,]*' "$d" || echo '?')"
+    adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
+  done
 }
 
 # PHASE 2 (26 Nov 2026, the owner: "every shortcut as MX's — what it does
