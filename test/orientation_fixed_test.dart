@@ -35,8 +35,12 @@ void main() {
         contains(ShortcutItem.screenRotation));
     expect(ShortcutItem.available(orientationFixed: true),
         isNot(contains(ShortcutItem.screenRotation)));
-    expect(ShortcutItem.available(orientationFixed: true).length,
+    // Less Screen rotation, and less Vertical flip (MX has none: not on
+    // the row anywhere since 26 Nov 2026).
+    expect(ShortcutItem.available(orientationFixed: false).length,
         ShortcutItem.values.length - 1);
+    expect(ShortcutItem.available(orientationFixed: true).length,
+        ShortcutItem.values.length - 2);
   });
 
   for (final fixed in [false, true]) {

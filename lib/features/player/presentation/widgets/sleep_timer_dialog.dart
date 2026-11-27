@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/localization/app_strings.dart';
@@ -21,11 +22,13 @@ class SleepTimerOption {
 // A fixed 3×4 keypad laid out as explicit Rows (so the "0" can sit centred
 // in the bottom row). Identical metrics + tokens in both orientations —
 // only the arrangement differs (portrait column / landscape split).
-// Re-measured against MX's portrait screenshot (411 dp phone): smaller keys
-// spread wider, and a larger, lighter time read-out centred over them.
-const double _kKeyBtn = 36.0; // circle diameter
-const double _kKeyColPitch = 80.0; // column centre-to-centre
-const double _kKeyRowPitch = 53.0; // row centre-to-centre
+// MX 3.4.3's, from its tree on the owner's phone (reference lab
+// 45886561831, `numpad`): 32 dp keys, 74.6 dp apart across and 49.1 down;
+// the title's middle 28 dp from the panel's top, the time's 72, its ×
+// (MX's iv_clear: it clears the entry, it does not close) at the row's end.
+const double _kKeyBtn = 32.0; // circle diameter
+const double _kKeyColPitch = 74.6; // column centre-to-centre
+const double _kKeyRowPitch = 49.1; // row centre-to-centre
 const double _kTimeNumeral = 44.0; // big h/m numerals
 const double _kTimeSuffix = 16.0; // small "h" / "m" suffix
 
@@ -123,63 +126,71 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     // time and the keys were drawn straight onto the film under a 25 %
     // scrim. Upright a bottom sheet, sideways a panel from the right.
     final content = Padding(
-      padding: EdgeInsets.fromLTRB(pad, portrait ? 0 : 10, pad - 8, 10),
+      // MX's keys at full size where MX has them (384 dp sideways, as the
+      // owner's phone): Innocent's box and Stop / Start keep 48 dp rows
+      // (MX's are 32), so the title and the time rows give the room back.
+      // It was 0.87 of MX's keypad (reference lab 45896496134).
+      padding: EdgeInsets.fromLTRB(pad, 6, pad, 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Semantics(
-                  header: true,
-                  child: Text(AppStrings.of(context).sleepTimer,
-                      style: PlayerUi.title),
-                ),
-              ),
-              _closeButton(),
-            ],
-          ),
-          Center(child: _timeDisplay()),
-          const SizedBox(height: 6),
-          const Divider(color: PlayerUi.hairline, height: 1, thickness: 1),
-          const SizedBox(height: 8),
-          // Sideways the keypad gives way, not STOP and START: four rows of
-          // keys are 212 dp, more than a phone held sideways has left
-          // (test/player_layout_test.dart). Full size wherever they fit.
-          if (portrait)
-            Center(child: _keypad())
-          else
-            Flexible(
-              child: Center(
-                child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
+          // No ×: MX's panel closes by a tap outside it, or Back.
+          SizedBox(
+            height: 36,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Semantics(
+                header: true,
+                child: Text(AppStrings.of(context).sleepTimer,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: PlayerUi.title),
               ),
             ),
-          const SizedBox(height: 4),
+          ),
+          SizedBox(
+            height: 48,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                _timeDisplay(),
+                PositionedDirectional(end: 0, child: _clearButton()),
+              ],
+            ),
+          ),
+          const Divider(color: PlayerUi.hairline, height: 1, thickness: 1),
+          // The keypad gives way, not STOP and START: four rows of keys are
+          // 196 dp, more than a short window has left (an upright window in
+          // split screen, 384x411 dp: 104 px cut, 26 Nov 2026;
+          // test/player_layout_test.dart). Full size wherever they fit.
+          Flexible(
+            child: Center(
+              child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
+            ),
+          ),
           _checkboxRow(),
           _actionsRow(),
         ],
       ),
     );
 
-    final surface = PlayerGlass(
-      borderRadius: portrait
-          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-          : const BorderRadius.horizontal(
-              left: Radius.circular(PlayerUi.radius)),
+    // On the shade, as MX's Sleep Timer and every other panel (the
+    // reference lab, run 45862946745; the owner, 26 Nov 2026: "as MX"):
+    // sideways a panel from the right, the whole height, MX's reach wide;
+    // upright a bottom panel the screen's width, MX's reach tall. Nothing
+    // dims the film behind it. It was frosted glass over a dimmed film.
+    final surface = PlayerShade(
+      sideways: !portrait,
       child: Padding(
         padding: EdgeInsets.only(
-          top: portrait ? 0 : padding.top,
+          top: portrait ? 2 : padding.top,
           right: portrait ? 0 : padding.right,
           bottom: padding.bottom,
         ),
         child: Column(
-          mainAxisSize: portrait ? MainAxisSize.min : MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (portrait) const PlayerDragHandle(),
-            Flexible(child: content),
-          ],
+          children: [Flexible(child: content)],
         ),
       ),
     );
@@ -194,7 +205,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             child: GestureDetector(
               onTap: widget.onDismiss,
               behavior: HitTestBehavior.opaque,
-              child: const ColoredBox(color: PlayerUi.scrim),
+              child: const SizedBox.expand(),
             ),
           ),
         ),
@@ -203,22 +214,20 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: Center(
-              child: ConstrainedBox(
-                // Capped so the column stays tidy on tablets.
-                constraints: BoxConstraints(
-                    maxWidth: 560, maxHeight: size.height * 0.85),
-                child: surface,
-              ),
-            ),
+            // MX's reach, but never under 320 dp (the keys, the box and
+            // STOP / START): a split window's reach is ~190 (layout test,
+            // 384x411). No taller than the window.
+            height: (math.max(PlayerUi.panelExtent(size), 320.0) +
+                    padding.bottom)
+                .clamp(0.0, size.height),
+            child: surface,
           )
         else
           Positioned(
             right: 0,
             top: 0,
             bottom: 0,
-            width: math.min(400.0, math.max(300.0, size.width * 0.46)) +
-                padding.right,
+            width: PlayerUi.sideWidth(size) + padding.right,
             child: surface,
           ),
       ],
@@ -261,25 +270,27 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     );
   }
 
-  Widget _closeButton() {
-    // The 32 dp circle MX draws, inside a 48 dp target (8 of it outside the
-    // circle's own space on the right, where the dialog has room).
+  Widget _clearButton() {
+    // MX's iv_clear: a 26 dp disc at the time's end, its edge on the
+    // content's, that empties the entry back to 0h 00m; the 48 dp target
+    // reaches in from it.
     return RemoteTappable(
-      onTap: widget.onDismiss,
-      semanticLabel: MaterialLocalizations.of(context).closeButtonTooltip,
+      onTap: _clear,
+      semanticLabel: AppStrings.of(context).clear,
       child: SizedBox(
         width: 48,
         height: 48,
-        child: Center(
+        child: Align(
+          alignment: AlignmentDirectional.centerEnd,
           child: Container(
-            width: 32,
-            height: 32,
+            width: 26,
+            height: 26,
             decoration: const BoxDecoration(
               color: PlayerUi.raised,
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.close_rounded,
-                color: PlayerUi.textPrimary, size: 20),
+                color: PlayerUi.textPrimary, size: 18),
           ),
         ),
       ),
@@ -313,7 +324,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     );
   }
 
-  // The whole 80 x 53 cell takes the tap; the 36 dp circle is only drawn
+  // The whole 74.6 x 49.1 cell takes the tap; the 32 dp circle is only drawn
   // (it was the target alone, SCREEN_A11Y=1). The circle's ripple stays out
   // of the semantics, or its tap splits the key's node in two.
   Widget _keyCell(String digit) {
@@ -341,7 +352,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
                   digit,
                   style: const TextStyle(
                     color: PlayerUi.textPrimary,
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.w400,
                   ),
                 ),

@@ -17,8 +17,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/services/video_player/models/subtitle_track_info.dart';
+import 'package:innocent/core/services/video_player/stream_renewal.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -58,6 +60,12 @@ final scenes = <Scene>[
   }),
   Scene('audio_sheet', (t, c, svc) async => _tapIcon(t, Icons.music_note),
       portrait: false),
+  // ♪'s audio delay row (as MX's Synchronization), then its own sheet.
+  Scene('audio_sync', (t, c, svc) async {
+    await _tapIcon(t, Icons.music_note);
+    await t.tap(find.text('0 ms').last, warnIfMissed: false);
+    await _settle(t);
+  }),
   Scene('subtitle_tracks', (t, c, svc) async {
     // A track chosen in the CC panel, then the panel again: the choice is
     // checked.
@@ -96,10 +104,56 @@ final scenes = <Scene>[
     await t.longPress(find.byIcon(Icons.skip_next).first, warnIfMissed: false);
     await _settle(t);
   }),
+  // MX's speed card (the "1X" shortcut).
   Scene('speed_tap', (t, c, svc) async {
     await t.tap(find.byKey(const ValueKey('playbackSpeed')).first,
         warnIfMissed: false);
-    await t.pump(const Duration(milliseconds: 200));
+    await _settle(t);
+  }),
+  // The Audio Effect / Equalizer sheet (MX's two tabs), from the row.
+  Scene('equalizer', (t, c, svc) async {
+    await t.tap(find.byKey(const ValueKey('equalizer')).first,
+        warnIfMissed: false);
+    await _settle(t);
+  }),
+  // MX's A-B bar: the row opened, its A-B tapped, A set.
+  Scene('ab_bar', (t, c, svc) async {
+    await _tapIcon(t, Icons.chevron_right);
+    // Past a narrow screen's edge the button is built but offstage.
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
+    await t.ensureVisible(ab.first);
+    await t.pump();
+    await t.tap(ab.first, warnIfMissed: false);
+    await _settle(t);
+    c.setABPointA();
+    await _settle(t);
+  }),
+  // A catalogue stream: the Quality pill on the top bar beside ♪, CC, the
+  // decoder and the clock. On 360 and 412 dp phones held upright ⋮ ran
+  // off the bar (the 1.64.89 review): the bar's room now counts the pill.
+  Scene('quality_bar', (t, c, svc) async {
+    StreamRenewal.quality.value = QualityMenu(
+      uri: c.activeUri ?? 'x',
+      options: const [
+        QualityOption(id: 'auto', label: 'Auto'),
+        QualityOption(id: '1080', label: '1080p'),
+        QualityOption(id: '480', label: '480p'),
+      ],
+      selected: 'auto',
+      playing: '1080p',
+    );
+    addTearDown(() => StreamRenewal.quality.value = null);
+    await _settle(t);
+    expect(find.byKey(const ValueKey('player-quality')), findsOneWidget);
+    final view = t.view.physicalSize / t.view.devicePixelRatio;
+    final more = t.getRect(find.byIcon(Icons.more_vert));
+    expect(more.right <= view.width + 0.5 && more.left >= 0, isTrue,
+        reason: '⋮ off the bar: $more in $view');
+  }),
+  // MX's Customise Items: the top bar's icons on a card under the bar.
+  Scene('customise', (t, c, svc) async {
+    c.openCustomisePanel();
+    await _settle(t);
   }),
   Scene('aspect_tap', (t, c, svc) async {
     await t.tap(find.byIcon(Icons.crop_landscape_outlined).first,
@@ -119,18 +173,50 @@ Future<void> _moreItem(WidgetTester t, IconData icon) async {
   await _settle(t);
 }
 
+/// Opens ⋮, then its "More ›" page (as MX's, 26 Nov 2026), and taps its
+/// [index]th row (0 Kids Lock, 1 Transfer, 2 Network stream, 3 Subtitle
+/// delay, 4 Skip markers, 5 Custom speed, 6 Settings, 7 FAQ, 8 updates).
+Future<void> _morePageRow(WidgetTester t, int index) async {
+  await _tapIcon(t, Icons.more_vert);
+  final more = find.descendant(
+      of: find.byType(MoreMenuPanel),
+      matching: find.byIcon(Icons.chevron_right_rounded));
+  await t.ensureVisible(more.first);
+  await t.pump();
+  await t.tap(more.first, warnIfMissed: false);
+  await _settle(t);
+  final row = find
+      .descendant(of: find.byType(MoreMenuPanel), matching: find.byType(PanelRow))
+      .at(index);
+  await t.ensureVisible(row);
+  await t.pump();
+  await t.tap(row, warnIfMissed: false);
+  await _settle(t);
+}
+
 final scenes2 = <Scene>[
   Scene('queue', (t, c, svc) => _moreItem(t, Icons.queue_music)),
-  Scene('kids_lock', (t, c, svc) => _moreItem(t, Icons.child_care)),
+  Scene('kids_lock', (t, c, svc) => _morePageRow(t, 0)),
+  // ⋮'s "More ›" page itself.
+  Scene('more_page', (t, c, svc) async {
+    await _tapIcon(t, Icons.more_vert);
+    final more = find.descendant(
+        of: find.byType(MoreMenuPanel),
+        matching: find.byIcon(Icons.chevron_right_rounded));
+    await t.ensureVisible(more.first);
+    await t.pump();
+    await t.tap(more.first, warnIfMissed: false);
+    await _settle(t);
+  }),
   Scene('aspect_menu', (t, c, svc) => _moreItem(t, Icons.aspect_ratio)),
   Scene('display', (t, c, svc) => _moreItem(t, Icons.tune)),
   Scene('bookmarks', (t, c, svc) => _moreItem(t, Icons.bookmark_outline)),
   Scene('cut', (t, c, svc) => _moreItem(t, Icons.content_cut)),
   Scene('info', (t, c, svc) => _moreItem(t, Icons.info_outline)),
   Scene('help', (t, c, svc) => _moreItem(t, Icons.help_outline)),
-  Scene('sub_delay', (t, c, svc) => _moreItem(t, Icons.subtitles_outlined)),
-  Scene('skip_markers', (t, c, svc) => _moreItem(t, Icons.skip_next_outlined)),
-  Scene('custom_speed', (t, c, svc) => _moreItem(t, Icons.speed)),
+  Scene('sub_delay', (t, c, svc) => _morePageRow(t, 3)),
+  Scene('skip_markers', (t, c, svc) => _morePageRow(t, 4)),
+  Scene('custom_speed', (t, c, svc) => _morePageRow(t, 5)),
   Scene('ab_badge', (t, c, svc) async {
     c.cycleABRepeat();
     await svc.seek(const Duration(minutes: 14, seconds: 2));

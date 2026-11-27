@@ -113,6 +113,21 @@ class _FocusRingLayerState extends State<FocusRingLayer> {
                     ),
                   ],
                 ),
+                // A white line inside the blue: the blue alone read 1.7:1
+                // over the player's shade on a bright film (grey 102), where
+                // a remote walks a panel; white there reads 5.6:1, and the
+                // blue still reads where the white cannot (3.6:1 on white).
+                // 26 Nov 2026.
+                child: const Padding(
+                  padding: EdgeInsets.all(3),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(7)),
+                      border: Border.fromBorderSide(
+                          BorderSide(color: Colors.white, width: 1.5)),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

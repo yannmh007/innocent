@@ -48,7 +48,6 @@ Widget _row({required bool expanded, bool loopOn = true}) => Builder(
                 expanded: expanded,
                 onItemTap: (_) {},
                 onToggleExpand: () {},
-                isPortrait: true,
                 loopMode: loopOn ? LoopMode.one : LoopMode.off,
               ),
             ),

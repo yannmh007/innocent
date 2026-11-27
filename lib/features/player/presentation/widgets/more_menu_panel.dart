@@ -40,16 +40,38 @@ class MoreMenuItemData {
   });
 }
 
+/// A row of ⋮'s "More" page: words alone, as MX's.
+class MorePageRow {
+  const MorePageRow({required this.title, required this.onTap});
+  final String title;
+  final VoidCallback onTap;
+}
+
+/// A section of ⋮'s "More" page (MX's "Tools", "Help").
+class MorePageSection {
+  const MorePageSection({required this.label, required this.rows});
+  final String label;
+  final List<MorePageRow> rows;
+}
+
 /// The ⋮ panel: the player's other actions as a grid of tiles, then the
 /// Video display switch and the choice of shortcuts on the row under the
 /// top bar. A side panel sideways, a bottom sheet upright (PlayerPanel).
+///
+/// As MX's (the owner, 26 Nov 2026: "11 tiles and More"; reference lab
+/// 45857557804): MX's tiles in MX's order, the last a "More ›" tile that
+/// turns the panel to a second page in place — "← More", then rows of
+/// words in sections ([moreSections]) — whose ← turns it back.
 ///
 /// 12 Nov 2026, redrawn on player_ui.dart: it was a 92 % grey over a 38 %
 /// scrim with the controls still drawn under it, 47 dp outline rings, and
 /// a "Video display" switch that hid the sixteen actions as well as the
 /// picture. The switch now turns the picture off and nothing else.
-class MoreMenuPanel extends StatelessWidget {
+class MoreMenuPanel extends StatefulWidget {
   final List<MoreMenuItemData> items;
+
+  /// The "More ›" page; no "More ›" tile without it.
+  final List<MorePageSection> moreSections;
   final bool videoDisplayEnabled;
   final Set<ShortcutItem> visibleShortcuts;
   final ValueChanged<bool> onVideoDisplayToggle;
@@ -66,24 +88,67 @@ class MoreMenuPanel extends StatelessWidget {
     required this.onShortcutsToggle,
     required this.onShortcutToggle,
     required this.onDismiss,
+    this.moreSections = const [],
   });
+
+  @override
+  State<MoreMenuPanel> createState() => _MoreMenuPanelState();
+}
+
+class _MoreMenuPanelState extends State<MoreMenuPanel> {
+  bool _more = false;
 
   @override
   Widget build(BuildContext context) {
     final s = AppStrings.of(context);
+    final w = widget;
+    if (_more) {
+      // MX's second page: "← More", then its sections of words.
+      return PlayerPanel(
+        // Its own key: the first page's scroll was kept, and "More" opened
+        // half way down its list (the layout test's photographs).
+        key: const ValueKey('more-page'),
+        title: s.moreOptions,
+        onBack: () => setState(() => _more = false),
+        onDismiss: w.onDismiss,
+        children: [
+          for (var i = 0; i < w.moreSections.length; i++)
+            PanelSection(
+              label: w.moreSections[i].label,
+              first: i == 0,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final r in w.moreSections[i].rows)
+                    // A tile's label may break in two; a row's never.
+                    PanelRow(
+                        title: r.title.replaceAll('\n', ' '), onTap: r.onTap),
+                ],
+              ),
+            ),
+        ],
+      );
+    }
+    // No title, upright or sideways: MX's ⋮ has none, the tiles are the
+    // first thing (the owner, 26 Nov 2026: "hide the word More").
     return PlayerPanel(
-      title: s.moreOptions,
-      onDismiss: onDismiss,
+      key: const ValueKey('more-tiles'),
+      onDismiss: w.onDismiss,
       children: [
         PanelGrid(
-          rowGap: 4,
           children: [
-            for (final item in items)
+            for (final item in w.items)
               PanelTile(
                 icon: item.icon,
                 label: item.label,
                 dot: item.hasNotificationDot,
                 onTap: item.onTap,
+              ),
+            if (w.moreSections.isNotEmpty)
+              PanelTile(
+                icon: Icons.chevron_right_rounded,
+                label: s.moreOptions,
+                onTap: () => setState(() => _more = true),
               ),
           ],
         ),
@@ -93,14 +158,14 @@ class MoreMenuPanel extends StatelessWidget {
         PanelSwitchRow(
           icon: Icons.ondemand_video_outlined,
           title: s.scVideoDisplay,
-          value: videoDisplayEnabled,
-          onChanged: onVideoDisplayToggle,
+          value: w.videoDisplayEnabled,
+          onChanged: w.onVideoDisplayToggle,
         ),
         PanelSwitchRow(
           icon: Icons.dashboard_customize_outlined,
           title: s.shortcuts,
-          value: visibleShortcuts.isNotEmpty,
-          onChanged: onShortcutsToggle,
+          value: w.visibleShortcuts.isNotEmpty,
+          onChanged: w.onShortcutsToggle,
         ),
         const SizedBox(height: 6),
         PanelCard(
@@ -111,8 +176,8 @@ class MoreMenuPanel extends StatelessWidget {
               for (final item in ShortcutItem.available())
                 _ShortcutCheck(
                   label: item.labelIn(s).replaceAll('\n', ' '),
-                  value: visibleShortcuts.contains(item),
-                  onChanged: () => onShortcutToggle(item),
+                  value: w.visibleShortcuts.contains(item),
+                  onChanged: () => w.onShortcutToggle(item),
                 ),
             ],
           ),

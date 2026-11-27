@@ -12,6 +12,12 @@ import 'player_ui.dart';
 /// panel a 90 % black slab with the controls showing through it, the same
 /// right-hand panel even with the phone upright. Choosing a track is what
 /// CC is pressed for, so it is now one tap, as in MX Player.
+///
+/// 26 Nov 2026, the owner: "English, Burmese in a rectangle — as MX, all of
+/// it". In MX's order: open a file; the tracks, each a check box, in a box
+/// (the one on is the one showing; tapped again, none shows — there is no
+/// "Off" row); online subtitles; and Settings, a row that opens below
+/// itself to the delay, the text style and the position.
 class SubtitlePanel extends StatelessWidget {
   final List<SubtitleTrackInfo> tracks;
 
@@ -46,68 +52,54 @@ class SubtitlePanel extends StatelessWidget {
       title: s.subtitle,
       onDismiss: onDismiss,
       children: [
-        PanelSection(
-          first: true,
-          label: s.plTracks,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PanelRow(
-                choice: true,
-                title: s.off,
-                selected: current == null,
-                onTap: () => onSelectTrack(null),
-              ),
-              for (final t in tracks)
-                PanelRow(
-                  choice: true,
-                  title: t.displayName,
-                  // By id: the engine sends the list afresh (a file loaded,
-                  // a track found late), and the chosen track is then an
-                  // older copy of one in it.
-                  selected: t.id == current?.id,
-                  onTap: () => onSelectTrack(t),
-                ),
-              PanelRow(
-                icon: Icons.folder_open_outlined,
-                title: s.loadExternalSubtitle,
-                onTap: onOpen,
-              ),
-              // A row, not the header's corner: "Online စာတန်းထိုးများ" was
-              // cut to "Online စာတန်းထိုးမ…" beside the title.
-              PanelRow(
-                icon: Icons.travel_explore_rounded,
-                title: s.onlineSubtitles,
-                onTap: onOnlineSubtitles,
-              ),
-            ],
-          ),
+        PanelRow(
+          icon: Icons.folder_open_outlined,
+          title: s.loadExternalSubtitle,
+          onTap: onOpen,
         ),
-        PanelSection(
-          label: s.settingsTitle,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              PanelRow(
-                icon: Icons.av_timer_rounded,
-                title: s.subtitleDelayMenu.replaceAll('\n', ' '),
-                chevron: true,
-                onTap: onDelay,
+        if (tracks.isNotEmpty)
+          PanelCheckBox(rows: [
+            for (final t in tracks)
+              PanelCheck(
+                title: t.displayName,
+                // By id: the engine sends the list afresh (a file loaded,
+                // a track found late), and the chosen track is then an
+                // older copy of one in it.
+                value: t.id == current?.id,
+                // The one on, tapped again: none.
+                onTap: () => onSelectTrack(t.id == current?.id ? null : t),
               ),
-              PanelRow(
-                icon: Icons.text_fields_rounded,
-                title: s.pwTextStyle,
-                chevron: true,
-                onTap: onTextStyle,
-              ),
-              PanelRow(
-                icon: Icons.format_align_center_rounded,
-                title: s.pwPosLayout,
-                chevron: true,
-                onTap: onLayout,
-              ),
-            ],
-          ),
+          ]),
+        // A row, not the header's corner: "Online စာတန်းထိုးများ" was
+        // cut to "Online စာတန်းထိုးမ…" beside the title.
+        PanelRow(
+          icon: Icons.travel_explore_rounded,
+          title: s.onlineSubtitles,
+          onTap: onOnlineSubtitles,
+        ),
+        PanelExpandRow(
+          icon: Icons.settings_outlined,
+          title: s.settingsTitle,
+          children: [
+            PanelRow(
+              icon: Icons.av_timer_rounded,
+              title: s.subtitleDelayMenu.replaceAll('\n', ' '),
+              chevron: true,
+              onTap: onDelay,
+            ),
+            PanelRow(
+              icon: Icons.text_fields_rounded,
+              title: s.pwTextStyle,
+              chevron: true,
+              onTap: onTextStyle,
+            ),
+            PanelRow(
+              icon: Icons.format_align_center_rounded,
+              title: s.pwPosLayout,
+              chevron: true,
+              onTap: onLayout,
+            ),
+          ],
         ),
       ],
     );

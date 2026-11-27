@@ -2,39 +2,29 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/device_profile.dart';
 
-/// All 15 shortcuts available in player shortcut row.
-///
-/// Phase 45 (audit): order RE-VERIFIED against MX Player V3 v2.13.4
-/// screen recordings 180939 frame 11 (landscape expanded) and 180939
-/// frame 24 (portrait expanded). The LANDSCAPE order, left-to-right
-/// when expanded, is:
-///
-///   Mute → Sleep Timer → A-B Repeat → Mirror Mode → Vertical Flip →
-///   Audio Effect → Equalizer → Speed (1X) → Screenshot →
-///   Background Play → Screen Rotation → Loop
-///
-/// PORTRAIT additionally shows Night Mode, Customise Items, Shuffle
-/// before Mute (frame 24 left side). To keep one canonical enum order
-/// we put these at the front so portrait shows them; landscape ignores
-/// them via [defaultLandscapeShortcuts] filtering.
+/// The player's shortcuts, in MX Player 3.4.3's order (the reference lab,
+/// run 45857557804: MX's open row sideways, left to right; the owner, 26
+/// Nov 2026: "every shortcut as MX's"). MX's row shut shows the last five
+/// (Equalizer, Speed, Screenshot, Background Play, Screen Rotation: the
+/// default, PlayerState); open, the others first and those five last,
+/// beside the chevron. MX has fourteen: [verticalFlip] is Innocent's alone
+/// and is not offered on the row ([available]); its state is kept.
 enum ShortcutItem {
-  // Portrait-only first three (frame 24).
   nightMode,
   customiseItems,
   shuffle,
-  // Common to both orientations, in MX Player order.
+  loop,
   mute,
   sleepTimer,
   abRepeat,
-  mirrorMode,
-  verticalFlip,
   audioEffect,
   equalizer,
   playbackSpeed,
   screenshot,
   backgroundPlay,
   screenRotation,
-  loop;
+  mirrorMode,
+  verticalFlip;
 
   String get label {
     switch (this) {
@@ -149,8 +139,9 @@ enum ShortcutItem {
   /// button did nothing but announce a mode.
   static List<ShortcutItem> available({bool? orientationFixed}) => [
         for (final item in ShortcutItem.values)
-          if (item != ShortcutItem.screenRotation ||
-              !(orientationFixed ?? DeviceProfile.orientationFixed))
+          if (item != ShortcutItem.verticalFlip &&
+              (item != ShortcutItem.screenRotation ||
+                  !(orientationFixed ?? DeviceProfile.orientationFixed)))
             item,
       ];
 }

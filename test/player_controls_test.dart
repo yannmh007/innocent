@@ -7,6 +7,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/di/core_providers.dart';
+import 'package:innocent/core/services/preferences/extra_settings_service.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/ui/device_profile.dart';
 import 'package:innocent/features/player/domain/engine_check.dart';
@@ -17,6 +19,9 @@ import 'package:innocent/features/player/presentation/widgets/display_settings_s
 import 'package:innocent/features/player/presentation/widgets/gestures_help_overlay.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
 import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
+import 'package:innocent/features/player/presentation/widgets/speed_card.dart';
+import 'package:innocent/features/player/presentation/widgets/ab_repeat_bar.dart';
+import 'package:innocent/features/player/presentation/widgets/customise_top_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -97,16 +102,52 @@ void main() {
       // the same icon).
       await tester.tap(find.byIcon(Icons.subtitles_outlined).first);
       await _settle(tester);
+      // As MX (the owner, 26 Nov 2026): the tracks are check boxes in a
+      // box, the one showing checked; tapped again, none shows.
       final englishRow = find.ancestor(
           of: find.text('English'), matching: find.byType(InkWell));
       expect(
           find.descendant(
-              of: englishRow.first, matching: find.byIcon(Icons.check_rounded)),
+              of: englishRow.first,
+              matching: find.byWidgetPredicate(
+                  (w) => w is PanelCheckMark && w.value)),
           findsOneWidget,
           reason: 'the chosen track is not marked');
-      await tester.tap(find.text('Off'));
+      expect(find.byType(PanelCheckBox), findsOneWidget);
+      expect(find.text('Off'), findsNothing, reason: 'MX has no Off row');
+      await tester.tap(find.text('English'));
       await _settle(tester);
       expect(_state().currentSubtitleTrack, isNull);
+      await leavePlayer(tester);
+    });
+
+    testWidgets('$o: upright a panel and a sheet close by their ←, as MX\'s',
+        (tester) async {
+      await pumpPlayer(tester, phone: _phone, landscape: landscape, lang: 'en');
+      await tester.tap(find.byIcon(Icons.subtitles_outlined));
+      await _settle(tester);
+      final back = find.descendant(
+          of: find.byType(PlayerPanel),
+          matching: find.byIcon(Icons.arrow_back_rounded));
+      // MX puts it before the title upright only.
+      expect(back, landscape ? findsNothing : findsOneWidget);
+      expect(find.byType(PlayerDragHandle), findsNothing);
+      if (!landscape) {
+        await tester.tap(back);
+        await _settle(tester);
+        expect(_state().openPanel, SidePanel.none);
+        expect(find.byType(PlayerScreen), findsOneWidget);
+        await tester.longPress(find.byIcon(Icons.skip_next));
+        await _settle(tester);
+        expect(find.text('Loop one'), findsOneWidget);
+        await tester.tap(find.descendant(
+            of: find.byType(PlayerSheetHeader),
+            matching: find.byIcon(Icons.arrow_back_rounded)));
+        await _settle(tester);
+        expect(find.text('Loop one'), findsNothing);
+        expect(find.byType(PlayerScreen), findsOneWidget,
+            reason: 'the ← closed the player, not the sheet');
+      }
       await leavePlayer(tester);
     });
 
@@ -120,9 +161,10 @@ void main() {
       await tester.tap(find.text('Video Display'));
       await _settle(tester);
       expect(_state().openPanel, SidePanel.more);
-      // The sixteen actions stay: the switch used to hide them as well.
+      // The actions stay: the switch used to hide them as well. (MX's ten
+      // and "More ›" since 26 Nov 2026.)
       expect(find.byIcon(Icons.queue_music), findsOneWidget);
-      expect(find.byIcon(Icons.speed), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsWidgets);
       await leavePlayer(tester);
     });
 
@@ -182,38 +224,53 @@ void main() {
     });
   }
 
-  testWidgets('menus are frosted glass, and the picture stays where it is',
+  testWidgets(
+      'menus are on the shade, MX\'s reach, and the picture stays where it is',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
     final frame = find.byType(AspectRatio).first;
     final before = tester.getRect(frame);
     await tester.tap(find.byIcon(Icons.more_vert));
     await _settle(tester);
+    // The owner, 22 Nov 2026: as MX, the film neither blurred nor dimmed
+    // under a menu (it was frosted glass over a 40 % dim since 12 Nov).
     expect(
         find.descendant(
             of: find.byType(MoreMenuPanel), matching: find.byType(BackdropFilter)),
-        findsOneWidget,
-        reason: 'the menu is not glass (owner, 12 Nov)');
-    // The owner chose glass over moving the film (12 Nov).
+        findsNothing,
+        reason: 'the menu blurs the film');
+    expect(
+        find.descendant(
+            of: find.byType(MoreMenuPanel),
+            matching: find.byWidgetPredicate((w) =>
+                w is ColoredBox && w.color.a > 0 && w.color == PlayerUi.scrim)),
+        findsNothing,
+        reason: 'the menu dims the picture');
     expect(tester.getRect(frame), before);
-    // Upright, the sheet stops at 55 % of the screen.
-    final sheet = tester.getRect(find.byType(PlayerGlass).first);
-    expect(sheet.height, lessThanOrEqualTo(_phone.height * 0.55 + 0.5));
+    // Upright, MX's reach: the screen's short side, 46.6 % of the long one
+    // at most (the reference lab, 22 Nov).
+    final sheet = tester.getRect(find.byType(PlayerShade).first);
+    expect(sheet.height,
+        closeTo(PlayerUi.panelExtent(Size(_phone.width, _phone.height)), 0.5));
+    expect(sheet.bottom, closeTo(_phone.height, 0.5));
     await leavePlayer(tester);
   });
 
-  testWidgets('sideways, a player sheet is a glass panel from the right',
+  testWidgets('sideways, a player sheet is a panel from the right',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
     expect(find.text('Loop one'), findsOneWidget);
-    final glass = tester.getRect(find.byType(PlayerGlass).last);
+    final glass = tester.getRect(find.byType(PlayerShade).last);
     // The whole height, at the right edge: not a bottom sheet that held two
     // rows (12 Nov).
     expect(glass.height, closeTo(_phone.width, 0.5));
     expect(glass.right, closeTo(_phone.height, 0.5));
-    expect(glass.width, lessThan(_phone.height * 0.6));
+    // MX's reach sideways (PlayerUi.sideWidth; the harness has no
+    // navigation strip).
+    expect(glass.width,
+        closeTo(PlayerUi.sideWidth(Size(_phone.height, _phone.width)), 0.5));
     await leavePlayer(tester);
   });
 
@@ -228,9 +285,11 @@ void main() {
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
     final content = tester.element(find.text('Loop one'));
-    var glass = tester.getRect(find.byType(PlayerGlass).last);
+    var glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.bottom, closeTo(_phone.height, 0.5), reason: 'not at the foot');
     expect(glass.width, closeTo(_phone.width, 0.5));
+    expect(glass.height,
+        closeTo(PlayerUi.panelExtent(Size(_phone.width, _phone.height)), 0.5));
 
     Future<void> turn(bool sideways) async {
       tester.view.physicalSize = sideways
@@ -240,7 +299,7 @@ void main() {
     }
 
     await turn(true);
-    glass = tester.getRect(find.byType(PlayerGlass).last);
+    glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.height, closeTo(_phone.width, 0.5),
         reason: 'sideways, not the whole height');
     expect(glass.right, closeTo(_phone.height, 0.5));
@@ -249,7 +308,7 @@ void main() {
         reason: 'the turn rebuilt the sheet\'s content from scratch');
 
     await turn(false);
-    glass = tester.getRect(find.byType(PlayerGlass).last);
+    glass = tester.getRect(find.byType(PlayerShade).last);
     expect(glass.bottom, closeTo(_phone.height, 0.5));
     expect(glass.width, closeTo(_phone.width, 0.5));
     expect(identical(tester.element(find.text('Loop one')), content), isTrue);
@@ -295,13 +354,15 @@ void main() {
     await pumpPlayer(tester, phone: _phone, landscape: false, lang: 'en');
     await tester.longPress(find.byIcon(Icons.skip_next));
     await _settle(tester);
-    final handle = find.byType(PlayerDragHandle);
+    // No handle since 26 Nov 2026 (as MX): the sheet drags by its header.
+    final handle = find.byType(PlayerSheetHeader);
     expect(handle, findsOneWidget);
-    final top = tester.getRect(find.byType(PlayerGlass).last).top;
+    expect(find.byType(PlayerDragHandle), findsNothing);
+    final top = tester.getRect(find.byType(PlayerShade).last).top;
     await tester.drag(handle, const Offset(0, 30));
     await _settle(tester);
     expect(find.text('Loop one'), findsOneWidget);
-    expect(tester.getRect(find.byType(PlayerGlass).last).top,
+    expect(tester.getRect(find.byType(PlayerShade).last).top,
         closeTo(top, 0.5), reason: 'a short drag did not settle back');
     await tester.drag(handle, const Offset(0, 400));
     await _settle(tester);
@@ -464,6 +525,56 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets('a remote walks CC: the tracks, Online, "Settings ▾" opens '
+      'its rows; Esc puts the panel away and the film plays on',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    playerContainer!.read(playerControllerProvider.notifier).openSubtitleMenu();
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.subtitle);
+    // What the remote is on: the words under the focused control.
+    String? onFocus() {
+      final ctx = FocusManager.instance.primaryFocus?.context;
+      if (ctx == null) return null;
+      final words = <String>[];
+      void walk(Element e) {
+        final w = e.widget;
+        if (w is Text && w.data != null) words.add(w.data!);
+        e.visitChildElements(walk);
+      }
+
+      (ctx as Element).visitChildElements(walk);
+      return words.join(' ');
+    }
+
+    final seen = <String>[];
+    for (var i = 0; i < 8; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pump();
+      final f = onFocus();
+      if (f != null && f.isNotEmpty) seen.add(f);
+      if (f != null && f.contains('Settings')) break;
+    }
+    expect(seen, contains(contains('English')),
+        reason: 'the remote reaches the tracks: $seen');
+    expect(seen, contains(contains('Online subtitles')), reason: '$seen');
+    expect(seen.last, contains('Settings'), reason: '$seen');
+    // Select opens "Settings ▾" below itself.
+    expect(find.text('Subtitle Delay'), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await _settle(tester);
+    expect(find.text('Subtitle Delay'), findsOneWidget);
+    // And on, into its rows.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+    expect(onFocus(), contains('Subtitle Delay'));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
   testWidgets('a mouse: moving shows the controls, a right-click opens ⋮',
       (tester) async {
     await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
@@ -520,6 +631,314 @@ void main() {
     expect(find.textContaining('Track no'), findsNothing);
     expect(find.text('Stereo · English'), findsOneWidget);
     expect(find.text('Commentary · English'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('♪ has the audio delay under its tracks, as MX: + moves it '
+      '50 ms and the engine hears it; a tap on the value puts it back',
+      (tester) async {
+    final svc = FakePlayerService(audioTracks: const [
+      AudioTrackInfo(id: '1', title: 'Stereo', language: 'eng'),
+      AudioTrackInfo(id: '2', title: 'Commentary', language: 'eng'),
+    ]);
+    await pumpPlayer(tester,
+        phone: _phone, landscape: false, lang: 'en', engine: svc);
+    int delay() => playerContainer!
+        .read(extraSettingsProvider)
+        .getInt(IntSetting.audioDelay);
+    await tester.tap(find.byIcon(Icons.music_note));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    expect(find.text('Audio delay'), findsOneWidget);
+    expect(find.text('0 ms'), findsOneWidget);
+    await tester.tap(find.text('Audio delay'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    // ♪ gave way to the delay's own sheet.
+    expect(find.text('Stereo · English'), findsNothing);
+    svc.calls.clear();
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('+50 ms'), findsOneWidget);
+    expect(delay(), 50);
+    expect(svc.calls, contains('Symbol("setAudioDelayMs")'));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('−50 ms'), findsOneWidget);
+    expect(delay(), -50);
+    await tester.tap(find.text('−50 ms'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(delay(), 0);
+    expect(find.text('0 ms'), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('"1X" opens MX\'s speed card: the controls give way, ± a '
+      '20th, reset, a tap above puts it away', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.tap(find.byKey(const ValueKey('playbackSpeed')).first);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.speed);
+    expect(find.byType(SpeedCard), findsOneWidget);
+    expect(find.text('1.00x'), findsOneWidget);
+    expect(find.byIcon(Icons.more_vert), findsNothing,
+        reason: 'the controls give way to the card');
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, closeTo(1.05, 1e-9));
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await _settle(tester);
+    await tester.tap(find.byIcon(Icons.remove_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, closeTo(0.95, 1e-9));
+    await tester.tap(find.byIcon(Icons.restart_alt_rounded));
+    await _settle(tester);
+    expect(_state().playbackSpeed, 1.0);
+    await tester.tapAt(const Offset(400, 40));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("A-B opens MX's bar: A, then B after it, the loop; close lets "
+      'both go', (tester) async {
+    final svc = FakePlayerService();
+    await pumpPlayer(
+        tester, phone: _phone, landscape: true, lang: 'en', engine: svc);
+    // A-B is on the open row.
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await _settle(tester);
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
+    await tester.ensureVisible(ab.first);
+    await tester.pump();
+    await tester.tap(ab.first);
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsOneWidget);
+    expect(_state().abPointA, isNull, reason: 'the bar opens; no point yet');
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.text('A')));
+    await _settle(tester);
+    expect(_state().abPointA, isNotNull);
+    await svc.seek((_state().abPointA ?? Duration.zero) +
+        const Duration(seconds: 30));
+    await _settle(tester);
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.text('B')));
+    await _settle(tester);
+    expect(_state().abPointB, isNotNull);
+    expect(_state().abPointB! > _state().abPointA!, isTrue);
+    await tester.tap(find.descendant(
+        of: find.byType(ABRepeatBar), matching: find.byIcon(Icons.close_rounded)));
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsNothing);
+    expect(_state().abPointA, isNull);
+    expect(_state().abPointB, isNull);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("Customise Items opens MX's card over the controls: a tap "
+      'takes one on or off, Cancel keeps them, Apply sets them — the top '
+      "bar's and the bottom row's", (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    Future<void> open() async {
+      final key = find.byKey(const ValueKey('customiseItems'),
+          skipOffstage: false);
+      if (key.evaluate().isEmpty) {
+        await tester.tap(find.byIcon(Icons.chevron_right).first);
+        await _settle(tester);
+      }
+      await tester.ensureVisible(key.first);
+      await tester.pump();
+      await tester.tap(key.first);
+      await _settle(tester);
+    }
+
+    String saved() => playerContainer!
+        .read(extraSettingsProvider)
+        .getStr(StringSetting.playerTopBar);
+    final card = find.byType(CustomiseTopBarCard);
+    Finder inCard(Finder f) => find.descendant(of: card, matching: f);
+
+    expect(find.byIcon(Icons.queue_music), findsNothing,
+        reason: "MX's default: all but the playing queue");
+    await open();
+    expect(_state().openPanel, SidePanel.customise);
+    expect(card, findsOneWidget);
+    // As MX's edit view: the controls stay, each optional one in a dashed
+    // box (♪, CC, the decoder, the screen mode, PiP), the row goes.
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    final dashed =
+        find.byWidgetPredicate((w) => w is EditSlot && w.editing);
+    expect(dashed, findsNWidgets(5));
+    expect(find.byKey(const ValueKey('nightMode')), findsNothing);
+    for (final i in TopBarItem.values) {
+      expect(inCard(find.byIcon(i.icon)), findsOneWidget);
+    }
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(5));
+
+    // Cancel: whatever was tapped, the controls are as they were.
+    await tester.tap(inCard(find.byIcon(Icons.queue_music)));
+    await tester.pump();
+    expect(inCard(find.byIcon(Icons.check_rounded)), findsNWidgets(6));
+    await tester.tap(inCard(find.text('Cancel')));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(saved(), 'decoder|audio|subtitle|pip|screenMode');
+
+    // Apply: the queue on; CC and PiP off.
+    await open();
+    await tester.tap(inCard(find.byIcon(Icons.queue_music)));
+    await tester.tap(inCard(find.byIcon(Icons.subtitles_outlined)));
+    await tester.tap(inCard(find.byIcon(Icons.picture_in_picture_alt_outlined)));
+    await tester.pump();
+    await tester.tap(inCard(find.text('Apply')));
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(saved(), 'decoder|queue|audio|screenMode');
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(400, 200));
+      await _settle(tester);
+    }
+    expect(find.byIcon(Icons.queue_music), findsOneWidget);
+    expect(find.byIcon(Icons.subtitles_outlined), findsNothing);
+    expect(find.byIcon(Icons.music_note), findsOneWidget);
+    expect(find.byIcon(Icons.picture_in_picture_alt_outlined), findsNothing,
+        reason: "Popup Window off: the bottom row's PiP goes");
+    expect(find.byIcon(Icons.crop_landscape_outlined), findsOneWidget);
+    expect(dashed, findsNothing);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('a 320 dp phone held upright keeps the title: the top bar '
+      'carries what fits, ♪, CC and the decoder first', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await pumpPlayer(tester,
+        phone: const Phone('320x640', 320, 640, 2.0), landscape: false,
+        lang: 'en');
+    await playerContainer!
+        .read(extraSettingsProvider.notifier)
+        .setStr(StringSetting.playerTopBar,
+            TopBarItem.write(TopBarItem.values.toSet()));
+    await _settle(tester);
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(160, 320));
+      await _settle(tester);
+    }
+    final bar = find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_TopBar');
+    Finder onBar(IconData i) =>
+        find.descendant(of: bar, matching: find.byIcon(i));
+    expect(onBar(Icons.music_note), findsOneWidget);
+    expect(onBar(Icons.subtitles_outlined), findsOneWidget);
+    expect(onBar(Icons.queue_music), findsNothing,
+        reason: 'four icons on 320 dp ran the title to nothing');
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await leavePlayer(tester);
+  });
+
+  testWidgets("Sleep Timer as MX's on the owner's phone sideways: its keys "
+      "at MX's size, its × clears the entry and does not close", (tester) async {
+    await pumpPlayer(tester,
+        phone: const Phone('384x823', 384, 823.5, 2.8125,
+            statusBar: 30, navBar: 48, cutout: 30),
+        landscape: true,
+        lang: 'en');
+    playerContainer!
+        .read(playerControllerProvider.notifier)
+        .openSleepTimerDialog();
+    await _settle(tester);
+    final key5 = find.bySemanticsLabel('5');
+    // MX's key cell (reference lab 45896496134): 74.6 x 49.1 dp.
+    final size = tester.getSize(key5);
+    expect(size.width / 74.6, greaterThan(0.97),
+        reason: 'the keys were 0.87 of MX\'s');
+    await tester.tap(key5);
+    await tester.tap(find.bySemanticsLabel('3'));
+    await tester.pump();
+    expect(find.text('0h 53m', findRichText: true), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Clear'));
+    await tester.pump();
+    expect(find.text('0h 00m', findRichText: true), findsOneWidget,
+        reason: '× clears the entry');
+    expect(_state().sleepTimerDialogOpen, isTrue, reason: 'and stays open');
+    await leavePlayer(tester);
+  });
+
+  testWidgets('Back puts the A-B bar away, not the film', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await _settle(tester);
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
+    await tester.ensureVisible(ab.first);
+    await tester.pump();
+    await tester.tap(ab.first);
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsOneWidget);
+    await _back(tester);
+    expect(find.byType(ABRepeatBar), findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('in system PiP, Customise Items draws no edit view',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    final c = playerContainer!.read(playerControllerProvider.notifier);
+    c.openCustomisePanel();
+    await _settle(tester);
+    final dashed =
+        find.byWidgetPredicate((w) => w is EditSlot && w.editing);
+    expect(dashed, findsWidgets);
+    c.setInSystemPip(true);
+    await _settle(tester);
+    expect(dashed, findsNothing);
+    c.setInSystemPip(false);
+    await _settle(tester);
+    // Android saying PiP began (the Home button): the card goes too.
+    playerContainer!.read(pipServiceProvider).onPipModeChanged?.call(true);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(CustomiseTopBarCard), findsNothing);
+    playerContainer!.read(pipServiceProvider).onPipModeChanged?.call(false);
+    await _settle(tester);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('what Customise Items hides stays reachable: ♪ and CC in ⋮ '
+      'sideways, the decoder and PiP on its More page', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await playerContainer!.read(extraSettingsProvider.notifier).setStr(
+        StringSetting.playerTopBar, TopBarItem.write({TopBarItem.screenMode}));
+    await _settle(tester);
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(400, 200));
+      await _settle(tester);
+    }
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    Finder inMore(Finder f) =>
+        find.descendant(of: find.byType(MoreMenuPanel), matching: f);
+    expect(inMore(find.byIcon(Icons.music_note)), findsOneWidget);
+    expect(inMore(find.byIcon(Icons.subtitles_outlined)), findsOneWidget);
+    final more = inMore(find.byIcon(Icons.chevron_right_rounded));
+    await tester.ensureVisible(more.first);
+    await tester.pump();
+    await tester.tap(more.first);
+    await _settle(tester);
+    final pip = find.text('Picture-in-picture');
+    expect(pip, findsOneWidget);
+    final decoder = find.text('Decoder');
+    await tester.ensureVisible(decoder);
+    await tester.pump();
+    await tester.tap(decoder);
+    await _settle(tester);
+    expect(_state().decoderDialogOpen, isTrue);
+    playerContainer!.read(playerControllerProvider.notifier).closeDecoderDialog();
+    await _settle(tester);
     await leavePlayer(tester);
   });
 
@@ -602,15 +1021,15 @@ void main() {
     await tutorial(tester);
     final help = find.byType(GesturesHelpOverlay);
     expect(help, findsOneWidget);
-    // On the player's glass, as every menu of the player.
-    expect(find.ancestor(of: help, matching: find.byType(PlayerGlass)),
+    // On the player's shade, as every menu of the player.
+    expect(find.ancestor(of: help, matching: find.byType(PlayerShade)),
         findsOneWidget);
     expect(find.text('Player gestures'), findsOneWidget);
     expect(find.text('Tap anywhere to dismiss'), findsNothing);
-    // A keyboard or a remote walks the twelve rows, and the list scrolls
-    // to the last.
+    // A keyboard or a remote walks the header's ← (upright, as MX's,
+    // 26 Nov 2026) and the twelve rows, and the list scrolls to the last.
     final last = find.text('Headset button');
-    for (var i = 0; i < 12; i++) {
+    for (var i = 0; i < 13; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();
     }

@@ -201,6 +201,26 @@ extension PlayerModes on PlayerController {
     }
   }
 
+  /// MX's A-B bar (26 Nov 2026): its A sets A where the film is (and lets
+  /// go of B); its B sets B, after A, and the loop starts. True when the
+  /// point was set.
+  bool setABPointA() {
+    state = state.copyWith(abPointA: _livePosition(), abPointB: null);
+    return true;
+  }
+
+  bool setABPointB() {
+    final a = state.abPointA;
+    final now = _livePosition();
+    if (a == null || now <= a) return false;
+    state = state.copyWith(abPointB: now);
+    return true;
+  }
+
+  void clearABRepeat() {
+    state = state.copyWith(abPointA: null, abPointB: null);
+  }
+
   void updateVisibleShortcuts(Set<ShortcutItem> shortcuts) {
     state = state.copyWith(visibleShortcuts: shortcuts);
     // Persist it. Without this the Customise Items screen was write-only:

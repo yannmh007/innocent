@@ -52,8 +52,75 @@ class PlayerUi {
 
   static bool _probed = false;
 
+  /// THE SHADE (the owner, 22 Nov 2026, after the reference lab: "as MX —
+  /// it disturbs the film less while it plays than the misted glass"; and
+  /// again: "MX's is more see-through, the film behind shows; ours is still
+  /// heavier"). A panel or sheet neither blurs nor dims the picture as a
+  /// whole. Behind it a shade of [shadeColour] lets [shadeSeeThrough] of the
+  /// film show through — 40 %, as much as MX lets through its panels
+  /// (measured over a white and a black frame, grey levels only: run
+  /// 45019756405) — and before its edge the shade thins out over
+  /// [shadeFade] dp, to [shadeMid] at [shadeMidAt] dp before the edge and
+  /// to nothing at the far end, as MX's does. MX's see-through, never its
+  /// colours. The words and icons on it carry [shadeInk], a soft dark
+  /// halo, so they still read over a white, a busy or a colourful frame
+  /// (test/player_legibility_test.dart: 4.5:1 for text, 3:1 for icons).
+  static const double shadeSeeThrough = 0.40;
+
+  /// The shade's colour: the scrim's black, not [surface]'s grey — at the
+  /// same see-through a grey shade over a bright film left words 15 % less
+  /// contrast (the legibility test, 22 Nov 2026).
+  static const Color shadeColour = Color(0xFF000000);
+  static const double shadeFade = 360;
+  static const double shadeMidAt = 160;
+  static const double shadeMid = 0.20;
+  static const List<Shadow> shadeInk = <Shadow>[
+    // Tight, then soft: the first two keep a dark rim round every stroke,
+    // the last a quiet ground under a word.
+    Shadow(color: Color(0xFF000000), blurRadius: 1),
+    Shadow(color: Color(0xE6000000), blurRadius: 3),
+    Shadow(color: Color(0x80000000), blurRadius: 10),
+  ];
+
+  /// How far a panel or sheet reaches from its edge: as MX's (one square,
+  /// the screen's short side — 384 dp, 46.6 % of the owner's 823 dp
+  /// screen, upright and sideways alike; reference lab, 22 Nov 2026), never
+  /// more than 46.6 % of the long side (a tablet). It was 55 % upright, 46 %
+  /// sideways.
+  ///
+  /// On a tablet (the owner, 26 Nov 2026, from MX on a 10" tablet,
+  /// reference lab 45828625924): MX's panels were 480 dp exactly, both ways
+  /// (37.5 % of 1280): the short side, at most 480. With the 46.6 % of the
+  /// phone measure still a cap (a split window: MX was not measured there).
+  static double panelExtent(Size size) {
+    final cap = size.longestSide * 0.466;
+    final reach = size.shortestSide < cap ? size.shortestSide : cap;
+    return reach < 480 ? reach : 480;
+  }
+
+  /// Sideways, a side panel's width: the reach, 480 at most (MX's on a
+  /// tablet), 280 at least (a narrow window).
+  static double sideWidth(Size size) => panelExtent(size).clamp(280.0, 480.0);
+
+  /// How many player sheets are open (showPlayerSheet): the player lifts
+  /// the subtitle over an upright one, as over an open panel.
+  static final ValueNotifier<int> openSheets = ValueNotifier<int>(0);
+
   /// A tile, card or chip on a menu: a light film over the glass.
   static const Color raised = Color(0x1FFFFFFF);
+
+  /// The disc under a tile's icon on the see-through shade: darker than
+  /// the shade, so the icon keeps its ground over a bright film.
+  static const Color tileDisc = Color(0x4D000000);
+
+  /// The ring round a tile's disc, as MX rings its tiles (the owner, 26 Nov
+  /// 2026); the box round the subtitle tracks; an idle radio or check box —
+  /// an outline only, as MX's: over a white film the shade under it is
+  /// grey 102 at most, and the ring (white 70 %) reads 3.7:1 there. A dark
+  /// halo under it filled the idle box and ring black (run 45775539414).
+  static const Color tileRing = Color(0x8CFFFFFF);
+  static const Color boxEdge = Color(0x66FFFFFF);
+  static const Color markIdle = Color(0xB3FFFFFF);
 
   static const Color hairline = Color(0x1AFFFFFF);
   static const Color textPrimary = Color(0xEBFFFFFF);
@@ -85,8 +152,11 @@ class PlayerUi {
     color: textPrimary,
     fontSize: 15,
   );
+  // A row's value is told from its title by size, not by grey: on the
+  // shade over a white film the 62 % grey read 2.35:1 (♪'s "0 ms", the
+  // legibility test, 26 Nov 2026); white (with the shade's ink) passes.
   static const TextStyle rowValue = TextStyle(
-    color: textSecondary,
+    color: textPrimary,
     fontSize: 13,
   );
   static const TextStyle body = TextStyle(
@@ -94,15 +164,38 @@ class PlayerUi {
     fontSize: 14,
     height: 1.45,
   );
+  /// White, not [textPrimary]: the smallest word on the shade (26 Nov
+  /// 2026: ⋮'s labels over a white film read 3.7-4.3:1 at 92 % white, 11
+  /// below 4.5 sideways; at 100 %, 2).
   static const TextStyle tileLabel = TextStyle(
-    color: textPrimary,
+    color: Colors.white,
     fontSize: 12,
     fontWeight: FontWeight.w500,
   );
 
+  /// [tileLabel] for the viewer's language: Burmese and Thai a weight up.
+  /// Their strokes are thinner than Latin's at 12 sp: over a white film 11
+  /// of their ⋮ words read 3.5-4.4:1 by the strict measure (the legibility
+  /// test, 26 Nov 2026); a weight up, 5 (Thai none), the rest Burmese's
+  /// finest marks (ဖြတ်ရန်, အကြိုက်: 3.8-4.5 at the 10th percentile of
+  /// their pixels, over 5 at the strokes). 13 sp made it no better.
+  static TextStyle tileLabelIn(BuildContext context) {
+    final code = Localizations.localeOf(context).languageCode;
+    return code == 'my' || code == 'th'
+        ? tileLabel.copyWith(fontWeight: FontWeight.w600)
+        : tileLabel;
+  }
+
   /// Side padding of a panel: a little less on the narrowest phones.
-  static double pad(BuildContext context) =>
-      MediaQuery.sizeOf(context).shortestSide < 360 ? 16 : 20;
+  /// 24, as MX Player's panels keep their content about 26 dp in (the
+  /// reference lab, 22 Nov 2026, on the owner's 384 dp phone; the owner
+  /// chose MX's spacing): it was 20.
+  /// On a tablet (short side 600 dp or more) 32, as MX's there (reference
+  /// lab 45828625924: its rows 32 dp in, its panel the screen's width).
+  static double pad(BuildContext context) {
+    final short = MediaQuery.sizeOf(context).shortestSide;
+    return short >= 600 ? 32 : (short < 360 ? 20 : 24);
+  }
 
   /// A dialog's surface: the panel's colour and corners.
   static ShapeBorder get dialogShape => RoundedRectangleBorder(
@@ -111,9 +204,11 @@ class PlayerUi {
 }
 
 /// A menu of the player: a side panel from the right with the phone held
-/// sideways, a bottom sheet upright. Opaque, over a dimmed picture; a tap
-/// on the picture closes it. Its body scrolls, and fades at an edge that
-/// has more. It slides in.
+/// sideways, a bottom sheet upright, MX's reach both ways
+/// ([PlayerUi.panelExtent]). On the [PlayerShade]: the picture is neither
+/// dimmed nor blurred, only darkened behind the words (the owner, 22 Nov
+/// 2026); a tap on the picture closes it. Its body scrolls, and fades at
+/// an edge that has more. It slides in.
 class PlayerPanel extends StatelessWidget {
   const PlayerPanel({
     super.key,
@@ -121,6 +216,7 @@ class PlayerPanel extends StatelessWidget {
     required this.onDismiss,
     this.title,
     this.trailing,
+    this.onBack,
   });
 
   final String? title;
@@ -128,18 +224,20 @@ class PlayerPanel extends StatelessWidget {
   final List<Widget> children;
   final VoidCallback onDismiss;
 
+  /// A page inside a panel (⋮'s "More", as MX's): its ← goes back a page,
+  /// both ways round. Without it, upright the ← closes the panel.
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
     final portrait = size.height >= size.width;
     final pad = PlayerUi.pad(context);
     final padding = MediaQuery.paddingOf(context);
+    final extent = PlayerUi.panelExtent(size);
 
-    final surface = PlayerGlass(
-      borderRadius: portrait
-          ? const BorderRadius.vertical(top: Radius.circular(PlayerUi.radius))
-          : const BorderRadius.horizontal(
-              left: Radius.circular(PlayerUi.radius)),
+    final surface = PlayerShade(
+      sideways: !portrait,
       child: Padding(
         // Sideways the panel runs under the status bar and the navigation
         // buttons; its content keeps clear of both.
@@ -148,21 +246,25 @@ class PlayerPanel extends StatelessWidget {
           right: portrait ? 0 : padding.right,
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (portrait) const PlayerDragHandle(),
+            // As MX's (the owner, 26 Nov 2026: "as MX, all of it"): no
+            // handle; upright a ← before the title closes the panel; the
+            // title as near the top as MX's (its middle 28 dp down).
             if (title != null)
               _PanelHeader(
                 title: title!,
                 trailing: trailing,
-                top: portrait ? 2 : 14,
+                top: portrait ? 4 : 6,
+                onBack: onBack ?? (portrait ? onDismiss : null),
               ),
             Flexible(
               child: _FadingScroll(
                 padding: EdgeInsets.fromLTRB(
                   pad,
-                  title == null ? (portrait ? 4 : 18) : 2,
+                  // No title (⋮): the first tiles 34 dp down, as MX's.
+                  title == null ? 30 : 2,
                   pad,
                   20 + (portrait ? padding.bottom : 0),
                 ),
@@ -181,16 +283,14 @@ class PlayerPanel extends StatelessWidget {
       builder: (context, t, panel) => Stack(
         children: [
           Positioned.fill(
-            // Read as Android reads a dialog's backdrop: "Dismiss".
+            // Read as Android reads a dialog's backdrop: "Dismiss". Nothing
+            // drawn: the picture is not dimmed (the shade, 22 Nov).
             child: Semantics(
               label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
               child: GestureDetector(
                 onTap: onDismiss,
                 behavior: HitTestBehavior.opaque,
-                child: Opacity(
-                  opacity: t,
-                  child: const ColoredBox(color: PlayerUi.scrim),
-                ),
+                child: const SizedBox.expand(),
               ),
             ),
           ),
@@ -201,19 +301,18 @@ class PlayerPanel extends StatelessWidget {
               bottom: 0,
               child: FractionalTranslation(
                 translation: Offset(0, 1 - t),
-                // No wider than 640, centred: on a tablet held upright the
-                // tiles stood 200 dp apart across the screen (Google's
-                // large-screen guideline: no full-width bottom sheets).
+                // The screen's width, as MX's on a tablet held upright
+                // (reference lab 45828625924; the owner took it over the
+                // 640 dp cap of Google's large-screen guideline, 26 Nov).
                 child: Align(
                   alignment: Alignment.bottomCenter,
                   heightFactor: 1,
-                  child: ConstrainedBox(
-                    // 55 %, not 72: upright it rose over the whole picture
-                    // (owner's screenshot, 12 Nov). What it covers shows
-                    // through its glass.
-                    constraints: BoxConstraints(
-                        maxWidth: 640, maxHeight: size.height * 0.55),
-                    child: panel,
+                  child: SizedBox(
+                    // MX's reach, the same for every panel (panelExtent):
+                    // what it covers below its words is shade, not glass.
+                    width: size.width,
+                    height: extent,
+                    child: Opacity(opacity: t, child: panel),
                   ),
                 ),
               ),
@@ -223,12 +322,12 @@ class PlayerPanel extends StatelessWidget {
               right: 0,
               top: 0,
               bottom: 0,
-              // Up to 400 dp of content; the navigation buttons' strip is
-              // added to it, not taken from it.
-              width: (size.width * 0.46).clamp(300.0, 400.0) + padding.right,
+              // MX's reach; the navigation buttons' strip is added to it,
+              // not taken from it.
+              width: PlayerUi.sideWidth(size) + padding.right,
               child: FractionalTranslation(
                 translation: Offset(1 - t, 0),
-                child: panel,
+                child: Opacity(opacity: t, child: panel),
               ),
             ),
         ],
@@ -239,17 +338,28 @@ class PlayerPanel extends StatelessWidget {
 }
 
 class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({required this.title, required this.top, this.trailing});
+  const _PanelHeader({
+    required this.title,
+    required this.top,
+    this.trailing,
+    this.onBack,
+  });
 
   final String title;
   final Widget? trailing;
   final double top;
 
+  /// Upright, MX's ← before the title (26 Nov 2026): it closes.
+  final VoidCallback? onBack;
+
   @override
   Widget build(BuildContext context) {
     final pad = PlayerUi.pad(context);
     return Padding(
-      padding: EdgeInsets.fromLTRB(pad, top, pad - 8, 6),
+      // With a ←, its 48 dp target starts 12 dp before the edge, so the
+      // arrow itself sits on it and the title 60 dp in, as MX's.
+      padding: EdgeInsets.fromLTRB(
+          onBack != null ? pad - 12 : pad, top, pad - 8, 0),
       child: ConstrainedBox(
         constraints: const BoxConstraints(minHeight: 44),
         // The action at the right edge, as wide as it needs up to half the
@@ -258,6 +368,13 @@ class _PanelHeader extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, c) => Row(
             children: [
+              if (onBack != null)
+                IconButton(
+                  onPressed: onBack,
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  icon: const Icon(Icons.arrow_back_rounded,
+                      size: 24, color: PlayerUi.textPrimary),
+                ),
               Expanded(
                 child: Semantics(
                   header: true,
@@ -491,7 +608,11 @@ class PanelRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colour = selected ? PlayerUi.accent : PlayerUi.textPrimary;
+    // A choice is marked as MX and Android mark one (the owner, 26 Nov
+    // 2026: "as MX, all of it"): a ring, a dot in it when chosen. The
+    // title stays white: a blue title over a bright film read 1.3:1 on the
+    // see-through shade (the legibility test, 22 Nov).
+    const colour = PlayerUi.textPrimary;
     return Semantics(
       selected: selected,
       child: InkWell(
@@ -506,16 +627,12 @@ class PanelRow extends StatelessWidget {
                 if (choice)
                   SizedBox(
                     width: 22,
-                    child: selected
-                        ? const Icon(Icons.check_rounded,
-                            size: 22, color: PlayerUi.accent)
-                        : null,
+                    child: Center(child: PanelRadio(selected: selected)),
                   )
                 else if (icon != null)
                   Icon(icon,
                       size: 22,
-                      color:
-                          selected ? PlayerUi.accent : PlayerUi.textSecondary),
+                      color: PlayerUi.textPrimary),
                 if (choice || icon != null) const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -525,7 +642,12 @@ class PanelRow extends StatelessWidget {
                 ),
                 if (value != null) ...[
                   const SizedBox(width: 12),
-                  Flexible(
+                  // At the row's end, up to 160 dp: as a Flexible beside
+                  // the Expanded title the two split the row and the value
+                  // sat in its middle (♪'s "Audio delay  0 ms" on the
+                  // emulator, run 45796876490).
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
                     child: Text(
                       value!,
                       maxLines: 1,
@@ -538,7 +660,9 @@ class PanelRow extends StatelessWidget {
                 if (selected && !choice) ...[
                   const SizedBox(width: 12),
                   const Icon(Icons.check_rounded,
-                      size: 22, color: PlayerUi.accent),
+                      size: 22,
+                      color: PlayerUi.textPrimary,
+                      shadows: PlayerUi.shadeInk),
                 ] else if (chevron) ...[
                   const SizedBox(width: 8),
                   const Icon(Icons.chevron_right_rounded,
@@ -548,6 +672,289 @@ class PanelRow extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A choice's mark (the owner, 26 Nov 2026: "as MX, all of it"): a ring,
+/// with a dot in it when chosen — the mark MX and Android give one choice
+/// of a list. An outline: nothing fills it while it is not chosen.
+class PanelRadio extends StatelessWidget {
+  const PanelRadio({super.key, required this.selected});
+
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+            color: selected ? PlayerUi.textPrimary : PlayerUi.markIdle,
+            width: 2),
+      ),
+      child: selected
+          ? Center(
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                    color: PlayerUi.accent, shape: BoxShape.circle),
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+/// A check box's mark: a rounded square, filled with a ✓ when on — as
+/// MX draws its subtitle tracks (the owner, 26 Nov 2026).
+class PanelCheckMark extends StatelessWidget {
+  const PanelCheckMark({super.key, required this.value});
+
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color: value ? PlayerUi.accent : null,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+            color: value ? PlayerUi.accent : PlayerUi.markIdle, width: 2),
+      ),
+      child: value
+          ? const Icon(Icons.check_rounded,
+              size: 16, color: Colors.white, shadows: <Shadow>[])
+          : null,
+    );
+  }
+}
+
+/// One row of a [PanelCheckBox] group.
+class PanelCheck {
+  const PanelCheck({required this.title, required this.value, required this.onTap});
+
+  final String title;
+  final bool value;
+  final VoidCallback onTap;
+}
+
+/// Check box rows in a box (the owner, 26 Nov 2026: "English, Burmese in a
+/// rectangle, as MX"): the film's subtitle tracks, each a check box and its
+/// name, inside a thin rectangle. The row takes the tap.
+class PanelCheckBox extends StatelessWidget {
+  const PanelCheckBox({super.key, required this.rows});
+
+  final List<PanelCheck> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: PlayerUi.boxEdge),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final r in rows)
+            MergeSemantics(
+              child: Semantics(
+                checked: r.value,
+                child: InkWell(
+                  onTap: r.onTap,
+                  borderRadius: BorderRadius.circular(6),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      child: Row(
+                        children: [
+                          PanelCheckMark(value: r.value),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Text(r.title,
+                                style: PlayerUi.rowTitle
+                                    .copyWith(color: PlayerUi.textPrimary)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A row that opens below itself, as MX's subtitle "Settings ▾" does (the
+/// owner, 26 Nov 2026): an icon, a title and a caret; its rows show while
+/// it is open. Shut when the panel opens.
+class PanelExpandRow extends StatefulWidget {
+  const PanelExpandRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  State<PanelExpandRow> createState() => _PanelExpandRowState();
+}
+
+class _PanelExpandRowState extends State<PanelExpandRow> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(widget.icon, size: 22, color: PlayerUi.textPrimary),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(widget.title,
+                          style: PlayerUi.rowTitle
+                              .copyWith(color: PlayerUi.textPrimary)),
+                    ),
+                    Icon(
+                        _open
+                            ? Icons.arrow_drop_up_rounded
+                            : Icons.arrow_drop_down_rounded,
+                        size: 26,
+                        color: PlayerUi.textPrimary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open) ...widget.children,
+      ],
+    );
+  }
+}
+
+/// A value set by steps: its name on the left, − value + on the right
+/// (every stepper of a sheet in one column). A tap on the value puts it
+/// back. The subtitle's timing, size and position; the audio's delay.
+class PanelStepperRow extends StatelessWidget {
+  const PanelStepperRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+    required this.onReset,
+    required this.minusTooltip,
+    required this.plusTooltip,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onMinus;
+  final VoidCallback onPlus;
+  final VoidCallback onReset;
+  final String minusTooltip;
+  final String plusTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 56),
+      child: Row(
+        children: [
+          Icon(icon, color: PlayerUi.textSecondary, size: 22),
+          const SizedBox(width: 16),
+          Expanded(child: Text(label, style: PlayerUi.rowTitle)),
+          _StepButton(
+            icon: Icons.remove_rounded,
+            onPressed: onMinus,
+            tooltip: minusTooltip,
+          ),
+          SizedBox(
+            width: 76,
+            child: GestureDetector(
+              // Tapping the number resets that one row. Cheap to reach, and
+              // obvious once found — the value is the thing you are staring at.
+              onTap: onReset,
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: PlayerUi.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ),
+          _StepButton(
+            icon: Icons.add_rounded,
+            onPressed: onPlus,
+            tooltip: plusTooltip,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// − or + of a stepper: a 40 dp tonal circle.
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        backgroundColor: PlayerUi.raised,
+        foregroundColor: PlayerUi.textPrimary,
+        fixedSize: const Size(40, 40),
+        minimumSize: const Size(40, 40),
       ),
     );
   }
@@ -583,7 +990,9 @@ class PanelSwitchRow extends StatelessWidget {
               child: Row(
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 22, color: PlayerUi.textSecondary),
+                    // White, as the row's words: grey read 2.5:1 over a
+                    // white film (⋮'s Video Display, 26 Nov 2026).
+                    Icon(icon, size: 22, color: PlayerUi.textPrimary),
                     const SizedBox(width: 16),
                   ],
                   Expanded(child: Text(title, style: PlayerUi.rowTitle)),
@@ -628,7 +1037,9 @@ class PanelTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(PlayerUi.tileRadius),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(2, 8, 2, 8),
+          // MX's proportions (26 Nov 2026): a 44 dp disc (MX's 45), rows
+          // about 88 dp apart (MX's 83; they were 110).
+          padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -636,12 +1047,20 @@ class PanelTile extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color:
-                          selected ? PlayerUi.accentContainer : PlayerUi.raised,
+                      // A dark disc in a thin ring, as MX rings its tiles
+                      // (the owner, 26 Nov 2026). Dark: on the see-through
+                      // shade a light disc lifted the ground under a white
+                      // icon over a bright film to 2.9:1 (22 Nov).
+                      color: selected
+                          ? PlayerUi.accentContainer
+                          : PlayerUi.tileDisc,
                       shape: BoxShape.circle,
+                      border: Border.all(
+                          color: selected ? PlayerUi.accent : PlayerUi.tileRing,
+                          width: 1.2),
                     ),
                     child: Icon(icon,
                         size: 22,
@@ -665,7 +1084,7 @@ class PanelTile extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               // Three lines at most: two hold every label at the usual
               // sizes; the third keeps a Burmese one whole on a 320 dp
               // phone at the largest font ("ဖွင့်နေသော စ…").
@@ -674,7 +1093,7 @@ class PanelTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: PlayerUi.tileLabel,
+                style: PlayerUi.tileLabelIn(context),
               ),
             ],
           ),
@@ -749,7 +1168,9 @@ class PlayerSheetHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.trailing,
-    this.divider = true,
+    // No line under the title, as MX's sheets have none (the owner, 26 Nov
+    // 2026: "as MX, all of it").
+    this.divider = false,
   });
 
   final String title;
@@ -764,10 +1185,14 @@ class PlayerSheetHeader extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Sideways a sheet is a side panel (showPlayerSheet): nothing to
-        // drag.
-        if (upright) const PlayerDragHandle(),
-        _PanelHeader(title: title, trailing: trailing, top: upright ? 2 : 14),
+        // As a panel's (26 Nov 2026): no handle — upright the whole sheet
+        // still drags down to close — and upright a ← that closes it.
+        _PanelHeader(
+          title: title,
+          trailing: trailing,
+          top: upright ? 4 : 6,
+          onBack: upright ? () => Navigator.of(context).maybePop() : null,
+        ),
         if (divider)
           const Divider(height: 1, thickness: 1, color: PlayerUi.hairline),
       ],
@@ -775,13 +1200,13 @@ class PlayerSheetHeader extends StatelessWidget {
   }
 }
 
-/// A sheet of the player. Upright, a bottom sheet of frosted glass, as tall
-/// as its content up to 85 % of the screen, no wider than 640 dp, dragged
-/// or flicked down to close. Sideways, the same content in a glass panel
-/// from the right, the whole height — as ⋮ and the subtitle panel are: a
-/// bottom sheet on a phone held sideways had some 300 dp and cut the lists,
-/// the sliders and the buttons (12 Nov). [barrierColor] transparent for a
-/// sheet that changes the picture, so the change can be seen.
+/// A sheet of the player. Upright, a bottom sheet on the [PlayerShade], as
+/// tall as every panel ([PlayerUi.panelExtent], MX's reach: 22 Nov 2026),
+/// the screen's width (MX's, 26 Nov 2026), dragged or flicked down to close. Sideways, the
+/// same content in a panel from the right, the whole height — as ⋮ and the
+/// subtitle panel are: a bottom sheet on a phone held sideways had some
+/// 300 dp and cut the lists, the sliders and the buttons (12 Nov). The
+/// picture is not dimmed behind it; [barrierColor] can still set a dim.
 ///
 /// The form follows the WINDOW while the sheet is open (_PlayerSheetFrame):
 /// it was chosen once, on opening, so a phone turned under an open sheet —
@@ -793,11 +1218,13 @@ Future<T?> showPlayerSheet<T>(
   required WidgetBuilder builder,
   Color? barrierColor,
 }) {
+  PlayerUi.openSheets.value++;
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: barrierColor ?? PlayerUi.scrim,
+    // The picture is not dimmed behind a sheet (the shade, 22 Nov 2026).
+    barrierColor: barrierColor ?? Colors.transparent,
     transitionDuration: PlayerUi.motion,
     pageBuilder: (_, __, ___) => _PlayerSheetFrame(builder: builder),
     transitionBuilder: (context, animation, __, child) {
@@ -812,11 +1239,11 @@ Future<T?> showPlayerSheet<T>(
         child: child,
       );
     },
-  );
+  ).whenComplete(() => PlayerUi.openSheets.value--);
 }
 
-/// The frame of a player sheet, by the window: a glass bottom sheet
-/// upright, a glass panel from the right, the whole height, sideways. Every
+/// The frame of a player sheet, by the window: a bottom sheet upright, a
+/// panel from the right, the whole height, sideways, both on the shade. Every
 /// widget above the content is the same in both forms — only their values
 /// change — so a turn keeps the content's element and its state (a cut's
 /// marks, the subtitle panel's values).
@@ -874,9 +1301,12 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
     final size = MediaQuery.sizeOf(context);
     final padding = MediaQuery.paddingOf(context);
     final sideways = size.width > size.height;
+    // MX's reach, as every panel's (PlayerUi.panelExtent): upright the
+    // screen's short side tall, sideways as wide.
     final width = sideways
-        ? (size.width * 0.46).clamp(300.0, 400.0) + padding.right
-        : size.width.clamp(0.0, 640.0);
+        ? PlayerUi.sideWidth(size) + padding.right
+        : size.width;
+    final extent = PlayerUi.panelExtent(size);
     return Align(
       alignment: sideways ? Alignment.centerRight : Alignment.bottomCenter,
       child: Transform.translate(
@@ -890,24 +1320,15 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
             key: _sheet,
             constraints: sideways
                 ? BoxConstraints.tightFor(width: width, height: size.height)
-                : BoxConstraints(
-                    minWidth: width,
-                    maxWidth: width,
-                    maxHeight: size.height * 0.85,
-                  ),
-            child: PlayerGlass(
-              borderRadius: sideways
-                  ? const BorderRadius.horizontal(
-                      left: Radius.circular(PlayerUi.radius))
-                  : const BorderRadius.vertical(
-                      top: Radius.circular(PlayerUi.radius)),
+                : BoxConstraints.tightFor(width: width, height: extent),
+            child: PlayerShade(
+              sideways: sideways,
               child: Padding(
                 padding: sideways
                     ? EdgeInsets.only(top: padding.top, right: padding.right)
                     : EdgeInsets.only(bottom: padding.bottom),
                 child: Column(
-                  mainAxisSize:
-                      sideways ? MainAxisSize.max : MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [Flexible(child: Builder(builder: widget.builder))],
                 ),
@@ -920,9 +1341,169 @@ class _PlayerSheetFrameState extends State<_PlayerSheetFrame>
   }
 }
 
+/// The dark ground under the controls' top bar (from the top) or bottom
+/// row (from the bottom): black at [edge] at the screen's edge, at least
+/// [hold] across the bar, where its words and icons are, then thinning out
+/// to nothing over [fade] dp beyond it (drawn outside the bar, taking no
+/// taps), so it has no edge. Its words and icons carry [PlayerUi.shadeInk]
+/// too (as a panel's).
+///
+/// Why (26 Nov 2026): the bars' gradients ran from 80 % black at the edge
+/// to nothing across the bar itself, as light as MX's (the reference lab,
+/// run 45781933354: within a few grey levels of each other), and over a
+/// white, busy or colourful frame the title read 2.2:1, ♪ and CC 2.0, the
+/// elapsed time 1.5 (test/player_legibility_test.dart; 4.5:1 text, 3:1
+/// icons). A halo alone lifted them to 2.0-3.7: two or three pixels off a
+/// thin stroke it is too faint. Held at 50 % black across the bar (MX's
+/// level where its title sits, but held, not ramped), the lowest word
+/// reads 5.8:1 over a white film (45 %: 5.1; 62 %: 7.8); over a dark one
+/// nothing changes.
+class BarShade extends StatelessWidget {
+  const BarShade({super.key, required this.fromTop, required this.child});
+
+  /// The top bar; else the bottom row.
+  final bool fromTop;
+  final Widget child;
+
+  static const double edge = 0.80;
+  static const double hold = 0.50;
+  static const double fade = 64;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          top: fromTop ? 0 : -fade,
+          bottom: fromTop ? -fade : 0,
+          child: IgnorePointer(
+            child: LayoutBuilder(builder: (context, c) {
+              final total = c.maxHeight;
+              final bar = (total - fade).clamp(0.0, total);
+              final at = total > 0 ? bar / total : 1.0;
+              final half = total > 0 ? (bar + fade * 0.45) / total : 1.0;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: fromTop ? Alignment.topCenter : Alignment.bottomCenter,
+                    end: fromTop ? Alignment.bottomCenter : Alignment.topCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: edge),
+                      Colors.black.withValues(alpha: hold),
+                      Colors.black.withValues(alpha: hold * 0.4),
+                      Colors.black.withValues(alpha: 0),
+                    ],
+                    stops: [0, at, half, 1],
+                  ),
+                ),
+              );
+            }),
+          ),
+        ),
+        FilmInk(child: child),
+      ],
+    );
+  }
+}
+
+/// Words and icons drawn straight on the film carry [PlayerUi.shadeInk], as
+/// a panel's do: the controls' bars (inside [BarShade]) and the shortcut
+/// row, whose labels hang on the film under its discs when it is open.
+class FilmInk extends StatelessWidget {
+  const FilmInk({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTextStyle.merge(
+      style: const TextStyle(shadows: PlayerUi.shadeInk),
+      child: IconTheme.merge(
+        data: const IconThemeData(shadows: PlayerUi.shadeInk),
+        child: child,
+      ),
+    );
+  }
+}
+
+/// The shade behind a panel or sheet ([PlayerUi.shadeSeeThrough]): within
+/// the menu, [PlayerUi.shadeColour] letting 40 % of the film through; before
+/// its edge (above it upright, left of it sideways) thinning out over
+/// [PlayerUi.shadeFade] dp to nothing. No blur, no edge, no corners: the film
+/// stays sharp. The fade before the edge is drawn outside the menu's box and
+/// takes no taps (a tap there closes the menu, as anywhere off it). Words
+/// and icons on it carry [PlayerUi.shadeInk]. Ink draws on it.
+class PlayerShade extends StatelessWidget {
+  const PlayerShade({super.key, required this.sideways, required this.child});
+
+  /// The menu rises from the right; else from the bottom.
+  final bool sideways;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) {
+      const fade = PlayerUi.shadeFade;
+      final reach = (sideways ? c.maxWidth : c.maxHeight);
+      final length = (reach.isFinite ? reach : 400.0) + fade;
+      const full = 1 - PlayerUi.shadeSeeThrough;
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: sideways ? -fade : 0,
+            top: sideways ? 0 : -fade,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: sideways ? Alignment.centerLeft : Alignment.topCenter,
+                    end: sideways ? Alignment.centerRight : Alignment.bottomCenter,
+                    colors: [
+                      PlayerUi.shadeColour.withValues(alpha: 0),
+                      PlayerUi.shadeColour.withValues(alpha: PlayerUi.shadeMid),
+                      PlayerUi.shadeColour.withValues(alpha: full),
+                      PlayerUi.shadeColour.withValues(alpha: full),
+                    ],
+                    stops: [
+                      0,
+                      (fade - PlayerUi.shadeMidAt) / length,
+                      fade / length,
+                      1,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Material(
+              type: MaterialType.transparency,
+              // The halo on every word and icon of the menu: the film shows
+              // through the shade, so a word may sit on white.
+              child: DefaultTextStyle.merge(
+                style: const TextStyle(shadows: PlayerUi.shadeInk),
+                child: IconTheme.merge(
+                  data: const IconThemeData(shadows: PlayerUi.shadeInk),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
 /// Frosted glass: the film behind blurred, under [PlayerUi.glassTint], a
 /// faint edge; [PlayerUi.surface] where the phone cannot afford the blur.
-/// Ink (a row's ripple) draws on it.
+/// Ink (a row's ripple) draws on it. A dialog's and a card's surface; a
+/// panel or sheet has the [PlayerShade] since 22 Nov 2026.
 class PlayerGlass extends StatelessWidget {
   const PlayerGlass({
     super.key,

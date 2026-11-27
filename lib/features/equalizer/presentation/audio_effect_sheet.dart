@@ -8,55 +8,36 @@ import '../../../core/services/equalizer/equalizer_service.dart';
 import '../../../core/services/preferences/player_settings_service.dart';
 import '../../../core/theme/app_colors.dart';
 import 'equalizer_screen.dart' show equalizerServiceProvider;
+import '../../player/presentation/widgets/player_ui.dart';
 
 import '../../../core/localization/app_strings.dart';
 import '../../../core/ui/tv_focus.dart';
 import '../../../core/ui/safe_popup_menu.dart';
 
-// ── MX Player-sampled palette (v0.49.2 visual parity pass). Values were
-// measured from reference screenshots at density 3.0, so this sheet
-// matches MX pixel-for-pixel without disturbing the app-wide tokens. ──
-const Color _mxActive = Color(0xFF66BAFF);      // thumb, active track, dial dot
-const Color _mxTrackMuted = Color(0xFF335777);  // inactive (upper) track
-const Color _mxCardBorder = Color(0xFF35455F);  // band panel + card borders
-const Color _mxSelTop = Color(0xFF20356A);      // selected card gradient top
-const Color _mxSelBottom = Color(0xFF233D78);   // selected card gradient bottom
-const Color _mxSelBorder = Color(0xFF4388CB);   // selected card border
-const Color _mxDialCenter = Color(0xFF3871C2);  // dial radial gradient centre
-const Color _mxDialEdge = Color(0xFF184588);    // dial radial gradient edge
+// ── Innocent's own colours (the owner's rule, 21-26 Nov 2026: MX's kinds
+// of control and places, never MX's colours). It was a palette sampled
+// off MX's screenshots. ──
+const Color _active = PlayerUi.accent; // thumb, active track, dial dot
+const Color _trackMuted = Color(0x3DFFFFFF); // inactive (upper) track
+const Color _cardBorder = Color(0x33FFFFFF); // an effect card's edge
+const Color _selFill = PlayerUi.accentContainer; // a chosen card
+const Color _selBorder = PlayerUi.accent; // a chosen card's edge
+const Color _dialCenter = Color(0x8C3D8DF0); // the dial: accent 55 %
+const Color _dialEdge = Color(0x403D8DF0); // to 25 % at its edge
 /// Present the MX Player–style Audio Effect / Equalizer panel. In portrait
 /// it slides up as a bottom panel over the (still-visible) video; in
 /// landscape it slides in from the right as a side drawer, leaving the
 /// video visible on the left — matching MX Player. [initialTab] 0 = Audio
 /// Effect, 1 = Equalizer.
 Future<void> showAudioEffectSheet(BuildContext context, {int initialTab = 1}) {
-  final size = MediaQuery.of(context).size;
-  final landscape = size.width > size.height;
-  return showGeneralDialog(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black.withValues(alpha: 0.18),
-    transitionDuration: const Duration(milliseconds: 240),
-    pageBuilder: (ctx, _, __) {
-      final land = MediaQuery.of(ctx).size.width >
-          MediaQuery.of(ctx).size.height;
-      return Align(
-        alignment:
-            land ? Alignment.centerRight : Alignment.bottomCenter,
-        child: AudioEffectSheet(initialTab: initialTab),
-      );
-    },
-    transitionBuilder: (_, anim, __, child) {
-      final curved =
-          CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
-      final begin = landscape ? const Offset(1, 0) : const Offset(0, 1);
-      return SlideTransition(
-        position:
-            Tween<Offset>(begin: begin, end: Offset.zero).animate(curved),
-        child: child,
-      );
-    },
+  // A player sheet (showPlayerSheet): MX's reach, on the shade, a panel
+  // from the right sideways and a bottom sheet upright, following the
+  // window — as MX's Audio Effect / Equalizer panel (reference lab, run
+  // 45862946745). It was its own dialog over a dimmed film, its own
+  // gradients and widths.
+  return showPlayerSheet<void>(
+    context,
+    builder: (_) => AudioEffectSheet(initialTab: initialTab),
   );
 }
 
@@ -276,9 +257,6 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final isLandscape = media.size.width > media.size.height;
-
     final content = Column(
       children: [
         _tabBar(),
@@ -299,62 +277,8 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       ],
     );
 
-    if (isLandscape) {
-      // MX Player landscape: a right-side drawer over the dimmed video
-      // (the video stays visible on the left), full height. Soft fade on
-      // the left edge, rounded left corners.
-      final panelW = (media.size.width * 0.48).clamp(340.0, 420.0);
-      return Container(
-        width: panelW,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              Colors.black.withValues(alpha: 0.72),
-              Colors.black.withValues(alpha: 0.93),
-              Colors.black.withValues(alpha: 0.97),
-            ],
-            stops: const [0.0, 0.16, 1.0],
-          ),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-          ),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: SafeArea(left: false, child: content),
-        ),
-      );
-    }
-
-    // Portrait: a bottom panel over the lower ~64%, video crisp above it.
-    // Transparent at the top so the video shows through the tab bar,
-    // fading to near-opaque dark for the controls — the MX look.
-    final sheetH = (media.size.height * 0.60).clamp(400.0, 580.0);
-    return Container(
-      height: sheetH,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withValues(alpha: 0.0),
-            Colors.black.withValues(alpha: 0.60),
-            Colors.black.withValues(alpha: 0.95),
-            Colors.black.withValues(alpha: 0.97),
-          ],
-          stops: const [0.0, 0.05, 0.17, 1.0],
-        ),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: SafeArea(top: false, child: content),
-      ),
-    );
+    // The sheet's frame (showPlayerSheet) gives the shade and the size.
+    return Material(type: MaterialType.transparency, child: content);
   }
 
   Widget _unsupported() => Center(
@@ -456,16 +380,11 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
   /// framed look from MX Player that keeps the bands visually grouped
   /// instead of floating loose over the video.
   Widget _bandPanel() {
-    // MX: the framed band card measures ~164dp tall in BOTH orientations,
-    // with a clearly visible steel-blue 1.2dp border (#35455F).
+    // MX 3.4.3's bands stand on the shade with no frame round them (the
+    // reference lab, run 45862946745); ~164 dp tall both ways.
     return Container(
       height: 164,
       padding: const EdgeInsets.fromLTRB(8, 12, 8, 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _mxCardBorder, width: 1.2),
-      ),
       child: _bandRow(),
     );
   }
@@ -526,7 +445,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
               child: Text(
                 p.index == null ? AppStrings.of(context).aeCustom : p.label,
                 style: TextStyle(
-                  color: active ? _mxActive : AppColors.white50,
+                  color: active ? _active : AppColors.white50,
                   fontSize: 15,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                 ),
@@ -578,14 +497,14 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
               // MX slider (measured): 3dp track, ø16 thumb, bright #66BAFF
               // below the thumb, muted #335777 above it.
               trackHeight: 3,
-              activeTrackColor: _mxActive,
-              inactiveTrackColor: _mxTrackMuted,
-              thumbColor: _mxActive,
+              activeTrackColor: _active,
+              inactiveTrackColor: _trackMuted,
+              thumbColor: _active,
               thumbShape:
                   const RoundSliderThumbShape(enabledThumbRadius: 8),
               overlayShape:
                   const RoundSliderOverlayShape(overlayRadius: 16),
-              overlayColor: _mxActive.withValues(alpha: 0.15),
+              overlayColor: _active.withValues(alpha: 0.15),
               trackShape: const RectangularSliderTrackShape(),
             ),
             child: RotatedBox(
@@ -732,20 +651,12 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            // MX selected card: a deep-blue vertical gradient with a
-            // brighter #4388CB frame; unselected: near-black with the same
-            // steel border as the band panel.
-            gradient: active
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [_mxSelTop, _mxSelBottom],
-                  )
-                : null,
-            color: active ? null : Colors.white.withValues(alpha: 0.03),
+            // A chosen card on the accent at 16 % in an accent edge, as
+            // Innocent marks a chosen tile; the others raised (white 12 %).
+            color: active ? _selFill : PlayerUi.raised,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: active ? _mxSelBorder : _mxCardBorder,
+              color: active ? _selBorder : _cardBorder,
               width: active ? 1.6 : 1.2,
             ),
           ),
@@ -852,9 +763,9 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
                   size: Size(size, size),
                   painter: _DialPainter(
                     t: t,
-                    fill: _mxDialCenter,
-                    track: _mxTrackMuted,
-                    accent: _mxActive,
+                    fill: _dialCenter,
+                    track: _trackMuted,
+                    accent: _active,
                   ),
                 ),
                 Column(
@@ -944,7 +855,7 @@ class _DialPainter extends CustomPainter {
       r,
       Paint()
         ..shader = RadialGradient(
-          colors: [fill, _mxDialEdge],
+          colors: [fill, _dialEdge],
           stops: const [0.25, 1.0],
         ).createShader(Rect.fromCircle(center: center, radius: r)),
     );
