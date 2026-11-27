@@ -1,24 +1,55 @@
-LAB cpu app 36% · 8.2fps · b90 3.3 r90 179 ms · late 80 · 1.raster 16% | pool-thread 14% | .innocent.media 3% | RenderThread 2%
-LAB smooth: 1 steps, display 60 Hz
+LAB cpu app 46% · 8.4fps · b90 0.5 r90 132 ms · late 84 · 1.raster 30% | pool-thread 10% | .innocent.media 3% | RenderThread 2%
+LAB smooth: 19 steps, display 60 Hz
+LAB cpu app 44% · 9.6fps · b90 2.5 r90 120 ms · late 96 · 1.raster 39% | .innocent.media 4%
+LAB frames play/queue/stretch n=57 fps=10.7 hz=60 build=0.5/1.9/16/16 raster=82/107/131/131 ms over16=57 (100.0%) · app 53% · 10.7fps · 1.raster 47% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 50% · 12.3fps · b90 1.6 r90 120 ms · late 123 · 1.raster 45% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB frames play/queue/now n=55 fps=10.6 hz=60 build=0.4/1.0/8.8/8.8 raster=87/122/161/161 ms over16=55 (100.0%) · app 51% · 10.6fps · 1.raster 46% | .innocent.media 3%
+LAB frames play/display/stretch n=53 fps=10.1 hz=60 build=0.4/0.6/3.5/3.5 raster=86/119/593/593 ms over16=53 (100.0%) · app 59% · 10.1fps · 1.raster 53% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB cpu app 50% · 10.9fps · b90 0.7 r90 119 ms · late 109 · 1.raster 45% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB frames play/display/now n=56 fps=10.8 hz=60 build=0.3/0.6/26/26 raster=89/113/135/135 ms over16=56 (100.0%) · app 43% · 10.8fps · 1.raster 37% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 52% · 10.2fps · b90 0.7 r90 125 ms · late 102 · 1.raster 46% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB frames play/more/stretch n=41 fps=7.9 hz=60 build=0.4/0.6/30/30 raster=108/153/470/470 ms over16=41 (100.0%) · app 66% · 7.9fps · 1.raster 60% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/more/now n=28 fps=5.4 hz=60 build=0.4/6.4/24/24 raster=115/300/560/560 ms over16=28 (100.0%) · app 76% · 5.4fps · 1.raster 69% | .innocent.media 4% | ExoPlayer:Playb 2%
+LAB cpu app 66% · 7.7fps · b90 3.2 r90 235 ms · late 77 · 1.raster 60% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/cc/stretch n=21 fps=4.2 hz=60 build=0.5/1.7/11/11 raster=220/247/284/284 ms over16=21 (100.0%) · app 78% · 4.2fps · 1.raster 70% | .innocent.media 4% | ExoPlayer:Playb 2%
+LAB cpu app 72% · 4.9fps · b90 2.0 r90 250 ms · late 49 · 1.raster 66% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/cc/now n=21 fps=3.5 hz=60 build=0.5/0.5/0.8/0.8 raster=221/228/254/254 ms over16=21 (100.0%) · app 71% · 3.5fps · 1.raster 64% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 71% · 4.1fps · b90 1.0 r90 239 ms · late 41 · 1.raster 65% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/morepage/stretch n=42 fps=7.6 hz=60 build=0.3/0.5/24/24 raster=116/175/283/283 ms over16=42 (100.0%) · app 71% · 7.6fps · 1.raster 65% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 63% · 8.8fps · b90 0.6 r90 148 ms · late 87 · 1.raster 57% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/morepage/now n=49 fps=9.7 hz=60 build=0.3/0.5/3.9/3.9 raster=91/123/197/197 ms over16=48 (98.0%) · app 57% · 9.7fps · 1.raster 51% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 61% · 9.4fps · b90 0.5 r90 134 ms · late 94 · 1.raster 56% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames pause/more/stretch n=41 fps=7.9 hz=60 build=0.3/0.7/33/33 raster=121/150/316/316 ms over16=41 (100.0%) · app 71% · 7.9fps · 1.raster 65% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames pause/more/now n=42 fps=8.2 hz=60 build=0.3/0.5/6.4/6.4 raster=120/140/374/374 ms over16=42 (100.0%) · app 70% · 8.2fps · 1.raster 64% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 64% · 8.9fps · b90 0.5 r90 145 ms · late 89 · 1.raster 59% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/queue/now n=51 fps=10.0 hz=60 build=0.4/1.1/17/17 raster=95/126/174/174 ms over16=51 (100.0%) · app 55% · 10.0fps · 1.raster 49% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 53% · 10.5fps · b90 1.1 r90 127 ms · late 105 · 1.raster 47% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/queue/stretch n=51 fps=9.8 hz=60 build=0.3/0.9/6.7/6.7 raster=87/122/158/158 ms over16=51 (100.0%) · app 54% · 9.8fps · 1.raster 48% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB cpu app 61% · 9.5fps · b90 0.9 r90 135 ms · late 95 · 1.raster 55% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/more/now n=40 fps=7.9 hz=60 build=0.3/0.5/7.8/7.8 raster=123/155/331/331 ms over16=40 (100.0%) · app 69% · 7.9fps · 1.raster 63% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames play/more/stretch n=41 fps=8.0 hz=60 build=0.4/0.8/8.2/8.2 raster=124/176/182/182 ms over16=41 (100.0%) · app 66% · 8.0fps · 1.raster 61% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB cpu app 61% · 9.0fps · b90 0.8 r90 155 ms · late 90 · 1.raster 56% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB frames play/controls/now n=38 fps=12.7 hz=60 build=0.3/1.5/168/168 raster=81/144/190/190 ms over16=38 (100.0%) · app 57% · 12.7fps · 1.raster 52% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB frames pause/film/now n=42 fps=10.5 hz=60 build=0.3/0.3/3.7/3.7 raster=85/108/122/122 ms over16=42 (100.0%) · app 35% · 10.5fps · 1.raster 31% | .innocent.media 3% | ExoPlayer:Playb 1%
+LAB cpu app 44% · 10.7fps · b90 1.3 r90 122 ms · late 107 · 1.raster 39% | .innocent.media 3% | ExoPlayer:Playb 1%
 LAB fn shortcut/nightMode: says Night mode on
-LAB cpu app 45% · 7.4fps · b90 17 r90 200 ms · late 73 · 1.raster 28% | .innocent.media 8% | DartWorker 2% | ExoPlayer:Playb 2% | MediaCodec_loop 1%
-LAB fn shortcut/customiseItems: says 00:04 / -09:52 / Tap an icon to show it on the controls or hide it
-LAB fn shortcut/shuffle: says 00:07 / -09:48 / Shuffle on
-LAB fn shortcut/loop: says 00:11 / -09:44 / Loop all
-LAB cpu app 51% · 8.7fps · b90 15 r90 171 ms · late 86 · 1.raster 25% | .innocent.media 9% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | DartWorker 2% | HwBinder:6052 2%
-LAB fn shortcut/mute: says Background Play / 00:15 / -09:40
+LAB fn shortcut/customiseItems: says Tap an icon to show it on the controls or hide it / Decoder / Playing Queue
+LAB cpu app 59% · 11.1fps · b90 2.1 r90 129 ms · late 111 · 1.raster 54% | .innocent.media 3% | ExoPlayer:Playb 2%
+LAB fn shortcut/shuffle: says Shuffle on
+LAB fn shortcut/loop: says Loop all
+LAB fn shortcut/mute: says Background Play / Muted
+LAB cpu app 56% · 10.0fps · b90 3.4 r90 142 ms · late 100 · 1.raster 51% | .innocent.media 4% | ExoPlayer:Playb 1%
 LAB fn shortcut/sleepTimer: says 1 / 2 / 3
-LAB fn shortcut/abRepeat: says Background Play / Screen Rotation / 00:23
-LAB cpu app 36% · 8.0fps · b90 9.1 r90 236 ms · late 80 · 1.raster 24% | .innocent.media 4% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6052 2%
+LAB fn shortcut/abRepeat: says Background Play / Screen Rotation / A
 LAB fn shortcut/audioEffect: says Audio effect / Original / Clarity
+LAB cpu app 62% · 10.3fps · b90 2.6 r90 139 ms · late 103 · 1.raster 55% | .innocent.media 4% | ExoPlayer:Playb 2%
 LAB fn shortcut/equalizer: says Audio effect / Off / Custom
-LAB cpu app 42% · 6.5fps · b90 35 r90 200 ms · late 65 · 1.raster 29% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | HwBinder:6052 2%
 LAB fn shortcut/playbackSpeed: says 1.00x / 0.25x / 1.0x
-LAB fn shortcut/screenshot: says Background Play / Screen Rotation / 00:39
-LAB fn shortcut/backgroundPlay: says 00:43 / -09:13 / Background play on
-LAB cpu app 46% · 7.0fps · b90 25 r90 270 ms · late 70 · 1.raster 30% | .innocent.media 4% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | 1.io 2% | HwBinder:6052 2%
-LAB fn shortcut/mirrorMode: says Background Play / Screen Rotation / 00:47
+LAB cpu app 64% · 10.0fps · b90 4.6 r90 132 ms · late 100 · 1.raster 58% | .innocent.media 4% | ExoPlayer:Playb 2%
+LAB fn shortcut/screenshot: says Background Play / Screen Rotation / Saved to Gallery (Pictures/Innocent)
+LAB fn shortcut/backgroundPlay: says Background play on
+LAB fn shortcut/mirrorMode: says Background Play / Screen Rotation / Mirror on
 LAB smooth: done
-LAB cpu app 54% · 8.7fps · b90 5.2 r90 172 ms · late 87 · 1.raster 37% | .innocent.media 6% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | HwBinder:6052 2%
+LAB cpu app 66% · 8.6fps · b90 2.4 r90 142 ms · late 86 · 1.raster 59% | .innocent.media 4% | ExoPlayer:Playb 2% | 1.io 1%
 screenshots in MediaStore:
-  none
+Row: 0 _display_name=Innocent_1795775815511.png, relative_path=Pictures/Innocent/

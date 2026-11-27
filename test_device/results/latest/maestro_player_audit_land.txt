@@ -29,7 +29,9 @@ Wait for animation to end within 1500 ms... COMPLETED
 Take screenshot 82_audit_more_closed_by_back... COMPLETED
 Assert that "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*" is not visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
-Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
 Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
