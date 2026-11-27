@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/services/video_player/models/subtitle_track_info.dart';
+import 'package:innocent/core/services/video_player/stream_renewal.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
 import 'package:innocent/features/player/presentation/widgets/more_menu_panel.dart';
 import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
@@ -126,6 +127,28 @@ final scenes = <Scene>[
     await _settle(t);
     c.setABPointA();
     await _settle(t);
+  }),
+  // A catalogue stream: the Quality pill on the top bar beside ♪, CC, the
+  // decoder and the clock. On 360 and 412 dp phones held upright ⋮ ran
+  // off the bar (the 1.64.89 review): the bar's room now counts the pill.
+  Scene('quality_bar', (t, c, svc) async {
+    StreamRenewal.quality.value = QualityMenu(
+      uri: c.activeUri ?? 'x',
+      options: const [
+        QualityOption(id: 'auto', label: 'Auto'),
+        QualityOption(id: '1080', label: '1080p'),
+        QualityOption(id: '480', label: '480p'),
+      ],
+      selected: 'auto',
+      playing: '1080p',
+    );
+    addTearDown(() => StreamRenewal.quality.value = null);
+    await _settle(t);
+    expect(find.byKey(const ValueKey('player-quality')), findsOneWidget);
+    final view = t.view.physicalSize / t.view.devicePixelRatio;
+    final more = t.getRect(find.byIcon(Icons.more_vert));
+    expect(more.right <= view.width + 0.5 && more.left >= 0, isTrue,
+        reason: '⋮ off the bar: $more in $view');
   }),
   // MX's Customise Items: the top bar's icons on a card under the bar.
   Scene('customise', (t, c, svc) async {

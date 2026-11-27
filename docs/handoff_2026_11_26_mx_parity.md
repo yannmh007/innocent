@@ -119,6 +119,16 @@
 > - 27 NOV, THE OWNER: "CC as Innocent's" (♪ and CC stay on the upright
 >   bar); the sleep keys at MX's size sideways; ⋮'s Burmese and Thai
 >   labels a weight up (11 → 5 words under 4.5:1 over white); then release.
+> - THE 1.64.89 REVIEW (reviewer, 27 Nov: SHIP AFTER FIXES), all fixed: the
+>   top bar's room counts the Quality pill, the clock and the sleep badge
+>   (⋮ ran off the bar upright on 360 and 412 dp phones on a catalogue
+>   stream); ♪ and CC never leave it, the title, the decoder and the
+>   queue give way, then MX's margins, the clock, Auto's live rung (layout
+>   scene `quality_bar`, all phones); entering PiP closes an open panel
+>   and the edit view is never drawn in PiP; a D-pad cannot reach the
+>   controls under the Customise card (ExcludeFocus); Back puts the A-B
+>   bar away; what Customise hides stays reachable (♪/CC tiles in ⋮
+>   sideways, Decoder and Picture-in-picture rows on ⋮'s More page).
 > - SLEEP TIMER AS MX's (its tree, same run): no close ×; MX's × is
 >   `iv_clear`, at the time's end, and clears the entry; keys 32 dp, 74.6
 >   across, 49.1 down; the title's middle 28 dp from the top.

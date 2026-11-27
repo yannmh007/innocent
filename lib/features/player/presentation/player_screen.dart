@@ -665,7 +665,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         // ignore: discarded_futures
         controller.setBackgroundAudioMode(false);
         // Hide top/bottom bars while in PiP — the system shows its
-        // own minimal controls there.
+        // own minimal controls there. An open panel goes too: Customise
+        // Items keeps the controls up, and its edit view was drawn whole
+        // in the small window (the 1.64.89 review).
+        controller.closePanel();
         controller.hideControls();
       } else {
         // Restore controls when the user expands back out of PiP.
@@ -1491,6 +1494,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     //  — because the in-app overlay can't draw outside Innocent.)
     final useCustom =
         ref.read(playerSettingsProvider).get(PlayerSetting.useCustomPip);
+    ref.read(playerControllerProvider.notifier).closePanel();
     if (useCustom) {
       // Continuing over OTHER apps (once the user leaves Innocent from the
       // floating window) relies on the system Picture-in-picture permission.
@@ -2323,6 +2327,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       controller.closePanel();
       return;
     }
+    // MX's A-B bar is the player's own, not a panel: Back puts it away
+    // too, as every other surface in the player (the 1.64.89 review).
+    if (_abBarOpen) {
+      setState(() => _abBarOpen = false);
+      return;
+    }
     if (_errorShown(state)) {
       controller.dismissError();
       return;
@@ -2481,7 +2491,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// MX's Customise Items is open: its card over the controls, which stay
   /// (dimmed film, dashed boxes) so the viewer sees what each choice is.
   bool _customising(PlayerState state) =>
-      state.openPanel == SidePanel.customise;
+      state.openPanel == SidePanel.customise && !state.inSystemPip;
 
   /// A sheet or dialog route the player opened (audio, loop, bookmarks,
   /// aspect ratio…) is over it: the controls step aside under it too.
@@ -2561,11 +2571,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // As MX's ⋮ (the owner, 26 Nov 2026: "11 tiles and More"; reference
     // lab 45857557804): its ten in its order, then "More ›" (MoreMenuPanel).
     // Upright MX puts its ♪ and CC first (its top bar keeps only HW and ⋮);
-    // Innocent keeps them on the top bar too.
+    // Innocent keeps them on the top bar too. Sideways they are here when
+    // Customise Items took them off the bar, so they stay reachable.
     final upright =
         MediaQuery.orientationOf(context) == Orientation.portrait;
+    final onBar = _topBarItems();
     return [
-      if (upright) ...[
+      if (upright || !onBar.contains(TopBarItem.audio))
         MoreMenuItemData(
           label: s.audioTrack,
           category: MoreMenuCategory.playback,
@@ -2575,13 +2587,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             _showAudioTracks(context);
           },
         ),
+      if (upright || !onBar.contains(TopBarItem.subtitle))
         MoreMenuItemData(
           label: s.subtitle,
           category: MoreMenuCategory.playback,
           icon: Icons.subtitles_outlined,
           onTap: _openSubtitlePanel,
         ),
-      ],
       MoreMenuItemData(
         label: s.playingQueue,
         category: MoreMenuCategory.playback,
@@ -2688,6 +2700,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// settings, help and update check where MX has its own.
   List<MorePageSection> _buildMorePage(BuildContext context) {
     final controller = ref.read(playerControllerProvider.notifier);
+    final svc = ref.read(videoPlayerServiceProvider);
     final s = AppStrings.of(context);
     void open(Widget page) {
       controller.closePanel();
@@ -2743,6 +2756,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               _showCustomSpeed(context);
             },
           ),
+          // The decoder for this film, wherever the top bar's HW is (a
+          // narrow bar, or Customise Items took it off); and picture-in-
+          // picture when the bottom row's is hidden (the 1.64.89 review).
+          if (!(svc is MediaKitPlayerService && svc.playingLadder))
+            MorePageRow(
+              title: s.pmDecoder,
+              onTap: () {
+                controller.closePanel();
+                controller.openDecoderDialog();
+              },
+            ),
+          if (!_topBarItems().contains(TopBarItem.pip))
+            MorePageRow(
+              title: s.pmPip,
+              onTap: () => _enterPip(context),
+            ),
           MorePageRow(
             title: s.settingsTitle,
             onTap: () => open(const SettingsPlayerScreen()),
@@ -4399,8 +4428,22 @@ class _TopBar extends StatelessWidget {
         '${n.minute.toString().padLeft(2, '0')}';
   }
 
+  // Under Customise Items' card a D-pad must not reach these (the card
+  // blocks touches, not focus; the 1.64.89 review).
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ExcludeFocus(excluding: editing, child: _build(context));
+
+  // The Quality pill's presence changes what fits: the bar is laid out
+  // again whenever the menu does.
+  Widget _build(BuildContext context) => onQuality == null
+      ? _bar(context, null)
+      : ValueListenableBuilder<QualityMenu?>(
+          valueListenable: StreamRenewal.quality,
+          builder: (context, menu, _) => _bar(context, menu),
+        );
+
+  Widget _bar(BuildContext context, QualityMenu? menu) {
     // A portrait bar under 400 dp (most phones held upright, the owner's
     // 384 dp one too) has room for a readable title or the clock, not
     // both, now that audio and subtitles are on it: the title wins.
@@ -4413,20 +4456,84 @@ class _TopBar extends StatelessWidget {
     // title 16 dp after ←, ⋮ 56 wide. Upright MX keeps only HW there, ♪
     // and CC in ⋮; Innocent keeps them on the bar too, one tap (the lab's
     // decision table: Innocent's better, keep), and in ⋮ as MX's.
-    final moreWidth = upright ? 56.0 : 48.0;
-    // As many of the chosen icons as the bar holds beside the ←, ⋮ and a
-    // readable title (64 dp), ♪, CC and the decoder first: six on a 320 dp
-    // phone held upright ran the title to nothing.
-    final room =
-        size.width - insets.left - insets.right - 56 - moreWidth - 64;
-    const priority = [
-      TopBarItem.audio,
-      TopBarItem.subtitle,
-      TopBarItem.decoder,
-      TopBarItem.queue,
-    ];
-    final fits = (room / 48).floor().clamp(0, priority.length);
-    final shown = priority.where(items.contains).take(fits).toSet();
+    // What the bar must hold beside its optional icons: ←, ⋮, the Quality
+    // pill on a catalogue stream, the clock, the sleep badge. The 1.64.89
+    // review: on 360 and 412 dp phones held upright the pill was not
+    // counted, and ⋮ ran off the bar.
+    final s = AppStrings.of(context);
+    final scaler = MediaQuery.textScalerOf(context);
+    final pill = menu != null &&
+        menu.options.isNotEmpty &&
+        (activeUri == null || menu.uri == activeUri);
+    double textWidth(String t, TextStyle st) => (TextPainter(
+          text: TextSpan(text: t, style: st),
+          textDirection: TextDirection.ltr,
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout())
+            .width;
+    final pillLabel = !pill
+        ? ''
+        : menu.options
+                .where((o) => o.id == menu.selected)
+                .map((o) => o.label)
+                .firstOrNull ??
+            s.plAuto;
+    const pillStyle = TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600);
+    var pillWidth =
+        !pill ? 0.0 : textWidth('$pillLabel · 1080p', pillStyle) + 18 + 8 + 12;
+    var pillShort = false;
+    var clockWidth = showClock && !narrow
+        ? textWidth('00:00',
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)) +
+            12
+        : 0.0;
+    final sleepWidth = sleepTimerRemaining != null
+        ? textWidth(fmtTimer(sleepTimerRemaining!),
+                const TextStyle(fontSize: 12)) +
+            38
+        : 0.0;
+    final width = size.width - insets.left - insets.right;
+    // ♪ and CC stay on the bar whatever its width (the owner, 27 Nov:
+    // "CC as Innocent's"); the decoder and the queue only while the title
+    // keeps 64 dp. On a narrow bar MX's margins give way first: the gap
+    // after ← and ⋮'s extra 8.
+    final core = [TopBarItem.audio, TopBarItem.subtitle]
+        .where(items.contains)
+        .toList();
+    var backWidth = 56.0;
+    var gap = upright ? 16.0 : 4.0;
+    var moreWidth = upright ? 56.0 : 48.0;
+    double fixed() =>
+        backWidth +
+        gap +
+        moreWidth +
+        pillWidth +
+        clockWidth +
+        sleepWidth +
+        48.0 * core.length;
+    if (width - fixed() < 64) {
+      gap = 0;
+      moreWidth = 48;
+    }
+    // Then the clock (the phone's own shows the time), then ←'s extra 8.
+    if (width - fixed() < 64) clockWidth = 0;
+    if (width - fixed() < 0) backWidth = 48;
+    // Last, the pill keeps its choice and drops Auto's live rung (a 320 dp
+    // phone held upright at a large font).
+    if (pill && width - fixed() < 0) {
+      pillShort = true;
+      pillWidth = textWidth(pillLabel, pillStyle) + 18 + 8 + 12;
+    }
+    final extraRoom = width - fixed() - 64;
+    final extras = [TopBarItem.decoder, TopBarItem.queue]
+        .where((i) =>
+            items.contains(i) &&
+            (i != TopBarItem.decoder || onDecoder != null) &&
+            (i != TopBarItem.queue || onQueue != null))
+        .take((extraRoom / 48).floor().clamp(0, 2))
+        .toList();
+    final shown = {...core, ...extras};
     // Its ground: black, at least 50 % under the words, thinning out below
     // (BarShade: over a white film the title read 2.2:1 on the old
     // gradient).
@@ -4447,10 +4554,10 @@ class _TopBar extends StatelessWidget {
             IconButton(
               tooltip: MaterialLocalizations.of(context).backButtonTooltip,
               icon: const Icon(Icons.arrow_back, color: Colors.white),
-              constraints: const BoxConstraints(minWidth: 56, minHeight: 48),
+              constraints: BoxConstraints(minWidth: backWidth, minHeight: 48),
               onPressed: onBack,
             ),
-            SizedBox(width: upright ? 16 : 4),
+            SizedBox(width: gap),
             Expanded(
               // Each text in the controls is its own TalkBack node: loose,
               // they all joined one full-screen node with the subtitle
@@ -4501,7 +4608,7 @@ class _TopBar extends StatelessWidget {
                 ),
               ),
             // Settings → Style → "Show system clock".
-            if (showClock && !narrow)
+            if (clockWidth > 0)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Semantics(
@@ -4617,7 +4724,7 @@ class _TopBar extends StatelessWidget {
                     label: ValueListenableBuilder<int?>(
                       valueListenable: MediaKitPlayerService.rungOnScreen,
                       builder: (context, live, _) {
-                        final now = menu.selected == 'auto'
+                        final now = menu.selected == 'auto' && !pillShort
                             ? (live != null ? '${live}p' : menu.playing)
                             : null;
                         return Text.rich(
@@ -5045,8 +5152,13 @@ class _BottomControlsState extends ConsumerState<_BottomControls> {
     });
   }
 
+  // Under Customise Items' card a D-pad must not reach these (the card
+  // blocks touches, not focus; the 1.64.89 review).
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ExcludeFocus(excluding: widget.editing, child: _build(context));
+
+  Widget _build(BuildContext context) {
     final hasDuration = widget.duration.inMilliseconds > 0;
     final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
     // Between Prev, Play and Next, as MX's on the owner's phone (the

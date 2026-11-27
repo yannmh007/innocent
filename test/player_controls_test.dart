@@ -867,6 +867,74 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets('Back puts the A-B bar away, not the film', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await _settle(tester);
+    final ab = find.byKey(const ValueKey('abRepeat'), skipOffstage: false);
+    await tester.ensureVisible(ab.first);
+    await tester.pump();
+    await tester.tap(ab.first);
+    await _settle(tester);
+    expect(find.byType(ABRepeatBar), findsOneWidget);
+    await _back(tester);
+    expect(find.byType(ABRepeatBar), findsNothing);
+    expect(find.byType(PlayerScreen), findsOneWidget);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('in system PiP, Customise Items draws no edit view',
+      (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    final c = playerContainer!.read(playerControllerProvider.notifier);
+    c.openCustomisePanel();
+    await _settle(tester);
+    final dashed =
+        find.byWidgetPredicate((w) => w is EditSlot && w.editing);
+    expect(dashed, findsWidgets);
+    c.setInSystemPip(true);
+    await _settle(tester);
+    expect(dashed, findsNothing);
+    c.setInSystemPip(false);
+    c.closePanel();
+    await _settle(tester);
+    await leavePlayer(tester);
+  });
+
+  testWidgets('what Customise Items hides stays reachable: ♪ and CC in ⋮ '
+      'sideways, the decoder and PiP on its More page', (tester) async {
+    await pumpPlayer(tester, phone: _phone, landscape: true, lang: 'en');
+    await playerContainer!.read(extraSettingsProvider.notifier).setStr(
+        StringSetting.playerTopBar, TopBarItem.write({TopBarItem.screenMode}));
+    await _settle(tester);
+    if (find.byIcon(Icons.more_vert).evaluate().isEmpty) {
+      await tester.tapAt(const Offset(400, 200));
+      await _settle(tester);
+    }
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await _settle(tester);
+    Finder inMore(Finder f) =>
+        find.descendant(of: find.byType(MoreMenuPanel), matching: f);
+    expect(inMore(find.byIcon(Icons.music_note)), findsOneWidget);
+    expect(inMore(find.byIcon(Icons.subtitles_outlined)), findsOneWidget);
+    final more = inMore(find.byIcon(Icons.chevron_right_rounded));
+    await tester.ensureVisible(more.first);
+    await tester.pump();
+    await tester.tap(more.first);
+    await _settle(tester);
+    final pip = find.text('Picture-in-picture');
+    expect(pip, findsOneWidget);
+    final decoder = find.text('Decoder');
+    await tester.ensureVisible(decoder);
+    await tester.pump();
+    await tester.tap(decoder);
+    await _settle(tester);
+    expect(_state().decoderDialogOpen, isTrue);
+    playerContainer!.read(playerControllerProvider.notifier).closeDecoderDialog();
+    await _settle(tester);
+    await leavePlayer(tester);
+  });
+
   testWidgets('one audio track: no "more to choose" dot on the audio button',
       (tester) async {
     await pumpPlayer(tester,
