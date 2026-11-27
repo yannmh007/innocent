@@ -1,0 +1,58 @@
+Display identification data:
+Display 4619827259835644672 (HWC display 0): port=0 pnpId=GGL displayName="EMU_display_0"
+Display 4619827259835644672 color modes:
+FrameRateOverrides=
+    setFrameRate=
+        (uid, frameRate)={10192, 60.00 Hz}
+	Refresh Rate Map:
+* Layer 0x7df777615680 (52bb18a ActivityRecordInputSink com.innocent.media/.MainActivity#198)
+* Layer 0x7df77762c300 (ActivityRecord{e6ed3fb u0 com.innocent.media/.MainActivity#194)
+* Layer 0x7df7775fbc70 (f92ac70 com.innocent.media/com.innocent.media.MainActivity#204)
+* Layer 0x7df77760cdd0 (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#240)
+* Layer 0x7df7776540e0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#238)
+* Layer 0x7df777648aa0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#239)
+* Layer 0x7df777642f80 (com.innocent.media/com.innocent.media.MainActivity#205)
+* Layer 0x7df77764e5c0 (Bounds for - com.innocent.media/com.innocent.media.MainActivity#208)
+* Layer 0x7df77763a6d0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#230)
+* Layer 0x7df7776a3ca0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#231)
+Display 4619827259835644672
+    activeMode=60.00 Hz (60.00 Hz)
+        {id=0, hwcId=0, resolution=1080x2400, refreshRate=60.00 Hz, dpi=420.00x420.00, group=0}
+    frameRateOverrideConfig=Enabled
+Display 4619827259835644672 (physical, "EMU_display_0")
+  - Output Layer 0x7df637577250(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#239)
+  - Output Layer 0x7df637570b50(com.innocent.media/com.innocent.media.MainActivity#205)
+  - Output Layer 0x7df63756f800(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#231)
+EGL_ANDROID_front_buffer_auto_refresh EGL_ANDROID_get_native_client_buffer EGL_ANDROID_presentation_time EGL_EXT_surface_CTA861_3_metadata EGL_EXT_surface_SMPTE2086_metadata EGL_KHR_get_all_proc_addresses EGL_KHR_swap_buffers_with_damage EGL_ANDROID_get_frame_timestamps EGL_ANDROID_image_native_buffer EGL_ANDROID_native_fence_sync EGL_ANDROID_recordable EGL_KHR_create_context EGL_KHR_fence_sync EGL_KHR_gl_texture_2D_image EGL_KHR_image EGL_KHR_image_base 
+  refresh-rate              : 60.00 Hz
+Display 4619827259835644672 (active) HWC layers:
+ SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#239
+ com.innocent.media/com.innocent.media.MainActivity#205
+ SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#231
++ Layer (52bb18a ActivityRecordInputSink com.innocent.media/.MainActivity#198) uid=1000
+      parent=ActivityRecord{e6ed3fb u0 com.innocent.media/.MainActivity#194
++ Layer (ActivityRecord{e6ed3fb u0 com.innocent.media/.MainActivity#194) uid=1000
++ Layer (f92ac70 com.innocent.media/com.innocent.media.MainActivity#204) uid=1000
+      parent=ActivityRecord{e6ed3fb u0 com.innocent.media/.MainActivity#194
++ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#232) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#230
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#205
++ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#240) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#238
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#205
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#238) uid=10192
+      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#208
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#205
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#239) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#238
++ Layer (com.innocent.media/com.innocent.media.MainActivity#205) uid=10192
+      parent=f92ac70 com.innocent.media/com.innocent.media.MainActivity#204
++ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#208) uid=10192
+      parent=com.innocent.media/com.innocent.media.MainActivity#205
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#230) uid=10192
+      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#208
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#205
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#231) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#230
+Layer Splash Screen com.innocent.media#196 (contains buffer) pid:837 uid:10168 handleAlive
+Layer Surface(name=f92ac70 com.innocent.media/com.innocent.media.MainActivity)/@0x83fa12a - animation-leash of starting_reveal#212 pid:523 uid:1000 handleAlive
