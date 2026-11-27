@@ -64,12 +64,19 @@ main (live is 1.64.90+403). Read first: CLAUDE.md, this file, BACKLOG §0
    windows (~395 s of the 585), ONE window switch (a second stopped the
    film on the emulator):
    `STREAM_SMOOTH="play:film:now:20 play:controls:now:12
-   play:film:nowprof:12 play:film:sched:20 play:film:now:20 local
-   play:film:now:20 play:controls:now:12 play:film:nowprof:12 title
-   play:film:now:20 play:film:t:20 play:film:tprof:12 play:film:sv:20
-   play:controls:sv:12 play:film:svprof:12 play:film:svsched:20
-   play:film:sv:20"` (~360 s; libmpv only opaque: in a see-through window
-   it never configured its video on the emulator, P1-E2 — next to debug)
+   play:film:nowprof:12 play:film:sched:20 play:film:now:20
+   play:film:t:20 play:film:tprof:12 play:film:sv:20 play:controls:sv:12
+   play:film:svprof:12 play:film:svsched:20 play:film:sv:20"` (~280 s,
+   ExoPlayer only). libmpv waits: device lab P1-E3 46031384937 played the
+   local copy's sound but no picture (its position moved, vo `?`, app 1 %)
+   even in the opaque window — the copy (init + fragments, one range) is
+   the suspect: P1-E1's whole-file copy played at 20 fps. Debug it on the
+   emulator first (mpv's log for the file; try the whole file once, or a
+   fresh mp4 made by the lab), then a second A/B with `local … title`.
+   WATCH `controls/sv` on the phones: on the emulator Flutter's controls
+   over the film's SurfaceView drew at 0.7-2.3 fps (raster up to 4.4 s) —
+   a CPU-drawn see-through surface; if a phone does that too, the route
+   costs the controls and is not the answer.
    (one line in cloud.env).
 3. Read: per look, app % and per thread, Flutter fps, raster p50, the
    `LAB main` lines; realme and OPPO each. Then the owner's decision with

@@ -34,8 +34,14 @@ does it.
   SurfaceView 0 Flutter frames, app 6-8 % against 44-54 % (emulator,
   shares only); main thread 330 messages in 8 s on the texture, 45 on the
   SurfaceView. Faults fixed for Test Lab: the local copy (one byte range),
-  one window switch per plan (a second stopped the film). P1-E2 (ce1f1dc3)
-  runs the Test Lab plan on the emulator.
+  one window switch per plan (a second stopped the film). P1-E2
+  46026276321 and P1-E3 46031384937: `sv` 5-9 % in all six windows,
+  texture (`now`, `t`) 35-48 %, `t` = `now` (the see-through window costs
+  nothing measurable here); main thread 315 messages in 12 s on the
+  texture, 32 on the SurfaceView. NOT YET: libmpv's local copy played
+  sound without picture (debug first); `controls/sv` drew 0.7-2.3 fps on
+  the emulator (watch it on the phones). The Test Lab plan for 28 Nov:
+  handoff §3 (ExoPlayer only).
   P2/P3 (ship): DisplayVote.kt on Flutter's own SurfaceView (the film's
   rate, FIXED_SOURCE, seamless only; the highest rate while touched,
   DisplayRate); Report a problem says `· N Hz · gap 8.3` and the display's
