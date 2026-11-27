@@ -1,36 +1,17 @@
-[04:50:40] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[04:50:40] install
-[04:50:49] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[04:50:50] network: eth0 has qdisc clsact
-[04:50:50] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[04:51:26] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[04:51:26] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[04:51:26] library: pushing 24 files
-[04:51:56] library: MediaStore lists 24 videos
-[04:51:56] cold start
+[07:09:35] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[07:09:35] install
+[07:09:49] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[07:09:49] network: enp39s0 has qdisc clsact
+[07:09:49] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[07:10:17] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[07:10:17] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[07:10:17] library: pushing 24 files
+[07:10:47] library: MediaStore lists 24 videos
+[07:10:47] cold start
 Status: ok
-TotalTime: 2823
-WaitTime: 2832
-[04:52:09] flow genres
-[04:53:11] flow genres exit 0
-[04:53:19] flow jumps
-[04:53:19] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[04:57:24] flow jumps done
-[04:57:24] flow gestures
-[04:57:27] rotation asked 0, now 0
-[04:58:34] flow gestures exit 0
-[04:58:40] stacked taps at 918,1200: 4 taps in 412 ms
-[04:58:50] flow gestures_land
-[04:58:52] rotation asked 1, now 90
-[04:59:30] flow gestures_land exit 0
-[04:59:38] flow layout_portrait
-[04:59:40] rotation asked 0, now 0
-[05:00:20] flow layout_portrait exit 0
-[05:00:32] flow player_audit
-[05:01:36] flow player_audit exit 0
-[05:01:44] flow layout_landscape
-[05:01:46] rotation asked 1, now 90
-[05:02:01] flow layout_landscape exit 0
-[05:02:09] flow player_audit_land
-[05:02:55] flow player_audit_land exit 0
-[05:03:07] done
+TotalTime: 2809
+WaitTime: 2819
+[07:11:01] flow smooth
+[07:11:02] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan default
+[07:14:49] flow smooth done
+[07:14:54] done
