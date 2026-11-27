@@ -54,6 +54,14 @@ paths:
   as "the enclosing class has none" when an expression-bodied method
   (`double _snap(double v) => …`) came before build, and the push gate
   stopped (26 Nov 2026). A top-level function passes.
+- **A row's overflow is found with the real fonts, not the test font.**
+  player_controls_test draws every glyph a full em wide (its Quality pill
+  measured 189 dp, not ~108), so a width check there fails for nothing and
+  a real overflow can pass: the 1.64.89 review found ⋮ running off the
+  upright top bar on 360/412 dp phones with the Quality pill, which no
+  test had shown. Put a layout case in test/player_layout_test.dart (real
+  fonts, every phone, my/en/th, 1.0/1.3) and assert the control's rect is
+  on screen — `findsOneWidget` passes for a widget drawn off screen.
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
   the release review. Name the files. And not a changed file that HEAD

@@ -49,7 +49,12 @@ files, minus what must not ship. Nothing is merged.
 - `python3 tool/check.py` in the worktree; `git diff --cached --stat <branch>`
   must show only the exclusions and the version.
 - Commit as `Claude <noreply@anthropic.com>`, message: what users get, what
-  is server-side, the run ids that proved it, what is left out by design.
+  is server-side, the run ids that proved it, what is left out by design,
+  ending with the session's Co-Authored-By and Claude-Session lines (an
+  amended message loses them: 1.64.89's main commit went out without).
+- Before the push, the reviewer agent on the tree's diff; fix what it
+  finds and have it look at the delta (1.64.89: five findings, one an
+  overflow on the most common phones).
 
 ## 4. Ship
 - **Not while GitHub's release downloads fail.** The Build fetches Gradle
