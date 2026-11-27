@@ -156,8 +156,8 @@
                   },
                   "children" : [ {
                     "attributes" : {
-                      "text" : "1:29 ",
-                      "accessibilityText" : "1:29 PM",
+                      "text" : "3:44 ",
+                      "accessibilityText" : "3:44 AM",
                       "hintText" : "",
                       "ignoreBoundsFiltering" : "false",
                       "resource-id" : "com.android.systemui:id/clock",
@@ -463,7 +463,7 @@
                     }, {
                       "attributes" : {
                         "text" : "",
-                        "accessibilityText" : "Phone three bars.",
+                        "accessibilityText" : "Phone signal full.",
                         "hintText" : "",
                         "ignoreBoundsFiltering" : "false",
                         "resource-id" : "com.android.systemui:id/mobile_combo",
@@ -1344,8 +1344,8 @@
                               },
                               "children" : [ {
                                 "attributes" : {
-                                  "text" : "Thu, Nov 26",
-                                  "accessibilityText" : "Thu, Nov 26",
+                                  "text" : "Fri, Nov 27",
+                                  "accessibilityText" : "Fri, Nov 27",
                                   "hintText" : "",
                                   "ignoreBoundsFiltering" : "false",
                                   "resource-id" : "com.google.android.apps.nexuslauncher:id/date",

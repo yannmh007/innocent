@@ -29,12 +29,12 @@ Wait for animation to end within 1500 ms... COMPLETED
 Take screenshot 72_audit_more_closed_by_back... COMPLETED
 Assert that "(?s)(Playing.Queue|ဖွင့်နေသော စာရင်း).*" is not visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
-Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
-  Wait for animation to end within 800 ms... COMPLETED
-  Tap on point (50%,50%)... COMPLETED
-Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible... SKIPPED
 Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
   Tap on point (50%,50%)... COMPLETED
@@ -48,12 +48,12 @@ Assert that "(Loop one|တစ်ခု ထပ်ဖွင့်)" is visible... 
 Press back... COMPLETED
 Wait for animation to end within 1000 ms... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
-Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
-  Wait for animation to end within 800 ms... COMPLETED
-  Tap on point (50%,50%)... COMPLETED
-Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible... SKIPPED
 Tap on "(Subtitle|စာတန်းထိုး)"... COMPLETED
 Wait for animation to end within 1500 ms... COMPLETED
 Take screenshot 74_audit_subtitle_panel... COMPLETED
@@ -63,10 +63,10 @@ Wait for animation to end within 1500 ms... COMPLETED
 Take screenshot 75_audit_subtitle_panel_closed... COMPLETED
 Assert that "(Online.*|.*Online.*)" is not visible... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is visible...
-Run flow when "(Audio track|အသံ လိုင်း)" is visible... SKIPPED
+  Tap on point (50%,50%)... COMPLETED
+  Wait for animation to end within 800 ms... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
 Tap on point (50%,50%)... COMPLETED
 Run flow when "(Audio track|အသံ လိုင်း)" is not visible...
-  Wait for animation to end within 800 ms... COMPLETED
-  Tap on point (50%,50%)... COMPLETED
-Run flow when "(Audio track|အသံ လိုင်း)" is not visible... COMPLETED
+Run flow when "(Audio track|အသံ လိုင်း)" is not visible... SKIPPED
 Assert that "(Audio track|အသံ လိုင်း)" is visible... COMPLETED
