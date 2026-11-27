@@ -16,6 +16,42 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **27 Nov: 1.64.89 IS OUT — THE PLAYER AS MX PLAYER'S (the owner: "as
+  MX, every device and screen"; "CC as Innocent's"; "release")**.
+  RELEASED: main 6ee04134 (pushed 05:15:51 UTC after the libmpv jars came
+  whole 3 of 3, md5 right), Build 45944756774 green (Analyze, Test, both
+  APKs, the CDN, the GitHub release, the attestation); GitHub release
+  v1.64.89-402: arm64 95743620 B `18febbc9…2a37`, arm32 87723728 B
+  `05f0e0b8…ce78` (the assets' digests = the release body); Playback
+  check 45947933155 green; app_releases id 1 moved 05:47:48 UTC after a
+  rolled-back dry run (notes: the controls and menus as MX Player's, the
+  ⋮ menu with a More page, the shortcut row, speed card, A-B bar;
+  Customise Items; menus fit tablets and split screens and read over
+  bright films); transport check 45947930319 (dispatched after the row
+  moved) green. The tree: main + 31 files (lib/features/player/presentation/**,
+  the equalizer sheet, app_strings, extra_settings_service, tv_focus, the
+  player tests) and the version 1.64.89+402. Left out by design: the lab
+  hooks (app.dart's tour, lab_stream, ExoEngine.rungKbps,
+  MediaKitPlayerService's lab rung), the Google sign-in nonce, and work
+  not yet released: the library cache (scan_gate) and the seek-bar pack's
+  header read / single-file pack (stream_cache_server), with their tests.
+  PROOF: device lab gate G2 45940757774 on the final code (genres 37/37,
+  jumps 15/15, gestures 27/27 and 19/19, player audits 52 and 52; G1
+  45933945536 the same); Test Lab 45940757751 realme 16 PASS, OPPO 16
+  PASS (the home trip SKIP; the OPPO's Original failed once on
+  45933945442 on a 1.9-7 Mbit/s line under the 10 Mbit/s copy, passed on
+  the rerun); build.yml 45941587531 green; the reference lab beside MX
+  (45885319037, 45892311848: every control within 0.5 dp; 45896496134:
+  the edit view, Sleep, the toast); the release review (reviewer):
+  SHIP AFTER FIXES, five findings fixed (the top bar's room with the
+  Quality pill on 360/412 dp upright, PiP closes a panel, no focus under
+  the Customise card, Back and the A-B bar, hidden controls reachable from
+  ⋮), then SHIP and three notes done; the tree's flutter test 2093,
+  check.py. Static analysis: no red branch run since 1.64.88. The main
+  commit lacks the Claude-Session trailer (pushed; history kept).
+  THE OWNER TO SEE ON THE PHONE: update, open a film — ⋮ (ten tiles and
+  More ›), the shortcut row (› opens it), Customise Items, Speed, A-B,
+  Sleep; sideways and upright.
 - **22 Nov: 1.64.88 IS OUT — the sign-in kept when the server ends a
   session while its token still lives; THE CONSOLE'S SIGN-OUT IS LOCAL
   (LIVE)**. RELEASED: main f82cbc4c (pushed 08:41:35 UTC after the
