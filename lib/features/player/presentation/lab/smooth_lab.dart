@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../../core/localization/app_strings.dart';
 import '../../../../core/services/diagnostics/cpu_probe.dart';
 import '../../../../core/services/diagnostics/playback_log.dart';
+import '../shortcut_item.dart';
 import '../widgets/player_ui.dart';
 
 /// DEVICE LAB AND TEST LAB ONLY (`INNOCENT_LAB`) — the player's smoothness
@@ -26,12 +28,21 @@ import '../widgets/player_ui.dart';
 ///  * MENU `more` (⋮), `morepage` (its "More ›" page), `cc`, `audio` (♪),
 ///    `queue`, `display`, `eq`, `sleep`, `bookmarks`, `shortcuts` (the
 ///    open shortcut row, scrolled sideways), `controls` (the controls up,
-///    nothing scrolled), `film` (nothing over the film);
+///    nothing scrolled), `film` (nothing over the film); any menu with
+///    `-still` (`more-still`) is opened and timed without a scroll;
 ///  * LOOK a set of [PlayerUi] lab switches ([looks]): `base` is 1.64.89's
 ///    drawing, `now` the build's own;
 ///  * SECONDS of scrolling (5 by default; a still MENU is timed as long).
 /// One play of every step, in order: the A/B is inside one run on one
 /// phone, never across runs (skill device-labs).
+///
+/// A step `fn:more`, `fn:morepage` or `fn:shortcuts` taps every tile of ⋮,
+/// every row of its More page or every shortcut of the open row in turn,
+/// on the phone's own plugins, and writes what each did (`LAB fn …`: the
+/// kinds of widget and the words that came, or NOTHING) — as
+/// test/player_functions_test.dart does on a fake engine. Left out: Share
+/// (Android's chooser takes the screen), picture-in-picture (it leaves the
+/// player) and Screen Rotation (it turns the phone).
 class SmoothLab {
   SmoothLab._();
 
@@ -56,17 +67,19 @@ class SmoothLab {
       'play:more:now play:more:base';
 
   /// The looks a step can ask for: each sets [PlayerUi]'s lab switches.
-  /// `base`: the halo blurred three times (1, 3, 10), the full-panel fade
+  /// `base`: the halo blurred three times (1, 3, 10; two since 27 Nov), the full-panel fade
   /// mask, no layer of its own for a list or a bar, the screen rebuilt on
   /// every position tick — 1.64.89. The others change one thing of it.
   /// `now`: the build's own choices.
   static const Map<String, Map<String, Object>> looks = {
-    'base': {'ink': 'blur', 'mask': true, 'rb': false, 'tick': true},
+    'base': {'ink': 'blur3', 'mask': true, 'rb': false, 'tick': true},
     'noink': {'ink': 'none', 'mask': true, 'rb': false, 'tick': true},
     'rim': {'ink': 'rim', 'mask': true, 'rb': false, 'tick': true},
-    'nomask': {'ink': 'blur', 'mask': false, 'rb': false, 'tick': true},
-    'rb': {'ink': 'blur', 'mask': true, 'rb': true, 'tick': true},
-    'notick': {'ink': 'blur', 'mask': true, 'rb': false, 'tick': false},
+    'nomask': {'ink': 'blur3', 'mask': false, 'rb': false, 'tick': true},
+    'rb': {'ink': 'blur3', 'mask': true, 'rb': true, 'tick': true},
+    'notick': {'ink': 'blur3', 'mask': true, 'rb': false, 'tick': false},
+    // Everything of `now` but the halo: 1.64.89's three blurs.
+    'ink3': {'ink': 'blur3', 'mask': true, 'rb': true, 'tick': false},
     'now': <String, Object>{},
   };
 
@@ -87,6 +100,10 @@ class SmoothLab {
           'display ${CpuProbe.refreshRate.round()} Hz');
       for (final step in steps) {
         final p = step.split(':');
+        if (p.length == 2 && p[0] == 'fn') {
+          await _functions(p[1]);
+          continue;
+        }
         if (p.length < 3) continue;
         final seconds = p.length > 3 ? (double.tryParse(p[3]) ?? 5) : 5.0;
         await _step(p[0], p[1], p[2], seconds);
@@ -111,8 +128,12 @@ class SmoothLab {
     PlayerUi.labLook(looks[look] ?? const <String, Object>{});
     await playing?.call(state != 'pause');
     await _wait(900);
-    if (menu != 'film') {
-      final ok = await open?.call(menu) ?? false;
+    // `more-still`: ⋮ open, nothing scrolled — what an open menu costs
+    // while the film plays under it.
+    final stillMenu = menu.endsWith('-still');
+    final opened = stillMenu ? menu.substring(0, menu.length - 6) : menu;
+    if (opened != 'film') {
+      final ok = await open?.call(opened) ?? false;
       if (!ok) {
         PlaybackLog.add('LAB frames $name: could not open');
         return;
@@ -120,7 +141,7 @@ class SmoothLab {
     }
     // The menu in, its fade measured, the first frames of its film drawn.
     await _wait(900);
-    final still = menu == 'film' || menu == 'controls';
+    final still = stillMenu || menu == 'film' || menu == 'controls';
     final scroll = still ? null : _findScrollable(horizontal: menu == 'shortcuts');
     if (!still && scroll == null) {
       PlaybackLog.add('LAB frames $name: nothing to scroll');
@@ -232,6 +253,20 @@ class SmoothLab {
     }
 
     root.visitChildren(visit);
+    if (hit == null) return false;
+    // On screen first: ⋮'s last tiles and the open row's far end scroll.
+    final el = _first(match);
+    if (el != null) {
+      try {
+        await Scrollable.ensureVisible(el,
+            duration: const Duration(milliseconds: 200), alignment: 0.5);
+        await _wait(350);
+        final ro = el.renderObject;
+        if (ro is RenderBox && ro.attached && ro.hasSize) {
+          hit = ro.localToGlobal(Offset.zero) & ro.size;
+        }
+      } catch (_) {}
+    }
     final r = hit;
     if (r == null) return false;
     final id = ++_pointer;
@@ -246,5 +281,122 @@ class SmoothLab {
         timeStamp: now + const Duration(milliseconds: 60),
         kind: PointerDeviceKind.touch));
     return true;
+  }
+
+  static Element? _first(bool Function(Widget w) match) {
+    Element? found;
+    void visit(Element e) {
+      if (found != null) return;
+      if (match(e.widget) && e.renderObject is RenderBox) {
+        found = e;
+        return;
+      }
+      e.visitChildren(visit);
+    }
+
+    WidgetsBinding.instance.rootElement?.visitChildren(visit);
+    return found;
+  }
+
+  static List<Element> _all(bool Function(Widget w) match) {
+    final out = <Element>[];
+    void visit(Element e) {
+      if (match(e.widget)) out.add(e);
+      e.visitChildren(visit);
+    }
+
+    WidgetsBinding.instance.rootElement?.visitChildren(visit);
+    return out;
+  }
+
+  /// What is on screen: the kinds of widget and the words.
+  static ({Set<String> types, Set<String> words}) _look() {
+    final types = <String>{};
+    final words = <String>{};
+    void visit(Element e) {
+      types.add(e.widget.runtimeType.toString());
+      final w = e.widget;
+      if (w is Text && w.data != null) words.add(w.data!);
+      e.visitChildren(visit);
+    }
+
+    WidgetsBinding.instance.rootElement?.visitChildren(visit);
+    return (types: types, words: words);
+  }
+
+  static const _kinds = [
+    'Sheet', 'Dialog', 'Screen', 'Panel', 'Card', 'Bar', 'Overlay', 'Toast'
+  ];
+
+  /// Taps what [match] finds after [menu] is opened, and writes what came.
+  static Future<void> _tryOne(
+      String name, String menu, bool Function(Widget w) match) async {
+    await close?.call();
+    await _wait(500);
+    if (!(await open?.call(menu) ?? false)) {
+      PlaybackLog.add('LAB fn $name: could not open $menu');
+      return;
+    }
+    await _wait(900);
+    final before = _look();
+    if (!await tap(match)) {
+      PlaybackLog.add('LAB fn $name: not on screen');
+      return;
+    }
+    await _wait(1600);
+    final after = _look();
+    final shown = (after.types.difference(before.types).toList()..sort())
+        .where((t) => _kinds.any(t.contains) && !t.startsWith('_'))
+        .take(4)
+        .toList();
+    final said = after.words.difference(before.words).take(3).toList();
+    final what = [
+      if (shown.isNotEmpty) 'shows ${shown.join(', ')}',
+      if (said.isNotEmpty) 'says ${said.join(' / ')}',
+    ].join('; ');
+    PlaybackLog.add('LAB fn $name: ${what.isEmpty ? 'NOTHING' : what}'
+        .replaceAll('\n', ' '));
+  }
+
+  static Future<void> _functions(String what) async {
+    await close?.call();
+    await _wait(500);
+    if (what == 'shortcuts') {
+      for (final item in ShortcutItem.available()) {
+        if (item == ShortcutItem.screenRotation) continue;
+        await _tryOne('shortcut/${item.name}', 'shortcuts',
+            (w) => w.key == ValueKey(item.name));
+      }
+      return;
+    }
+    final page = what == 'morepage';
+    if (!(await open?.call(page ? 'morepage' : 'more') ?? false)) return;
+    await _wait(900);
+    final first = _first((w) => w is PanelTile);
+    final s = first == null ? null : AppStrings.of(first);
+    final skip = <String>{
+      if (s != null) s.share,
+      if (s != null) s.pmPip,
+      if (s != null) s.moreOptions,
+    };
+    final names = page
+        ? [
+            for (final e in _all((w) => w is PanelRow))
+              (e.widget as PanelRow).title,
+          ]
+        : [
+            for (final e in _all((w) => w is PanelTile))
+              (e.widget as PanelTile).label,
+          ];
+    PlaybackLog.add('LAB fn $what: ${names.length} to tap');
+    for (final n in names) {
+      if (skip.contains(n)) continue;
+      await _tryOne(
+          '$what/${n.replaceAll('\n', ' ')}',
+          page ? 'morepage' : 'more',
+          page
+              ? (w) => w is PanelRow && w.title == n
+              : (w) => w is PanelTile && w.label == n);
+    }
   }
 }

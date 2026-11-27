@@ -1999,6 +1999,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (ref.read(playerControllerProvider).shortcutsExpanded) {
       c.toggleShortcutsExpanded();
     }
+    // What a shortcut the lab tapped left on (SmoothLab.functions), back
+    // as the film opened.
+    final st = ref.read(playerControllerProvider);
+    if (st.decoderDialogOpen) c.closeDecoderDialog();
+    if (st.isKidsLocked) c.toggleKidsLock();
+    if (st.isLocked) c.toggleLock();
+    if (st.isNightMode) c.toggleNightMode();
+    if (st.isMirrorMode) c.toggleMirrorMode();
+    if (st.isVerticalFlip) c.toggleVerticalFlip();
+    if (st.isShuffleEnabled) c.toggleShuffle();
+    if (st.isMuted) await c.toggleMute();
+    if (st.isBackgroundPlay) c.toggleBackgroundPlay();
+    if (st.loopMode != LoopMode.off) c.setLoopMode(LoopMode.off);
+    if (st.playbackSpeed != 1.0) await c.setSpeed(1.0);
+    if (st.abPointA != null) c.clearABRepeat();
     c.hideControls();
   }
 

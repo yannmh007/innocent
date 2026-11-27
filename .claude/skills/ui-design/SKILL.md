@@ -45,7 +45,7 @@ on a phone. The player's building blocks live in
 | | value |
 |---|---|
 | behind a panel or sheet | nothing: the picture is not dimmed (22 Nov) |
-| panel, sheet | **the shade** (`PlayerShade`): black at 60 % within the menu (40 % of the film shows, as MX's), 20 % at 160 dp before its edge, 0 at 360 dp; no blur, edge or corners; words and icons with `PlayerUi.shadeInk` (black rim 1 + 3, a soft 10); tile discs black 30 %. Black, not `#1C1C1E`: the grey left words 15 % less contrast over a bright film |
+| panel, sheet | **the shade** (`PlayerShade`): black at 60 % within the menu (40 % of the film shows, as MX's), 20 % at 160 dp before its edge, 0 at 360 dp; no blur, edge or corners; words and icons with `PlayerUi.shadeInk` (black 95 % blurred 3, a soft 50 % at 10 — two blurs since 27 Nov: each is drawn anew when a word is painted again); tile discs black 30 %. A list or bar on the shade is a layer of its own (`PlayerUi.ownLayer`). Black, not `#1C1C1E`: the grey left words 15 % less contrast over a bright film |
 | under the controls | `BarShade` (26 Nov): black 80 % at the screen's edge, held at 50 % across the top bar and the bottom row (where the words are), then to nothing over 64 dp beyond, taking no taps; their words and icons in `FilmInk` (the halo). MX's gradients ramp to nothing across the bar and fail over a white film (title 2.2:1, the elapsed time 1.5); held at 50 % the lowest word reads 5.8:1 |
 | shortcut row | every shortcut on a dark translucent disc (`AppColors.shortcutInactive`), upright and sideways, the speed's "1X" too; the chevron on a 28 dp one — as MX 3.4.3 (its discs vanish over a black frame: the Phase 45 audit read "none upright" off a dark film) |
 | scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |

@@ -85,6 +85,24 @@ paths:
   test/player_scrub_test.dart). A widget that opens one ends it in
   `dispose`; a timer that removes UI checks it first; a guard on the end
   (a lock) never refuses what the start let through.
+- **A list or bar whose words carry a blurred shadow is a layer of its
+  own (`PlayerUi.ownLayer`), and a screen does not rebuild on a clock.**
+  Impeller (3.32.8) keeps a word's blurred shadow (TextShadowCache) only
+  while the same recorded paragraph is drawn again: the cache is keyed by
+  the TextFrame, which `drawTextShadow` makes anew every time a paragraph
+  is painted (a lone glyph — an icon — by its index). A list scrolled
+  without a RepaintBoundary inside its scroll view paints every word again
+  each frame: ⋮'s halo (three blurs a word) cost 132 Gaussian blurs a
+  frame, "⋮ stutters when scrolled" (27 Nov 2026, 1.64.89). And the
+  player screen watched the whole PlayerState, so each second of the film
+  rebuilt it, ⋮ open, 707 elements a tick. How: a new scrolling body on
+  the shade wraps its child in `PlayerUi.ownLayer`; a widget that follows
+  the position watches `select((s) => s.position)` and the screen
+  `s.look` (PlayerState.withPosition keeps it); check with
+  test/player_smoothness_test.dart (rebuilds counted, a layer's pictures
+  compared) and on phones with SmoothLab (`STREAM_SMOOTH` in cloud.env,
+  flow `smooth`). A widget that leaned on the old rebuild (the top bar's
+  clock) needs its own timer.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.

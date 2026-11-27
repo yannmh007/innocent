@@ -1014,8 +1014,12 @@ for flow in $FLOWS; do
       { echo "layer: $layer"; adb shell dumpsys SurfaceFlinger --latency "'$layer'"; } > "$OUT/smooth_surfaceflinger.txt" 2>&1 || true
     fi
     awk '/LAB phase smooth start/{on=1} on' "$OUT/logcat_raw.txt" 2>/dev/null \
-      | grep -o 'LAB frames.*\|LAB smooth.*\|LAB cpu.*' | tee "$OUT/smooth.txt" | grep -c 'LAB frames' \
+      | grep -o 'LAB frames.*\|LAB smooth.*\|LAB fn.*\|LAB cpu.*' | tee "$OUT/smooth.txt" | grep -c 'LAB frames' \
       | sed 's/^/  frames lines: /' || true
+    # The Screenshot shortcut's picture, where a viewer looks for it.
+    { echo "screenshots in MediaStore:"; adb shell content query --uri content://media/external/images/media \
+        --projection _display_name:relative_path 2>/dev/null | grep -i 'Innocent_' || echo "  none"; } >> "$OUT/smooth.txt"
+
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
     adb shell rm -f "$d/lab_stream_url" "$d/lab_smooth" >/dev/null 2>&1 || true

@@ -74,9 +74,23 @@ class PlayerUi {
   static const double shadeFade = 360;
   static const double shadeMidAt = 160;
   static const double shadeMid = 0.20;
+  ///
+  /// Two blurs, not three (27 Nov 2026, the smoothness session): a word's
+  /// blurred shadow is drawn anew whenever the word is painted again or
+  /// scrolls back into view (Impeller's TextShadowCache, see
+  /// [ownLayer]), and on the realme the third — a 1 dp rim under the 3 dp
+  /// one — was a third of that work for nothing: over the same five frames,
+  /// my/en/th, the lowest word over a white film read 4.04:1 with these two
+  /// against 3.77 with the three (median change +0.04; 4 words under 4.5
+  /// against 5). 1.64.89's three are [shadeInk3], for the lab's `base`.
   static const List<Shadow> shadeInk = <Shadow>[
-    // Tight, then soft: the first two keep a dark rim round every stroke,
-    // the last a quiet ground under a word.
+    // A dark rim round every stroke, then a quiet ground under a word.
+    Shadow(color: Color(0xF2000000), blurRadius: 3),
+    Shadow(color: Color(0x80000000), blurRadius: 10),
+  ];
+
+  /// 1.64.89's halo, three blurs (the smoothness lab's `base`).
+  static const List<Shadow> shadeInk3 = <Shadow>[
     Shadow(color: Color(0xFF000000), blurRadius: 1),
     Shadow(color: Color(0xE6000000), blurRadius: 3),
     Shadow(color: Color(0x80000000), blurRadius: 10),
@@ -90,6 +104,7 @@ class PlayerUi {
     return switch (_labInk) {
       'none' => const <Shadow>[],
       'rim' => rimInk,
+      'blur3' => shadeInk3,
       _ => shadeInk,
     };
   }
