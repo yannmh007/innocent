@@ -11,8 +11,8 @@ HTTP/2 206
 content-length: 1024
 content-range: bytes 0-1023/1127595385
 --- one connection, 20 s
-bytes=1127595385 speed=58491681 B/s ttfb=0.305178s
+bytes=1127595385 speed=76561571 B/s ttfb=0.443202s
 --- three connections on three ranges, 20 s
-lane0 bytes=375865128 speed=84022267 B/s
-lane2 bytes=375865128 speed=82607793 B/s
-lane1 bytes=375865128 speed=76281672 B/s
+lane0 bytes=375865128 speed=79166133 B/s
+lane2 bytes=375865128 speed=77764592 B/s
+lane1 bytes=375865128 speed=60152886 B/s
