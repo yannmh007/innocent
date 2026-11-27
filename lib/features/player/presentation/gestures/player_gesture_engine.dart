@@ -70,6 +70,7 @@ class GestureCallbacks {
     this.onSubtitleScale,
     this.onSubtitleSeek,
     this.onSubtitleEnd,
+    this.onSubtitleGrab,
   });
 
   final void Function()? onTap;
@@ -113,6 +114,10 @@ class GestureCallbacks {
   /// One line forward (+1) or back (−1).
   final void Function(int direction)? onSubtitleSeek;
   final void Function()? onSubtitleEnd;
+
+  /// A finger took the subtitle (a move, a line swipe or a pinch began on
+  /// it): the line shows it is held until [onSubtitleEnd], as MX greys it.
+  final void Function()? onSubtitleGrab;
 }
 
 /// The player's touch gestures, decided from raw pointer events.
@@ -163,7 +168,10 @@ class PlayerGestureEngine {
   /// Finger travel per speed step on a two-finger swipe.
   static const double speedStepDp = 24;
 
-  /// Finger travel per subtitle line on a subtitle swipe.
+  /// The travel a swipe along the subtitle needs to step a line. MX 3.4.3
+  /// (reference lab 46047544023, 46049383870, 27 Nov 2026): ONE line a
+  /// swipe, however long, when the finger lifts; right to left the next,
+  /// left to right the previous; 90 dp stepped, 49 dp did not.
   static const double subtitleStepDp = 64;
 
   static const double _maxSeekWidthDp = 600;
@@ -204,7 +212,7 @@ class PlayerGestureEngine {
   Duration? _stackLastAt;
 
   double _lastVerticalY = 0;
-  int _lastSubtitleSteps = 0;
+  double _subtitleDx = 0;
   int _lastSpeedSteps = 0;
   double _twoSpacing0 = 0;
   double _twoLastSpacing = 0;
@@ -302,7 +310,7 @@ class PlayerGestureEngine {
     _downGlobal = global;
     _swipeAllowed = !_inNoSwipeZone(local);
     _lastVerticalY = local.dy;
-    _lastSubtitleSteps = 0;
+    _subtitleDx = 0;
     _longPressTimer?.cancel();
     if (switches.longPress && callbacks.onLongPressStart != null) {
       _longPressTimer = Timer(longPressTimeout, () {
@@ -355,15 +363,8 @@ class PlayerGestureEngine {
         callbacks.onSubtitleMove?.call(step);
         break;
       case _One.subtitleSeek:
-        final steps = (d.dx / subtitleStepDp).truncate();
-        while (_lastSubtitleSteps < steps) {
-          _lastSubtitleSteps++;
-          callbacks.onSubtitleSeek?.call(1);
-        }
-        while (_lastSubtitleSteps > steps) {
-          _lastSubtitleSteps--;
-          callbacks.onSubtitleSeek?.call(-1);
-        }
+        // The line steps when the finger lifts (_upOne), as MX's.
+        _subtitleDx = d.dx;
         break;
       case _One.pending:
       case _One.longPress:
@@ -384,12 +385,14 @@ class PlayerGestureEngine {
       if (vertical && callbacks.onSubtitleMove != null) {
         _one = _One.subtitleMove;
         _lastVerticalY = start.dy + d.dy;
+        callbacks.onSubtitleGrab?.call();
         callbacks.onSubtitleMove?.call(d.dy / size.height);
         return;
       }
       if (horizontal && callbacks.onSubtitleSeek != null) {
         _one = _One.subtitleSeek;
-        _lastSubtitleSteps = 0;
+        _subtitleDx = d.dx;
+        callbacks.onSubtitleGrab?.call();
         return;
       }
     }
@@ -429,7 +432,16 @@ class PlayerGestureEngine {
         callbacks.onVerticalEnd?.call();
         break;
       case _One.subtitleMove:
+        callbacks.onSubtitleEnd?.call();
+        break;
       case _One.subtitleSeek:
+        final dx = _down.isEmpty
+            ? _subtitleDx
+            : (local - _down.values.first).dx;
+        if (dx.abs() >= subtitleStepDp) {
+          // Right to left: the next line (MX).
+          callbacks.onSubtitleSeek?.call(dx < 0 ? 1 : -1);
+        }
         callbacks.onSubtitleEnd?.call();
         break;
       case _One.pending:
@@ -548,6 +560,7 @@ class PlayerGestureEngine {
       if (spread > twoFingerSlop) {
         if (_twoOnSubtitle && callbacks.onSubtitleScale != null) {
           _two = _Two.subtitlePinch;
+          callbacks.onSubtitleGrab?.call();
         } else if (switches.pinch && callbacks.onPinch != null) {
           _two = _Two.pinch;
         } else {

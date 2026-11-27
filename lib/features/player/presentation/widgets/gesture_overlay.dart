@@ -47,6 +47,9 @@ class GestureOverlay extends StatefulWidget {
   final ValueChanged<int>? onSubtitleStep;
   final VoidCallback? onSubtitleEnd;
 
+  /// A finger took the subtitle (until [onSubtitleEnd]).
+  final VoidCallback? onSubtitleGrab;
+
   /// The band the visible subtitle occupies in a player of the given size,
   /// or null when no subtitle is on screen. Asked at each touch.
   final Rect? Function(Size size)? subtitleBand;
@@ -90,6 +93,7 @@ class GestureOverlay extends StatefulWidget {
     this.onSubtitleScale,
     this.onSubtitleStep,
     this.onSubtitleEnd,
+    this.onSubtitleGrab,
     this.subtitleBand,
     this.duration = Duration.zero,
     this.brightnessSwipeEnabled = true,
@@ -179,6 +183,7 @@ class _GestureOverlayState extends State<GestureOverlay> {
         onSubtitleScale: w.onSubtitleScale,
         onSubtitleSeek: w.onSubtitleStep,
         onSubtitleEnd: w.onSubtitleEnd,
+        onSubtitleGrab: w.onSubtitleGrab,
       ));
   }
 
@@ -247,6 +252,7 @@ class _GestureOverlayState extends State<GestureOverlay> {
       onSubtitleScale: c.onSubtitleScale,
       onSubtitleSeek: c.onSubtitleSeek,
       onSubtitleEnd: c.onSubtitleEnd,
+      onSubtitleGrab: c.onSubtitleGrab,
     );
   }
 

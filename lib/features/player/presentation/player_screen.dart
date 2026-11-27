@@ -191,6 +191,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   PlaybackReporter? _reporter;
   Timer? _reportTimer;
 
+  /// A finger holds the subtitle (a move, a line swipe, a pinch): its line
+  /// shows a box until the finger lifts, as MX greys it (reference lab
+  /// 46047544023). Only the subtitle layer listens.
+  final ValueNotifier<bool> _subtitleHeld = ValueNotifier<bool>(false);
+
   /// The player screen on top: the one whose film the shared controller
   /// plays. A screen pushed over another (an "open with", the lab's intent, a
   /// play that reached the player while one was open) takes the controller
@@ -1283,6 +1288,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // FIRST, before anything that could throw. A leaked observer is the one
     // failure that outlives the screen and keeps firing forever.
     _disposed = true;
+    _subtitleHeld.dispose();
     if (const bool.fromEnvironment('INNOCENT_LAB') &&
         SmoothLab.open == _labOpen) {
       SmoothLab.open = null;
@@ -3032,6 +3038,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         service: svc,
         picture: picture,
         padding: _subtitlePadding(state),
+        held: _subtitleHeld,
       );
     });
   }
@@ -3720,7 +3727,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 onSubtitleMove: controller.onSubtitleMoveDelta,
                 onSubtitleScale: controller.onSubtitleScaleDelta,
                 onSubtitleStep: controller.onSubtitleStep,
-                onSubtitleEnd: controller.onSubtitleGestureEnd,
+                onSubtitleEnd: () {
+                  _subtitleHeld.value = false;
+                  controller.onSubtitleGestureEnd();
+                },
+                onSubtitleGrab: () => _subtitleHeld.value = true,
                 subtitleBand: _subtitleBand,
                 duration: state.duration,
                 panEnabled: ref

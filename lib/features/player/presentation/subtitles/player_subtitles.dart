@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/services/diagnostics/playback_log.dart';
@@ -16,6 +17,7 @@ class PlayerSubtitles extends StatelessWidget {
     required this.service,
     required this.picture,
     this.padding = EdgeInsets.zero,
+    this.held,
   });
 
   final MediaKitPlayerService service;
@@ -25,6 +27,10 @@ class PlayerSubtitles extends StatelessWidget {
 
   /// Kept clear at the top and bottom (system bars, the bottom controls).
   final EdgeInsets padding;
+
+  /// True while a finger holds the subtitle: the main line sits on a grey
+  /// box (MX's sign that it is held), over a dark film and a bright one.
+  final ValueListenable<bool>? held;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,10 @@ class PlayerSubtitles extends StatelessWidget {
                     left: g.box.left,
                     width: g.box.width,
                     bottom: view.height - g.bottom,
-                    child: SubtitleText(main, look: look, geometry: g),
+                    child: SubtitleHeldBox(
+                      held: held,
+                      child: SubtitleText(main, look: look, geometry: g),
+                    ),
                   ),
                 if (second.isNotEmpty)
                   Positioned(
@@ -68,6 +77,36 @@ class PlayerSubtitles extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+/// The main line on a grey box while held. Mid grey at half: over black it
+/// reads as MX's (83 of 255 there, run 46047544023), over a white film it
+/// still shows where MX's white 33 % would vanish.
+class SubtitleHeldBox extends StatelessWidget {
+  const SubtitleHeldBox({super.key, required this.held, required this.child});
+
+  final ValueListenable<bool>? held;
+  final Widget child;
+
+  static const Color grey = Color(0x80808080);
+
+  @override
+  Widget build(BuildContext context) {
+    final h = held;
+    if (h == null) return child;
+    return ValueListenableBuilder<bool>(
+      valueListenable: h,
+      child: child,
+      builder: (context, on, child) => Align(
+        alignment: Alignment.bottomCenter,
+        heightFactor: 1,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: on ? grey : null),
+          child: child,
+        ),
+      ),
     );
   }
 }

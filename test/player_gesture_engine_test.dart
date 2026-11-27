@@ -32,6 +32,7 @@ class _Log {
         onSubtitleScale: (d) => subScale *= d,
         onSubtitleSeek: (dir) => subtitleSeek += dir,
         onSubtitleEnd: () => events.add('subtitle end'),
+        onSubtitleGrab: () => events.add('subtitle held'),
       );
 }
 
@@ -313,17 +314,53 @@ void main() {
       _drag(e, const Offset(300, 740), const Offset(300, 640));
       expect(log.subtitleMove, closeTo(-100 / 915, 0.002));
       expect(log.volume, 0);
-      expect(log.events, ['subtitle end']);
+      expect(log.events, ['subtitle held', 'subtitle end']);
       e.dispose();
     });
 
-    testWidgets('a horizontal swipe on it steps a line per 64 dp',
+    // MX 3.4.3, measured (reference lab 46047544023, 46049383870): one line
+    // a swipe, however long, when the finger lifts; right to left the
+    // next, left to right the previous; 90 dp stepped, 49 dp did not.
+    testWidgets('a swipe right to left on it is the next line, one a swipe',
         (tester) async {
       final log = _Log();
       final e = withSubtitle(log);
-      _drag(e, const Offset(100, 740), const Offset(250, 740));
-      expect(log.subtitleSeek, 2);
+      _drag(e, const Offset(350, 740), const Offset(60, 740));
+      expect(log.subtitleSeek, 1);
       expect(log.seekSeconds, isNull);
+      expect(log.events, ['subtitle held', 'subtitle end']);
+      e.dispose();
+    });
+
+    testWidgets('left to right is the previous line', (tester) async {
+      final log = _Log();
+      final e = withSubtitle(log);
+      _drag(e, const Offset(100, 740), const Offset(200, 740));
+      expect(log.subtitleSeek, -1);
+      e.dispose();
+    });
+
+    testWidgets('a swipe under 64 dp steps nothing', (tester) async {
+      final log = _Log();
+      final e = withSubtitle(log);
+      _drag(e, const Offset(200, 740), const Offset(150, 740));
+      expect(log.subtitleSeek, 0);
+      expect(log.seekSeconds, isNull);
+      expect(log.events, ['subtitle held', 'subtitle end']);
+      e.dispose();
+    });
+
+    testWidgets('the line steps when the finger lifts, not before',
+        (tester) async {
+      final log = _Log();
+      final e = withSubtitle(log);
+      e.pointerDown(1, const Offset(300, 740), Duration.zero);
+      for (var i = 1; i <= 10; i++) {
+        e.pointerMove(1, Offset(300 - 20.0 * i, 740), _ms * (i * 16));
+      }
+      expect(log.subtitleSeek, 0);
+      e.pointerUp(1, const Offset(100, 740), const Duration(seconds: 1));
+      expect(log.subtitleSeek, 1);
       e.dispose();
     });
 

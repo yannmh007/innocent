@@ -22,7 +22,7 @@ MX screenshots (docs PDF, pages 7 and 9).
 | Pinch | Zoom the video. |
 | Two-finger drag while zoomed | Pan ("Zoom and pan"). |
 | Long press | Speed slider: drag left / right without lifting (owner's PDF p. 9). Newer builds also "hold for 2×". |
-| Subtitle scroll | Horizontal swipe on the subtitle text: previous / next subtitle line (seeks to it). |
+| Subtitle scroll | Horizontal swipe on the subtitle text: right to left the next line, left to right the previous (seeks to it) — one line a swipe, on the finger's lift, from 64 dp. |
 | Subtitle up / down | Vertical drag on the subtitle text: moves the subtitle. |
 | Subtitle zoom | Pinch on the subtitle text: subtitle size. |
 | Lock | Lock button disables every gesture; kids lock too. |
@@ -99,8 +99,14 @@ fake clock.
   zoomed picture (clamped so no black edge is dragged in).
 * **Subtitles.** When a subtitle is on screen and the gesture starts on its
   band: vertical drag moves it (`sub-pos`), horizontal swipe jumps to the
-  previous / next line (`sub-seek`), pinch sizes it (`sub-scale`); all saved
-  like the Subtitle settings.
+  next line (right to left) or the previous (left to right) — ONE line a
+  swipe, however long, when the finger lifts, from 64 dp of travel
+  (`sub-seek`) — and pinch sizes it (`sub-scale`); all saved like the
+  Subtitle settings. While a finger holds it the line sits on a grey box.
+  As MX 3.4.3, measured in the reference lab on 27-28 Nov 2026 (runs
+  46047544023, 46049383870: a 90 dp swipe stepped, 49 dp did not, a slow
+  one stepped on the lift; Innocent's had stepped a line per 64 dp the
+  other way round, left for the previous).
 * **Volume boost.** If the audio booster is enabled, swiping up at 100 %
   carries on to 200 % (libmpv gain); down returns through 100 %.
 * **Haptics.** A tick at the limits (0 / 100 / 200 %), on each speed step,
