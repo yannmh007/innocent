@@ -1,4 +1,4 @@
-layer: Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#267
+layer: Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#219
 16666666
 0	0	0
 0	0	0

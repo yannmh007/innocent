@@ -1,236 +1,136 @@
 LAB device kind=DeviceKind.phone sw=411.0
 LAB engine update ok ALREADY_UP_TO_DATE 2026.11.23 -> 2026.11.23
-LAB cpu app 16% · 0.2fps · b90 0.3 r90 757 ms · late 1 · 60 Hz · gap 11 · pool-thread 7% | 1.raster 6% | RenderThread 2%
+LAB cpu app 29% · 0.2fps · b90 0.0 r90 978 ms · late 2 · 60 Hz · gap 24 · pool-thread 18% | 1.raster 10% | RenderThread 1%
 LAB phase smooth start
 LAB device kind=DeviceKind.phone sw=411.0
 LAB    0.0 LAB jump rule spare on (the build's own)
+LAB    6.5 LAB title: opening Big Buck Bunny
 LAB engine update ok ALREADY_UP_TO_DATE 2026.11.23 -> 2026.11.23
-LAB    5.9 LAB title: opening Big Buck Bunny
-LAB    7.3 play server granted in 1352 ms, 2 rungs
-LAB    7.3 play rung 360p 546 kbps (choice auto, measured - kbps)
+LAB    7.9 play server granted in 1342 ms, 2 rungs
+LAB    7.9 play rung 360p 546 kbps (choice auto, measured - kbps)
 LAB hls start +0 ms: register
-LAB    7.3 stream lanes=6 peak=window
-LAB    7.5 stream cache: a new film, sealed
-LAB hls start +404 ms: rungs registered
-LAB hls start +405 ms: 360p head asked
-LAB    7.7 play through the ladder on ExoPlayer
-LAB    7.7 play: opening the player
-LAB    7.9 LAB smooth: 16 steps, display 60 Hz
+LAB    7.9 stream lanes=6 peak=window
+LAB    8.0 stream cache: a new film, sealed
+LAB hls start +375 ms: rungs registered
+LAB hls start +376 ms: 360p head asked
+LAB    8.2 play through the ladder on ExoPlayer
+LAB    8.2 play: opening the player
+LAB    8.4 LAB smooth: 19 steps, display 60 Hz
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB    8.2 hwdec -> auto
-LAB    8.2 open ladder (exo) start=0s autoplay=true rung=auto first=360
-LAB    8.3 wakelock playing=true bg=false priv=false pos=0ms
-LAB    8.4 open ok
-LAB hls start +1082 ms: master asked
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    8.6 hwdec -> auto
+LAB    8.6 open ladder (exo) start=0s autoplay=true rung=auto first=360
+LAB    8.8 wakelock playing=true bg=false priv=false pos=0ms
+LAB    8.8 open ok
+LAB hls start +980 ms: master asked
 LAB    8.9 stream index 0.0 MB at 0.0 MB
-LAB hls start +1609 ms: 360p length checked
-LAB hls start +1612 ms: 360p head/init asked
+LAB hls start +995 ms: 360p length checked
+LAB hls start +996 ms: 360p head/init asked
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
 LAB    9.2 fg stream: watching
-LAB hls start +1957 ms: 360p index
-LAB    9.3 hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
-LAB hls start +1962 ms: master served
-LAB hls start +1982 ms: 360p playlist asked
-LAB    9.3 hls: 360p playlist, 299 segments
-LAB hls start +1984 ms: 240p head asked
-LAB hls start +1986 ms: 360p playlist served
+LAB hls start +1369 ms: 360p index
+LAB    9.2 hls: 360p index, 299 segments, average 545, peak 2s 991, 10s 752, 20s 723 kbps
+LAB hls start +1371 ms: master served
+LAB hls start +1376 ms: 360p playlist asked
+LAB    9.2 hls: 360p playlist, 299 segments
+LAB hls start +1376 ms: 240p head asked
+LAB hls start +1383 ms: 360p playlist served
+LAB hls start +1529 ms: 360p head/init asked
 LAB    9.4 exo tracks 360,240 selected=2 adaptive=true peaks=723,388 kbps
-LAB hls start +2180 ms: 360p head/init asked
-LAB    9.5 hls jump: answer 319 ms, first byte 326 ms, segment 622 ms (65536 B); conn kept 0 ms, wait 316 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
-LAB hls start +2236 ms: 360p head/init in
-LAB hls start +2322 ms: 360p head/init in
-LAB hls start +2390 ms: 360p segment asked
-LAB    9.8 exo rung 360p 600 kbps
-LAB cpu app 47% · 13.8fps · b90 1.5 r90 91 ms · late 136 · 60 Hz · gap 4.5 · 1.raster 32% | pool-thread 7% | .innocent.media 4% | RenderThread 2%
-LAB hls start +2805 ms: 360p segment in
-LAB   10.1 hls start (ms): rungs registered 404, 360p head asked 405, master asked 1082, 360p length checked 1609, 360p head/init asked 1612, 360p index 1957, master served 1962, 360p playlist asked 1982, 240p head asked 1984, 360p playlist served 1986, 360p head/init in 2236, 360p segment asked 2390, 360p segment in 2805
-LAB hls start +2927 ms: 360p segment asked
-LAB hls start +2939 ms: 360p segment in
-LAB   10.6 first frame 2775 ms
-LAB hls start +3316 ms: 360p segment asked
-LAB hls start +3498 ms: 360p segment in
-LAB   10.9 stream index 0.0 MB at 0.0 MB
-LAB hls start +3631 ms: 240p head/init asked
-LAB hls start +3648 ms: 360p segment asked
-LAB hls start +3758 ms: 360p segment in
-LAB hls start +3874 ms: 360p segment asked
-LAB hls start +4104 ms: 360p segment in
-LAB hls start +4112 ms: 360p segment asked
-LAB hls start +4145 ms: 360p segment in
-LAB hls start +4188 ms: 360p segment asked
-LAB hls start +4426 ms: 360p segment in
-LAB hls start +4453 ms: 360p segment asked
-LAB hls start +4504 ms: 240p index
-LAB   11.8 hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
-LAB   12.1 line 3935 kbps, in a read
-LAB   12.2 hls jump: answer 787 ms, first byte 823 ms, segment 1292 ms (65536 B); conn new 262 ms (dns 15, tcp 110, tls 137), wait 525 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
-LAB hls start +4942 ms: 240p head/init in
-LAB hls start +5101 ms: 360p segment cut
-LAB hls start +5108 ms: 360p segment asked
-LAB hls start +5209 ms: 360p segment in
-LAB hls start +5354 ms: 360p segment asked
-LAB hls start +5389 ms: 360p segment in
-LAB hls start +5419 ms: 360p segment asked
-LAB hls start +5484 ms: 360p segment in
-LAB hls start +5544 ms: 360p segment asked
-LAB hls start +5609 ms: 360p segment in
-LAB hls start +5646 ms: 360p segment asked
-LAB hls start +5716 ms: 360p segment in
-LAB hls start +5732 ms: 360p segment asked
-LAB hls start +5793 ms: 360p segment in
-LAB hls start +5867 ms: 360p segment asked
-LAB hls start +5919 ms: 360p segment in
-LAB hls start +5972 ms: 360p segment asked
-LAB   13.4 line 5061 kbps, a read
-LAB   13.4 measured 5061 kbps
-LAB hls start +6353 ms: 360p segment in
-LAB   15.4 line 9537 kbps, a read
-LAB   15.4 measured 9537 kbps
-LAB   16.3 preview pack: 149 pictures, header 677 ms
-LAB   16.3 preview pack header ahead: 677 ms (at +5 s, ahead 55267 ms)
-LAB   17.6 measured 9880 kbps
-LAB frames play/film/now n=122 fps=15.2 hz=60 build=0.1/0.3/12/31 raster=53/90/251/265 ms over16=122 (100.0%) · app 54% · 15.2fps · 1.raster 31% | .innocent.media 9% | ExoPlayer:Playb 4% | DartWorker 3% | MediaCodec_loop 2% | HwBinder:8266 2%
-LAB   18.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 53% · 16.2fps · b90 0.3 r90 79 ms · late 161 · 60 Hz · gap 17 · 1.raster 32% | .innocent.media 8% | ExoPlayer:Playb 3% | DartWorker 2% | MediaCodec_loop 2% | HwBinder:8266 2%
-LAB frames play/film/nowprof n=135 fps=16.7 hz=60 build=0.1/0.1/0.2/30 raster=55/71/92/101 ms over16=135 (100.0%) · app 47% · 16.7fps · 1.raster 37% | MediaCodec_loop 3% | ExoPlayer:Playb 2% | .innocent.media 2% | HwBinder:8266 2%
-LAB   28.4 LAB main play/film/nowprof: main 2% · in messages 0% · 330 msgs · ImageReader$ListenerHandler ImageReader$1 185x0.11ms | Handler ExoStreamEngine$ticker$1 32x0.27ms | Handler FlutterRenderer$ImageReaderSurfaceProducer$$ExternalSyntheticLambda8 112x0.03ms | ActivityThread$H 1x3.66ms
-LAB   28.9 rebuffer start (ahead 0 ms)
-LAB   28.9 LAB native: dynamic scheduling on (the film opened again)
-LAB   29.0 hls: 360p playlist, 299 segments
-LAB   29.0 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
-LAB   29.9 rebuffer end 965 ms
-LAB cpu app 42% · 16.9fps · b90 0.1 r90 72 ms · late 170 · 60 Hz · gap 17 · 1.raster 35% | .innocent.media 3% | HwBinder:8266 2%
-LAB cpu app 45% · 17.0fps · b90 0.1 r90 77 ms · late 168 · 60 Hz · gap 17 · 1.raster 34% | .innocent.media 2% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:8266 2%
-LAB frames play/film/sched n=138 fps=17.2 hz=60 build=0.1/0.1/4.0/5.3 raster=57/77/90/114 ms over16=138 (100.0%) · app 45% · 17.2fps · 1.raster 35% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:8266 1%
-LAB   44.3 LAB native: the window see-through (recreated)
-LAB   44.3 lifecycle hidden mounted=true
-LAB   44.3 lifecycle paused mounted=true
-LAB   44.4 lifecycle detached mounted=true
-LAB   44.5 lifecycle resumed mounted=true
-LAB   44.5 lifecycle inactive mounted=true
-LAB   44.5 wakelock playing=false bg=false priv=false pos=0ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB   48.8 wakelock playing=true bg=false priv=false pos=0ms
-LAB   49.9 rebuffer start (ahead 0 ms)
-LAB   49.9 LAB native: dynamic scheduling off (the film opened again)
-LAB cpu app 26% · 10.4fps · b90 0.3 r90 79 ms · late 102 · 60 Hz · gap 17 · 1.raster 22% | .innocent.media 2% | HwBinder:8266 1%
-LAB   50.0 hls: 360p playlist, 299 segments
-LAB   50.0 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
-LAB   50.7 rebuffer end 848 ms
-LAB   58.2 rebuffer start (ahead 55526 ms)
-LAB   58.3 rebuffer end 39 ms
-LAB cpu app 46% · 14.5fps · b90 0.2 r90 75 ms · late 142 · 60 Hz · gap 17 · 1.raster 35% | MediaCodec_loop 3% | .innocent.media 3% | HwBinder:8266 2% | ExoPlayer:Playb 2%
-LAB frames play/film/t n=152 fps=19.0 hz=60 build=0.1/0.1/18/20 raster=56/70/97/100 ms over16=149 (98.0%) · app 44% · 19.0fps · 1.raster 35% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:8266 1%
-LAB   65.3 LAB native: the film on a SurfaceView (on)
-LAB cpu app 27% · 11.0fps · b90 0.2 r90 74 ms · late 110 · 60 Hz · gap 17 · 1.raster 20% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | .innocent.media 1% | HwBinder:8266 1%
-LAB   70.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:8266 1%
-LAB cpu app 6% · 0.2fps · b90 0.7 r90 125 ms · late 2 · 60 Hz · ExoPlayer:Playb 2% | MediaCodec_loop 1%
-LAB   81.4 preview ahead (pack): around 61s, 21 taken in 1532 ms, 1 requests, 133 KB
-LAB   83.5 rebuffer start (ahead 31024 ms)
-LAB   83.6 rebuffer end 67 ms
-LAB   85.9 fg stream: watching
-LAB frames play/controls/sv n=14 fps=2.3 hz=60 build=1.3/15/173/173 raster=233/466/3231/3231 ms over16=13 (92.9%) · app 60% · 2.3fps · 1.raster 50% | .innocent.media 3% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:8266 1%
-LAB   87.9 line 4290 kbps, in a read
-LAB   89.0 line 5410 kbps, a read
-LAB   89.0 measured 5410 kbps
-LAB cpu app 48% · 1.9fps · b90 15 r90 566 ms · late 17 · 60 Hz · gap 17 · 1.raster 36% | .innocent.media 4% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:8266 1%
-LAB   92.0 measured 6386 kbps
-LAB frames play/film/svprof n=0 fps=0.0 · app 8% · 0.0fps · .innocent.media 3% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:8266 1%
-LAB   97.2 LAB main play/film/svprof: main 3% · in messages 0% · 45 msgs · Handler ExoStreamEngine$ticker$1 32x0.24ms | Handler DartMessenger$$ExternalSyntheticLambda0 4x0.13ms | Handler MediaSourceList$ForwardingEventListener$$ExternalSyntheticLambda9 2x0.14ms | Handler 5x0.04ms | Handler ExoPlayerImpl$$ExternalSyntheticLambda13 1x0.18ms | Handler MediaSourceList$ForwardingEventListener$$ExternalSyntheticLambda11 1x0.09ms
-LAB   97.6 rebuffer start (ahead 0 ms)
-LAB   97.6 LAB native: dynamic scheduling on (the film opened again)
-LAB   97.7 hls: 360p playlist, 299 segments
-LAB   97.7 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
-LAB   98.1 rebuffer end 487 ms
-LAB cpu app 10% · 1.0fps · b90 1.2 r90 171 ms · late 8 · 60 Hz · gap 17 · 1.raster 3% | .innocent.media 3% | HwBinder:8266 1%
-LAB cpu app 8% · 0.0fps · ExoPlayer:Playb 5% | MediaCodec_loop 1% | HwBinder:8266 1%
-LAB frames play/film/svsched n=0 fps=0.0 · app 8% · 0.0fps · ExoPlayer:Playb 4% | MediaCodec_loop 2% | HwBinder:8266 1%
-LAB  113.0 LAB native: the film back on the texture
-LAB  113.8 LAB native: the window opaque (recreated)
-LAB  113.8 lifecycle hidden mounted=true
-LAB  113.8 lifecycle paused mounted=true
-LAB  114.0 lifecycle detached mounted=true
-LAB  114.0 lifecycle resumed mounted=true
-LAB  114.0 lifecycle inactive mounted=true
-LAB  114.0 wakelock playing=false bg=false priv=false pos=67004ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB  118.3 wakelock playing=true bg=false priv=false pos=67004ms
-LAB  119.3 LAB native: dynamic scheduling off (the film opened again)
-LAB  119.4 hls: 360p playlist, 299 segments
-LAB  119.4 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
-LAB cpu app 9% · 2.3fps · b90 4.4 r90 139 ms · late 20 · 60 Hz · gap 17 · 1.raster 4% | .innocent.media 2% | RenderThread 1%
-LAB cpu app 1% · 0.1fps · b90 0.1 r90 81 ms · late 1 · 60 Hz · -
-LAB frames play/film/now n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB  134.2 hls: 360p playlist, 299 segments
-LAB  134.4 stream from the phone 10.1 MB sealed
-LAB  134.6 fg stream: watching
-LAB  136.6 line 47549 kbps, in a read
-LAB  139.6 measured 48221 kbps
-LAB cpu app 56% · 0.2fps · b90 0.4 r90 16 ms · 60 Hz · gap 17 · .innocent.media 32% | DartWorker 11% | dart:io EventHa 8% | HeapTaskDaemon 3% | flutter-worker- 2%
-LAB  140.0 stream from the phone 38.8 MB sealed
-LAB cpu app 126% · 0.0fps · .innocent.media 47% | flutter-worker- 27% | HeapTaskDaemon 22% | DartWorker 21% | dart:io EventHa 10%
-LAB  157.8 LAB local: 38 segments, 76 s of 360p, 1548567 KB
-LAB  157.8 player teardown done keepPlaying=false
-LAB  157.8 wakelock playing=false bg=false priv=false pos=67004ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB  159.7 open scheme=path len=56 hwdec=auto start=0s autoplay=true
-LAB  159.7 wakelock playing=false bg=false priv=false pos=0ms
-LAB  159.7 open ok
-LAB  159.7 wakelock playing=true bg=false priv=false pos=0ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB cpu app 110% · 1.9fps · b90 1.7 r90 79 ms · late 19 · 60 Hz · gap 17 · .innocent.media 39% | flutter-worker- 21% | DartWorker 16% | HeapTaskDaemon 16% | 1.raster 9% | dart:io EventHa 8%
-LAB  168.3 LAB local: playing /data/user/0/com.innocent.media/cache/lab_local_360p.mp4
-LAB cpu app 52% · 17.4fps · b90 0.6 r90 68 ms · late 174 · 60 Hz · gap 17 · 1.raster 44% | mpv/opener 6% | .innocent.media 3%
-LAB frames play/film/now n=162 fps=20.2 hz=60 build=0.3/0.4/9.5/32 raster=55/69/105/105 ms over16=161 (99.4%) · app 46% · 20.2fps · 1.raster 39% | mpv/opener 4% | .innocent.media 3%
-LAB cpu app 48% · 18.3fps · b90 0.4 r90 67 ms · late 182 · 60 Hz · gap 17 · 1.raster 41% | mpv/opener 4% | .innocent.media 3%
-LAB frames play/controls/now n=115 fps=19.2 hz=60 build=0.3/0.4/3.9/7.1 raster=56/77/114/197 ms over16=113 (98.3%) · app 48% · 19.2fps · 1.raster 36% | mpv/opener 8% | .innocent.media 2%
-LAB  189.0 summary 39e102 sent
-LAB cpu app 49% · 17.7fps · b90 0.4 r90 73 ms · late 175 · 60 Hz · gap 17 · 1.raster 38% | mpv/opener 8% | .innocent.media 3%
-LAB  191.8 first frame 32254 ms
-LAB frames play/film/nowprof n=62 fps=7.8 hz=60 build=0.3/0.4/0.9/0.9 raster=55/66/104/104 ms over16=61 (98.4%) · app 17% · 7.8fps · 1.raster 15% | .innocent.media 1%
-LAB  197.0 LAB main play/film/nowprof: main 1% · in messages 0% · 34 msgs · Handler ExoStreamEngine$ticker$1 32x0.24ms | Handler DartMessenger$$ExternalSyntheticLambda0 2x0.77ms
-LAB  197.4 LAB native: the window see-through (recreated)
-LAB  197.4 lifecycle hidden mounted=true
-LAB  197.4 lifecycle paused mounted=true
-LAB  197.4 lifecycle detached mounted=true
-LAB  197.4 lifecycle resumed mounted=true
-LAB  197.4 lifecycle inactive mounted=true
-LAB  197.4 wakelock playing=false bg=false priv=false pos=0ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB    9.5 hls jump: answer 365 ms, first byte 369 ms, segment 665 ms (65536 B); conn kept 0 ms, wait 365 ms, before 0 ms, tries 1; no read cut, pool 1, never, the other never, last whole on it never
+LAB hls start +1664 ms: 360p head/init in
+LAB hls start +1820 ms: 360p head/init in
+LAB hls start +1835 ms: 360p segment asked
+LAB    9.9 exo rung 360p 600 kbps
+LAB cpu app 49% · 9.8fps · b90 1.5 r90 106 ms · late 98 · 60 Hz · gap 15 · 1.raster 31% | pool-thread 11% | .innocent.media 4% | RenderThread 2%
+LAB hls start +2169 ms: 360p segment in
+LAB   10.0 hls start (ms): rungs registered 375, 360p head asked 376, master asked 980, 360p length checked 995, 360p head/init asked 996, 360p index 1369, master served 1371, 360p playlist asked 1376, 240p head asked 1376, 360p playlist served 1383, 360p head/init in 1664, 360p segment asked 1835, 360p segment in 2169
+LAB hls start +2646 ms: 360p segment asked
+LAB   10.5 stream index 0.0 MB at 0.0 MB
+LAB hls start +2675 ms: 240p head/init asked
+LAB hls start +2748 ms: 360p segment in
+LAB   10.8 first frame 2466 ms
+LAB hls start +3000 ms: 360p segment asked
+LAB hls start +3044 ms: 360p segment in
+LAB hls start +3088 ms: 360p segment asked
+LAB hls start +3270 ms: 360p segment in
+LAB hls start +3293 ms: 360p segment asked
+LAB hls start +3476 ms: 240p index
+LAB   11.3 hls: 240p index, 299 segments, average 292, peak 2s 509, 10s 393, 20s 377 kbps
+LAB hls start +3627 ms: 360p segment in
+LAB hls start +3631 ms: 360p segment asked
+LAB hls start +3756 ms: 360p segment in
+LAB   11.6 hls jump: answer 539 ms, first byte 544 ms, segment 1083 ms (65536 B); conn new 294 ms (dns 32, tcp 98, tls 164), wait 245 ms, before 0 ms, tries 1; no read cut, pool 2, never, the other reading, last whole on it never
+LAB hls start +3759 ms: 240p head/init in
+LAB hls start +3762 ms: 360p segment asked
+LAB hls start +4185 ms: 360p segment in
+LAB   12.1 line 3833 kbps, in a read
+LAB hls start +4198 ms: 360p segment asked
+LAB hls start +4424 ms: 360p segment in
+LAB hls start +4449 ms: 360p segment asked
+LAB hls start +4650 ms: 360p segment in
+LAB hls start +4727 ms: 360p segment asked
+LAB hls start +4758 ms: 360p segment in
+LAB hls start +4786 ms: 360p segment asked
+LAB hls start +4933 ms: 360p segment in
+LAB hls start +4982 ms: 360p segment asked
+LAB hls start +5160 ms: 360p segment in
+LAB hls start +5225 ms: 360p segment asked
+LAB hls start +5547 ms: 360p segment in
+LAB hls start +5550 ms: 360p segment asked
+LAB hls start +5734 ms: 360p segment in
+LAB hls start +5820 ms: 360p segment asked
+LAB hls start +6081 ms: 360p segment cut
+LAB hls start +6152 ms: 360p segment asked
+LAB   14.0 measured 4157 kbps
+LAB hls start +6485 ms: 360p segment in
+LAB   16.3 line 5147 kbps, in a read
+LAB   16.3 preview pack: 149 pictures, header 429 ms
+LAB   16.3 preview pack header ahead: 429 ms (at +5 s, ahead 39493 ms)
+LAB   17.8 measured 4727 kbps
+LAB frames play/film/now n=106 fps=13.2 hz=60 build=0.1/0.3/4.2/7.6 raster=57/102/218/317 ms over16=105 (99.1%) · app 47% · 13.2fps · 1.raster 23% | .innocent.media 8% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | DartWorker 3% | HwBinder:6226 2%
+LAB   19.1 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   19.2 rebuffer start (ahead 59976 ms)
+LAB   19.2 rebuffer end 12 ms
+LAB   19.6 line 12662 kbps, a read
+LAB   19.6 measured 12662 kbps
+LAB cpu app 46% · 13.9fps · b90 0.6 r90 102 ms · late 136 · 60 Hz · gap 17 · 1.raster 22% | .innocent.media 9% | ExoPlayer:Playb 3% | MediaCodec_loop 3% | DartWorker 3% | HwBinder:6226 2%
+LAB   20.2 preview ahead (pack): around 8s, 13 taken in 212 ms, 1 requests, 84 KB
+LAB frames play/controls/now n=78 fps=13.0 hz=60 build=0.1/4.1/28/28 raster=67/109/150/150 ms over16=78 (100.0%) · app 51% · 13.0fps · 1.raster 37% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:6226 2%
+LAB cpu app 47% · 12.8fps · b90 4.0 r90 104 ms · late 127 · 60 Hz · gap 17 · 1.raster 35% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | .innocent.media 3% | HwBinder:6226 2%
+LAB frames play/film/nowprof n=112 fps=14.0 hz=60 build=0.1/0.2/28/41 raster=55/127/188/232 ms over16=112 (100.0%) · app 29% · 14.0fps · 1.raster 18% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:6226 1%
+LAB   37.5 LAB main play/film/nowprof: main 2% · in messages 0% · 313 msgs · ImageReader$ListenerHandler ImageReader$1 179x0.08ms | Handler ExoStreamEngine$ticker$1 32x0.20ms | Handler FlutterRenderer$ImageReaderSurfaceProducer$$ExternalSyntheticLambda8 102x0.03ms
+LAB   38.1 rebuffer start (ahead 0 ms)
+LAB   38.1 LAB native: dynamic scheduling on (the film opened again)
+LAB   38.3 hls: 360p playlist, 299 segments
+LAB   38.3 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
+LAB   39.1 rebuffer end 940 ms
+LAB cpu app 26% · 13.9fps · b90 0.5 r90 128 ms · late 139 · 60 Hz · gap 17 · 1.raster 20% | .innocent.media 2% | HwBinder:6226 1% | ExoPlayer:Playb 1%
+LAB   48.7 rebuffer start (ahead 54130 ms)
+LAB   48.7 rebuffer end 11 ms
+LAB cpu app 30% · 12.8fps · b90 0.1 r90 105 ms · late 126 · 60 Hz · gap 17 · 1.raster 19% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6226 1%
+LAB frames play/film/sched n=112 fps=14.0 hz=60 build=0.1/0.2/14/32 raster=62/92/174/229 ms over16=110 (98.2%) · app 32% · 14.0fps · 1.raster 23% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6226 1%
+LAB   53.6 rebuffer start (ahead 0 ms)
+LAB   53.6 LAB native: dynamic scheduling off (the film opened again)
+LAB   53.7 hls: 360p playlist, 299 segments
+LAB   53.7 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
+LAB   54.7 rebuffer end 1089 ms
+LAB   56.3 fg stream: watching
+LAB   58.3 line 6280 kbps, in a read
+LAB   58.6 measured 7102 kbps
+LAB cpu app 41% · 14.6fps · b90 0.3 r90 88 ms · late 146 · 60 Hz · gap 17 · 1.raster 29% | .innocent.media 5% | HwBinder:6226 2% | MediaCodec_loop 2% | ExoPlayer:Playb 1%
+LAB   61.3 rebuffer start (ahead 56881 ms)
+LAB   61.3 rebuffer end 1 ms
+LAB frames play/film/now n=115 fps=14.4 hz=60 build=0.1/0.1/30/36 raster=65/84/108/110 ms over16=115 (100.0%) · app 40% · 14.4fps · 1.raster 31% | MediaCodec_loop 2% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB   68.9 LAB native: the window see-through (recreated)
+LAB   68.9 lifecycle hidden mounted=true
+LAB   68.9 lifecycle paused mounted=true
+LAB   69.1 lifecycle detached mounted=true
+LAB   69.1 lifecycle resumed mounted=true
+LAB   69.1 lifecycle inactive mounted=true
+LAB   69.2 wakelock playing=false bg=false priv=false pos=15213ms
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
@@ -243,31 +143,94 @@ LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.761
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
 LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB  199.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
-LAB cpu app 12% · 5.0fps · b90 0.6 r90 76 ms · late 47 · 60 Hz · gap 17 · 1.raster 9% | .innocent.media 1%
-LAB  201.9 wakelock playing=true bg=false priv=false pos=0ms
-LAB cpu app 1% · 0.2fps · b90 0.5 r90 9.6 ms · 60 Hz · gap 17 · -
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB cpu app 41% · 14.3fps · b90 0.2 r90 86 ms · late 142 · 60 Hz · gap 17 · 1.raster 32% | .innocent.media 2% | MediaCodec_loop 2% | HwBinder:6226 2% | ExoPlayer:Playb 2%
+LAB   70.8 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB   73.4 wakelock playing=true bg=false priv=false pos=15213ms
+LAB cpu app 29% · 8.7fps · b90 0.2 r90 79 ms · late 86 · 60 Hz · gap 17 · 1.raster 23% | MediaCodec_loop 2% | HwBinder:6226 1% | .innocent.media 1% | ExoPlayer:Playb 1%
+LAB frames play/film/t n=122 fps=15.2 hz=60 build=0.1/0.1/2.3/28 raster=63/81/133/142 ms over16=122 (100.0%) · app 43% · 15.2fps · 1.raster 34% | MediaCodec_loop 3% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB cpu app 41% · 15.8fps · b90 0.2 r90 85 ms · late 158 · 60 Hz · gap 17 · 1.raster 31% | MediaCodec_loop 3% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
+LAB   92.1 rebuffer start (ahead 30928 ms)
+LAB   92.1 rebuffer end 9 ms
+LAB frames play/film/tprof n=116 fps=14.5 hz=60 build=0.1/0.2/16/28 raster=62/91/116/126 ms over16=115 (99.1%) · app 41% · 14.5fps · 1.raster 30% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:6226 1%
+LAB   94.6 LAB main play/film/tprof: main 2% · in messages 0% · 363 msgs · ImageReader$ListenerHandler ImageReader$1 166x0.09ms | Handler ExoStreamEngine$ticker$1 31x0.28ms | Handler FlutterRenderer$ImageReaderSurfaceProducer$$ExternalSyntheticLambda8 95x0.03ms | Handler 36x0.05ms | Handler MediaSourceList$ForwardingEventListener$$ExternalSyntheticLambda9 12x0.09ms | Handler ExoPlayerImpl$$ExternalSyntheticLambda13 3x0.37ms | Handler MediaSourceList$ForwardingEventListener$$ExternalSyntheticLambda11 13x0.06ms | Handler DisplayVote$$ExternalSyntheticLambda6 2x0.13ms
+LAB   94.7 fg stream: watching
+LAB   95.1 LAB native: the film on a SurfaceView (on)
+LAB   97.4 measured 6335 kbps
+LAB cpu app 27% · 8.2fps · b90 0.1 r90 95 ms · late 81 · 60 Hz · gap 17 · 1.raster 15% | .innocent.media 4% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:6226 2%
+LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
+LAB  108.3 preview ahead (pack): around 88s, 20 taken in 519 ms, 1 requests, 119 KB
+LAB cpu app 18% · 0.2fps · b90 0.3 r90 124 ms · late 2 · 60 Hz · gap 17 · 1.raster 12% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:6226 1%
+LAB frames play/controls/sv n=0 fps=0.0 · app 49% · 0.0fps · 1.raster 42% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:6226 1% | MediaCodec_loop 1%
+LAB cpu app 28% · 0.9fps · b90 6.5 r90 5831 ms · late 9 · 60 Hz · gap 17 · 1.raster 21% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1% | .innocent.media 1%
+LAB frames play/film/svprof n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
+LAB  124.9 LAB main play/film/svprof: main 0% · in messages 0% · 32 msgs · Handler ExoStreamEngine$ticker$1 32x0.26ms
+LAB  125.4 rebuffer start (ahead 0 ms)
+LAB  125.4 LAB native: dynamic scheduling on (the film opened again)
+LAB  125.5 hls: 360p playlist, 299 segments
+LAB  125.5 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
+LAB  126.8 rebuffer end 1371 ms
+LAB  128.1 rebuffer start (ahead 29520 ms)
+LAB  128.1 rebuffer end 4 ms
+LAB  128.5 fg stream: watching
+LAB  129.8 line 12520 kbps, a read
+LAB  129.8 measured 12520 kbps
+LAB cpu app 15% · 2.3fps · b90 0.5 r90 180 ms · late 19 · 60 Hz · gap 17 · 1.raster 5% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:6226 1%
+LAB cpu app 7% · 0.0fps · ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6226 1%
+LAB frames play/film/svsched n=0 fps=0.0 · app 7% · 0.0fps · ExoPlayer:Playb 3% | MediaCodec_loop 1% | HwBinder:6226 1%
+LAB  140.8 rebuffer start (ahead 0 ms)
+LAB  140.8 LAB native: dynamic scheduling off (the film opened again)
+LAB  140.8 hls: 360p playlist, 299 segments
+LAB  140.9 exo tracks 360,240 selected=2 adaptive=true peaks=723,377 kbps
+LAB  141.5 rebuffer end 682 ms
+LAB cpu app 10% · 1.3fps · b90 0.5 r90 213 ms · late 12 · 60 Hz · gap 17 · 1.raster 3% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | .innocent.media 1% | HwBinder:6226 1%
+LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
+LAB  155.7 LAB native: the film back on the texture
+LAB  156.5 hls: 360p playlist, 299 segments
+LAB  157.2 rebuffer start (ahead 45904 ms)
+LAB  157.2 rebuffer end 0 ms
+LAB  157.3 stream from the phone 4.9 MB sealed
+LAB  157.3 LAB local: one range, init 1436 B, 38 segments, 76 s of 360p, 5014 KB
+LAB  157.4 player teardown done keepPlaying=false
+LAB  157.5 wakelock playing=false bg=false priv=false pos=94022ms
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=48.0 bar=48.0
+LAB  159.3 open scheme=path len=56 hwdec=auto start=0s autoplay=true
+LAB  159.3 wakelock playing=false bg=false priv=false pos=0ms
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  159.4 wakelock playing=true bg=false priv=false pos=0ms
+LAB  159.4 open ok
+LAB  159.4 display: none
+LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
+LAB  159.6 first frame 556 ms
+LAB cpu app 24% · 3.6fps · b90 1.1 r90 153 ms · late 36 · 60 Hz · gap 17 · 1.raster 16% | .innocent.media 2% | RenderThread 2% | ExoPlayer:Playb 1% | HwBinder:6226 1%
+LAB  167.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB  167.8 LAB local: playing /data/user/0/com.innocent.media/cache/lab_local_360p.mp4
+LAB cpu app 5% · 3.3fps · b90 1.0 r90 53 ms · late 8 · 60 Hz · gap 17 · 1.raster 4%
+LAB  172.7 summary 36dcf3 sent
 LAB frames play/film/t n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB  213.1 LAB native: libmpv on a SurfaceView (refused)
-LAB cpu app 1% · 0.2fps · b90 1.0 r90 5.0 ms · 60 Hz · gap 17 · -
+LAB cpu app 4% · 0.2fps · b90 0.6 r90 8.5 ms · 60 Hz · gap 17 · 1.raster 3%
+LAB frames play/controls/t n=62 fps=10.3 hz=60 build=0.9/1.1/2.8/2.8 raster=15/46/63/63 ms over16=29 (46.8%) · app 17% · 10.3fps · 1.raster 15% | .innocent.media 1%
+LAB cpu app 11% · 6.7fps · b90 1.1 r90 46 ms · late 30 · 60 Hz · gap 17 · 1.raster 10% | .innocent.media 1%
+LAB frames play/film/tprof n=0 fps=0.0 · app 1% · 0.0fps · -
+LAB  196.4 LAB main play/film/tprof: main 0% · in messages 0% · 0 msgs · 
+LAB  196.9 LAB native: libmpv to wid 14938, 640x360
+LAB  196.9 LAB native: libmpv on a SurfaceView (on)
+LAB cpu app 1% · 0.4fps · b90 0.6 r90 14 ms · 60 Hz · gap 17 · -
 LAB frames play/film/mpvsv n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB cpu app 1% · 0.2fps · b90 0.3 r90 10 ms · 60 Hz · gap 17 · -
+LAB cpu app 1% · 0.2fps · b90 0.3 r90 4.8 ms · 60 Hz · gap 17 · -
+LAB frames play/controls/mpvsv n=57 fps=9.5 hz=60 build=1.0/2.2/14/14 raster=19/66/127/127 ms over16=29 (50.9%) · app 19% · 9.5fps · 1.raster 17% | .innocent.media 2%
+LAB  219.6 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB cpu app 14% · 6.2fps · b90 2.1 r90 59 ms · late 29 · 60 Hz · gap 17 · 1.raster 12% | .innocent.media 1%
 LAB frames play/film/mpvsvprof n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB  239.1 LAB main play/film/mpvsvprof: main 0% · in messages 0% · 32 msgs · Handler ExoStreamEngine$ticker$1 32x0.31ms
-LAB  239.1 LAB native: the window opaque (recreated)
-LAB  239.1 lifecycle hidden mounted=true
-LAB  239.1 lifecycle paused mounted=true
-LAB  239.1 lifecycle detached mounted=true
-LAB  239.1 lifecycle resumed mounted=true
-LAB  239.1 lifecycle inactive mounted=true
-LAB  239.1 wakelock playing=false bg=false priv=false pos=0ms
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB insets stable l=0.0 t=48.761905670166016 r=0.0 b=48.0 padding l=0.0 t=48.76190476190476 r=0.0 b=0.0 bar=48.0
-LAB cpu app 2% · 0.0fps · -
-LAB  243.6 wakelock playing=true bg=false priv=false pos=0ms
-LAB  244.6 LAB smooth: done
-LAB cpu app 1% · 0.5fps · b90 0.7 r90 46 ms · late 3 · 60 Hz · gap 17 · -
-LAB  251.9 video ? ?x? hwdec=?(?) vo=? surf=producer fps=? drop=?/? thr=1
+LAB  227.1 LAB main play/film/mpvsvprof: main 0% · in messages 0% · 0 msgs · 
+LAB  227.1 LAB native: libmpv stays on its SurfaceView
+LAB  227.1 LAB smooth: done
+LAB cpu app 1% · 0.0fps · -
+LAB  235.1 rebuffer start
+LAB  235.1 wakelock playing=false bg=false priv=false pos=57088ms
+LAB  235.1 rebuffer end 1 ms
+LAB  235.1 display: none
 LAB phase smooth end
