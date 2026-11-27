@@ -1,39 +1,36 @@
-[10:23:24] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[10:23:24] install
-[10:23:42] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[10:23:43] network: eth0 has qdisc clsact
-[10:23:43] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[10:24:16] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[10:24:16] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[10:24:16] library: pushing 24 files
-[10:24:46] library: MediaStore lists 24 videos
-[10:24:46] cold start
+[11:09:49] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[11:09:49] install
+[11:10:00] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[11:10:00] network: eth0 has qdisc clsact
+[11:10:00] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[11:10:34] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[11:10:34] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[11:10:34] library: pushing 24 files
+[11:11:03] library: MediaStore lists 24 videos
+[11:11:03] cold start
 Status: ok
-TotalTime: 3082
-WaitTime: 3084
-[10:24:59] flow smooth
-[10:25:01] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:queue:stretch play:queue:now play:display:stretch play:display:now play:more:stretch play:more:now play:cc:stretch play:cc:now play:morepage:stretch play:morepage:now pause:more:stretch pause:more:now play:queue:now play:queue:stretch play:more:now play:more:stretch play:controls:now:3 pause:film:now:4 fn:shortcuts
-[10:37:13] flow smooth done
-[10:37:13] flow genres
-[10:38:31] flow genres exit 1
-[10:38:42] flow jumps
-[10:38:43] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
-[10:42:50] flow jumps done
-[10:42:50] flow gestures
-[10:42:53] rotation asked 0, now 0
-[10:44:08] flow gestures exit 0
-[10:44:14] stacked taps at 918,1200: 4 taps in 452 ms
-[10:44:25] flow gestures_land
-[10:44:28] rotation asked 1, now 90
-[10:45:12] flow gestures_land exit 0
-[10:45:22] flow layout_portrait
-[10:45:24] rotation asked 0, now 0
-[10:46:08] flow layout_portrait exit 0
-[10:46:22] flow player_audit
-[10:47:32] flow player_audit exit 0
-[10:47:43] flow layout_landscape
-[10:47:45] rotation asked 1, now 90
-[10:48:03] flow layout_landscape exit 0
-[10:48:14] flow player_audit_land
-[10:49:05] flow player_audit_land exit 0
-[10:49:20] done
+TotalTime: 3365
+WaitTime: 3396
+[11:11:17] flow genres
+[11:12:20] flow genres exit 0
+[11:12:28] flow jumps
+[11:12:28] jumps: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, the viewer's jumps, 240 s, home after 130 s
+[11:16:33] flow jumps done
+[11:16:33] flow gestures
+[11:16:35] rotation asked 0, now 0
+[11:17:40] flow gestures exit 0
+[11:17:46] stacked taps at 918,1200: 4 taps in 402 ms
+[11:17:54] flow gestures_land
+[11:17:56] rotation asked 1, now 90
+[11:18:35] flow gestures_land exit 0
+[11:18:42] flow layout_portrait
+[11:18:44] rotation asked 0, now 0
+[11:19:22] flow layout_portrait exit 0
+[11:19:31] flow player_audit
+[11:20:34] flow player_audit exit 0
+[11:20:42] flow layout_landscape
+[11:20:44] rotation asked 1, now 90
+[11:20:58] flow layout_landscape exit 0
+[11:21:06] flow player_audit_land
+[11:21:51] flow player_audit_land exit 0
+[11:22:04] done
