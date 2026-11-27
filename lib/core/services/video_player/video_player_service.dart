@@ -104,6 +104,24 @@ abstract class VideoPlayerService {
   /// Phase 45 (audit): global audio delay in milliseconds (-2000..+2000).
   Future<void> setAudioDelayMs(int ms);
 
+  /// The sound's level now, in % (100 = as the film is; a boost above).
+  double get outputVolumePct;
+
+  // ♪'s MX items (27 Nov 2026, docs/handoff_2026_11_27_beyond_mx.md P4),
+  // carried from film to film.
+  /// Stereo mode: 0 stereo, 1 mono (both sides the average), 2 swapped.
+  int get stereoMode;
+  Future<void> setStereoMode(int mode);
+
+  /// Night sound: loud moments down, quiet speech up. False when this
+  /// phone cannot.
+  bool get nightMode;
+  Future<bool> setNightMode(bool on);
+
+  /// ♪'s Disable: the film silent, its tracks kept.
+  bool get audioDisabled;
+  Future<void> setAudioDisabled(bool off);
+
   /// Phase 45 (audit): global subtitle delay in milliseconds (-10000..+10000).
   Future<void> setSubtitleDelayMs(int ms);
 

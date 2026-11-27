@@ -2388,6 +2388,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   /// libmpv's output volume in percent: 100 is the file's own level, above
   /// 100 is the audio booster's gain.
+  @override
   double get outputVolumePct => _volumePct;
 
   /// Phase 45 (audit refined, build 63): subtitle shadow intensity.
@@ -3059,10 +3060,14 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   static const MethodChannel _dynamics = MethodChannel('innocent/dynamics');
 
   /// 0 stereo, 1 mono (both sides the average), 2 left and right swapped.
+  @override
   int get stereoMode => _stereoMode;
+  @override
   bool get nightMode => _night;
+  @override
   bool get audioDisabled => _audioOff;
 
+  @override
   Future<void> setStereoMode(int mode) async {
     _stereoMode = mode.clamp(0, 2);
     if (_exoActive) await _exo?.stereo(_stereoMode);
@@ -3072,6 +3077,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   /// Night mode: loud moments brought down, quiet speech lifted. False
   /// when this phone cannot (libmpv below Android 9).
+  @override
   Future<bool> setNightMode(bool on) async {
     _night = on;
     if (_exoActive) {
@@ -3083,6 +3089,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   /// ♪'s Disable: the film silent, its tracks kept; off plays the one
   /// that played.
+  @override
   Future<void> setAudioDisabled(bool off) async {
     _audioOff = off;
     if (_exoActive) {

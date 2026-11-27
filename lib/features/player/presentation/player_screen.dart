@@ -2524,8 +2524,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     final current = state.currentAudioTrack ??
         await _engineTrack(state.audioTracks, 'audio', (t) => t.id);
     if (!context.mounted) return;
-    final svc = ref.read(videoPlayerServiceProvider);
-    final mk = svc is MediaKitPlayerService ? svc : null;
+    final mk = ref.read(videoPlayerServiceProvider);
     final s = AppStrings.of(context);
     // The swipe's ceiling (player_controller_gestures.dart): 200 %, or the
     // viewer's own booster level when higher.
@@ -2533,60 +2532,52 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             math.max(2.0,
                 ref.read(preferencesProvider).audioVolumeBoost.clamp(1.0, 4.0)))
         .round();
-    final gainPct = math.max(100, (mk?.outputVolumePct ?? 100).round());
+    final gainPct = math.max(100, mk.outputVolumePct.round());
     await TrackSelectionSheet.showAudio(
       context,
       tracks: state.audioTracks,
       current: current,
       // MX's other ♪ items, the owner's choice (27 Nov 2026): Disable,
       // Stereo mode, Volume boost, Night sound.
-      disabled: mk?.audioDisabled ?? false,
-      onDisable: mk == null
-          ? null
-          : () {
+      disabled: mk.audioDisabled,
+      onDisable: () {
+        // ignore: discarded_futures
+        mk.setAudioDisabled(true);
+        _toast.show(s.audDisable,
+            kind: PlayerToastKind.success, icon: Icons.volume_off_rounded);
+      },
+      stereoLabel: StereoModeSheet.label(s, mk.stereoMode),
+      onStereo: () {
+        if (!context.mounted) return;
+        // ignore: discarded_futures
+        StereoModeSheet.show(context,
+            mode: mk.stereoMode,
+            onPick: (m) {
               // ignore: discarded_futures
-              mk.setAudioDisabled(true);
-              _toast.show(s.audDisable,
-                  kind: PlayerToastKind.success, icon: Icons.volume_off_rounded);
-            },
-      stereoLabel: StereoModeSheet.label(s, mk?.stereoMode ?? 0),
-      onStereo: mk == null
-          ? null
-          : () {
-              if (!context.mounted) return;
-              // ignore: discarded_futures
-              StereoModeSheet.show(context,
-                  mode: mk.stereoMode,
-                  onPick: (m) {
-                    // ignore: discarded_futures
-                    mk.setStereoMode(m);
-                    _toast.show(StereoModeSheet.label(s, m),
-                        kind: PlayerToastKind.success, icon: Icons.headphones);
-                  }).whenComplete(() {
-                if (mounted) _applySystemUiMode();
-              });
-            },
+              mk.setStereoMode(m);
+              _toast.show(StereoModeSheet.label(s, m),
+                  kind: PlayerToastKind.success, icon: Icons.headphones);
+            }).whenComplete(() {
+          if (mounted) _applySystemUiMode();
+        });
+      },
       boostLabel: '$gainPct %',
-      onBoost: mk == null
-          ? null
-          : () {
-              if (!context.mounted) return;
-              // ignore: discarded_futures
-              AudioBoostSheet.show(context,
-                  initialPct: gainPct,
-                  maxPct: boostMax,
-                  // ignore: discarded_futures
-                  onChanged: (pct) => mk.setAudioGain(pct / 100)).whenComplete(() {
-                if (mounted) _applySystemUiMode();
-              });
-            },
-      night: mk?.nightMode ?? false,
-      onNight: mk == null
-          ? null
-          : (on) async {
-              final ok = await mk.setNightMode(on);
-              if (!ok && on) _toast.show(s.audNightNo, icon: Icons.nightlight_round);
-            },
+      onBoost: () {
+        if (!context.mounted) return;
+        // ignore: discarded_futures
+        AudioBoostSheet.show(context,
+            initialPct: gainPct,
+            maxPct: boostMax,
+            // ignore: discarded_futures
+            onChanged: (pct) => mk.setAudioGain(pct / 100)).whenComplete(() {
+          if (mounted) _applySystemUiMode();
+        });
+      },
+      night: mk.nightMode,
+      onNight: (on) async {
+        final ok = await mk.setNightMode(on);
+        if (!ok && on) _toast.show(s.audNightNo, icon: Icons.nightlight_round);
+      },
       // Phase 45 (audit): wrap the selection callback so the user sees a
       // brief toast confirming what they just switched to — MX Player
       // shows this as "Audio: <track name>" in the same position as

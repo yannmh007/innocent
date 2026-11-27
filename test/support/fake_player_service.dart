@@ -227,6 +227,45 @@ class FakePlayerService implements VideoPlayerService {
         ),
       );
 
+  // ♪'s MX items: kept, as an engine keeps them.
+  int _stereo = 0;
+  bool _night = false;
+  bool _audioOff = false;
+  double _gainPct = 100;
+
+  @override
+  double get outputVolumePct => _gainPct;
+  @override
+  int get stereoMode => _stereo;
+  @override
+  Future<void> setStereoMode(int mode) async {
+    calls.add('setStereoMode($mode)');
+    _stereo = mode;
+  }
+
+  @override
+  bool get nightMode => _night;
+  @override
+  Future<bool> setNightMode(bool on) async {
+    calls.add('setNightMode($on)');
+    _night = on;
+    return true;
+  }
+
+  @override
+  bool get audioDisabled => _audioOff;
+  @override
+  Future<void> setAudioDisabled(bool off) async {
+    calls.add('setAudioDisabled($off)');
+    _audioOff = off;
+  }
+
+  @override
+  Future<void> setAudioGain(double multiplier) async {
+    calls.add('setAudioGain($multiplier)');
+    _gainPct = multiplier * 100;
+  }
+
   /// Everything else the screen may ask of an engine: accepted, recorded,
   /// and done at once.
   @override
