@@ -75,14 +75,20 @@ Future<String> _effect(WidgetTester tester, Finder target,
   await tester.pump();
   await tester.tap(target.first, warnIfMissed: false);
   await _settle(tester);
-  // What waits on the phone's storage or a picture (favourites, playlists,
-  // a screenshot) finishes in real time.
+  // What came, at each look: a message passes in 2 s, and what waits on the
+  // phone's storage or a picture (favourites, playlists, a screenshot)
+  // finishes in real time.
+  final seenTypes = <String>{}..addAll(_look(tester).types);
+  final seenWords = <String>{}..addAll(_look(tester).words);
   for (var i = 0; i < 3; i++) {
     await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)));
     await _settle(tester);
+    final l = _look(tester);
+    seenTypes.addAll(l.types);
+    seenWords.addAll(l.words);
   }
-  final after = _look(tester);
+  final after = (types: seenTypes, words: seenWords);
   final stateAfter = _stateWords(_state());
   final newTypes = after.types.difference(before.types)
     ..removeWhere((t) => t.startsWith('_') && !t.contains('Sheet'));
@@ -332,16 +338,57 @@ void main() {
           case ShortcutItem.verticalFlip:
             expect(e, contains('flip=true'));
           case ShortcutItem.screenshot:
+            // The picture goes to the gallery (MediaStore), the app's own
+            // folder only where that fails.
+            expect(e, contains('saveImage'));
           case ShortcutItem.screenRotation:
-            break;
+            expect(e, contains('setPreferredOrientations'));
         }
         await leavePlayer(tester);
       });
     }
   }
 
-  testWidgets('a fake engine for the record', (tester) async {
-    // Keeps FakePlayerService imported for the harness's default engine.
-    expect(FakePlayerService().calls, isEmpty);
-  });
+  // A vault film's or a protected film's picture is never copied out by
+  // the Screenshot shortcut (27 Nov 2026: it saved a plain PNG of it).
+  for (final secure in [false, true]) {
+    testWidgets(
+        'no screenshot of a ${secure ? 'protected' : 'vault'} film',
+        (tester) async {
+      await pumpPlayer(tester,
+          phone: _phone,
+          landscape: true,
+          lang: 'en',
+          engine: FakePlayerService(),
+          isPrivate: !secure,
+          secureScreen: secure);
+      final channels = _recordChannels(tester);
+      final c = playerContainer!.read(playerControllerProvider.notifier);
+      c.showControls();
+      if (!_state().shortcutsExpanded) c.toggleShortcutsExpanded();
+      await _settle(tester);
+      final key = find.byKey(const ValueKey('screenshot'), skipOffstage: false);
+      if (key.evaluate().isEmpty) {
+        await tester.scrollUntilVisible(key, 120,
+            scrollable: find
+                .descendant(
+                    of: find.byType(ListView), matching: find.byType(Scrollable))
+                .first);
+      }
+      List<String> shots() => _scratch
+          .listSync()
+          .whereType<File>()
+          .map((f) => f.path)
+          .where((p) => p.contains('screenshot_'))
+          .toList();
+      final before = shots();
+      final e = await _effect(tester, key, channels);
+      final s = AppStrings.of(tester.element(find.byType(PlayerScreen)));
+      expect(e, contains(s.plScreenshotOff));
+      expect(e, isNot(contains('saveImage')));
+      expect(e, isNot(contains('getApplicationDocumentsDirectory')));
+      expect(shots(), before, reason: 'a picture of the film was written');
+      await leavePlayer(tester);
+    });
+  }
 }

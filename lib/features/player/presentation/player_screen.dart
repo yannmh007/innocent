@@ -3852,7 +3852,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               // in a layer of its own, so the tick repaints the seek bar and
               // its times, not the top bar's words (whose blurred halos
               // Impeller draws anew whenever a word is painted again).
-              child: PlayerUi.ownLayer(Consumer(builder: (context, ref, _) => _BottomControls(
+              child: PlayerUi.ownLayer(Consumer(builder: (_, ref, __) => _BottomControls(
                 insets: _controlsInsets(context),
                 onEnterPip: () => _enterPip(context),
                 showScreenMode: topBar.contains(TopBarItem.screenMode),
