@@ -235,7 +235,11 @@ class SmoothLab {
       return false;
     }
     await close?.call();
-    await _native(const <String, Object>{});
+    // ExoPlayer's own switches off; the window stays as it is — a second
+    // switch of the window's mode stopped the film on the emulator (run
+    // 46019884853: after the Activity was made again, play went to libmpv),
+    // so a plan changes it once.
+    await _native(<String, Object>{'win': _win});
     final path = await _localCopy(url);
     if (path == null) return false;
     final open = openFile;
@@ -290,20 +294,34 @@ class SmoothLab {
         PlaybackLog.add('LAB local: the rung is encrypted, no local file');
         return null;
       }
+      // The ladder's rungs are one CMAF file each, read by byte ranges
+      // (hls_ladder.dart: the init, then each fragment's @offset): the
+      // copy is one range, the init and the first fragments. Separate
+      // segment files are joined one after another.
       Uri? init;
+      int? initEnd;
       final segs = <Uri>[];
+      final ranges = <(int, int)>[];
       var total = 0.0;
       double? dur;
+      (int, int)? range;
       for (final raw in media.split('\n')) {
         final l = raw.trim();
         if (l.startsWith('#EXT-X-MAP')) {
           final u = RegExp(r'URI="([^"]+)"').firstMatch(l);
           if (u != null) init = pick.resolve(u.group(1)!);
+          final b = RegExp(r'BYTERANGE="(\d+)@(\d+)"').firstMatch(l);
+          if (b != null) initEnd = int.parse(b.group(2)!) + int.parse(b.group(1)!);
         } else if (l.startsWith('#EXTINF:')) {
           dur = double.tryParse(l.substring(8).split(',').first);
+        } else if (l.startsWith('#EXT-X-BYTERANGE:')) {
+          final b = RegExp(r'(\d+)@(\d+)').firstMatch(l);
+          if (b != null) range = (int.parse(b.group(2)!), int.parse(b.group(1)!));
         } else if (l.isNotEmpty && !l.startsWith('#')) {
           if (total >= seconds) break;
           segs.add(pick.resolve(l));
+          if (range != null) ranges.add(range);
+          range = null;
           total += dur ?? 0;
           dur = null;
         }
@@ -315,13 +333,26 @@ class SmoothLab {
       final dir = await getTemporaryDirectory();
       final out = File('${dir.path}/lab_local_${best}p.${init != null ? 'mp4' : 'ts'}');
       final sink = out.openWrite();
-      for (final u in <Uri>[if (init != null) init, ...segs]) {
-        final rq = await client.getUrl(u);
+      final oneFile = ranges.length == segs.length &&
+          segs.every((u) => u == segs.first) &&
+          (init == null || init == segs.first);
+      if (oneFile) {
+        final last = ranges.last;
+        final rq = await client.getUrl(segs.first);
+        rq.headers.set(HttpHeaders.rangeHeader,
+            'bytes=0-${last.$1 + last.$2 - 1}');
         final rs = await rq.close();
         await sink.addStream(rs);
+      } else {
+        for (final u in <Uri>[if (init != null) init, ...segs]) {
+          final rq = await client.getUrl(u);
+          final rs = await rq.close();
+          await sink.addStream(rs);
+        }
       }
       await sink.close();
-      PlaybackLog.add('LAB local: ${segs.length} segments, '
+      PlaybackLog.add('LAB local: ${oneFile ? 'one range, init ${initEnd ?? 0} B, ' : ''}'
+          '${segs.length} segments, '
           '${total.round()} s of ${best}p, ${(await out.length()) ~/ 1024} KB');
       return out.path;
     } catch (e) {
