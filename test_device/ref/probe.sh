@@ -595,8 +595,12 @@ sg_touch() {
   sg_say "SUBGEST touch screen: ${TDEV:-none}, axes 0..${TMX:-?} x 0..${TMY:-?}, viewport orientation ${ORI:-?}"
   [ -n "$TDEV" ] && [ "${TMX:-0}" -gt 0 ] && [ "${TMY:-0}" -gt 0 ]
 }
-raw_xy() {  # $1 $2: a point on the sideways screen -> the panel's raw "x y" (TMAP 1 or 3)
-  if [ "$TMAP" = 1 ]; then
+raw_xy() {  # $1 $2: a point on the sideways screen -> the panel's raw "x y" (TMAP 0, 1 or 3)
+  if [ "$TMAP" = 0 ]; then
+    # The viewport read orientation 0 sideways (run 46049383870): the
+    # panel's axes then follow the screen as it is turned.
+    echo "$(( $1 * (TMX + 1) / SW )) $(( $2 * (TMY + 1) / SH ))"
+  elif [ "$TMAP" = 1 ]; then
     echo "$(( TMX - $2 * (TMX + 1) / pw )) $(( $1 * (TMY + 1) / ph ))"
   else
     echo "$(( $2 * (TMX + 1) / pw )) $(( TMY - $1 * (TMY + 1) / ph ))"
@@ -634,7 +638,7 @@ se_pinch() {  # $1 $2 centre, $3 $4 half-spread from/to (px, along the line), $5
 }
 sg_calibrate() {  # TMAP: the mapping whose sendevent tap on ⋮ opens ⋮'s panel
   local m n x y
-  for m in 1 3; do
+  for m in 0 1 3; do
     sg_open "cal$m" pause || { note "calibration $m: no subtitle came"; continue; }
     ensure_controls mx "$SW" "$SH" || { note "calibration $m: no controls"; continue; }
     [ -n "${BTNS[0]:-}" ] || continue
@@ -709,7 +713,7 @@ subtitle_gestures() {
   local i dir src
   SW=$ph; SH=$pw
   src=/sdcard/Movies/ref_land_black.mp4
-  for i in $(seq 1 16) cal1 cal3; do
+  for i in $(seq 1 16) cal0 cal1 cal3; do
     dir=/sdcard/Movies/ref_sg_$i
     adb shell "mkdir -p $dir && cp $src $dir/ref_sg$i.mp4 && cp /sdcard/Movies/ref_sub.srt $dir/ref_sg$i.srt"
   done
@@ -725,15 +729,14 @@ subtitle_gestures() {
   # Run 46047544023 (27 Nov) measured the swipes and drags; this one: the
   # previous line, where the band ends above the words, the shortest swipe
   # that steps, and the pinches (the right touch panel now).
-  sg_one prev pause seq L L R R R
-  sg_one band_above_60 pause swipe 62 38 300 -60
-  sg_one band_above_130 pause swipe 62 38 300 -130
-  sg_one swipe_left_90dp pause swipe 55 44 250
-  sg_one swipe_left_140dp pause swipe 58 41 250
+  # Runs 46047544023 and 46049383870 measured the swipes and drags; this
+  # one the pinches (mapping 0 tried first) and whether a short swipe steps
+  # when it is quick (49 dp in 80 ms; 70 dp slowly).
   sg_one pinch_out pause pinch 120 420
   sg_one pinch_in pause pinch 420 120
   sg_one pinch_out_playing play pinch 100 500
-  sg_one drag_short pause drag -90 900
+  sg_one swipe_left_49dp_fast pause swipe 53 47 80
+  sg_one swipe_left_70dp_slow pause swipe 54 46 700
   adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
     | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_after.txt" || true
   sg_say "SUBGEST MX's settings about subtitles and gestures: $(wc -l < "$OUT/raw/mx_prefs_sub_before.txt") lines before, $(diff "$OUT/raw/mx_prefs_sub_before.txt" "$OUT/raw/mx_prefs_sub_after.txt" | grep -c '^[<>]' || true) changed after (private)"
