@@ -206,8 +206,8 @@ class SmoothLab {
       PlaybackLog.add('LAB smooth: ${steps.length} steps, '
           'display ${CpuProbe.refreshRate.round()} Hz');
       for (final step in steps) {
-        if (step == 'local') {
-          if (!await _playLocal()) break;
+        if (step == 'local' || step.startsWith('local:')) {
+          if (!await _playLocal(step.length > 6 ? step.substring(6) : '')) break;
           continue;
         }
         if (step == 'title') {
@@ -245,9 +245,14 @@ class SmoothLab {
   /// A minute of the film playing now, copied from the local proxy into a
   /// file, and the player opened on it: what follows is libmpv on a local
   /// file (P1: MX's 26 % was a local film). False when there is none.
-  static Future<bool> _playLocal() async {
+  ///
+  /// [how] (P1-E4, 28 Nov 2026: P1-E3's copy played sound and no picture):
+  /// '' the first fragments as one byte range; `whole` the whole rung, one
+  /// read; `lab` no copy — the film run.sh made with ffmpeg and pushed as
+  /// `lab_fresh.mp4` into the app's external files folder.
+  static Future<bool> _playLocal(String how) async {
     final url = ExoEngine.labLatest?.labUrl;
-    if (url == null) {
+    if (url == null && how != 'lab') {
       PlaybackLog.add('LAB local: no film to copy');
       return false;
     }
@@ -257,7 +262,17 @@ class SmoothLab {
     // 46019884853: after the Activity was made again, play went to libmpv),
     // so a plan changes it once.
     await _native(<String, Object>{'win': _win});
-    final path = await _localCopy(url);
+    final String? path;
+    if (how == 'lab') {
+      final dir = await getExternalStorageDirectory();
+      final f = File('${dir?.path}/lab_fresh.mp4');
+      path = dir != null && f.existsSync() ? f.path : null;
+      PlaybackLog.add(path == null
+          ? 'LAB local: no lab_fresh.mp4'
+          : 'LAB local: the lab\'s own file, ${f.lengthSync() ~/ 1024} KB');
+    } else {
+      path = await _localCopy(url!, whole: how == 'whole');
+    }
     if (path == null) return false;
     final open = openFile;
     if (open == null) {
@@ -274,7 +289,8 @@ class SmoothLab {
   /// The tallest rung up to 720p of [master]: its init and segments up to
   /// [seconds] of film, one after another in one file (fMP4 or MPEG-TS
   /// concatenate). Null when encrypted or unreadable.
-  static Future<String?> _localCopy(String master, {int seconds = 75}) async {
+  static Future<String?> _localCopy(String master,
+      {int seconds = 75, bool whole = false}) async {
     final client = HttpClient();
     try {
       Future<String> text(Uri u) async {
@@ -348,7 +364,8 @@ class SmoothLab {
         return null;
       }
       final dir = await getTemporaryDirectory();
-      final out = File('${dir.path}/lab_local_${best}p.${init != null ? 'mp4' : 'ts'}');
+      final out = File('${dir.path}/lab_local_${best}p${whole ? '_whole' : ''}.'
+          '${init != null ? 'mp4' : 'ts'}');
       final sink = out.openWrite();
       final oneFile = ranges.length == segs.length &&
           segs.every((u) => u == segs.first) &&
@@ -356,9 +373,16 @@ class SmoothLab {
       if (oneFile) {
         final last = ranges.last;
         final rq = await client.getUrl(segs.first);
-        rq.headers.set(HttpHeaders.rangeHeader,
-            'bytes=0-${last.$1 + last.$2 - 1}');
+        // `whole`: the rung's file as it is, every fragment (P1-E1's copy
+        // that played was the whole file, read 38 times over).
+        if (!whole) {
+          rq.headers.set(HttpHeaders.rangeHeader,
+              'bytes=0-${last.$1 + last.$2 - 1}');
+        }
         final rs = await rq.close();
+        PlaybackLog.add('LAB local: ${rs.statusCode}, '
+            '${rs.headers.value(HttpHeaders.contentRangeHeader) ?? 'no range'}, '
+            'length ${rs.contentLength}');
         await sink.addStream(rs);
       } else {
         for (final u in <Uri>[if (init != null) init, ...segs]) {
@@ -368,7 +392,7 @@ class SmoothLab {
         }
       }
       await sink.close();
-      PlaybackLog.add('LAB local: ${oneFile ? 'one range, init ${initEnd ?? 0} B, ' : ''}'
+      PlaybackLog.add('LAB local: ${oneFile ? '${whole ? 'whole file' : 'one range'}, init ${initEnd ?? 0} B, ' : ''}'
           '${segs.length} segments, '
           '${total.round()} s of ${best}p, ${(await out.length()) ~/ 1024} KB');
       return out.path;

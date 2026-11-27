@@ -997,6 +997,21 @@ for flow in $FLOWS; do
     adb shell mkdir -p "$d" >/dev/null 2>&1
     adb shell "echo title:$jt > $d/lab_stream_url"
     adb shell "echo '${SMOOTH_PLAN:-1}' > $d/lab_smooth"
+    # P1-E4 (28 Nov 2026): step `local:lab` plays a film made here, not a
+    # copy of the stream — is it the copy or libmpv after ExoPlayer?
+    case " ${SMOOTH_PLAN:-} " in *" local:lab "*)
+      # (The workflow installs ffmpeg only for a library run.)
+      command -v ffmpeg >/dev/null 2>&1 || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; } >/dev/null 2>&1 || true
+      if command -v ffmpeg >/dev/null 2>&1; then
+        ffmpeg -loglevel error -y -f lavfi -i testsrc2=size=640x360:rate=24 \
+          -f lavfi -i sine=frequency=330 -t 90 -c:v libx264 -preset veryfast \
+          -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart /tmp/lab_fresh.mp4 \
+          && adb push /tmp/lab_fresh.mp4 "$d/lab_fresh.mp4" >/dev/null 2>&1 \
+          && log "smooth: lab_fresh.mp4 pushed ($(stat -c %s /tmp/lab_fresh.mp4) B)"
+      else
+        log "smooth: no ffmpeg — local:lab has no file"
+      fi ;;
+    esac
     log "smooth: $jt, plan ${SMOOTH_PLAN:-default}"
     adb shell am start -W -n "$PKG/.MainActivity" >/dev/null 2>&1
     sleep 20

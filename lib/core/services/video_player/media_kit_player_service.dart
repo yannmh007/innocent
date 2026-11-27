@@ -797,6 +797,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   StreamSubscription? _durationSub;
   StreamSubscription? _playingSub;
   StreamSubscription? _paramsSub;
+  // LAB ONLY: libmpv's log into the trail (see [_initializeOnce]).
+  static const bool _labBuild = bool.fromEnvironment('INNOCENT_LAB');
+  StreamSubscription? _logSub;
+  int _labLogLines = 0;
 
   /// [firstPictureStream]'s source, and the open it last spoke for.
   final StreamController<void> _pictureCtl = StreamController<void>.broadcast();
@@ -850,6 +854,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
         // small one they genuinely need.
         bufferSize: 24 * 1024 * 1024, // 24 MB
         title: 'Innocent',
+        // LAB ONLY: libmpv's own words at info level (which track, which
+        // decoder, which output), in the trail — P1-E3's local file played
+        // sound and no picture with nothing said (28 Nov 2026).
+        logLevel: _labBuild ? mk.MPVLogLevel.info : mk.MPVLogLevel.error,
       ),
     );
     // Phase 45: enable hardware acceleration on the texture path. The
@@ -892,6 +900,14 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       final w = v.w ?? v.dw ?? 0;
       if (!_exoActive && w > 0) _picture();
     });
+    if (_labBuild) {
+      _logSub = _player.stream.log.listen((l) {
+        // At most 600 lines a life: a film's open says ~30.
+        if (_labLogLines++ < 600) {
+          PlaybackLog.add('mpv ${l.level} [${l.prefix}] ${l.text.trim()}');
+        }
+      });
+    }
 
     // Phase 45: apply a sensible decoder + subtitle baseline so even
     // before [PlayerProvider] pushes user preferences the file plays
@@ -979,6 +995,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _playingSub?.cancel();
     await _paramsSub?.cancel();
     _paramsSub = null;
+    await _logSub?.cancel();
+    _logSub = null;
     await _limitSub?.cancel();
     _limitSub = null;
     _bgReassertTimer?.cancel();
@@ -1935,10 +1953,12 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _durationSub?.cancel();
     await _playingSub?.cancel();
     await _paramsSub?.cancel();
+    await _logSub?.cancel();
     _positionSub = null;
     _durationSub = null;
     _playingSub = null;
     _paramsSub = null;
+    _logSub = null;
     // AUDIT FIX (v1.55) — the detach watchdog added in v1.54 was never
     // cancelled here, so a service torn down while backgrounded left a
     // periodic timer writing properties to a disposed player.
