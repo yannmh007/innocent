@@ -5,56 +5,56 @@ FrameRateOverrides=
     setFrameRate=
         (uid, frameRate)={10192, 60.00 Hz}
 	Refresh Rate Map:
-* Layer 0x7ee253924090 (9a42c7a ActivityRecordInputSink com.innocent.media/.MainActivity#186)
-* Layer 0x7ee25391b7e0 (ActivityRecord{d04c2b u0 com.innocent.media/.MainActivity#182)
-* Layer 0x7ee25399ba30 (e0a7878 com.innocent.media/com.innocent.media.MainActivity#189)
-* Layer 0x7ee25395a240 (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#225)
-* Layer 0x7ee25393ad10 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#223)
-* Layer 0x7ee253973c50 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#224)
-* Layer 0x7ee253965880 (com.innocent.media/com.innocent.media.MainActivity#190)
-* Layer 0x7ee253984db0 (Bounds for - com.innocent.media/com.innocent.media.MainActivity#193)
-* Layer 0x7ee253904b60 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#214)
-* Layer 0x7ee253979770 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218)
+* Layer 0x7c1bfd111a50 (5de1c45 ActivityRecordInputSink com.innocent.media/.MainActivity#219)
+* Layer 0x7c1bfd122bb0 (ActivityRecord{e8d3f9a u0 com.innocent.media/.MainActivity#213)
+* Layer 0x7c1bfd1893f0 (9410577 com.innocent.media/com.innocent.media.MainActivity#220)
+* Layer 0x7c1bfd153240 (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#268)
+* Layer 0x7c1bfd1420e0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#266)
+* Layer 0x7c1bfd0fadd0 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#267)
+* Layer 0x7c1bfd0fdb60 (com.innocent.media/com.innocent.media.MainActivity#221)
+* Layer 0x7c1bfd186660 (Bounds for - com.innocent.media/com.innocent.media.MainActivity#224)
+* Layer 0x7c1bfd180b40 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#257)
+* Layer 0x7c1bfd18c180 (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#258)
 Display 4619827259835644672
     activeMode=60.00 Hz (60.00 Hz)
         {id=0, hwcId=0, resolution=1080x2400, refreshRate=60.00 Hz, dpi=420.00x420.00, group=0}
     frameRateOverrideConfig=Enabled
 Display 4619827259835644672 (physical, "EMU_display_0")
-  - Output Layer 0x7ee26386d1f0(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#224)
-  - Output Layer 0x7ee26386b1c0(com.innocent.media/com.innocent.media.MainActivity#190)
-  - Output Layer 0x7ee2638718c0(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218)
+  - Output Layer 0x7c1a9d05b190(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#267)
+  - Output Layer 0x7c1a9d062570(com.innocent.media/com.innocent.media.MainActivity#221)
+  - Output Layer 0x7c1a9d058af0(SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#258)
 EGL_ANDROID_front_buffer_auto_refresh EGL_ANDROID_get_native_client_buffer EGL_ANDROID_presentation_time EGL_EXT_surface_CTA861_3_metadata EGL_EXT_surface_SMPTE2086_metadata EGL_KHR_get_all_proc_addresses EGL_KHR_swap_buffers_with_damage EGL_ANDROID_get_frame_timestamps EGL_ANDROID_image_native_buffer EGL_ANDROID_native_fence_sync EGL_ANDROID_recordable EGL_KHR_create_context EGL_KHR_fence_sync EGL_KHR_gl_texture_2D_image EGL_KHR_image EGL_KHR_image_base 
   refresh-rate              : 60.00 Hz
 Display 4619827259835644672 (active) HWC layers:
- SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#224
- com.innocent.media/com.innocent.media.MainActivity#190
- SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218
-+ Layer (9a42c7a ActivityRecordInputSink com.innocent.media/.MainActivity#186) uid=1000
-      parent=ActivityRecord{d04c2b u0 com.innocent.media/.MainActivity#182
-+ Layer (ActivityRecord{d04c2b u0 com.innocent.media/.MainActivity#182) uid=1000
-+ Layer (e0a7878 com.innocent.media/com.innocent.media.MainActivity#189) uid=1000
-      parent=ActivityRecord{d04c2b u0 com.innocent.media/.MainActivity#182
-+ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#219) uid=10192
-      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#214
-      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#190
-+ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#225) uid=10192
-      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#223
-      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#190
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#223) uid=10192
-      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#193
-      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#190
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#224) uid=10192
-      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#223
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#190) uid=10192
-      parent=e0a7878 com.innocent.media/com.innocent.media.MainActivity#189
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#193) uid=10192
-      parent=com.innocent.media/com.innocent.media.MainActivity#190
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#214) uid=10192
-      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#193
-      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#190
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218) uid=10192
-      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#214
-Layer Splash Screen com.innocent.media#184 (contains buffer) pid:837 uid:10168 handleAlive
-Layer Surface(name=e0a7878 com.innocent.media/com.innocent.media.MainActivity)/@0x66b92d8 - animation-leash of starting_reveal#197 pid:518 uid:1000 handleAlive
-Layer Splash Screen com.innocent.media#154 (contains buffer) pid:837 uid:10168 handleAlive
-Layer Surface(name=fbe0577 com.innocent.media/com.innocent.media.MainActivity)/@0xb5b0be6 - animation-leash of starting_reveal#167 pid:518 uid:1000 handleAlive
+ SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#267
+ com.innocent.media/com.innocent.media.MainActivity#221
+ SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#258
++ Layer (5de1c45 ActivityRecordInputSink com.innocent.media/.MainActivity#219) uid=1000
+      parent=ActivityRecord{e8d3f9a u0 com.innocent.media/.MainActivity#213
++ Layer (ActivityRecord{e8d3f9a u0 com.innocent.media/.MainActivity#213) uid=1000
++ Layer (9410577 com.innocent.media/com.innocent.media.MainActivity#220) uid=1000
+      parent=ActivityRecord{e8d3f9a u0 com.innocent.media/.MainActivity#213
++ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#259) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#257
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#221
++ Layer (Background for SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#268) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#266
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#221
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#266) uid=10192
+      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#224
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#221
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#267) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#266
++ Layer (com.innocent.media/com.innocent.media.MainActivity#221) uid=10192
+      parent=9410577 com.innocent.media/com.innocent.media.MainActivity#220
++ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#224) uid=10192
+      parent=com.innocent.media/com.innocent.media.MainActivity#221
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#257) uid=10192
+      parent=Bounds for - com.innocent.media/com.innocent.media.MainActivity#224
+      zOrderRelativeOf=com.innocent.media/com.innocent.media.MainActivity#221
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#258) uid=10192
+      parent=SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#257
+Layer Splash Screen com.innocent.media#215 (contains buffer) pid:840 uid:10168 handleAlive
+Layer Surface(name=9410577 com.innocent.media/com.innocent.media.MainActivity)/@0xa3685f3 - animation-leash of starting_reveal#228 pid:521 uid:1000 handleAlive
+Layer Splash Screen com.innocent.media#187 (contains buffer) pid:840 uid:10168 handleAlive
+Layer Surface(name=9b20350 com.innocent.media/com.innocent.media.MainActivity)/@0x52fe84e - animation-leash of starting_reveal#200 pid:521 uid:1000 handleAlive

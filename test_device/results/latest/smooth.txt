@@ -1,45 +1,43 @@
-LAB smooth: 19 steps, display 60 Hz
-LAB cpu app 49% · 9.8fps · b90 1.5 r90 106 ms · late 98 · 60 Hz · gap 15 · 1.raster 31% | pool-thread 11% | .innocent.media 4% | RenderThread 2%
-LAB frames play/film/now n=106 fps=13.2 hz=60 build=0.1/0.3/4.2/7.6 raster=57/102/218/317 ms over16=105 (99.1%) · app 47% · 13.2fps · 1.raster 23% | .innocent.media 8% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | DartWorker 3% | HwBinder:6226 2%
-LAB cpu app 46% · 13.9fps · b90 0.6 r90 102 ms · late 136 · 60 Hz · gap 17 · 1.raster 22% | .innocent.media 9% | ExoPlayer:Playb 3% | MediaCodec_loop 3% | DartWorker 3% | HwBinder:6226 2%
-LAB frames play/controls/now n=78 fps=13.0 hz=60 build=0.1/4.1/28/28 raster=67/109/150/150 ms over16=78 (100.0%) · app 51% · 13.0fps · 1.raster 37% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:6226 2%
-LAB cpu app 47% · 12.8fps · b90 4.0 r90 104 ms · late 127 · 60 Hz · gap 17 · 1.raster 35% | MediaCodec_loop 4% | ExoPlayer:Playb 3% | .innocent.media 3% | HwBinder:6226 2%
-LAB frames play/film/nowprof n=112 fps=14.0 hz=60 build=0.1/0.2/28/41 raster=55/127/188/232 ms over16=112 (100.0%) · app 29% · 14.0fps · 1.raster 18% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:6226 1%
-LAB cpu app 26% · 13.9fps · b90 0.5 r90 128 ms · late 139 · 60 Hz · gap 17 · 1.raster 20% | .innocent.media 2% | HwBinder:6226 1% | ExoPlayer:Playb 1%
-LAB cpu app 30% · 12.8fps · b90 0.1 r90 105 ms · late 126 · 60 Hz · gap 17 · 1.raster 19% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6226 1%
-LAB frames play/film/sched n=112 fps=14.0 hz=60 build=0.1/0.2/14/32 raster=62/92/174/229 ms over16=110 (98.2%) · app 32% · 14.0fps · 1.raster 23% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6226 1%
-LAB cpu app 41% · 14.6fps · b90 0.3 r90 88 ms · late 146 · 60 Hz · gap 17 · 1.raster 29% | .innocent.media 5% | HwBinder:6226 2% | MediaCodec_loop 2% | ExoPlayer:Playb 1%
-LAB frames play/film/now n=115 fps=14.4 hz=60 build=0.1/0.1/30/36 raster=65/84/108/110 ms over16=115 (100.0%) · app 40% · 14.4fps · 1.raster 31% | MediaCodec_loop 2% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
-LAB cpu app 41% · 14.3fps · b90 0.2 r90 86 ms · late 142 · 60 Hz · gap 17 · 1.raster 32% | .innocent.media 2% | MediaCodec_loop 2% | HwBinder:6226 2% | ExoPlayer:Playb 2%
-LAB cpu app 29% · 8.7fps · b90 0.2 r90 79 ms · late 86 · 60 Hz · gap 17 · 1.raster 23% | MediaCodec_loop 2% | HwBinder:6226 1% | .innocent.media 1% | ExoPlayer:Playb 1%
-LAB frames play/film/t n=122 fps=15.2 hz=60 build=0.1/0.1/2.3/28 raster=63/81/133/142 ms over16=122 (100.0%) · app 43% · 15.2fps · 1.raster 34% | MediaCodec_loop 3% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
-LAB cpu app 41% · 15.8fps · b90 0.2 r90 85 ms · late 158 · 60 Hz · gap 17 · 1.raster 31% | MediaCodec_loop 3% | HwBinder:6226 2% | ExoPlayer:Playb 2% | .innocent.media 2%
-LAB frames play/film/tprof n=116 fps=14.5 hz=60 build=0.1/0.2/16/28 raster=62/91/116/126 ms over16=115 (99.1%) · app 41% · 14.5fps · 1.raster 30% | MediaCodec_loop 3% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:6226 1%
-LAB cpu app 27% · 8.2fps · b90 0.1 r90 95 ms · late 81 · 60 Hz · gap 17 · 1.raster 15% | .innocent.media 4% | MediaCodec_loop 2% | ExoPlayer:Playb 2% | HwBinder:6226 2%
-LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
-LAB cpu app 18% · 0.2fps · b90 0.3 r90 124 ms · late 2 · 60 Hz · gap 17 · 1.raster 12% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:6226 1%
-LAB frames play/controls/sv n=0 fps=0.0 · app 49% · 0.0fps · 1.raster 42% | .innocent.media 2% | ExoPlayer:Playb 2% | HwBinder:6226 1% | MediaCodec_loop 1%
-LAB cpu app 28% · 0.9fps · b90 6.5 r90 5831 ms · late 9 · 60 Hz · gap 17 · 1.raster 21% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1% | .innocent.media 1%
-LAB frames play/film/svprof n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
-LAB cpu app 15% · 2.3fps · b90 0.5 r90 180 ms · late 19 · 60 Hz · gap 17 · 1.raster 5% | .innocent.media 3% | ExoPlayer:Playb 2% | HwBinder:6226 1%
-LAB cpu app 7% · 0.0fps · ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6226 1%
-LAB frames play/film/svsched n=0 fps=0.0 · app 7% · 0.0fps · ExoPlayer:Playb 3% | MediaCodec_loop 1% | HwBinder:6226 1%
-LAB cpu app 10% · 1.3fps · b90 0.5 r90 213 ms · late 12 · 60 Hz · gap 17 · 1.raster 3% | ExoPlayer:Playb 2% | MediaCodec_loop 1% | .innocent.media 1% | HwBinder:6226 1%
-LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6226 1%
-LAB cpu app 24% · 3.6fps · b90 1.1 r90 153 ms · late 36 · 60 Hz · gap 17 · 1.raster 16% | .innocent.media 2% | RenderThread 2% | ExoPlayer:Playb 1% | HwBinder:6226 1%
-LAB cpu app 5% · 3.3fps · b90 1.0 r90 53 ms · late 8 · 60 Hz · gap 17 · 1.raster 4%
-LAB frames play/film/t n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB cpu app 4% · 0.2fps · b90 0.6 r90 8.5 ms · 60 Hz · gap 17 · 1.raster 3%
-LAB frames play/controls/t n=62 fps=10.3 hz=60 build=0.9/1.1/2.8/2.8 raster=15/46/63/63 ms over16=29 (46.8%) · app 17% · 10.3fps · 1.raster 15% | .innocent.media 1%
-LAB cpu app 11% · 6.7fps · b90 1.1 r90 46 ms · late 30 · 60 Hz · gap 17 · 1.raster 10% | .innocent.media 1%
-LAB frames play/film/tprof n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB cpu app 1% · 0.4fps · b90 0.6 r90 14 ms · 60 Hz · gap 17 · -
-LAB frames play/film/mpvsv n=0 fps=0.0 · app 1% · 0.0fps · -
-LAB cpu app 1% · 0.2fps · b90 0.3 r90 4.8 ms · 60 Hz · gap 17 · -
-LAB frames play/controls/mpvsv n=57 fps=9.5 hz=60 build=1.0/2.2/14/14 raster=19/66/127/127 ms over16=29 (50.9%) · app 19% · 9.5fps · 1.raster 17% | .innocent.media 2%
-LAB cpu app 14% · 6.2fps · b90 2.1 r90 59 ms · late 29 · 60 Hz · gap 17 · 1.raster 12% | .innocent.media 1%
-LAB frames play/film/mpvsvprof n=0 fps=0.0 · app 1% · 0.0fps · -
+LAB smooth: 18 steps, display 60 Hz
+LAB cpu app 52% · 11.1fps · b90 0.5 r90 97 ms · late 110 · 60 Hz · gap 3.9 · 1.raster 36% | pool-thread 9% | .innocent.media 3% | RenderThread 2%
+LAB frames play/film/now n=103 fps=12.8 hz=60 build=0.1/2.4/26/44 raster=51/113/152/775 ms over16=103 (100.0%) · app 47% · 12.8fps · 1.raster 25% | .innocent.media 7% | ExoPlayer:Playb 3% | MediaCodec_loop 3% | DartWorker 2% | HwBinder:6320 1%
+LAB cpu app 48% · 12.3fps · b90 3.8 r90 113 ms · late 123 · 60 Hz · gap 17 · 1.raster 28% | .innocent.media 8% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | DartWorker 2% | HwBinder:6320 1%
+LAB frames play/controls/now n=83 fps=13.8 hz=60 build=0.1/11/65/65 raster=65/128/333/333 ms over16=83 (100.0%) · app 47% · 13.8fps · 1.raster 32% | .innocent.media 5% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6320 2% | DartWorker 1%
+LAB cpu app 44% · 11.6fps · b90 7.5 r90 120 ms · late 116 · 60 Hz · gap 17 · 1.raster 30% | .innocent.media 5% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6320 2%
+LAB frames play/film/nowprof n=122 fps=15.2 hz=60 build=0.1/0.1/6.3/36 raster=65/85/100/117 ms over16=122 (100.0%) · app 44% · 15.2fps · 1.raster 36% | .innocent.media 2% | ExoPlayer:Playb 2% | MediaCodec_loop 2% | HwBinder:6320 1%
+LAB cpu app 40% · 15.6fps · b90 0.2 r90 87 ms · late 156 · 60 Hz · gap 17 · 1.raster 35% | .innocent.media 2% | HwBinder:6320 1%
+LAB cpu app 38% · 14.6fps · b90 0.2 r90 107 ms · late 145 · 60 Hz · gap 17 · 1.raster 28% | MediaCodec_loop 3% | ExoPlayer:Playb 3% | .innocent.media 2% | HwBinder:6320 2%
+LAB frames play/film/sched n=114 fps=14.2 hz=60 build=0.1/0.1/23/54 raster=63/103/128/135 ms over16=114 (100.0%) · app 35% · 14.2fps · 1.raster 25% | ExoPlayer:Playb 3% | MediaCodec_loop 2% | HwBinder:6320 2% | .innocent.media 1%
+LAB cpu app 42% · 14.1fps · b90 0.2 r90 94 ms · late 141 · 60 Hz · gap 17 · 1.raster 31% | .innocent.media 4% | HwBinder:6320 2% | MediaCodec_loop 1%
+LAB frames play/film/now n=119 fps=14.8 hz=60 build=0.1/0.1/9.2/15 raster=61/81/108/110 ms over16=117 (98.3%) · app 41% · 14.8fps · 1.raster 33% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6320 2% | ExoPlayer:Playb 1%
+LAB cpu app 41% · 15.2fps · b90 0.1 r90 82 ms · late 150 · 60 Hz · gap 17 · 1.raster 31% | MediaCodec_loop 3% | .innocent.media 2% | HwBinder:6320 2% | ExoPlayer:Playb 1%
+LAB cpu app 18% · 6.1fps · b90 2.3 r90 82 ms · late 37 · 60 Hz · gap 17 · 1.raster 14% | .innocent.media 2% | RenderThread 1%
+LAB cpu app 1% · 0.2fps · b90 0.3 r90 9.1 ms · 60 Hz · gap 17 · -
+LAB frames play/film/now n=0 fps=0.0 · app 1% · 0.0fps · -
+LAB frames play/controls/now n=59 fps=9.8 hz=60 build=0.9/1.0/2.6/2.6 raster=14/33/61/61 ms over16=22 (37.3%) · app 16% · 9.8fps · 1.raster 14% | .innocent.media 1%
+LAB cpu app 12% · 6.7fps · b90 1.0 r90 27 ms · late 22 · 60 Hz · gap 17 · 1.raster 10% | .innocent.media 1%
+LAB frames play/film/nowprof n=0 fps=0.0 · app 1% · 0.0fps · -
+LAB cpu app 5% · 0.0fps · 1.raster 4%
+LAB cpu app 46% · 13.9fps · b90 2.2 r90 102 ms · late 139 · 60 Hz · gap 17 · 1.raster 37% | .innocent.media 4% | HeapTaskDaemon 1%
+LAB cpu app 44% · 13.8fps · b90 0.9 r90 89 ms · late 138 · 60 Hz · gap 17 · 1.raster 36% | MediaCodec_loop 3% | HwBinder:6320 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB cpu app 47% · 15.9fps · b90 0.1 r90 81 ms · late 159 · 60 Hz · gap 17 · 1.raster 39% | HwBinder:6320 2% | MediaCodec_loop 2% | .innocent.media 2% | ExoPlayer:Playb 2%
+LAB frames play/film/now n=124 fps=15.4 hz=60 build=0.1/0.1/11/31 raster=65/82/93/102 ms over16=124 (100.0%) · app 48% · 15.4fps · 1.raster 40% | MediaCodec_loop 2% | HwBinder:6320 2% | .innocent.media 2% | ExoPlayer:Playb 1%
+LAB cpu app 27% · 9.1fps · b90 0.2 r90 88 ms · late 89 · 60 Hz · gap 17 · 1.raster 20% | .innocent.media 2% | MediaCodec_loop 1% | HwBinder:6320 1%
+LAB frames play/film/t n=118 fps=14.8 hz=60 build=0.1/0.1/1.5/23 raster=60/84/111/129 ms over16=117 (99.2%) · app 46% · 14.8fps · 1.raster 36% | .innocent.media 3% | MediaCodec_loop 2% | HwBinder:6320 2% | ExoPlayer:Playb 2%
+LAB cpu app 46% · 14.8fps · b90 0.2 r90 80 ms · late 146 · 60 Hz · gap 17 · 1.raster 36% | .innocent.media 3% | MediaCodec_loop 3% | HwBinder:6320 2% | ExoPlayer:Playb 2%
+LAB frames play/film/tprof n=119 fps=14.9 hz=60 build=0.1/0.2/15/33 raster=63/81/96/100 ms over16=118 (99.2%) · app 47% · 14.9fps · 1.raster 38% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6320 2% | ExoPlayer:Playb 1%
+LAB cpu app 37% · 12.9fps · b90 0.3 r90 83 ms · late 128 · 60 Hz · gap 17 · 1.raster 30% | MediaCodec_loop 2% | .innocent.media 2% | HwBinder:6320 2% | ExoPlayer:Playb 2%
+LAB frames play/film/sv n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:6320 1%
+LAB cpu app 6% · 0.2fps · b90 0.4 r90 130 ms · late 2 · 60 Hz · gap 17 · ExoPlayer:Playb 2% | HwBinder:6320 1% | MediaCodec_loop 1%
+LAB frames play/controls/sv n=4 fps=0.7 hz=60 build=0.1/2.8/2.8/2.8 raster=96/4386/4386/4386 ms over16=4 (100.0%) · app 61% · 0.7fps · 1.raster 55% | .innocent.media 2% | ExoPlayer:Playb 1% | HwBinder:6320 1% | MediaCodec_loop 1%
+LAB cpu app 49% · 1.1fps · b90 3.5 r90 989 ms · late 11 · 60 Hz · gap 17 · 1.raster 42% | .innocent.media 2% | MediaCodec_loop 1% | ExoPlayer:Playb 1% | HwBinder:6320 1%
+LAB frames play/film/svprof n=0 fps=0.0 · app 6% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:6320 1%
+LAB cpu app 10% · 1.4fps · b90 0.5 r90 178 ms · late 12 · 60 Hz · gap 17 · 1.raster 3% | .innocent.media 2% | HwBinder:6320 1% | dart:io EventHa 1%
+LAB cpu app 10% · 0.0fps · ExoPlayer:Playb 6% | .innocent.media 2% | MediaCodec_loop 1% | HwBinder:6320 1%
+LAB frames play/film/svsched n=0 fps=0.0 · app 9% · 0.0fps · ExoPlayer:Playb 6% | HwBinder:6320 1% | MediaCodec_loop 1%
+LAB cpu app 9% · 1.5fps · b90 2.6 r90 137 ms · late 13 · 60 Hz · gap 17 · 1.raster 3% | .innocent.media 1% | HwBinder:6320 1% | ExoPlayer:Playb 1%
+LAB frames play/film/sv n=0 fps=0.0 · app 5% · 0.0fps · ExoPlayer:Playb 2% | MediaCodec_loop 1% | HwBinder:6320 1%
+LAB cpu app 10% · 1.1fps · b90 1.6 r90 166 ms · late 10 · 60 Hz · gap 17 · 1.raster 5% | ExoPlayer:Playb 2% | .innocent.media 1% | HwBinder:6320 1%
 LAB smooth: done
-LAB cpu app 1% · 0.0fps · -
 screenshots in MediaStore:
   none
