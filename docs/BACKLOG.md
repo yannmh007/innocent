@@ -16,6 +16,31 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **28 Nov: BEYOND MX, SESSION 2 (branch only; handoff
+  docs/handoff_2026_11_29_beyond_mx_p2.md when written)**. Test Lab's five
+  of 27 Nov were spent (53rd-55th); P0 and the P1 A/B wait for 08:00 UTC
+  28 Nov (a reminder is set). FOUND: libmpv's "local copy without a
+  picture" (P1-E3) is the API 34 emulator, not the copy: "Could not
+  create EGL context for GLES 2.x", "Video: no video" for the lab's own
+  ffmpeg film too (P1-E4 46044124212; a lab build now logs libmpv itself);
+  no API 34 trace ever read vo=gpu, phones did; P1-E1's "20 fps" was a
+  spinner. libmpv's A/B (`local`, `mpvsv`) needs the phones; API 30 cannot
+  run the smooth flow (P1-E5 46048122459). P5 GESTURES (pushed 28aa9ece):
+  MX measured in the reference lab (SCREENS=subgest, runs 46047544023,
+  46049383870, 46050792610; .claude/rules/reference-lab.md) — one line a
+  swipe on the lift, right to left the next, 50-70 dp; Innocent stepped a
+  line per 64 dp the other way round: now as MX, the held line on a grey
+  box (player_gesture_engine_test 25, subtitle_held_test). The pinch is not
+  measured (sendevent registers nothing on the API 30 image; run 5 tries
+  show_touches). P5 ONLINE (pushed 80a51e89, e7026ac3; NOT applied, NOT
+  deployed): docs/edge/subtitles-online.ts (+ subtitles_os.js, node test
+  in check.py), migration 084 subtitle_budget (install 40 searches/h, 5
+  downloads/day; network 200/h, 10/day; tool/sql/subtitle_budget_test.sql),
+  the app's CC → Online sheet (online_subtitles_test: hash, name, refusals,
+  download → load) and the privacy text. WAITS ON THE OWNER: the
+  OpenSubtitles key and account as secrets; then skill live-db-change
+  (084) and edge-deploy (subtitles-online, verify_jwt false). P4: the ♪
+  sheet sent again (p4_audio_mx_vs_innocent.png); the owner's word pending.
 - **27 Nov (night): BEYOND MX, SESSION 1 — P1 MEASURED ON THE EMULATOR,
   P2-P4 BUILT (branch only; docs/handoff_2026_11_28_beyond_mx_p1.md)**.
   The owner's answers: P1 A/B first; frame-rate matching seamless only;

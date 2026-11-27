@@ -110,6 +110,19 @@ Both run only on non-main branches, started by pushing their config file.
   not the build: run again (runs B-D, 5 of 8 on one build, the stops all
   this kind). A stop WITHOUT that gesture tap is worth reading.
 
+- **libmpv draws no picture on the API 34 emulator.** Its `vo=gpu` cannot
+  make an EGL context there ("Could not create EGL context for GLES 2.x",
+  "Video: no video"): the sound plays, the position moves, Flutter draws
+  nothing (P1-E4 46044124212, 28 Nov 2026 — the lab's own ffmpeg film
+  too). No API 34 trace ever read `vo=gpu` (git log -S); Test Lab's phones
+  did. So libmpv's picture, its frame rate and its CPU are measured on
+  phones only; the trail's `video ? ?x? vo=?` line is this, not a broken
+  file. A lab build writes libmpv's own log into the trail (`mpv info
+  [cplayer] …`, info level): read it before guessing. And a spinner draws
+  frames too: P1-E1's "libmpv at 20 fps" was a 32 s open's spinner. EMU_API
+  30 does not help: the app cannot read `lab_stream_url` from Android/data
+  there (P1-E5 46048122459: the smooth flow never started).
+
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
   day, reset at midnight PACIFIC: 07:00 UTC in summer time, 08:00 UTC from

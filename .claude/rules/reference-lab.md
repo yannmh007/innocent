@@ -84,4 +84,18 @@ repository and a run's public log carry numbers and our own code.
   navigation bar. Figures taken off the owner's own screenshots before
   26 Nov were divided by 2.625 and read ~7 % large (player_screen.dart's
   "MX GEOMETRY"); measure MX's controls here, not off those.
+- **A bare `wait` in probe.sh waits for the logcat reader too** (started in
+  setup_device, never ends): run 46051981906 sat to the job's 80-minute
+  limit. Wait for the PIDs you started (`wait "$pid"`).
+- **MX's subtitle gestures, measured (28 Nov 2026, SCREENS=subgest; runs
+  46047544023, 46049383870, 46050792610):** one line a swipe, however
+  long, on the finger's lift; right to left the next, left to right the
+  previous; 70 dp stepped, 49 dp did not (fast or slow); the band is the
+  line's own box across the whole width (60 px above the words stepped,
+  130 px was the screen's seek); a drag moves the line after ~60 px and
+  MX keeps the place for the next film, "↕ N" mid-screen while dragging;
+  the line greyed (white ~33 %) while held. The pinch is not measured:
+  sendevent on the API 30 image registered nothing (no tap opened ⋮ under
+  any axis mapping). MX's tree gives the subtitle as `subtitleView` /
+  `SubText` (ui.py `sub`); its media session gives no position there.
 
