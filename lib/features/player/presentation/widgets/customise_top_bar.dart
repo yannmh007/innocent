@@ -254,7 +254,7 @@ class _Choice extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: PlayerUi.tileLabel,
+                  style: PlayerUi.tileLabelIn(context),
                 ),
               ],
             ),

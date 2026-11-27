@@ -126,14 +126,18 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
     // time and the keys were drawn straight onto the film under a 25 %
     // scrim. Upright a bottom sheet, sideways a panel from the right.
     final content = Padding(
-      padding: EdgeInsets.fromLTRB(pad, 8, pad, 8),
+      // MX's keys at full size where MX has them (384 dp sideways, as the
+      // owner's phone): Innocent's box and Stop / Start keep 48 dp rows
+      // (MX's are 32), so the title and the time rows give the room back.
+      // It was 0.87 of MX's keypad (reference lab 45896496134).
+      padding: EdgeInsets.fromLTRB(pad, 6, pad, 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // No ×: MX's panel closes by a tap outside it, or Back.
           SizedBox(
-            height: 40,
+            height: 36,
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Semantics(
@@ -146,7 +150,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             ),
           ),
           SizedBox(
-            height: 52,
+            height: 48,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -156,17 +160,15 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
             ),
           ),
           const Divider(color: PlayerUi.hairline, height: 1, thickness: 1),
-          const SizedBox(height: 4),
           // The keypad gives way, not STOP and START: four rows of keys are
-          // 212 dp, more than a phone held sideways has left, or an upright
-          // window in split screen (384x411 dp: 104 px cut, 26 Nov 2026;
+          // 196 dp, more than a short window has left (an upright window in
+          // split screen, 384x411 dp: 104 px cut, 26 Nov 2026;
           // test/player_layout_test.dart). Full size wherever they fit.
           Flexible(
             child: Center(
               child: FittedBox(fit: BoxFit.scaleDown, child: _keypad()),
             ),
           ),
-          const SizedBox(height: 4),
           _checkboxRow(),
           _actionsRow(),
         ],
@@ -182,7 +184,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       sideways: !portrait,
       child: Padding(
         padding: EdgeInsets.only(
-          top: portrait ? 8 : padding.top,
+          top: portrait ? 2 : padding.top,
           right: portrait ? 0 : padding.right,
           bottom: padding.bottom,
         ),

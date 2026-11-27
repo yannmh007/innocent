@@ -839,6 +839,34 @@ void main() {
     await leavePlayer(tester);
   });
 
+  testWidgets("Sleep Timer as MX's on the owner's phone sideways: its keys "
+      "at MX's size, its × clears the entry and does not close", (tester) async {
+    await pumpPlayer(tester,
+        phone: const Phone('384x823', 384, 823.5, 2.8125,
+            statusBar: 30, navBar: 48, cutout: 30),
+        landscape: true,
+        lang: 'en');
+    playerContainer!
+        .read(playerControllerProvider.notifier)
+        .openSleepTimerDialog();
+    await _settle(tester);
+    final key5 = find.bySemanticsLabel('5');
+    // MX's key cell (reference lab 45896496134): 74.6 x 49.1 dp.
+    final size = tester.getSize(key5);
+    expect(size.width / 74.6, greaterThan(0.97),
+        reason: 'the keys were 0.87 of MX\'s');
+    await tester.tap(key5);
+    await tester.tap(find.bySemanticsLabel('3'));
+    await tester.pump();
+    expect(find.text('0h 53m', findRichText: true), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Clear'));
+    await tester.pump();
+    expect(find.text('0h 00m', findRichText: true), findsOneWidget,
+        reason: '× clears the entry');
+    expect(_state().sleepTimerDialogOpen, isTrue, reason: 'and stays open');
+    await leavePlayer(tester);
+  });
+
   testWidgets('one audio track: no "more to choose" dot on the audio button',
       (tester) async {
     await pumpPlayer(tester,

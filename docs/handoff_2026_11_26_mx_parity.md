@@ -116,6 +116,9 @@
 >   default all but the queue. The bar carries what fits beside ←, ⋮ and
 >   a 64 dp title, ♪, CC and the decoder first. The old page of shortcut
 >   switches is gone (⋮'s lower part keeps those switches).
+> - 27 NOV, THE OWNER: "CC as Innocent's" (♪ and CC stay on the upright
+>   bar); the sleep keys at MX's size sideways; ⋮'s Burmese and Thai
+>   labels a weight up (11 → 5 words under 4.5:1 over white); then release.
 > - SLEEP TIMER AS MX's (its tree, same run): no close ×; MX's × is
 >   `iv_clear`, at the time's end, and clears the entry; keys 32 dp, 74.6
 >   across, 49.1 down; the title's middle 28 dp from the top.

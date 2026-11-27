@@ -64,8 +64,10 @@ on a phone. The player's building blocks live in
 Type (Roboto; Burmese falls back to Noto Sans Myanmar, nearly twice as tall
 per line — never a fixed height around text, see .claude/rules/flutter-app.md):
 panel title 18 sp w600 · section label 12.5 sp w600, secondary colour ·
-row title 15 sp w500 · row value 13 sp secondary · tile label 12 sp w500
-white (not 92 %: the smallest word on the shade), two lines at most ·
+row title 15 sp w500 · row value 13 sp white (grey read 2.35:1 over a
+white film) · tile label 12 sp w500 white (not 92 %: the smallest word on
+the shade), Burmese and Thai w600 (`PlayerUi.tileLabelIn`: their strokes
+are thinner), two lines at most ·
 caption 11 sp.
 
 ## 3. Components (all in player_ui.dart)

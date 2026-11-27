@@ -173,6 +173,19 @@ class PlayerUi {
     fontWeight: FontWeight.w500,
   );
 
+  /// [tileLabel] for the viewer's language: Burmese and Thai a weight up.
+  /// Their strokes are thinner than Latin's at 12 sp: over a white film 11
+  /// of their ⋮ words read 3.5-4.4:1 by the strict measure (the legibility
+  /// test, 26 Nov 2026); a weight up, 5 (Thai none), the rest Burmese's
+  /// finest marks (ဖြတ်ရန်, အကြိုက်: 3.8-4.5 at the 10th percentile of
+  /// their pixels, over 5 at the strokes). 13 sp made it no better.
+  static TextStyle tileLabelIn(BuildContext context) {
+    final code = Localizations.localeOf(context).languageCode;
+    return code == 'my' || code == 'th'
+        ? tileLabel.copyWith(fontWeight: FontWeight.w600)
+        : tileLabel;
+  }
+
   /// Side padding of a panel: a little less on the narrowest phones.
   /// 24, as MX Player's panels keep their content about 26 dp in (the
   /// reference lab, 22 Nov 2026, on the owner's 384 dp phone; the owner
@@ -1080,7 +1093,7 @@ class PanelTile extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: PlayerUi.tileLabel,
+                style: PlayerUi.tileLabelIn(context),
               ),
             ],
           ),
