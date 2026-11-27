@@ -16,6 +16,13 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **27 Nov: NEXT SESSION — THE PLAYER'S SMOOTHNESS (the owner, on
+  1.64.89: "⋮'s menu stutters when scrolled")** — not started. The
+  suspects found in code (blurred text/icon shadows on every glyph, a
+  full-panel ShaderMask around an unbounded scroll, the whole player
+  rebuilt on each position tick), how to measure on the emulator and the
+  real phones, and the prompt to paste:
+  docs/handoff_2026_11_27_player_smoothness.md.
 - **27 Nov: 1.64.89 IS OUT — THE PLAYER AS MX PLAYER'S (the owner: "as
   MX, every device and screen"; "CC as Innocent's"; "release")**.
   RELEASED: main 6ee04134 (pushed 05:15:51 UTC after the libmpv jars came
