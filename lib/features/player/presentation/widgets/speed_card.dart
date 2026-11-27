@@ -73,7 +73,7 @@ class SpeedCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
                   child: DefaultTextStyle.merge(
-                    style: const TextStyle(shadows: PlayerUi.shadeInk),
+                    style: TextStyle(shadows: PlayerUi.ink),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -108,9 +108,9 @@ class SpeedCard extends StatelessWidget {
                             IconButton(
                               tooltip: s.reset,
                               onPressed: () => onSpeed(1.0),
-                              icon: const Icon(Icons.restart_alt_rounded,
+                              icon: Icon(Icons.restart_alt_rounded,
                                   size: 24, color: PlayerUi.textPrimary,
-                                  shadows: PlayerUi.shadeInk),
+                                  shadows: PlayerUi.ink),
                               constraints: const BoxConstraints(
                                   minWidth: 34, minHeight: 40),
                               padding: EdgeInsets.zero,
@@ -221,10 +221,10 @@ class _Scale extends StatelessWidget {
       final track = c.maxWidth - 2 * _inset;
       double x(double v) =>
           _inset + (v - SpeedCard.min) / (SpeedCard.max - SpeedCard.min) * track;
-      const labelStyle = TextStyle(
+      final labelStyle = TextStyle(
         color: PlayerUi.textPrimary,
         fontSize: 12,
-        shadows: PlayerUi.shadeInk,
+        shadows: PlayerUi.ink,
       );
       return SizedBox(
         height: 30 + 22,

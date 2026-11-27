@@ -2282,6 +2282,8 @@ class AppStrings {
 
   String get plScreenshotFailed => _s('plScreenshotFailed');
   String plSaved(Object v) => _s('plSaved').replaceFirst('{v}', '$v');
+  String get plSavedGallery => _s('plSavedGallery');
+  String get plScreenshotOff => _s('plScreenshotOff');
   String plScreenshotError(Object v) => _s('plScreenshotError').replaceFirst('{v}', '$v');
   String plLoaded(Object v) => _s('plLoaded').replaceFirst('{v}', '$v');
   String plSubtitlePickError(Object v) => _s('plSubtitlePickError').replaceFirst('{v}', '$v');
@@ -4745,6 +4747,8 @@ class AppStrings {
     'sdvResetAllSub': 'Put every setting back to its default.',
     'plScreenshotFailed': 'Could not take the screenshot',
     'plSaved': 'Saved: {v}',
+    'plSavedGallery': 'Saved to Gallery (Pictures/Innocent)',
+    'plScreenshotOff': 'Screenshots are off for this video',
     'plScreenshotError': 'Screenshot error: {v}',
     'plLoaded': 'Loaded: {v}',
     'plSubtitlePickError': 'Could not open the subtitle: {v}',
@@ -7107,6 +7111,8 @@ class AppStrings {
     'sdvResetAllSub': 'Settings အားလုံးကို မူလအတိုင်း ပြန်ထားပါ။',
     'plScreenshotFailed': 'Screenshot မရိုက်နိုင်ပါ',
     'plSaved': 'သိမ်းပြီး: {v}',
+    'plSavedGallery': 'Gallery ထဲ သိမ်းပြီး (Pictures/Innocent)',
+    'plScreenshotOff': 'ဒီဗီဒီယိုမှာ Screenshot ပိတ်ထားပါတယ်',
     'plScreenshotError': 'Screenshot မရပါ: {v}',
     'plLoaded': 'ထည့်ပြီး: {v}',
     'plSubtitlePickError': 'စာတန်းဖိုင် မဖွင့်နိုင်ပါ: {v}',
@@ -9455,6 +9461,8 @@ class AppStrings {
     'sdvResetAllSub': 'คืนค่าการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น',
     'plScreenshotFailed': 'จับภาพหน้าจอไม่สำเร็จ',
     'plSaved': 'บันทึกแล้ว: {v}',
+    'plSavedGallery': 'บันทึกลงแกลเลอรีแล้ว (Pictures/Innocent)',
+    'plScreenshotOff': 'ปิดการจับภาพหน้าจอสำหรับวิดีโอนี้',
     'plScreenshotError': 'จับภาพหน้าจอผิดพลาด: {v}',
     'plLoaded': 'โหลดแล้ว: {v}',
     'plSubtitlePickError': 'เปิดคำบรรยายไม่ได้: {v}',

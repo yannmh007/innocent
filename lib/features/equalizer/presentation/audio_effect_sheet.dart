@@ -346,7 +346,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
       padding: land
           ? const EdgeInsets.fromLTRB(18, 8, 14, 16)
           : const EdgeInsets.fromLTRB(24, 12, 24, 20),
-      child: Column(
+      child: PlayerUi.ownLayer(Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _eqHeader(),
@@ -372,7 +372,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
             ),
           ),
         ],
-      ),
+      )),
     );
   }
 
@@ -605,7 +605,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
         padding: landscape
             ? const EdgeInsets.fromLTRB(18, 14, 14, 18)
             : const EdgeInsets.fromLTRB(24, 16, 24, 20),
-        child: Column(
+        child: PlayerUi.ownLayer(Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
@@ -634,7 +634,7 @@ class _AudioEffectSheetState extends ConsumerState<AudioEffectSheet>
               ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

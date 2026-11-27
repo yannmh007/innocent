@@ -43,6 +43,25 @@ paths:
   such cuts (docs/player_ux_audit_2026_11.md). Check a player change with
   `test/player_layout_test.dart` (real fonts: `FONT_DIR`, see the doc) —
   320/360/411 dp, both orientations, `LANGS=my,en,th`, `SCALES=1.0,1.3`.
+- **`flutter analyze` with no path before a push.** CI's Analyze (Stream
+  bench, the Build) reads the whole project, `test_screens/` too, which
+  neither `flutter test` nor `flutter analyze lib/` reach: a parameter
+  removed from ShortcutRow broke test_screens/player_row_screens_test.dart
+  and failed Stream bench 45796876440 (26 Nov 2026). Errors only matter;
+  the ~180 infos are known.
+- **A widget's helpers that do not need `context` go outside the class.**
+  tool/context_scope.py (in check.py) read `context` in SpeedCard's build
+  as "the enclosing class has none" when an expression-bodied method
+  (`double _snap(double v) => …`) came before build, and the push gate
+  stopped (26 Nov 2026). A top-level function passes.
+- **A row's overflow is found with the real fonts, not the test font.**
+  player_controls_test draws every glyph a full em wide (its Quality pill
+  measured 189 dp, not ~108), so a width check there fails for nothing and
+  a real overflow can pass: the 1.64.89 review found ⋮ running off the
+  upright top bar on 360/412 dp phones with the Quality pill, which no
+  test had shown. Put a layout case in test/player_layout_test.dart (real
+  fonts, every phone, my/en/th, 1.0/1.3) and assert the control's rect is
+  on screen — `findsOneWidget` passes for a widget drawn off screen.
 - **`dart format` only the files you changed.** Formatting a directory
   rewrote eighteen untouched player widgets (12 Nov): noise in the diff and
   the release review. Name the files. And not a changed file that HEAD
@@ -66,6 +85,24 @@ paths:
   test/player_scrub_test.dart). A widget that opens one ends it in
   `dispose`; a timer that removes UI checks it first; a guard on the end
   (a lock) never refuses what the start let through.
+- **A list or bar whose words carry a blurred shadow is a layer of its
+  own (`PlayerUi.ownLayer`), and a screen does not rebuild on a clock.**
+  Impeller (3.32.8) keeps a word's blurred shadow (TextShadowCache) only
+  while the same recorded paragraph is drawn again: the cache is keyed by
+  the TextFrame, which `drawTextShadow` makes anew every time a paragraph
+  is painted (a lone glyph — an icon — by its index). A list scrolled
+  without a RepaintBoundary inside its scroll view paints every word again
+  each frame: ⋮'s halo (three blurs a word) cost 132 Gaussian blurs a
+  frame, "⋮ stutters when scrolled" (27 Nov 2026, 1.64.89). And the
+  player screen watched the whole PlayerState, so each second of the film
+  rebuilt it, ⋮ open, 707 elements a tick. How: a new scrolling body on
+  the shade wraps its child in `PlayerUi.ownLayer`; a widget that follows
+  the position watches `select((s) => s.position)` and the screen
+  `s.look` (PlayerState.withPosition keeps it); check with
+  test/player_smoothness_test.dart (rebuilds counted, a layer's pictures
+  compared) and on phones with SmoothLab (`STREAM_SMOOTH` in cloud.env,
+  flow `smooth`). A widget that leaned on the old rebuild (the top bar's
+  clock) needs its own timer.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.

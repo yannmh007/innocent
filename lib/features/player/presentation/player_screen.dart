@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/gestures.dart';
@@ -1447,6 +1448,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   Future<void> _captureScreenshot(BuildContext context) async {
+    // A vault film or a protected one is not screenshot-able (FLAG_SECURE,
+    // SecureScreenService): the shortcut must not copy its picture out
+    // either — before 27 Nov 2026 it saved a plain PNG of it.
+    if (widget.isPrivate || widget.secureScreen) {
+      _showOverlay(AppStrings.of(context).plScreenshotOff);
+      return;
+    }
     try {
       final boundary = _videoBoundaryKey.currentContext?.findRenderObject()
           as RenderRepaintBoundary?;
@@ -1457,6 +1465,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       final image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
+        PlaybackLog.add('screenshot: no picture');
         // `toImage` / `toByteData` above are both awaits, so match the
         // `context.mounted` guard this method already uses on its success and
         // error paths. The screenshot has failed either way; the only question
@@ -1467,16 +1476,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         return;
       }
       final bytes = byteData.buffer.asUint8List();
-
-      // Save to app documents directory (no extra permission needed)
-      final dir = await getApplicationDocumentsDirectory();
       final ts = DateTime.now().millisecondsSinceEpoch;
+
+      // Into the phone's gallery (Pictures/Innocent), where a viewer looks
+      // for a screenshot: Android 10 and later take the picture into
+      // MediaStore without a permission. It went to the app's own
+      // documents folder, which nothing on the phone shows: "Saved:
+      // screenshot_….png" and no way to find it (27 Nov 2026).
+      try {
+        // The gallery names it after its title (MediaStore DISPLAY_NAME).
+        final name = 'Innocent_$ts';
+        await PhotoManager.editor.saveImage(bytes,
+            filename: '$name.png', title: name, relativePath: 'Pictures/Innocent');
+        PlaybackLog.add('screenshot: in the gallery (${bytes.length} B)');
+        if (!context.mounted) return;
+        _showOverlay(AppStrings.of(context).plSavedGallery);
+        return;
+      } catch (e) {
+        // Android 9 and older (no permission to write there): the app's
+        // own folder, as before.
+        PlaybackLog.add('screenshot: not in the gallery '
+            '(${e.runtimeType}); the app\'s own folder');
+      }
+      final dir = await getApplicationDocumentsDirectory();
       final file = File('${dir.path}/screenshot_$ts.png');
       await file.writeAsBytes(bytes);
 
       if (!context.mounted) return;
       _showOverlay(AppStrings.of(context).plSaved(p.basename(file.path)));
     } catch (e) {
+      PlaybackLog.add('screenshot: failed (${e.runtimeType})');
       if (!context.mounted) return;
       _showSnack(context, AppStrings.of(context).plScreenshotError(e));
     }
@@ -3187,8 +3216,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     // Where the phone starts, so the first turn counts (didChangeMetrics).
     _lastOrientation ??= MediaQuery.orientationOf(context);
     final svc = ref.watch(videoPlayerServiceProvider);
-    final state = ref.watch(playerControllerProvider);
+    // Everything but the playing position (PlayerState.look): the seek bar
+    // and its times follow the film on their own (LAYER 7), so a second of
+    // the film no longer rebuilds the screen and an open menu (27 Nov 2026:
+    // 707 elements a tick under ⋮). A lab's `base` look rebuilds it as
+    // 1.64.89 did (the smoothness lab, work branch).
+    final PlayerState state;
+    if (PlayerUi.labTick && const bool.fromEnvironment('INNOCENT_LAB')) {
+      state = ref.watch(playerControllerProvider);
+    } else {
+      ref.watch(playerControllerProvider.select((s) => s.look));
+      state = ref.read(playerControllerProvider);
+    }
     final controller = ref.read(playerControllerProvider.notifier);
+    final topBar = _topBarItems();
 
     // Screen wake lock follows playback rather than the player's lifetime.
     _applyKeepScreenOn(state);
@@ -3580,7 +3621,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 bottom: pos == 'bottom' ? 120 : null,
                 left: 0,
                 right: 0,
-                child: _TopBar(
+                // A layer of its own: the bottom row's tick (or anything
+                // else under it) does not paint its words again.
+                child: PlayerUi.ownLayer(_TopBar(
                 insets: _controlsInsets(context),
                 title: _title,
                 decoderLabel: state.decoder == DecoderType.defaultMode
@@ -3631,7 +3674,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                             _videoUri.startsWith('rtsp'))
                     ? _videoUri
                     : null,
-              ),
+              )),
             );
           }),
 
@@ -3713,15 +3756,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               bottom: 0,
               left: 0,
               right: 0,
-              child: _BottomControls(
+              // The one part of the screen that follows the playing
+              // position: rebuilt by its tick alone (PlayerState.look), and
+              // in a layer of its own, so the tick repaints the seek bar and
+              // its times, not the top bar's words (whose blurred halos
+              // Impeller draws anew whenever a word is painted again).
+              child: PlayerUi.ownLayer(Consumer(builder: (_, ref, __) => _BottomControls(
                 insets: _controlsInsets(context),
                 onEnterPip: () => _enterPip(context),
-                showScreenMode:
-                    _topBarItems().contains(TopBarItem.screenMode),
-                showPip: _topBarItems().contains(TopBarItem.pip),
+                showScreenMode: topBar.contains(TopBarItem.screenMode),
+                showPip: topBar.contains(TopBarItem.pip),
                 editing: _customising(state),
                 playFocus: _playFocus,
-                position: state.position,
+                position: ref.watch(
+                    playerControllerProvider.select((s) => s.position)),
                 duration: state.duration,
                 isPlaying: state.isPlaying,
                 aspectRatioMode: state.aspectRatioMode,
@@ -3767,7 +3815,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 // controller so the auto-hide timer resets on each
                 // touch — controls don't vanish mid-scrub.
                 onUserActivity: controller.showControls,
-              ),
+              ))),
             ),
 
           // === LAYER 7b: Shortcut feedback overlay (dark text badge) ===
@@ -4417,17 +4465,6 @@ class _TopBar extends StatelessWidget {
     this.sourceLabel,
   });
 
-  /// 24-hour HH:MM. No timer behind it: the top bar only exists while the
-  /// controls are on screen, and while they are the player rebuilds about once
-  /// a second anyway, so the clock stays current without anything ticking in
-  /// the background — which is exactly what a clock in a video player should
-  /// cost.
-  static String _clockNow() {
-    final n = DateTime.now();
-    return '${n.hour.toString().padLeft(2, '0')}:'
-        '${n.minute.toString().padLeft(2, '0')}';
-  }
-
   // Under Customise Items' card a D-pad must not reach these (the card
   // blocks touches, not focus; the 1.64.89 review).
   @override
@@ -4617,15 +4654,7 @@ class _TopBar extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6),
                 child: Semantics(
                   container: true,
-                  child: Text(
-                  _clockNow(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
+                  child: const _TopBarClock(),
                 ),
               ),
             // Sleep timer remaining badge
@@ -4779,11 +4808,11 @@ class _TopBar extends StatelessWidget {
                         maxLines: 1,
                         // A button sets its own text style, not merged with
                         // FilmInk's: the halo is named here.
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          shadows: PlayerUi.shadeInk,
+                          shadows: PlayerUi.ink,
                         ),
                       ),
                     ),
@@ -5741,6 +5770,60 @@ class _LadderSwipePreviewState extends State<_LadderSwipePreview> {
           gaplessPlayback: true,
           errorBuilder: (_, __, ___) => const SizedBox(width: 192, height: 108),
         ),
+      ),
+    );
+  }
+}
+
+/// The top bar's clock, 24-hour HH:MM. It wakes once a minute, at the
+/// minute, and only while it is on screen (the top bar exists only while
+/// the controls are up). It had no timer: it counted on the player
+/// rebuilding once a second for the playing position, which the screen no
+/// longer does (PlayerState.look, 27 Nov 2026).
+class _TopBarClock extends StatefulWidget {
+  const _TopBarClock();
+
+  @override
+  State<_TopBarClock> createState() => _TopBarClockState();
+}
+
+class _TopBarClockState extends State<_TopBarClock> {
+  Timer? _timer;
+
+  void _arm() {
+    final n = DateTime.now();
+    _timer = Timer(
+        Duration(seconds: 60 - n.second, milliseconds: -n.millisecond + 50),
+        () {
+      if (!mounted) return;
+      setState(() {});
+      _arm();
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _arm();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final n = DateTime.now();
+    return Text(
+      '${n.hour.toString().padLeft(2, '0')}:'
+      '${n.minute.toString().padLeft(2, '0')}',
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        fontFeatures: [FontFeature.tabularFigures()],
       ),
     );
   }

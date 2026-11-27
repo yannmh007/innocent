@@ -1122,7 +1122,7 @@ extension PlayerPlayback on PlayerController {
     if (!mounted) return;
     final live = _ref.read(videoPlayerServiceProvider).position;
     if (live > Duration.zero && live.inSeconds != state.position.inSeconds) {
-      state = state.copyWith(position: live);
+      state = state.withPosition(live);
     }
   }
 

@@ -201,7 +201,7 @@ class _AudioSyncSheetState extends State<AudioSyncSheet> {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 PlayerUi.pad(context), 0, PlayerUi.pad(context) - 8, 16),
-            child: PanelStepperRow(
+            child: PlayerUi.ownLayer(PanelStepperRow(
               icon: Icons.schedule,
               label: s.pwTiming,
               value: AudioSyncSheet.format(_ms),
@@ -210,7 +210,7 @@ class _AudioSyncSheetState extends State<AudioSyncSheet> {
               onReset: () => _set(0),
               minusTooltip: s.pwDecrease(s.saDelay),
               plusTooltip: s.pwIncrease(s.saDelay),
-            ),
+            )),
           ),
         ),
       ],

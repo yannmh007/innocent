@@ -118,7 +118,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
           child: Align(
             alignment: Alignment.topCenter,
             child: SingleChildScrollView(
-              child: ConstrainedBox(
+              child: PlayerUi.ownLayer(ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 568),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -128,7 +128,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: DefaultTextStyle.merge(
-                      style: const TextStyle(shadows: PlayerUi.shadeInk),
+                      style: TextStyle(shadows: PlayerUi.ink),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -180,7 +180,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ),
           ),
         ),

@@ -185,6 +185,9 @@ Future<void> pumpPlayer(
   required String lang,
   double textScale = 1.0,
   FakePlayerService? engine,
+  // A vault film, or a protected one (FLAG_SECURE).
+  bool isPrivate = false,
+  bool secureScreen = false,
 }) async {
   final w = landscape ? phone.height : phone.width;
   final h = landscape ? phone.width : phone.height;
@@ -244,10 +247,12 @@ Future<void> pumpPlayer(
                 routes: [
                   GoRoute(
                     path: 'player',
-                    builder: (_, __) => const PlayerScreen(
+                    builder: (_, __) => PlayerScreen(
                       videoUri:
                           'file:///storage/emulated/0/Movies/The Long Road Home (2024) 1080p WEB-DL.mkv',
                       title: 'The Long Road Home (2024) 1080p WEB-DL.mkv',
+                      isPrivate: isPrivate,
+                      secureScreen: secureScreen,
                     ),
                   ),
                 ],

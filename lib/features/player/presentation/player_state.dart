@@ -137,6 +137,15 @@ const String kPlayerDamagedStretch =
 class PlayerState {
   // Playback
   final Duration position;
+
+  /// Everything the screen shows but the playing [position]: a new one with
+  /// every change ([copyWith]) except the position's own ([withPosition]).
+  /// The player screen rebuilds when it changes; the seek bar and its times
+  /// alone watch [position]. Why (27 Nov 2026, the owner: "⋮'s menu
+  /// stutters when scrolled"): the screen watched the whole state, and each
+  /// second of the film rebuilt all of it, ⋮ open over it: 707 elements a
+  /// tick, every tile and check box (test/player_smoothness_test.dart).
+  final Object look;
   final Duration duration;
   final bool isPlaying;
   final bool isBuffering;
@@ -356,9 +365,14 @@ class PlayerState {
     this.outroStartMs,
     this.pendingResumePosition,
     this.activeIndicator,
+    this.look = _firstLook,
   });
 
+  /// The film has played to [p]: nothing else changed ([look] kept).
+  PlayerState withPosition(Duration p) => copyWith(position: p, keepLook: true);
+
   PlayerState copyWith({
+    bool keepLook = false,
     Duration? position,
     Duration? duration,
     bool? isPlaying,
@@ -417,6 +431,7 @@ class PlayerState {
     Object? activeIndicator = _sentinel,
   }) {
     return PlayerState(
+      look: keepLook ? look : Object(),
       position: position ?? this.position,
       duration: duration ?? this.duration,
       isPlaying: isPlaying ?? this.isPlaying,
@@ -501,3 +516,4 @@ class PlayerState {
 }
 
 const Object _sentinel = Object();
+const Object _firstLook = Object();

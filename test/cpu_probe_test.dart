@@ -41,4 +41,52 @@ void main() {
     final r = CpuProbe.summarise(s, {1: const CpuSample('1.ui', 102)}, 10, 0)!;
     expect(r.quiet, isTrue);
   });
+
+  test('the 10 s line carries the frames\' timing when there is one', () {
+    final s = {1: const CpuSample('1.ui', 100)};
+    final r = CpuProbe.summarise(s, {1: const CpuSample('1.ui', 200)}, 10, 100,
+        timing: 'b90 2.0 r90 9.0 ms')!;
+    expect(r.text, 'app 10% · 10.0fps · b90 2.0 r90 9.0 ms · 1.ui 10%');
+  });
+
+  group('FrameWindow', () {
+    test('percentiles by nearest rank', () {
+      final xs = [for (var i = 1; i <= 100; i++) i];
+      expect(FrameWindow.percentile(xs, 50), 50);
+      expect(FrameWindow.percentile(xs, 90), 90);
+      expect(FrameWindow.percentile(xs, 99), 99);
+      expect(FrameWindow.percentile([7], 99), 7);
+      expect(FrameWindow.percentile([], 50), 0);
+    });
+
+    test('a frame is late when its build or its raster overran', () {
+      final w = FrameWindow();
+      // 120 frames: 100 quick, 15 with a slow raster, 5 with a slow build.
+      for (var i = 0; i < 100; i++) {
+        w.addMicros(2000, 6000);
+      }
+      for (var i = 0; i < 15; i++) {
+        w.addMicros(2000, 21000);
+      }
+      for (var i = 0; i < 5; i++) {
+        w.addMicros(30000, 6000);
+      }
+      expect(w.count, 120);
+      expect(w.over(16667), 20);
+      expect(w.over(8333), 20);
+      expect(w.brief(), 'b90 2.0 r90 21 ms · late 20');
+      final d = w.describe(2, 120);
+      expect(d, startsWith('n=120 fps=60.0 hz=120 '));
+      expect(d, contains('build=2.0/2.0/30/30 raster=6.0/21/21/21 ms'));
+      expect(d, contains('over16=20 (16.7%) over8.3=20 (16.7%)'));
+      w.clear();
+      expect(w.brief(), isNull);
+      expect(w.describe(1, 60), 'n=0 fps=0.0');
+    });
+
+    test('at 60 Hz there is no second budget', () {
+      final w = FrameWindow()..addMicros(1000, 1000);
+      expect(w.describe(1, 60), isNot(contains('over8')));
+    });
+  });
 }

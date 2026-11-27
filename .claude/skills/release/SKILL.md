@@ -14,8 +14,14 @@ files, minus what must not ship. Nothing is merged.
   (`git rev-list HEAD -- f` and compare blobs). Only `pubspec.yaml` and
   `lib/core/app_version.dart` should differ on main alone; anything else is
   main-only work and must be kept.
-- Never ship: `test_device/results/**`; lab hooks (`lib/app.dart` tour skip,
-  `ExoEngine.rungKbps`, `MediaKitPlayerService.ladderRungKbps`); the Google
+- Never ship: `test_device/results/**`; lab hooks (`lib/app.dart` tour skip
+  and its SmoothLab branch, `ExoEngine.rungKbps`,
+  `MediaKitPlayerService.ladderRungKbps`; the smoothness lab: the
+  player's lab/ folder (SmoothLab, branch only) and player_screen.dart's
+  `_labOpen`/`_labClose`/`_labPlaying` with their registration — PlayerUi's
+  lab switches (`labLook`, `ink`, `labMask`, `labBoundary`, `labTick`)
+  fold to the build's own values without INNOCENT_LAB and may ship, as
+  CpuProbe's FrameWindow and markStart/markEnd do); the Google
   sign-in nonce (`api_account_repository.dart`, `test/google_sign_in_gate_test.dart`)
   until the owner has signed in once with a build that carries it. Check
   BACKLOG §0 "Next app release" for the current list.
@@ -49,7 +55,12 @@ files, minus what must not ship. Nothing is merged.
 - `python3 tool/check.py` in the worktree; `git diff --cached --stat <branch>`
   must show only the exclusions and the version.
 - Commit as `Claude <noreply@anthropic.com>`, message: what users get, what
-  is server-side, the run ids that proved it, what is left out by design.
+  is server-side, the run ids that proved it, what is left out by design,
+  ending with the session's Co-Authored-By and Claude-Session lines (an
+  amended message loses them: 1.64.89's main commit went out without).
+- Before the push, the reviewer agent on the tree's diff; fix what it
+  finds and have it look at the delta (1.64.89: five findings, one an
+  overflow on the most common phones).
 
 ## 4. Ship
 - **Not while GitHub's release downloads fail.** The Build fetches Gradle

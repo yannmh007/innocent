@@ -74,13 +74,110 @@ class PlayerUi {
   static const double shadeFade = 360;
   static const double shadeMidAt = 160;
   static const double shadeMid = 0.20;
+  ///
+  /// Two blurs, not three (27 Nov 2026, the smoothness session): a word's
+  /// blurred shadow is drawn anew whenever the word is painted again or
+  /// scrolls back into view (Impeller's TextShadowCache, see
+  /// [ownLayer]), and on the realme the third — a 1 dp rim under the 3 dp
+  /// one — was a third of that work for nothing: over the same five frames,
+  /// my/en/th, the lowest word over a white film read 4.04:1 with these two
+  /// against 3.77 with the three (median change +0.04; 4 words under 4.5
+  /// against 5). 1.64.89's three are [shadeInk3], for the lab's `base`.
   static const List<Shadow> shadeInk = <Shadow>[
-    // Tight, then soft: the first two keep a dark rim round every stroke,
-    // the last a quiet ground under a word.
+    // A dark rim round every stroke, then a quiet ground under a word.
+    Shadow(color: Color(0xF2000000), blurRadius: 3),
+    Shadow(color: Color(0x80000000), blurRadius: 10),
+  ];
+
+  /// 1.64.89's halo, three blurs (the smoothness lab's `base`).
+  static const List<Shadow> shadeInk3 = <Shadow>[
     Shadow(color: Color(0xFF000000), blurRadius: 1),
     Shadow(color: Color(0xE6000000), blurRadius: 3),
     Shadow(color: Color(0x80000000), blurRadius: 10),
   ];
+
+  /// The halo every word and icon on the shade and on the film carries:
+  /// [shadeInk] — or, in a lab build, the look the smoothness lab asked for
+  /// ([labLook]).
+  static List<Shadow> get ink {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return shadeInk;
+    return switch (_labInk) {
+      'none' => const <Shadow>[],
+      'rim' => rimInk,
+      'blur3' => shadeInk3,
+      _ => shadeInk,
+    };
+  }
+
+  /// A candidate for [shadeInk] that the GPU draws without a blur: the
+  /// dark rim as unblurred copies of the word round it (the smoothness lab,
+  /// 27 Nov 2026).
+  static const List<Shadow> rimInk = <Shadow>[
+    Shadow(color: Color(0xB3000000), offset: Offset(0.9, 0)),
+    Shadow(color: Color(0xB3000000), offset: Offset(-0.9, 0)),
+    Shadow(color: Color(0xB3000000), offset: Offset(0, 0.9)),
+    Shadow(color: Color(0xB3000000), offset: Offset(0, -0.9)),
+  ];
+
+  // LAB BUILDS ONLY (INNOCENT_LAB): the smoothness lab's switches
+  // (lab/smooth_lab.dart), so one run on one phone times 1.64.89's drawing
+  // beside each change. A store build never reads them: [ink], [labMask],
+  // [labBoundary] and [labTick] fold to the build's own choices.
+  static String? _labInk;
+  static bool? _labMask;
+  static bool? _labBoundary;
+  static bool? _labTick;
+  static bool? _labStretch;
+
+  /// Whether a list on the shade stretches at its ends (Android 12's
+  /// overscroll, the platform's own): while it does, Flutter draws the list
+  /// into a layer and scales it every frame. Measured on the realme beside
+  /// lists that stop at their ends (Test Lab 45979430510, eight pairs, every
+  /// other fix in): 2.8 % of frames late against 2.2 %, within the
+  /// run's spread — so the platform's stretch stays. The lab's `nostretch`
+  /// takes it away.
+  static bool get labStretch => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labStretch ?? true)
+      : true;
+
+  /// Whether a panel's list fades at its edges through a mask.
+  static bool get labMask => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labMask ?? true)
+      : true;
+
+  /// Whether a panel's list draws into a layer of its own (yes since
+  /// 27 Nov 2026; see [_FadingScrollState._boundary]).
+  static bool get labBoundary => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labBoundary ?? true)
+      : true;
+
+  /// Whether the player screen rebuilds on every position tick, as before
+  /// 27 Nov 2026 (PlayerState.look).
+  static bool get labTick => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labTick ?? false)
+      : false;
+
+  /// [child] in a layer of its own (a RepaintBoundary): a list a sheet or
+  /// panel scrolls, a bar of the controls. Recorded once, it is moved by a
+  /// scroll and kept while what is beside it is painted again — and with
+  /// it Impeller's cache of its words' blurred halos ([shadeInk]), which
+  /// holds only while the same recorded words are drawn again (27 Nov 2026;
+  /// see [_FadingScrollState._boundary]).
+  static Widget ownLayer(Widget child) =>
+      labBoundary ? RepaintBoundary(child: child) : child;
+
+  /// Sets the lab's switches from a look (SmoothLab.looks); an empty look
+  /// is the build's own.
+  static void labLook(Map<String, Object> look) {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return;
+    _labInk = look['ink'] as String?;
+    _labMask = look['mask'] as bool?;
+    _labBoundary = look['rb'] as bool?;
+    _labTick = look['tick'] as bool?;
+    _labStretch = look['stretch'] as bool?;
+  }
+
+  static void labReset() => labLook(const <String, Object>{});
 
   /// How far a panel or sheet reaches from its edge: as MX's (one square,
   /// the screen's short side — 384 dp, 46.6 % of the owner's 823 dp
@@ -471,28 +568,46 @@ class _FadingScrollState extends State<_FadingScroll> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
         return false;
       },
-      child: ShaderMask(
-        blendMode: BlendMode.dstIn,
-        shaderCallback: (r) => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _moreAbove ? Colors.transparent : Colors.white,
-            Colors.white,
-            Colors.white,
-            _moreBelow ? Colors.transparent : Colors.white,
-          ],
-          stops: const [0, 0.07, 0.88, 1],
-        ).createShader(r),
-        child: SingleChildScrollView(
+      child: _mask(
+        SingleChildScrollView(
           controller: _ctl,
           padding: widget.padding,
-          child: Column(
+          child: _boundary(Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: widget.children,
-          ),
+          )),
         ),
       ),
+    );
+  }
+
+  /// THE LIST IN A LAYER OF ITS OWN (27 Nov 2026, the owner on 1.64.89:
+  /// "⋮'s menu stutters when scrolled"). Without it each frame of a scroll
+  /// painted the whole list again — and Impeller keeps a word's blurred
+  /// halo ([PlayerUi.shadeInk]) only while the same recorded word is drawn
+  /// again (its TextShadowCache is keyed by the TextFrame, made anew each
+  /// time a paragraph is painted; a lone glyph, an icon, by its index), so
+  /// every frame blurred every word's three shadows from nothing: ⋮'s 44
+  /// paragraphs, 132 blurs a frame. In its own layer the list is recorded
+  /// once and only moved; the halos come from the cache.
+  Widget _boundary(Widget child) => PlayerUi.ownLayer(child);
+
+  Widget _mask(Widget child) {
+    if (!PlayerUi.labMask) return child;
+    return ShaderMask(
+      blendMode: BlendMode.dstIn,
+      shaderCallback: (r) => LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          _moreAbove ? Colors.transparent : Colors.white,
+          Colors.white,
+          Colors.white,
+          _moreBelow ? Colors.transparent : Colors.white,
+        ],
+        stops: const [0, 0.07, 0.88, 1],
+      ).createShader(r),
+      child: child,
     );
   }
 }
@@ -659,10 +774,10 @@ class PanelRow extends StatelessWidget {
                 ],
                 if (selected && !choice) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.check_rounded,
+                  Icon(Icons.check_rounded,
                       size: 22,
                       color: PlayerUi.textPrimary,
-                      shadows: PlayerUi.shadeInk),
+                      shadows: PlayerUi.ink),
                 ] else if (chevron) ...[
                   const SizedBox(width: 8),
                   const Icon(Icons.chevron_right_rounded,
@@ -1419,9 +1534,9 @@ class FilmInk extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(shadows: PlayerUi.shadeInk),
+      style: TextStyle(shadows: PlayerUi.ink),
       child: IconTheme.merge(
-        data: const IconThemeData(shadows: PlayerUi.shadeInk),
+        data: IconThemeData(shadows: PlayerUi.ink),
         child: child,
       ),
     );
@@ -1486,10 +1601,18 @@ class PlayerShade extends StatelessWidget {
               // The halo on every word and icon of the menu: the film shows
               // through the shade, so a word may sit on white.
               child: DefaultTextStyle.merge(
-                style: const TextStyle(shadows: PlayerUi.shadeInk),
+                style: TextStyle(shadows: PlayerUi.ink),
                 child: IconTheme.merge(
-                  data: const IconThemeData(shadows: PlayerUi.shadeInk),
-                  child: child,
+                  data: IconThemeData(shadows: PlayerUi.ink),
+                  // Its lists stretch at their ends, as the platform's do,
+                  // unless the lab asks (PlayerUi.labStretch).
+                  child: PlayerUi.labStretch
+                      ? child
+                      : ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context)
+                              .copyWith(overscroll: false),
+                          child: child,
+                        ),
                 ),
               ),
             ),
@@ -1624,7 +1747,10 @@ class PlayerDialogBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Flexible(child: SingleChildScrollView(child: child)),
+          // Its own layer, as a panel's list (_FadingScroll._boundary):
+          // a scroll moves the words, it does not paint them again.
+          Flexible(
+              child: SingleChildScrollView(child: PlayerUi.ownLayer(child))),
           if (actions.isNotEmpty) ...[
             const SizedBox(height: 10),
             OverflowBar(

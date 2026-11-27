@@ -13,11 +13,26 @@ on a phone. The player's building blocks live in
 ## 1. Principles
 1. **The picture is the hero.** Chrome recedes: one accent (brand blue
    `#3D8DF0`, `AppColors.specPrimary`), greys for everything else.
-2. **One layer at a time.** An open panel, sheet or dialog is frosted
-   glass over a dimmed picture, and the controls under it hide: the film
-   shows through as colour, nothing sharp does (11 Nov: the clock, ♪,
-   "Default" and the seek bar showed through a translucent ⋮; 12 Nov the
-   owner chose misted glass over moving the picture out of the way).
+2. **One layer at a time, and the film stays the film.** An open panel
+   or sheet sits on THE SHADE (the owner, 22 Nov 2026, after the
+   reference lab: "as MX — it disturbs the film less while it plays than
+   the misted glass"; and: "MX's lets more of the film through"): no
+   blur, no dim over the picture; the menu's black shade lets 40 %
+   of the film through — as much as MX's (measured over a white and a
+   black frame, grey levels only) — and thins out over 360 dp before its
+   edge (`PlayerShade`). Its words and icons carry a dark halo
+   (`PlayerUi.shadeInk`); titles stay white (blue read 1.3:1 over a bright
+   film); a tile's icon sits on a dark disc in a thin white ring. The
+   controls are MX's kinds (the owner, 26 Nov 2026: "as MX, all of it"):
+   one choice of a list is a radio ring with a dot, the subtitle tracks
+   are check boxes in a thin rectangle (marks are outlines, nothing fills
+   them until chosen), ⋮ has no title, a sheet's title no line under it,
+   CC's settings open below a "Settings ▾" row, and upright a ← before a
+   panel's or sheet's title closes it (no drag handle).
+   The controls under it hide (11 Nov: the clock, ♪,
+   "Default" and the seek bar showed through a translucent ⋮). Upright,
+   the film's subtitle goes over the open panel, as MX lifts its own. A
+   dialog keeps frosted glass over a dimmed picture (12 Nov).
 3. **Every menu looks like every other menu**: same surface, header, row,
    spacing. A new menu is built from player_ui.dart, not from scratch.
 4. **It fits everywhere**: 320–411 dp, portrait and landscape, Burmese,
@@ -29,14 +44,19 @@ on a phone. The player's building blocks live in
 ## 2. Tokens (dark; the player is always dark)
 | | value |
 |---|---|
-| scrim behind a panel/dialog | black 40 % (`PlayerUi.scrim`) |
-| surface (panel, sheet, dialog) | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| behind a panel or sheet | nothing: the picture is not dimmed (22 Nov) |
+| panel, sheet | **the shade** (`PlayerShade`): black at 60 % within the menu (40 % of the film shows, as MX's), 20 % at 160 dp before its edge, 0 at 360 dp; no blur, edge or corners; words and icons with `PlayerUi.shadeInk` (black 95 % blurred 3, a soft 50 % at 10 — two blurs since 27 Nov: each is drawn anew when a word is painted again); tile discs black 30 %. A list or bar on the shade is a layer of its own (`PlayerUi.ownLayer`). Black, not `#1C1C1E`: the grey left words 15 % less contrast over a bright film |
+| under the controls | `BarShade` (26 Nov): black 80 % at the screen's edge, held at 50 % across the top bar and the bottom row (where the words are), then to nothing over 64 dp beyond, taking no taps; their words and icons in `FilmInk` (the halo). MX's gradients ramp to nothing across the bar and fail over a white film (title 2.2:1, the elapsed time 1.5); held at 50 % the lowest word reads 5.8:1 |
+| shortcut row | every shortcut on a dark translucent disc (`AppColors.shortcutInactive`), upright and sideways, the speed's "1X" too; the chevron on a 28 dp one — as MX 3.4.3 (its discs vanish over a black frame: the Phase 45 audit read "none upright" off a dark film) |
+| scrim behind a dialog | black 40 % (`PlayerUi.scrim`) |
+| surface of a dialog or card | **frosted glass**: the film blurred (σ 30) under `#1C1C1E` at 72 % (`PlayerGlass`, `PlayerUi.glassTint`), a white 12 % edge; opaque `#1C1C1E` on a low-RAM or 32-bit-only phone (`PlayerUi.probeGlass`) |
+| reach of a panel or sheet | MX's (`PlayerUi.panelExtent`): the screen's short side, at most 46.6 % of the long side and at most 480 dp — upright that tall and the full width, the content `PlayerUi.pad` in (24 dp, 20 under 360, 32 from 600); sideways that wide (`sideWidth`, 280-480) plus the navigation strip |
 | raised (card, tile, chip on a surface) | white 12 % (`PlayerUi.raised`) |
 | hairline | white 10 % |
 | text | primary white 92 %, secondary 62 %, disabled 38 % |
-| selected | accent text/icon; container accent 16 % |
+| selected | on the shade (26 Nov): a choice's radio ring white with an accent dot (idle ring white 70 %, an outline: 3.7:1 over the shade on a white film); a check box filled accent with a white ✓ (idle an outline, white 70 %); a row that is not a choice, a white ✓ at its end; a tile, accent icon on accent 16 % in an accent ring (idle ring white 55 %, `PlayerUi.tileRing`) |
 | radius | sheet/panel 20, dialog 20, card/tile 14, pill full |
-| spacing | 4 dp grid; panel padding 20 (16 under 360 dp); section gap 20 |
+| spacing | 4 dp grid; panel padding 24 (20 under 360 dp: MX keeps panel content ~26 dp in, the owner chose it 22 Nov); section gap 20 |
 | rows | min 52 dp, icon 22 dp, gap 16 |
 | touch | 48 dp, never under 40 in the player chrome |
 | motion | 200 ms ease-out-cubic for panels; 150 ms fades |
@@ -44,33 +64,56 @@ on a phone. The player's building blocks live in
 Type (Roboto; Burmese falls back to Noto Sans Myanmar, nearly twice as tall
 per line — never a fixed height around text, see .claude/rules/flutter-app.md):
 panel title 18 sp w600 · section label 12.5 sp w600, secondary colour ·
-row title 15 sp w500 · row value 13 sp secondary · tile label 12 sp w500,
-two lines at most · caption 11 sp.
+row title 15 sp w500 · row value 13 sp white (grey read 2.35:1 over a
+white film) · tile label 12 sp w500 white (not 92 %: the smallest word on
+the shade), Burmese and Thai w600 (`PlayerUi.tileLabelIn`: their strokes
+are thinner), two lines at most ·
+caption 11 sp.
 
 ## 3. Components (all in player_ui.dart)
-- **Panel** (`PlayerPanel`, in the player's own Stack): landscape a side
-  panel from the right, up to 400 dp of content plus the navigation strip,
-  46 % of the width; portrait a bottom sheet up to 60 % of the height with a
-  drag handle, up to 55 % (at 72 % it rose over the whole picture: "it
-  goes up too far", owner, 12 Nov). The picture never moves. Header: title + optional trailing (capped at half the row,
+- **Panel** (`PlayerPanel`, in the player's own Stack): MX's reach
+  (`PlayerUi.panelExtent`, 22 Nov 2026: one square, the screen's short
+  side — 384 dp, 46.6 % of the owner's screen, both ways); landscape a side
+  panel from the right that wide plus the navigation strip; portrait a
+  bottom sheet that tall with a drag handle (it was up to 55 %, and at 72 %
+  it rose over the whole picture: "it goes up too far", owner, 12 Nov). On
+  the shade. The picture never moves. ⋮ has no title, upright or sideways
+  (26 Nov: "hide the word More"); its first tiles 34 dp down, as MX's. No
+  drag handle; the title's middle 28 dp down, as MX's; upright a ← before
+  it closes the panel (26 Nov). Header: title + optional trailing (capped at half the row,
   never two flexibles — they split the row and the action sat in the
   middle). Body scrolls, with a fade at an edge that has more. Slides in in
   220 ms: a widget test needs several frames (`_settle`), not one long pump.
 - **Section** (`PanelSection`): a small label, then its content; 18 dp apart.
 - **Row** (`PanelRow`): icon, title (15 sp regular — Noto Sans Myanmar has
   no medium, a w500 Latin title beside it read bolder), value, chevron.
-  For a list of choices `choice: true`: the check sits where the icon would,
-  so every title starts at one edge. `PanelSwitchRow` for a setting: the
-  row takes the tap, `PlayerSwitch` only shows it. `PanelCheckRow` for a
-  check box with words.
-- **Tile** (`PanelTile` in a `PanelGrid`): 48 dp tonal circle (raised
-  fill, no outline), 22 dp icon, label up to three lines. Four columns.
+  For a list of choices `choice: true`: a radio ring (`PanelRadio`) sits
+  where the icon would, so every title starts at one edge. `PanelSwitchRow`
+  for a setting: the row takes the tap, `PlayerSwitch` only shows it.
+  `PanelCheckRow` for a check box with words.
+- **Check box group** (`PanelCheckBox` of `PanelCheck`s): check boxes
+  (`PanelCheckMark`) and their names in a thin rectangle (white 40 %,
+  radius 6) — the subtitle tracks, as MX boxes them (26 Nov). The one on
+  is the one showing; tapped again, none shows: no "Off" row.
+- **Expanding row** (`PanelExpandRow`): icon, title and a caret; its rows
+  open below it (CC's "Settings": delay, text style, position). Shut when
+  the panel opens.
+- **Stepper** (`PanelStepperRow`): icon, name, then − value + (40 dp
+  tonal circles); a tap on the value puts it back. The subtitle's timing,
+  size and position; the audio delay (`AudioSyncSheet`, 50 ms a step, on
+  a sheet that lets the film through).
+- **Tile** (`PanelTile` in a `PanelGrid`): 44 dp circle (black 30 % disc,
+  a 1.2 dp white 55 % ring, as MX rings its tiles; MX's is 45), 22 dp icon,
+  label 6 dp below, up to three lines; rows ~88 dp apart in English (MX's
+  83; they were 110). Four columns.
 - **Card** (`PanelCard`): raised, radius 14, for a checklist or a group.
 - **Choice grid** (`PanelChoiceChip` in a `PanelGrid`): a small set of
   values (aspect ratios) all on screen at once instead of a long radio list.
-- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`): upright a glass
-  bottom sheet (dragged down to close); **sideways a glass side panel from
-  the right, the whole height**, like ⋮ (a bottom sheet held sideways had
+- **Sheet** (`showPlayerSheet` + `PlayerSheetHeader`, no line under the
+  title and no handle, upright a ← that closes it, 26 Nov): the panel's
+  reach and shade; upright a bottom sheet (dragged down to close, by any
+  part of it); **sideways a
+  side panel from the right, the whole height**, like ⋮ (a bottom sheet held sideways had
   ~300 dp and cut its lists and sliders). The form follows the window
   while the sheet is open — a turn or a resize keeps the content's state
   (Android 16 ignores the player's orientation requests on tablets). `barrierColor: Colors.transparent` for a sheet that
@@ -82,10 +125,29 @@ two lines at most · caption 11 sp.
 - **Dialog**: `PlayerDialog` inside the player's Stack, `PlayerRouteDialog`
   for showDialog; `PlayerDialogButton` — the main action filled, the other
   plain; max width 360–420.
+- **On the shade, not glass**: every right panel the shortcuts open —
+  Sleep Timer, Audio Effect / Equalizer — as MX's (26 Nov): `PlayerShade`,
+  no scrim, the panel's reach; their colours from `PlayerUi` (accent,
+  accentContainer, raised), never a copy of MX's blue.
+- **Over the picture, the controls gone** (MX's): the speed card
+  (`SpeedCard`, at the foot), the A-B bar (`ABRepeatBar`, under the row).
+  Customise Items is MX's edit view: the controls stay over a dimmed film
+  (`PlayerUi.scrim`), the optional ones in dashed boxes (`EditSlot`), the
+  card (`CustomiseTopBarCard`) under the top bar; the top bar shows what
+  fits, ♪, CC and the decoder first. A tap outside puts each away.
 - **Messages**: a passing message is the player toast
-  (`PlayerToastController.current` reaches it from a sheet); an error is
+  (`PlayerToastController.current` reaches it from a sheet); a shortcut's
+  answer (Night mode, Screenshot, Background play) is the badge at the
+  foot, centred, 24 dp up, 2 s, as MX's (Android's) toasts
+  (`_showOverlay`); an error is
   `PlayerErrorCard` — a card on the scrim, the engine's text through
   `scrubPlaybackError` (never a signed address on screen).
+- **On the film**: the controls' bars sit in `BarShade`; anything else
+  that writes straight on the picture (the shortcut row's labels) takes
+  `FilmInk`. Measure it: `LEGIBILITY_OUT=dir flutter test
+  test/player_legibility_test.dart` — orientations `port` (a wide film
+  upright: on its black bars), `tall` (an upright film: on the picture),
+  `land`.
 - **The controls under a layer**: `_chromeUp` in player_screen.dart hides
   the top bar, shortcut row and bottom row while a panel, a dialog, the
   error card or a route the player opened is up.
@@ -109,7 +171,8 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
   expanded 840–1200, large 1200+. The shell's rail takes over at 600.
 - A list or form page caps its width (`TabletConstrainedWidth`, 840; a
   reading page 640); hero, rails and grids use the width. A sheet or
-  panel is never full width on a large screen (≤ 640).
+  panel is never full width on a large screen (≤ 640) — but the player's,
+  below.
 - A screen that is a list of things to open shows two panes from 840 dp of
   window (`core/ui/list_detail.dart`: Settings, the Video tab's folders):
   `ListDetailPanes` (list 360–400 dp, white-10 % hairline, each pane its
@@ -117,6 +180,11 @@ Roboto and icons, test/fonts' Noto Sans Myanmar as NotoSansMyanmar-400/700).
   14, inset 8), a page that opens pages in a `DetailNavigator`. Below 840
   the phone's layout, untouched. A window that narrows keeps what the
   person opened; never push over the player.
+- The player's panels and sheets on a large screen (the owner, 26 Nov
+  2026, from MX on a tablet, reference lab 45828625924): MX's reach — the
+  short side, at most 480 dp, both ways — and upright the full width, the
+  content 32 dp in; not the 640 cap above. Built 26 Nov (night):
+  `panelExtent` = min(short side, 0.466 x long side, 480), `PlayerUi.pad`.
 - A grid adds columns with width (`Responsive.gridColumns`; posters
   `PosterMetrics.gridColumnsFor`): the phone's count is the minimum, a
   cell stays about a phone's size.
@@ -138,6 +206,37 @@ Top bar `← title … ♪ CC HW ⋮`; shortcut row with its expand chevron;
 bottom row `lock | ⏮ ⏯ ⏭ | screen-mode PiP`; ⋮ = "Video display" tiles +
 the shortcuts checklist. Do not invent a new layout to look modern; make
 this one precise.
+
+**MX is a reference for proportions and behaviour, never for looks** (the
+owner, 21 Nov 2026: Innocent aims at a global standard and takes nothing
+from MX but its reasoning).
+- Take from MX: how far a panel or sheet rises and where it anchors, its
+  width and height against the screen, how much of the picture stays
+  visible and how the controls give way, how it comes in and goes, the
+  proportions of its spacing.
+- Never take: its theme, colours, icons, images, animations or brand.
+- Where Innocent's choice is better it stays (rows of 52 dp; ♪ and CC one
+  tap away upright). Take MX's only where it answers something Innocent
+  lacks, and the owner decides each one: on 22 Nov the owner took MX's
+  reach (over the 55 % panel), its spacing (panel padding 24), its shade
+  (over the frosted glass) and its subtitle lifted over an upright panel;
+  on 26 Nov its kinds of control ("Innocent's UI is not pro, so make it
+  as MX, all of it"): radio rings, the subtitle tracks as boxed check
+  boxes, ringed tiles, no ⋮ title, no line under a sheet's title, CC's
+  settings behind "Settings ▾", the ← upright, MX's spacing of titles and
+  tiles (measured on the emulator, run 45775539414); on 26 Nov (later)
+  ♪'s Synchronization (Innocent's "Audio delay" row under the tracks,
+  after a hairline, opening a stepper) and the shortcut discs upright;
+  that night ⋮ as MX's (ten tiles, "More ›" turning the panel to "←
+  More" with Tools and Help in words) and the shortcuts' own screens:
+  the speed card (`SpeedCard`) and the A-B bar (`ABRepeatBar`), both on
+  the shade's black at 60 %, words with the halo.
+  Kinds of control and their places only —
+  drawn with Innocent's own icons and colours, never MX's.
+- Colour is tested against the film, not against MX: the player plays any
+  video, so every icon, label and panel must read over a dark, a bright, a
+  busy and a colourful frame — at least 3:1 for icons and controls, 4.5:1
+  for text. Measuring MX: BACKLOG §0, "Reference lab".
 
 ## 5. Prove it (every UI change)
 1. `test/player_layout_test.dart` with `PLAYER_SHOTS=<dir>`, the scenes the
