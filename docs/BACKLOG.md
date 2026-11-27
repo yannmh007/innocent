@@ -60,6 +60,14 @@ does it.
   refused. Tests: test/player_smoothness_test.dart (rebuilds, layers),
   player_functions_test.dart; whole suite 2163 pass, layout matrix
   (PLAYER_PHONES=all, my/en/th, 1.0/1.3) 4686 pass, check.py, analyze.
+  THE GATE on the final code a3b9b4a4, device lab S6 45985816711: genres
+  37/37, jumps 15/15, gestures 27/27 and 19/19, player audits 52 and 52
+  (as G2 45940757774). S5's genres and jumps stops were the runner's line
+  (master playlist 8 s, HttpDataSourceException); S3/S4's upright audit
+  stop at "Loop one" the auto-hide race (the long press 4.6 s after the
+  tap). Test Lab 45979430510 (the realme, the fifty-fifth): all thirteen
+  shortcuts, the screenshot "in the gallery". Today's Test Lab: five of
+  five used (51st-52nd before 08:00 UTC were yesterday's quota).
   NOT DONE (found): ♪ on a catalogue film (ExoPlayer) says "no audio
   tracks" — the ladder reports none — and the audio delay acts on libmpv
   only; a thick subtitle outline (stroke over 4 dp) is drawn as a path,
