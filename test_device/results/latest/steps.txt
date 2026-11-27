@@ -1,18 +1,17 @@
-[17:58:50] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[17:58:50] install
-[17:59:09] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[17:59:09] network: eth0 has qdisc clsact
-[17:59:09] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[17:59:37] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[17:59:37] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[17:59:37] library: pushing 24 files
-[18:00:06] library: MediaStore lists 24 videos
-[18:00:06] cold start
+[18:19:18] device: sdk_gphone_x86_64 / Android 11 / ABIs x86_64,x86,arm64-v8a,armeabi-v7a,armeabi
+[18:19:18] install
+[18:19:40] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[18:19:40] network: eth0 has qdisc clsact
+[18:19:40] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[18:20:08] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[18:20:08] nav bar: 
+[18:20:08] library: pushing 24 files
+[18:20:34] library: MediaStore lists 24 videos
+[18:20:34] cold start
 Status: ok
-TotalTime: 3533
-WaitTime: 3534
-[18:00:20] flow smooth
-[18:00:27] smooth: lab_fresh.mp4 pushed (8907435 B)
-[18:00:27] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:6 local:lab play:film:now:8 play:controls:now:6 title local play:film:now:8 title local:whole play:film:now:8 play:controls:now:6
-[18:03:51] flow smooth done
-[18:03:56] done
+TotalTime: 2024
+WaitTime: 2026
+[18:20:47] flow smooth
+[18:20:50] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:6 local:lab play:film:now:8 play:controls:now:6 title local play:film:now:8 play:film:t:8 play:film:mpvsv:8 play:controls:mpvsv:6
+[18:28:57] flow smooth done
+[18:29:00] done
