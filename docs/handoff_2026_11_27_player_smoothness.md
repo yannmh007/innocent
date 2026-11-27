@@ -1,5 +1,10 @@
 # Handoff, 27 Nov 2026: the player's smoothness (⋮ scroll stutters)
 
+> **DONE the same day (smoothness session)** — the cause, the fixes and
+> the phones' numbers are in BACKLOG §0 ("THE PLAYER'S SMOOTHNESS — FOUND,
+> FIXED, MEASURED"); the rule in .claude/rules/flutter-app.md. Not
+> released. What follows is the plan as it was written before.
+
 Written at the end of the session that shipped 1.64.89 (the player as MX
 Player's). The owner's report, the same day, on 1.64.89: **tap ⋮, scroll
 its menu: it stutters and lags** ("ထစ်ပြီး ကြာနေပါတယ်"). The owner wants

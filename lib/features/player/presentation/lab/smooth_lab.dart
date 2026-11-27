@@ -75,8 +75,8 @@ class SmoothLab {
     'base': {
       'ink': 'blur3', 'mask': true, 'rb': false, 'tick': true, 'stretch': true
     },
-    // Everything of `now` but the lists stretching at their ends again.
-    'stretch': {'stretch': true},
+    // Everything of `now` but the lists' stretch at their ends.
+    'nostretch': {'stretch': false},
     'noink': {'ink': 'none', 'rb': false, 'tick': true, 'stretch': true},
     'rim': {'ink': 'rim', 'rb': false, 'tick': true, 'stretch': true},
     'nomask': {

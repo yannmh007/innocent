@@ -130,14 +130,15 @@ class PlayerUi {
   static bool? _labStretch;
 
   /// Whether a list on the shade stretches at its ends (Android 12's
-  /// overscroll): while it does, Flutter draws the list into a layer of
-  /// its own and scales it every frame (a saveLayer and a filtered
-  /// transform). Measured, the Playing Queue's one-row list — nothing to
-  /// scroll, every fling a stretch — had 12-17 % of its frames late on the
-  /// realme and the OPPO with every fix in (Test Lab 45965335653).
+  /// overscroll, the platform's own): while it does, Flutter draws the list
+  /// into a layer and scales it every frame. Measured on the realme beside
+  /// lists that stop at their ends (Test Lab 45979430510, eight pairs, every
+  /// other fix in): 2.8 % of frames late against 2.2 %, within the
+  /// run's spread — so the platform's stretch stays. The lab's `nostretch`
+  /// takes it away.
   static bool get labStretch => const bool.fromEnvironment('INNOCENT_LAB')
-      ? (_labStretch ?? false)
-      : false;
+      ? (_labStretch ?? true)
+      : true;
 
   /// Whether a panel's list fades at its edges through a mask.
   static bool get labMask => const bool.fromEnvironment('INNOCENT_LAB')
@@ -1603,13 +1604,15 @@ class PlayerShade extends StatelessWidget {
                 style: TextStyle(shadows: PlayerUi.ink),
                 child: IconTheme.merge(
                   data: IconThemeData(shadows: PlayerUi.ink),
-                  // Its lists stop at their ends, as MX's do, instead of
-                  // stretching (PlayerUi.labStretch says what that cost).
-                  child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context)
-                        .copyWith(overscroll: PlayerUi.labStretch),
-                    child: child,
-                  ),
+                  // Its lists stretch at their ends, as the platform's do,
+                  // unless the lab asks (PlayerUi.labStretch).
+                  child: PlayerUi.labStretch
+                      ? child
+                      : ScrollConfiguration(
+                          behavior: ScrollConfiguration.of(context)
+                              .copyWith(overscroll: false),
+                          child: child,
+                        ),
                 ),
               ),
             ),
