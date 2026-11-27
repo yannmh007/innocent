@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:flutter/foundation.dart';
@@ -121,6 +120,9 @@ import 'video_geometry.dart';
 import 'widgets/gesture_hud.dart';
 import '../../../core/ui/share_media.dart';
 import '../../../core/ui/app_sheet.dart';
+import '../../video_hub/presentation/account_provider.dart' show apiClientProvider;
+import '../data/online_subtitles.dart';
+import 'widgets/online_subtitles_sheet.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final String videoUri;
@@ -2631,6 +2633,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   String get _title =>
       ref.read(playerControllerProvider.notifier).currentTitle ?? widget.title;
 
+  /// The film as a file on the phone (its hash for an online subtitle
+  /// search), or null for a stream or a content:// address.
+  static File? _localFile(String uri) {
+    if (uri.startsWith('/')) return File(uri);
+    if (uri.startsWith('file://')) {
+      try {
+        return File(Uri.parse(uri).toFilePath());
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
   /// CC: the panel, the track showing marked — the viewer's choice, else
   /// the one libmpv picked itself, asked once as the panel opens.
   void _openSubtitlePanel() {
@@ -4171,20 +4187,24 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               },
               onOnlineSubtitles: () {
                 controller.closePanel();
-                // Phase 40: share a constructed OpenSubtitles search URL so the
-                // user can open it in their browser. A real OpenSubtitles API
-                // integration would need an account + REST client; this is
-                // the most useful thing we can do without adding url_launcher.
-                // Encoded: a title with "#", "?", "&" or "/" broke the
-                // address it was put into.
-                final fileName = Uri.encodeComponent(_title)
-                    .replaceAll('%20', '+');
-                final url =
-                    'https://www.opensubtitles.org/en/search/sublanguageid-all/moviename-$fileName';
-                Share.share(
-                  url,
-                  subject: AppStrings.of(context).plSearchSubs(_title),
-                );
+                // P5 (28 Nov 2026): found and loaded in the app, through
+                // the subtitles-online function (it holds OpenSubtitles'
+                // key). Until then a search address was shared to a
+                // browser. Loaded into libmpv: a catalogue film plays on
+                // ExoPlayer, whose own subtitles come with the film.
+                final svc = ref.read(videoPlayerServiceProvider);
+                if (svc is MediaKitPlayerService && svc.playingLadder) {
+                  _toast.show(AppStrings.of(context).osOwnVideos,
+                      icon: Icons.subtitles_outlined);
+                  return;
+                }
+                unawaited(OnlineSubtitlesSheet.show(
+                  context,
+                  client: OnlineSubtitles(ref.read(apiClientProvider)),
+                  filmName: _title,
+                  file: _localFile(_videoUri),
+                  onLoad: controller.loadExternalSubtitle,
+                ));
               },
               onDismiss: controller.closePanel,
             ),

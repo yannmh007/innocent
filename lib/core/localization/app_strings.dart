@@ -2320,6 +2320,25 @@ class AppStrings {
   String plSubtitle(Object v) => _s('plSubtitle').replaceFirst('{v}', '$v');
   String plAspect(Object v) => _s('plAspect').replaceFirst('{v}', '$v');
   String plSearchSubs(Object v) => _s('plSearchSubs').replaceFirst('{v}', '$v');
+  // CC → Online (P5, 28 Nov 2026).
+  String get osTitle => _s('osTitle');
+  String get osSearchHint => _s('osSearchHint');
+  String get osSearch => _s('osSearch');
+  String get osLangMyEn => _s('osLangMyEn');
+  String get osLangEn => _s('osLangEn');
+  String get osLangAll => _s('osLangAll');
+  String get osSearching => _s('osSearching');
+  String get osNone => _s('osNone');
+  String get osOffline => _s('osOffline');
+  String get osBusy => _s('osBusy');
+  String get osDayUsedUp => _s('osDayUsedUp');
+  String get osNotReady => _s('osNotReady');
+  String get osFailed => _s('osFailed');
+  String get osLoaded => _s('osLoaded');
+  String get osOwnVideos => _s('osOwnVideos');
+  String get osMatch => _s('osMatch');
+  String get osCredit => _s('osCredit');
+  String osDownloads(Object v) => _s('osDownloads').replaceFirst('{v}', '$v');
   String plDecoder(Object v) => _s('plDecoder').replaceFirst('{v}', '$v');
   String get plDecoderDefault => _s('plDecoderDefault');
   String plPositionOf(Object a, Object b) => _s('plPositionOf').replaceFirst('{a}', '$a').replaceFirst('{b}', '$b');
@@ -3599,7 +3618,7 @@ class AppStrings {
     'faqA3': 'A: Settings → Audio → Audio delay. Or use the long-press menu in player → Audio sync.',
     'faqQ4': 'Q: Why is my screen dim after playing?',
     'faqA4': 'A: Fixed in build 56 — brightness is now restored when the player closes.',
-    'privacyBody': 'Your own videos, music, history, favourites and playlists stay on this phone.\n\nWhen you browse or play films, Innocent connects to its servers to show the catalogue, play the film and, if you sign in, keep your account. It also sends usage records (what was searched, opened or played, app version, device type, country), linked to your account if you are signed in, or to a random install ID if not. A record not yet sent is kept on this phone until it can be sent, 7 days at most. They never include your name or email, and your IP address is kept only as a one-way hash. Usage records are deleted after 90 days; only daily totals with no ID are kept.\n\nA report you choose to send (about a title, or “Report a problem”) reaches us as you send it.',
+    'privacyBody': 'Your own videos, music, history, favourites and playlists stay on this phone.\n\nWhen you browse or play films, Innocent connects to its servers to show the catalogue, play the film and, if you sign in, keep your account. It also sends usage records (what was searched, opened or played, app version, device type, country), linked to your account if you are signed in, or to a random install ID if not. A record not yet sent is kept on this phone until it can be sent, 7 days at most. They never include your name or email, and your IP address is kept only as a one-way hash. Usage records are deleted after 90 days; only daily totals with no ID are kept.\n\nA report you choose to send (about a title, or “Report a problem”) reaches us as you send it.\n\nOnline subtitles (CC → Online) send the film\'s name as you search for it, or a short fingerprint of the video file (never the file), with the install ID, to our server, which asks OpenSubtitles.com for you.',
     'aboutBody': 'A faithful MX Player-style media player for Android, built with Flutter and media_kit.',
     'addSubtitleFromUrl': 'Add Subtitle from URL',
     'subtitleUrlTip': 'Tip: at OpenSubtitles.org, copy the direct "Download" link (not the page URL). For zipped subtitles, extract first.',
@@ -4792,6 +4811,24 @@ class AppStrings {
     'plSubtitle': 'Subtitle: {v}',
     'plAspect': 'Aspect: {v}',
     'plSearchSubs': 'Search subtitles for {v}',
+    'osTitle': 'Online subtitles',
+    'osSearchHint': 'Film name',
+    'osSearch': 'Search',
+    'osLangMyEn': 'Burmese & English',
+    'osLangEn': 'English',
+    'osLangAll': 'All languages',
+    'osSearching': 'Searching…',
+    'osNone': 'No subtitles found. Try another name or all languages.',
+    'osOffline': 'No connection.',
+    'osBusy': 'Too many tries just now. Try again in a little while.',
+    'osDayUsedUp': 'Today\'s subtitle downloads are used up. Try again tomorrow.',
+    'osNotReady': 'Online subtitles are not ready yet.',
+    'osFailed': 'The subtitle service did not answer. Try again.',
+    'osLoaded': 'Subtitle loaded',
+    'osOwnVideos': 'Online subtitles are for videos on this phone.',
+    'osMatch': 'Made for this file',
+    'osCredit': 'Subtitles from OpenSubtitles.com',
+    'osDownloads': '{v} downloads',
     'plDecoder': 'Decoder: {v}',
     'plDecoderDefault': 'Default',
     'plPositionOf': 'Playback position {a} of {b}',
@@ -5989,7 +6026,7 @@ class AppStrings {
     'faqA3': 'ဖြေ: Settings → Audio → Audio delay။ ဒါမှမဟုတ် player ထဲမှာ ကြာကြာနှိပ်ပြီး → Audio sync ကို သုံးပါ။',
     'faqQ4': 'မေး: ဖွင့်ပြီးရင် မျက်နှာပြင် ဘာလို့ မှိန်နေတာလဲ?',
     'faqA4': 'ဖြေ: Build 56 မှာ ပြင်ပြီးပါပြီ — player ပိတ်တဲ့အခါ အလင်းရောင် ပြန်ကောင်းသွားပါပြီ။',
-    'privacyBody': 'သင့်ဖုန်းထဲက ဗီဒီယို၊ သီချင်း၊ ကြည့်ခဲ့သည့်မှတ်တမ်း၊ အကြိုက်ဆုံးများနှင့် playlist များသည် ဤဖုန်းထဲတွင်သာ ရှိပါသည်။\n\nဇာတ်ကား ရှာ/ကြည့်သည့်အခါ catalogue ပြရန်၊ ဇာတ်ကားဖွင့်ရန်နှင့် sign in ဝင်ထားလျှင် account ထိန်းရန် Innocent က server နှင့် ချိတ်ဆက်ပါသည်။ ဘာရှာ/ဖွင့်/ကြည့်ခဲ့သည်၊ app version၊ ဖုန်းအမျိုးအစား၊ နိုင်ငံ စသည့် အသုံးပြုမှုစာရင်းများကိုလည်း ပို့ပါသည်။ Sign in ဝင်ထားလျှင် account နှင့်၊ မဝင်ထားလျှင် ကျပန်း install ID နှင့် ချိတ်ပါသည်။ မပို့ရသေးသော စာရင်းကို ပို့နိုင်သည်အထိ ဤဖုန်းထဲတွင် ခဏ (အများဆုံး ၇ ရက်) သိမ်းထားပါသည်။ နာမည် သို့မဟုတ် email မပါပါ။ IP address ကိုလည်း ပြန်ဖော်၍မရသော hash အဖြစ်သာ သိမ်းပါသည်။ အသုံးပြုမှုစာရင်းများကို ၉၀ ရက်ပြည့်လျှင် ဖျက်ပါသည်။ ID မပါသော နေ့စဉ်စုစုပေါင်းများကိုသာ ဆက်ထားပါသည်။\n\nသင်ကိုယ်တိုင် ပို့သော report (ဇာတ်ကားအကြောင်း သို့မဟုတ် “ပြဿနာတစ်ခု report လုပ်ရန်”) များကို ပို့သည့်အတိုင်း ကျွန်ုပ်တို့ထံ ရောက်ပါသည်။',
+    'privacyBody': 'သင့်ဖုန်းထဲက ဗီဒီယို၊ သီချင်း၊ ကြည့်ခဲ့သည့်မှတ်တမ်း၊ အကြိုက်ဆုံးများနှင့် playlist များသည် ဤဖုန်းထဲတွင်သာ ရှိပါသည်။\n\nဇာတ်ကား ရှာ/ကြည့်သည့်အခါ catalogue ပြရန်၊ ဇာတ်ကားဖွင့်ရန်နှင့် sign in ဝင်ထားလျှင် account ထိန်းရန် Innocent က server နှင့် ချိတ်ဆက်ပါသည်။ ဘာရှာ/ဖွင့်/ကြည့်ခဲ့သည်၊ app version၊ ဖုန်းအမျိုးအစား၊ နိုင်ငံ စသည့် အသုံးပြုမှုစာရင်းများကိုလည်း ပို့ပါသည်။ Sign in ဝင်ထားလျှင် account နှင့်၊ မဝင်ထားလျှင် ကျပန်း install ID နှင့် ချိတ်ပါသည်။ မပို့ရသေးသော စာရင်းကို ပို့နိုင်သည်အထိ ဤဖုန်းထဲတွင် ခဏ (အများဆုံး ၇ ရက်) သိမ်းထားပါသည်။ နာမည် သို့မဟုတ် email မပါပါ။ IP address ကိုလည်း ပြန်ဖော်၍မရသော hash အဖြစ်သာ သိမ်းပါသည်။ အသုံးပြုမှုစာရင်းများကို ၉၀ ရက်ပြည့်လျှင် ဖျက်ပါသည်။ ID မပါသော နေ့စဉ်စုစုပေါင်းများကိုသာ ဆက်ထားပါသည်။\n\nသင်ကိုယ်တိုင် ပို့သော report (ဇာတ်ကားအကြောင်း သို့မဟုတ် “ပြဿနာတစ်ခု report လုပ်ရန်”) များကို ပို့သည့်အတိုင်း ကျွန်ုပ်တို့ထံ ရောက်ပါသည်။\n\nအွန်လိုင်း စာတန်းထိုး (CC → Online) သုံးလျှင် သင်ရှာသည့် ဇာတ်ကားအမည် သို့မဟုတ် ဗီဒီယိုဖိုင်၏ fingerprint အတိုလေး (ဖိုင်ကိုယ်တိုင် မဟုတ်) နှင့် install ID ကို ကျွန်ုပ်တို့ server သို့ ပို့ပြီး server က OpenSubtitles.com ကို သင့်ကိုယ်စား မေးပါသည်။',
     'aboutBody': 'MX Player ပုံစံအတိုင်း တည်ဆောက်ထားတဲ့ Android media player ဖြစ်ပြီး Flutter နဲ့ media_kit ကို အသုံးပြုထားပါတယ်။',
     'addSubtitleFromUrl': 'URL မှ စာတန်းထိုး ထည့်မယ်',
     'subtitleUrlTip': 'အကြံပြုချက်: OpenSubtitles.org မှာ "Download" link တိုက်ရိုက်ကို ကူးပါ (page URL မဟုတ်ပါ)။ Zip ဖိုင်ဆိုရင် အရင်ဖြည်ပါ။',
@@ -7163,6 +7200,24 @@ class AppStrings {
     'plSubtitle': 'စာတန်း: {v}',
     'plAspect': 'အချိုး: {v}',
     'plSearchSubs': '{v} အတွက် စာတန်း ရှာ',
+    'osTitle': 'အွန်လိုင်း စာတန်းထိုး',
+    'osSearchHint': 'ဇာတ်ကား အမည်',
+    'osSearch': 'ရှာမည်',
+    'osLangMyEn': 'မြန်မာ နှင့် English',
+    'osLangEn': 'English',
+    'osLangAll': 'ဘာသာစကား အားလုံး',
+    'osSearching': 'ရှာနေသည်…',
+    'osNone': 'စာတန်း မတွေ့ပါ။ အမည် တခြား သို့မဟုတ် ဘာသာစကား အားလုံးနဲ့ ရှာကြည့်ပါ။',
+    'osOffline': 'အင်တာနက် မရှိပါ။',
+    'osBusy': 'ကြိုးစားတာ များနေပါပြီ။ ခဏနေမှ ပြန်ကြိုးစားပါ။',
+    'osDayUsedUp': 'ဒီနေ့အတွက် စာတန်း download ကုန်ပါပြီ။ မနက်ဖြန် ပြန်ကြိုးစားပါ။',
+    'osNotReady': 'အွန်လိုင်း စာတန်းထိုး မအသင့် မဖြစ်သေးပါ။',
+    'osFailed': 'စာတန်း ဝန်ဆောင်မှုက မဖြေပါ။ ပြန်ကြိုးစားပါ။',
+    'osLoaded': 'စာတန်းထိုး ထည့်ပြီးပါပြီ',
+    'osOwnVideos': 'အွန်လိုင်း စာတန်းထိုးက ဖုန်းထဲက ဗီဒီယိုတွေအတွက်ပါ။',
+    'osMatch': 'ဒီဖိုင်အတွက် လုပ်ထားသည်',
+    'osCredit': 'OpenSubtitles.com မှ စာတန်းထိုးများ',
+    'osDownloads': 'download {v} ကြိမ်',
     'plDecoder': 'Decoder: {v}',
     'plDecoderDefault': 'မူလ',
     'plPositionOf': 'ဖွင့်နေတဲ့ နေရာ {a} / {b}',
@@ -8353,7 +8408,7 @@ class AppStrings {
     'faqA3': 'ตอบ: Settings → Audio → Audio delay หรือกดค้างในเพลเยอร์ → Audio sync',
     'faqQ4': 'ถาม: ทำไมหน้าจอมืดหลังเล่นเสร็จ?',
     'faqA4': 'ตอบ: แก้แล้วใน build 56 — ความสว่างจะกลับคืนเมื่อปิดเพลเยอร์',
-    'privacyBody': 'วิดีโอ เพลง ประวัติ รายการโปรด และเพลย์ลิสต์ของคุณอยู่ในโทรศัพท์เครื่องนี้เท่านั้น\n\nเมื่อคุณค้นหาหรือดูภาพยนตร์ Innocent จะเชื่อมต่อกับเซิร์ฟเวอร์เพื่อแสดงแคตตาล็อก เล่นภาพยนตร์ และดูแลบัญชีของคุณหากลงชื่อเข้าใช้ นอกจากนี้ยังส่งบันทึกการใช้งาน (สิ่งที่ค้นหา เปิด หรือดู เวอร์ชันแอป ประเภทอุปกรณ์ และประเทศ) โดยผูกกับบัญชีของคุณหากลงชื่อเข้าใช้ หรือกับ ID การติดตั้งแบบสุ่มหากไม่ได้ลงชื่อเข้าใช้ บันทึกที่ยังไม่ได้ส่งจะเก็บไว้ในโทรศัพท์เครื่องนี้ชั่วคราวจนกว่าจะส่งได้ (ไม่เกิน 7 วัน) บันทึกเหล่านี้ไม่มีชื่อหรืออีเมลของคุณ และที่อยู่ IP ถูกเก็บไว้เป็นค่าแฮชทางเดียวเท่านั้น บันทึกการใช้งานจะถูกลบหลังจาก 90 วัน โดยเก็บไว้เพียงยอดรวมรายวันที่ไม่มี ID\n\nรายงานที่คุณเลือกส่งเอง (เกี่ยวกับภาพยนตร์ หรือ “รายงานปัญหา”) จะถึงเราตามที่คุณส่ง',
+    'privacyBody': 'วิดีโอ เพลง ประวัติ รายการโปรด และเพลย์ลิสต์ของคุณอยู่ในโทรศัพท์เครื่องนี้เท่านั้น\n\nเมื่อคุณค้นหาหรือดูภาพยนตร์ Innocent จะเชื่อมต่อกับเซิร์ฟเวอร์เพื่อแสดงแคตตาล็อก เล่นภาพยนตร์ และดูแลบัญชีของคุณหากลงชื่อเข้าใช้ นอกจากนี้ยังส่งบันทึกการใช้งาน (สิ่งที่ค้นหา เปิด หรือดู เวอร์ชันแอป ประเภทอุปกรณ์ และประเทศ) โดยผูกกับบัญชีของคุณหากลงชื่อเข้าใช้ หรือกับ ID การติดตั้งแบบสุ่มหากไม่ได้ลงชื่อเข้าใช้ บันทึกที่ยังไม่ได้ส่งจะเก็บไว้ในโทรศัพท์เครื่องนี้ชั่วคราวจนกว่าจะส่งได้ (ไม่เกิน 7 วัน) บันทึกเหล่านี้ไม่มีชื่อหรืออีเมลของคุณ และที่อยู่ IP ถูกเก็บไว้เป็นค่าแฮชทางเดียวเท่านั้น บันทึกการใช้งานจะถูกลบหลังจาก 90 วัน โดยเก็บไว้เพียงยอดรวมรายวันที่ไม่มี ID\n\nรายงานที่คุณเลือกส่งเอง (เกี่ยวกับภาพยนตร์ หรือ “รายงานปัญหา”) จะถึงเราตามที่คุณส่ง\n\nคำบรรยายออนไลน์ (CC → Online) จะส่งชื่อภาพยนตร์ที่คุณค้นหา หรือลายนิ้วมือสั้นๆ ของไฟล์วิดีโอ (ไม่ใช่ตัวไฟล์) พร้อม ID การติดตั้ง ไปยังเซิร์ฟเวอร์ของเรา ซึ่งจะค้นหาใน OpenSubtitles.com แทนคุณ',
     'aboutBody': 'เครื่องเล่นสื่อสไตล์ MX Player สำหรับ Android สร้างด้วย Flutter และ media_kit',
     'addSubtitleFromUrl': 'เพิ่มซับไตเติลจาก URL',
     'subtitleUrlTip': 'เคล็ดลับ: ที่ OpenSubtitles.org ให้คัดลอกลิงก์ "Download" โดยตรง (ไม่ใช่ URL ของหน้า) ถ้าเป็น zip ให้แตกไฟล์ก่อน',
@@ -9520,6 +9575,24 @@ class AppStrings {
     'plSubtitle': 'คำบรรยาย: {v}',
     'plAspect': 'อัตราส่วน: {v}',
     'plSearchSubs': 'ค้นหาคำบรรยายสำหรับ {v}',
+    'osTitle': 'คำบรรยายออนไลน์',
+    'osSearchHint': 'ชื่อภาพยนตร์',
+    'osSearch': 'ค้นหา',
+    'osLangMyEn': 'พม่าและอังกฤษ',
+    'osLangEn': 'อังกฤษ',
+    'osLangAll': 'ทุกภาษา',
+    'osSearching': 'กำลังค้นหา…',
+    'osNone': 'ไม่พบคำบรรยาย ลองชื่ออื่นหรือทุกภาษา',
+    'osOffline': 'ไม่มีการเชื่อมต่อ',
+    'osBusy': 'ลองบ่อยเกินไป ลองใหม่ในอีกสักครู่',
+    'osDayUsedUp': 'ดาวน์โหลดคำบรรยายของวันนี้หมดแล้ว ลองใหม่พรุ่งนี้',
+    'osNotReady': 'คำบรรยายออนไลน์ยังไม่พร้อม',
+    'osFailed': 'บริการคำบรรยายไม่ตอบ ลองใหม่',
+    'osLoaded': 'โหลดคำบรรยายแล้ว',
+    'osOwnVideos': 'คำบรรยายออนไลน์ใช้กับวิดีโอในโทรศัพท์เครื่องนี้',
+    'osMatch': 'ตรงกับไฟล์นี้',
+    'osCredit': 'คำบรรยายจาก OpenSubtitles.com',
+    'osDownloads': 'ดาวน์โหลด {v} ครั้ง',
     'plDecoder': 'ตัวถอดรหัส: {v}',
     'plDecoderDefault': 'ค่าเริ่มต้น',
     'plPositionOf': 'ตำแหน่ง {a} จาก {b}',

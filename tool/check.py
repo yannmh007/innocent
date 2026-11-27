@@ -366,6 +366,11 @@ def main() -> int:
          'a control room that draws for an owner and throws for a viewer, a '
          '2-step code that verifies and then never retries the request it '
          'interrupted, or a sign-out in the middle of an upload'),
+        ('subtitles_os_test.mjs',
+         'online subtitles: the search URL, the list, the download',
+         'a viewer\'s stray parameter or an unchecked file id sent to the '
+         'one OpenSubtitles account every viewer shares, or a download link '
+         'handed to the app'),
     ]
     node = shutil.which('node')
     for name, what, guards in JS_TESTS:
