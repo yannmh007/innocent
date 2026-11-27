@@ -72,14 +72,20 @@ class SmoothLab {
   /// every position tick — 1.64.89. The others change one thing of it.
   /// `now`: the build's own choices.
   static const Map<String, Map<String, Object>> looks = {
-    'base': {'ink': 'blur3', 'mask': true, 'rb': false, 'tick': true},
-    'noink': {'ink': 'none', 'mask': true, 'rb': false, 'tick': true},
-    'rim': {'ink': 'rim', 'mask': true, 'rb': false, 'tick': true},
-    'nomask': {'ink': 'blur3', 'mask': false, 'rb': false, 'tick': true},
-    'rb': {'ink': 'blur3', 'mask': true, 'rb': true, 'tick': true},
-    'notick': {'ink': 'blur3', 'mask': true, 'rb': false, 'tick': false},
+    'base': {
+      'ink': 'blur3', 'mask': true, 'rb': false, 'tick': true, 'stretch': true
+    },
+    // Everything of `now` but the lists stretching at their ends again.
+    'stretch': {'stretch': true},
+    'noink': {'ink': 'none', 'rb': false, 'tick': true, 'stretch': true},
+    'rim': {'ink': 'rim', 'rb': false, 'tick': true, 'stretch': true},
+    'nomask': {
+      'ink': 'blur3', 'mask': false, 'rb': false, 'tick': true, 'stretch': true
+    },
+    'rb': {'ink': 'blur3', 'rb': true, 'tick': true, 'stretch': true},
+    'notick': {'ink': 'blur3', 'rb': false, 'tick': false, 'stretch': true},
     // Everything of `now` but the halo: 1.64.89's three blurs.
-    'ink3': {'ink': 'blur3', 'mask': true, 'rb': true, 'tick': false},
+    'ink3': {'ink': 'blur3', 'stretch': true},
     'now': <String, Object>{},
   };
 

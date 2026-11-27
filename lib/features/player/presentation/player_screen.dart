@@ -1496,8 +1496,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // documents folder, which nothing on the phone shows: "Saved:
       // screenshot_….png" and no way to find it (27 Nov 2026).
       try {
+        // The gallery names it after its title (MediaStore DISPLAY_NAME).
+        final name = 'Innocent_$ts';
         await PhotoManager.editor.saveImage(bytes,
-            filename: 'Innocent_$ts.png', relativePath: 'Pictures/Innocent');
+            filename: '$name.png', title: name, relativePath: 'Pictures/Innocent');
         PlaybackLog.add('screenshot: in the gallery (${bytes.length} B)');
         if (!context.mounted) return;
         _showOverlay(AppStrings.of(context).plSavedGallery);

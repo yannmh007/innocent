@@ -1018,7 +1018,7 @@ for flow in $FLOWS; do
       | sed 's/^/  frames lines: /' || true
     # The Screenshot shortcut's picture, where a viewer looks for it.
     { echo "screenshots in MediaStore:"; adb shell content query --uri content://media/external/images/media \
-        --projection _display_name:relative_path 2>/dev/null | grep -i 'Innocent_' || echo "  none"; } >> "$OUT/smooth.txt"
+        --projection _display_name:relative_path 2>/dev/null | grep -i 'Innocent' || echo "  none"; } >> "$OUT/smooth.txt"
 
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"
