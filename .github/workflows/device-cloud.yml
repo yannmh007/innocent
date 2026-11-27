@@ -115,10 +115,13 @@ jobs:
           # (docs/MEDIA_ENCRYPTION.md §6), as device-lab.yml builds one.
           # STREAM_AUTOJUMPS: after the checks, jumps in Auto to these
           # shares of the film, the jump rule on and off in turn (BACKLOG 5c).
+          # STREAM_SMOOTH: instead of the checks, the player's menus scrolled
+          # and timed on the phone (SmoothLab's plan; "1" its default).
           flutter build apk --release --target-platform android-arm64 \
             --dart-define=INNOCENT_LAB=true \
             --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
             --dart-define=INNOCENT_LAB_AUTOJUMPS="${STREAM_AUTOJUMPS:-}" \
+            --dart-define=INNOCENT_LAB_SMOOTH="${STREAM_SMOOTH:-}" \
             --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
           cp build/app/outputs/flutter-apk/app-release.apk app.apk
           # DEVICES32: phones that run 32-bit Android take the armeabi-v7a
@@ -129,6 +132,7 @@ jobs:
               --dart-define=INNOCENT_LAB=true \
               --dart-define=INNOCENT_LAB_TITLE="${STREAM_TITLE:-}" \
               --dart-define=INNOCENT_LAB_AUTOJUMPS="${STREAM_AUTOJUMPS:-}" \
+              --dart-define=INNOCENT_LAB_SMOOTH="${STREAM_SMOOTH:-}" \
               --dart-define=MEDIA_SEAL="${MEDIA_SEAL:-}"
             cp build/app/outputs/flutter-apk/app-release.apk app32.apk
             ls -la app32.apk

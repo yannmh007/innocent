@@ -1006,7 +1006,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         }
       }
       if (_positionIsVisible() && p.inSeconds != state.position.inSeconds) {
-        state = state.copyWith(position: p);
+        state = state.withPosition(p);
       }
     }));
     _subs.add(svc.durationStream.listen((d) {

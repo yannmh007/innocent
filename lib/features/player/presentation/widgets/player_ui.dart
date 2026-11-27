@@ -118,15 +118,26 @@ class PlayerUi {
       ? (_labMask ?? true)
       : true;
 
-  /// Whether a panel's list draws into a layer of its own.
+  /// Whether a panel's list draws into a layer of its own (yes since
+  /// 27 Nov 2026; see [_FadingScrollState._boundary]).
   static bool get labBoundary => const bool.fromEnvironment('INNOCENT_LAB')
-      ? (_labBoundary ?? false)
+      ? (_labBoundary ?? true)
+      : true;
+
+  /// Whether the player screen rebuilds on every position tick, as before
+  /// 27 Nov 2026 (PlayerState.look).
+  static bool get labTick => const bool.fromEnvironment('INNOCENT_LAB')
+      ? (_labTick ?? false)
       : false;
 
-  /// Whether the player screen rebuilds on every position tick.
-  static bool get labTick => const bool.fromEnvironment('INNOCENT_LAB')
-      ? (_labTick ?? true)
-      : true;
+  /// [child] in a layer of its own (a RepaintBoundary): a list a sheet or
+  /// panel scrolls, a bar of the controls. Recorded once, it is moved by a
+  /// scroll and kept while what is beside it is painted again — and with
+  /// it Impeller's cache of its words' blurred halos ([shadeInk]), which
+  /// holds only while the same recorded words are drawn again (27 Nov 2026;
+  /// see [_FadingScrollState._boundary]).
+  static Widget ownLayer(Widget child) =>
+      labBoundary ? RepaintBoundary(child: child) : child;
 
   /// Sets the lab's switches from a look (SmoothLab.looks); an empty look
   /// is the build's own.
@@ -542,8 +553,16 @@ class _FadingScrollState extends State<_FadingScroll> {
     );
   }
 
-  Widget _boundary(Widget child) =>
-      PlayerUi.labBoundary ? RepaintBoundary(child: child) : child;
+  /// THE LIST IN A LAYER OF ITS OWN (27 Nov 2026, the owner on 1.64.89:
+  /// "⋮'s menu stutters when scrolled"). Without it each frame of a scroll
+  /// painted the whole list again — and Impeller keeps a word's blurred
+  /// halo ([PlayerUi.shadeInk]) only while the same recorded word is drawn
+  /// again (its TextShadowCache is keyed by the TextFrame, made anew each
+  /// time a paragraph is painted; a lone glyph, an icon, by its index), so
+  /// every frame blurred every word's three shadows from nothing: ⋮'s 44
+  /// paragraphs, 132 blurs a frame. In its own layer the list is recorded
+  /// once and only moved; the halos come from the cache.
+  Widget _boundary(Widget child) => PlayerUi.ownLayer(child);
 
   Widget _mask(Widget child) {
     if (!PlayerUi.labMask) return child;
@@ -1692,7 +1711,10 @@ class PlayerDialogBody extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Flexible(child: SingleChildScrollView(child: child)),
+          // Its own layer, as a panel's list (_FadingScroll._boundary):
+          // a scroll moves the words, it does not paint them again.
+          Flexible(
+              child: SingleChildScrollView(child: PlayerUi.ownLayer(child))),
           if (actions.isNotEmpty) ...[
             const SizedBox(height: 10),
             OverflowBar(

@@ -958,6 +958,25 @@ for flow in $FLOWS; do
     continue
     ;;
   esac
+  # THE APP'S SCREENS, STILL AND SCROLLED (27 Nov 2026): the Video tab, the
+  # catalogue's front, its poster grid and the Me tab in turn (flows
+  # idle_*.yaml), a marker round each, so CpuProbe's 10 s lines between
+  # belong to that screen — still (a line with frames is a screen drawing
+  # on its own), then flung (b90/r90 and late frames). screens.txt.
+  case "$flow" in idle_screens)
+    for scr in local hub movies me; do
+      adb shell log -p i -t flutter "LAB screen $scr start" >/dev/null 2>&1 || true
+      ( cd "$OUT/shots" && maestro test --test-output-dir "$OUT/maestro_out" "$OLDPWD/test_device/flows/idle_$scr.yaml" ) >> "$OUT/maestro_$flow.txt" 2>&1 \
+        || log "idle_$scr: maestro exit $?"
+      adb shell log -p i -t flutter "LAB screen $scr end" >/dev/null 2>&1 || true
+    done
+    awk '/LAB phase idle_screens start/{on=1} on' "$OUT/logcat_raw.txt" 2>/dev/null \
+      | grep -o 'LAB screen.*\|LAB cpu.*' > "$OUT/screens.txt" || true
+    adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
+    log "flow $flow done"
+    continue
+    ;;
+  esac
   # THE PLAYER'S SMOOTHNESS (27 Nov 2026, the owner on 1.64.89: "⋮'s menu
   # stutters when scrolled"). The open film plays; the app itself opens
   # each menu, flings its list up and down and times every frame

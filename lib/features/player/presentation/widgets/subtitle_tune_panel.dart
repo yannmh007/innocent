@@ -204,7 +204,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
                     PlayerUi.pad(context), 0, PlayerUi.pad(context) - 8, 12),
-                child: Column(
+                child: PlayerUi.ownLayer(Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -238,7 +238,7 @@ class _SubtitleTunePanelState extends State<SubtitleTunePanel> {
                       onReset: () => _setPos(100),
                     ),
                   ],
-                ),
+                )),
               ),
             ),
           ],

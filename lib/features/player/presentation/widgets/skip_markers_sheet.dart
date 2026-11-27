@@ -52,7 +52,7 @@ class SkipMarkersSheet extends ConsumerWidget {
         Flexible(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(pad, 0, pad, 16),
-            child: Column(
+            child: PlayerUi.ownLayer(Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -108,7 +108,7 @@ class SkipMarkersSheet extends ConsumerWidget {
                   ),
                 ],
               ],
-            ),
+            )),
           ),
         ),
       ],

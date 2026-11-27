@@ -34,7 +34,7 @@ class LoopMenuSheet extends ConsumerWidget {
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
                 PlayerUi.pad(context) - 4, 8, PlayerUi.pad(context) - 4, 16),
-            child: Column(
+            child: PlayerUi.ownLayer(Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 PanelRow(
@@ -67,7 +67,7 @@ class LoopMenuSheet extends ConsumerWidget {
                   },
                 ),
               ],
-            ),
+            )),
           ),
         ),
       ],

@@ -1,0 +1,65 @@
+# THE APP'S SCREENS, STILL AND SCROLLED (27 Nov 2026, the smoothness
+# session: "a screen standing still draws no frames; a scroll near 60 fps").
+# Flow `idle_screens` (run.sh) runs idle_local, idle_hub, idle_movies,
+# idle_me in turn, an adb marker (`LAB screen NAME start|end`) round each,
+# so CpuProbe's 10 s lines in between belong to that screen: ~22 s still
+# (a line there is a screen drawing on its own), three flings each way
+# (b90/r90 and the late frames), ~12 s still again.
+# This one: the Video tab with the lab's library (LIBRARY in config.env).
+appId: com.innocent.media
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "Skip"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Allow.*"
+    optional: true
+- tapOn:
+    text: "Skip"
+    optional: true
+- tapOn:
+    text: "Video"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: s1_local
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 22000
+    optional: true
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 12000
+    optional: true

@@ -1,0 +1,50 @@
+# Part of flow `idle_screens` (run.sh; idle_local.yaml says why).
+# The catalogue's front (Video tab → Movies): rows of posters, sideways rails.
+appId: com.innocent.media
+---
+- tapOn:
+    text: "Video"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 5000
+- tapOn: "Movies"
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn:
+    text: "I am 18 or older.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: s2_hub
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 22000
+    optional: true
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 12000
+    optional: true

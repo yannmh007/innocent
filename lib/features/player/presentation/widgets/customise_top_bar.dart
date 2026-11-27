@@ -118,7 +118,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
           child: Align(
             alignment: Alignment.topCenter,
             child: SingleChildScrollView(
-              child: ConstrainedBox(
+              child: PlayerUi.ownLayer(ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 568),
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -180,7 +180,7 @@ class _CustomiseTopBarCardState extends State<CustomiseTopBarCard> {
                     ),
                   ),
                 ),
-              ),
+              )),
             ),
           ),
         ),

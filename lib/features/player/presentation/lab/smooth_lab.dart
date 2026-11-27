@@ -29,7 +29,7 @@ import '../widgets/player_ui.dart';
 ///    nothing scrolled), `film` (nothing over the film);
 ///  * LOOK a set of [PlayerUi] lab switches ([looks]): `base` is 1.64.89's
 ///    drawing, `now` the build's own;
-///  * SECONDS of scrolling (6 by default; a still MENU is timed as long).
+///  * SECONDS of scrolling (5 by default; a still MENU is timed as long).
 /// One play of every step, in order: the A/B is inside one run on one
 /// phone, never across runs (skill device-labs).
 class SmoothLab {
@@ -44,20 +44,22 @@ class SmoothLab {
   /// The default plan: ⋮ in every look, playing then paused; the other
   /// menus and the controls in the two that count.
   static const String defaultPlan =
-      'play:film:base:4 play:controls:base:3 play:controls:now:3 '
+      'play:film:base:4 play:film:now:4 '
+      'play:controls:base:3 play:controls:now:3 '
       'play:more:base play:more:noink play:more:nomask play:more:rb '
-      'play:more:rim play:more:now '
-      'pause:more:base pause:more:noink pause:more:now '
+      'play:more:notick play:more:now '
+      'pause:more:base pause:more:now '
       'play:morepage:base play:morepage:now '
       'play:cc:base play:cc:now play:audio:base play:audio:now '
-      'play:queue:base play:queue:now play:display:base play:display:now '
-      'play:shortcuts:base play:shortcuts:now '
-      'play:more:base:4 play:more:now:4';
+      'play:display:base play:display:now play:queue:base play:queue:now '
+      'play:shortcuts:base:3 play:shortcuts:now:3 '
+      'play:more:now play:more:base';
 
   /// The looks a step can ask for: each sets [PlayerUi]'s lab switches.
   /// `base`: the halo blurred three times (1, 3, 10), the full-panel fade
-  /// mask, no repaint boundary round a list, the screen rebuilt on every
-  /// position tick — 1.64.89. `now`: the build's own choices.
+  /// mask, no layer of its own for a list or a bar, the screen rebuilt on
+  /// every position tick — 1.64.89. The others change one thing of it.
+  /// `now`: the build's own choices.
   static const Map<String, Map<String, Object>> looks = {
     'base': {'ink': 'blur', 'mask': true, 'rb': false, 'tick': true},
     'noink': {'ink': 'none', 'mask': true, 'rb': false, 'tick': true},
@@ -86,7 +88,7 @@ class SmoothLab {
       for (final step in steps) {
         final p = step.split(':');
         if (p.length < 3) continue;
-        final seconds = p.length > 3 ? (double.tryParse(p[3]) ?? 6) : 6.0;
+        final seconds = p.length > 3 ? (double.tryParse(p[3]) ?? 5) : 5.0;
         await _step(p[0], p[1], p[2], seconds);
       }
       PlayerUi.labReset();

@@ -47,7 +47,7 @@ class DisplaySettingsSheet extends ConsumerWidget {
         Flexible(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(pad, 0, pad, 12),
-            child: Column(
+            child: PlayerUi.ownLayer(Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 _AdjustRow(
@@ -77,7 +77,7 @@ class DisplaySettingsSheet extends ConsumerWidget {
                   onChanged: (v) => set.state = set.state.copyWith(hue: v),
                 ),
               ],
-            ),
+            )),
           ),
         ),
       ],

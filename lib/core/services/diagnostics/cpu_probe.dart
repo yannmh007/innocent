@@ -146,8 +146,13 @@ class CpuProbe {
       if (line == null) return;
       // A process doing nothing is the normal case and not worth a line
       // every ten seconds; one in six keeps the record honest about it.
+      // A lab build prints every one: a screen standing still is read
+      // from them (flow idle_screens).
       if (line.quiet && _quietSkipped < 5) {
         _quietSkipped++;
+        if (const bool.fromEnvironment('INNOCENT_LAB')) {
+          debugPrint('LAB cpu ${line.text}');
+        }
         return;
       }
       _quietSkipped = 0;

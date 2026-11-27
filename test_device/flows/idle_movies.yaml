@@ -1,0 +1,41 @@
+# Part of flow `idle_screens` (run.sh; idle_local.yaml says why).
+# The poster grid (the hub's Movies).
+appId: com.innocent.media
+---
+- tapOn: "Movies"
+- extendedWaitUntil:
+    visible: "Sintel"
+    timeout: 30000
+- takeScreenshot: s3_movies
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 22000
+    optional: true
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,80%"
+    end: "50%,30%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- swipe:
+    start: "50%,30%"
+    end: "50%,80%"
+    duration: 250
+- extendedWaitUntil:
+    visible: "__nothing_has_this_text__"
+    timeout: 12000
+    optional: true

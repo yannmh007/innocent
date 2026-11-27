@@ -308,7 +308,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
         PlayerSheetHeader(title: AppStrings.of(context).cut, divider: false),
         Flexible(
       child: SingleChildScrollView(
-      child: Padding(
+      child: PlayerUi.ownLayer(Padding(
         padding: EdgeInsets.fromLTRB(
             PlayerUi.pad(context), 0, PlayerUi.pad(context), 20),
         child: Column(
@@ -442,7 +442,7 @@ class _CutSheetState extends ConsumerState<CutSheet> {
             ),
           ],
         ),
-      ),
+      )),
       ),
         ),
       ],
