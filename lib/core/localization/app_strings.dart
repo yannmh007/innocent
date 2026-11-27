@@ -2163,6 +2163,14 @@ class AppStrings {
   String get saLanguage => _s('saLanguage');
   String saLanguageSub(Object v) => _s('saLanguageSub').replaceFirst('{v}', '$v');
   String get saDelay => _s('saDelay');
+  // ♪'s MX items (27 Nov 2026, docs/handoff_2026_11_27_beyond_mx.md P4).
+  String get audDisable => _s('audDisable');
+  String get audStereoMode => _s('audStereoMode');
+  String get audStereo => _s('audStereo');
+  String get audMono => _s('audMono');
+  String get audSwap => _s('audSwap');
+  String get audNight => _s('audNight');
+  String get audNightNo => _s('audNightNo');
   String saDelaySub(Object v) => _s('saDelaySub').replaceFirst('{v}', '$v');
 
   String get ssFolder => _s('ssFolder');
@@ -4634,6 +4642,13 @@ class AppStrings {
     'saLanguage': 'Preferred audio language',
     'saLanguageSub': 'The language of the audio track to pick first. Currently: {v}',
     'saDelay': 'Audio delay',
+    'audDisable': 'Disable',
+    'audStereoMode': 'Stereo mode',
+    'audStereo': 'Stereo',
+    'audMono': 'Mono',
+    'audSwap': 'Left and right swapped',
+    'audNight': 'Night sound',
+    'audNightNo': 'Night sound needs Android 9 or later for this video',
     'saDelaySub': 'Move the sound earlier or later against the picture. Currently: {v}',
     'ssFolder': 'Subtitle folder',
     'ssFolderSame': 'Only the video\'s own folder',
@@ -6998,6 +7013,13 @@ class AppStrings {
     'saLanguage': 'အသံ ဘာသာစကား ဦးစားပေး',
     'saLanguageSub': 'ဦးစားပေး ဖွင့်မယ့် အသံ track ရဲ့ ဘာသာ။ လက်ရှိ: {v}',
     'saDelay': 'အသံ နောက်ကျချိန်',
+    'audDisable': 'အသံ ပိတ်',
+    'audStereoMode': 'စတီရီယို မုဒ်',
+    'audStereo': 'စတီရီယို',
+    'audMono': 'မိုနို (နှစ်ဖက် တူ)',
+    'audSwap': 'ဘယ်ညာ လဲထား',
+    'audNight': 'ညဘက် အသံ',
+    'audNightNo': 'ဒီဗီဒီယိုအတွက် ညဘက် အသံက Android 9 နဲ့ အထက်မှာပဲ ရပါတယ်',
     'saDelaySub': 'ပုံနဲ့ ကိုက်အောင် အသံကို စော / နောက်ကျ ရွှေ့ပါ။ လက်ရှိ: {v}',
     'ssFolder': 'စာတန်း folder',
     'ssFolderSame': 'ဗီဒီယိုရှိတဲ့ folder ထဲကသာ',
@@ -9348,6 +9370,13 @@ class AppStrings {
     'saLanguage': 'ภาษาเสียงที่ต้องการ',
     'saLanguageSub': 'ภาษาของแทร็กเสียงที่เลือกก่อน ปัจจุบัน: {v}',
     'saDelay': 'หน่วงเสียง',
+    'audDisable': 'ปิดเสียง',
+    'audStereoMode': 'โหมดสเตอริโอ',
+    'audStereo': 'สเตอริโอ',
+    'audMono': 'โมโน',
+    'audSwap': 'สลับซ้ายขวา',
+    'audNight': 'เสียงกลางคืน',
+    'audNightNo': 'เสียงกลางคืนสำหรับวิดีโอนี้ต้องใช้ Android 9 ขึ้นไป',
     'saDelaySub': 'เลื่อนเสียงให้เร็วหรือช้ากว่าภาพ ปัจจุบัน: {v}',
     'ssFolder': 'โฟลเดอร์คำบรรยาย',
     'ssFolderSame': 'เฉพาะโฟลเดอร์เดียวกับวิดีโอ',

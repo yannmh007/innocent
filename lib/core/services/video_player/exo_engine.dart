@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../diagnostics/playback_log.dart';
+import 'models/audio_track_info.dart';
 
 /// The Dart side of ExoStreamEngine (android/.../ExoStreamEngine.kt): Media3's
 /// ExoPlayer, for catalogue films that have a ladder, played as HLS from the
@@ -130,7 +131,17 @@ class ExoEngine {
   final _error = StreamController<String?>.broadcast();
   final _size = StreamController<Size?>.broadcast();
   final _first = StreamController<void>.broadcast();
+  final _audio = StreamController<List<AudioTrackInfo>>.broadcast();
   StreamSubscription<Map<Object?, Object?>>? _sub;
+
+  /// ♪ on a catalogue film (P4, 27 Nov 2026): the audio tracks the ladder
+  /// offers (an HLS rendition each, or the one muxed in), as ExoPlayer
+  /// reads them; [audioTrackOn] the one playing, [audioOff] when ♪'s
+  /// Disable is on. Ids are "group:track" in the player's own Tracks.
+  List<AudioTrackInfo> audioTracks = const <AudioTrackInfo>[];
+  String? audioTrackOn;
+  bool audioOff = false;
+  Stream<List<AudioTrackInfo>> get audioTracksStream => _audio.stream;
 
   Stream<Duration> get positionStream => _position.stream;
   Stream<Duration> get durationStream => _duration.stream;
@@ -224,6 +235,26 @@ class ExoEngine {
           rungKbps = (e['kbps'] as num?)?.toInt();
           PlaybackLog.add('exo rung ${h}p ${(e['kbps'] as num?)?.toInt() ?? 0} kbps');
         }
+      case 'audio':
+        final list = <AudioTrackInfo>[];
+        String? on;
+        for (final t in (e['tracks'] as List<Object?>? ?? const <Object?>[])) {
+          if (t is! Map) continue;
+          final tid = t['id'] as String?;
+          if (tid == null) continue;
+          list.add(AudioTrackInfo(
+            id: tid,
+            title: t['title'] as String?,
+            language: t['lang'] as String?,
+            codec: t['codec'] as String?,
+            channels: (t['ch'] as num?)?.toInt(),
+          ));
+          if (t['on'] == true) on = tid;
+        }
+        audioTracks = list;
+        audioTrackOn = on;
+        audioOff = e['off'] == true;
+        _audio.add(list);
       case 'tracks':
         heights = [
           for (final h in (e['heights'] as List<Object?>? ?? const <Object?>[]))
@@ -365,6 +396,23 @@ class ExoEngine {
     return _call('stop');
   }
 
+  /// ♪: plays the audio track [trackId] (one of [audioTracks]).
+  Future<bool> audioTrack(String trackId) =>
+      _call('audioTrack', <String, Object?>{'track': trackId});
+
+  /// ♪'s Disable: no sound at all, or back.
+  Future<bool> setAudioOff(bool off) => _call('audioOff', <String, Object?>{'off': off});
+
+  /// Synchronization: the sound [ms] later than the picture (negative:
+  /// sooner) — ExoPlayer's audio clock moved (ExoAudio.kt).
+  Future<bool> audioDelay(int ms) => _call('audioDelay', <String, Object?>{'ms': ms});
+
+  /// Stereo mode: 0 stereo, 1 mono, 2 left and right swapped.
+  Future<bool> stereo(int mode) => _call('stereo', <String, Object?>{'mode': mode});
+
+  /// Night mode: loud moments down, quiet ones up.
+  Future<bool> night(bool on) => _call('night', <String, Object?>{'on': on});
+
   /// Frames drawn and dropped so far, whether it plays, where it is.
   Future<Map<String, Object?>> stats() async {
     try {
@@ -409,6 +457,7 @@ class ExoEngine {
     _noteHeld('');
     await _call('release');
     await _sub?.cancel();
+    await _audio.close();
     for (final c in [_position, _duration, _buffered, _playing, _buffering, _completed, _error, _size, _first]) {
       await c.close();
     }

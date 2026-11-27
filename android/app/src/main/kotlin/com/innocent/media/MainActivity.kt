@@ -318,6 +318,8 @@ class MainActivity : AudioServiceFragmentActivity() {
         super.configureFlutterEngine(flutterEngine)
         PlayerLab.attach(this)
         PlayerLab.register(flutterEngine)
+        // ♪'s Night mode and levelling on libmpv's audio session.
+        SessionDynamics.register(flutterEngine)
         // Catalogue films with a ladder: ExoPlayer, as HLS (ExoStreamEngine).
         ExoStreamEngine.register(flutterEngine, applicationContext)
         PreviewFrames.register(flutterEngine)

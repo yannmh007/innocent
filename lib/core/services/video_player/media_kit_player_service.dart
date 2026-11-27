@@ -1210,6 +1210,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       // matters: the id option is read when the AO is created.
       await _setMpvProperty('ao', 'audiotrack');
       await _setMpvProperty('audiotrack-session-id', '$sid');
+      _audioSession = sid;
     } catch (e) {
       if (kDebugMode) debugPrint('media_kit_player_service.audio-session: $e');
     }
@@ -1304,31 +1305,16 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _setMpvProperty(key, value);
   }
 
-  /// Audit fix (Phase 4 #15): apply or clear a loudness-normalization
-  /// audio filter. libmpv exposes the `af` (audio filters) property
-  /// which accepts an ffmpeg filter graph; `dynaudnorm` is the
-  /// classic real-time loudness normalizer that doesn't need
-  /// look-ahead (so it works on streams). Setting `af` to empty
-  /// removes any filter chain.
-  ///
-  /// NOTE: this is best-effort. media_kit's libmpv build may not
-  /// include all ffmpeg filters; setProperty silently fails when a
-  /// filter is unsupported. The caller should treat the toggle as
-  /// "tried" rather than "guaranteed working".
+  /// Audit fix (Phase 4 #15): loudness levelling on or off (Settings →
+  /// Audio). It was libavfilter's `dynaudnorm` through mpv's `af`, best
+  /// effort — and this build has no such filter.
   Future<void> setLoudnessNormalization(bool enabled) async {
-    if (enabled) {
-      // dynaudnorm parameters tuned for music + speech:
-      //   g=15 → 15-sample sliding window (~300 ms at 48 kHz)
-      //   p=0.95 → target peak 95 % of max
-      //   m=10.0 → max gain factor 10 dB
-      //   r=0.0 → no RMS coupling between channels
-      //   s=20 → 20 ms compress/release smoothing
-      // These are conservative; users who need aggressive levelling
-      // can chain a stronger filter in a future setting.
-      await _setMpvProperty('af', 'dynaudnorm=g=15:p=0.95:m=10.0:r=0.0:s=20');
-    } else {
-      await _setMpvProperty('af', '');
-    }
+    // FOUND 27 Nov 2026: this libmpv's libavfilter has no `dynaudnorm`
+    // (nor any compressor) — read from libmpv.so — so the filter set
+    // here never acted. The levelling is DynamicsProcessing's now, on libmpv's
+    // audio session (gentler than Night mode, which wins when both are on).
+    _level = enabled;
+    await _applyDynamics();
   }
 
   @override
@@ -1356,10 +1342,19 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       _live((p) => p.stream.buffer, exo: (e) => e.bufferedStream);
 
   @override
-  Stream<List<AudioTrackInfo>> get audioTracksStream =>
-      _live((p) => p.stream.tracks).map(
-        (tracks) => tracks.audio.map(_mapAudio).toList(),
+  Stream<List<AudioTrackInfo>> get audioTracksStream => _live(
+        (p) => p.stream.tracks.map(
+          (tracks) => tracks.audio.map(_mapAudio).toList(),
+        ),
+        // A catalogue film: the ladder's own (♪ said "no audio tracks"
+        // there until 27 Nov 2026), the list it has now first.
+        exo: _exoAudioTracks,
       );
+
+  static Stream<List<AudioTrackInfo>> _exoAudioTracks(ExoEngine e) async* {
+    if (e.audioTracks.isNotEmpty) yield e.audioTracks;
+    yield* e.audioTracksStream;
+  }
 
   @override
   Stream<List<SubtitleTrackInfo>> get subtitleTracksStream =>
@@ -1729,6 +1724,12 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     _position = startAt ?? Duration.zero;
     // The viewer's volume (a boost above 100 % too) and speed carry over.
     await e.volume((_volumePct / 100).clamp(0.0, 4.0));
+    // ♪'s choices too: the delay, Stereo mode, Night mode (the engine
+    // keeps them across its players); Disable is the player's own, set
+    // again once it has its tracks.
+    await e.audioDelay(_audioDelayMs);
+    await e.stereo(_stereoMode);
+    await e.night(_night);
     try {
       final rate = _player.state.rate;
       if (rate > 0 && rate != 1.0) await e.rate(rate);
@@ -1736,6 +1737,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     final ok = await e.open(uri,
         startAt: startAt,
         autoplay: autoplay,
+        // (♪'s Disable, below, once the player exists.)
         target: armed?.target,
         maxHeight: armed?.maxHeight,
         kbps: networkKbps?.value ?? armed?.kbps,
@@ -1755,6 +1757,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       await _ladderFailed(uri, startAt: startAt, autoplay: autoplay);
       return;
     }
+    if (_audioOff) await e.setAudioOff(true);
     PlaybackLog.add('open ok');
   }
 
@@ -2183,6 +2186,13 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
 
   @override
   Future<void> setAudioTrack(AudioTrackInfo track) async {
+    if (_exoActive) {
+      if (_audioOff) await setAudioDisabled(false);
+      await _exo?.audioTrack(track.id);
+      return;
+    }
+    // A track chosen is sound again (Disable off).
+    _audioOff = false;
     final tracks = _player.state.tracks.audio;
     final mkTrack = tracks.firstWhere(
       (t) => t.id == track.id,
@@ -2985,7 +2995,7 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// not report its pick, so the subtitle menu said "None" over a film
   /// whose Burmese subtitles were on screen.
   Future<String?> currentTrackId(String kind) async {
-    if (_exoActive) return null;
+    if (_exoActive) return kind == 'audio' ? _exo?.audioTrackOn : null;
     return _getMpvProperty('current-tracks/$kind/id');
   }
 
@@ -3000,8 +3010,71 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// SECONDS so we convert. Range matches MX Player V3 (-2000..+2000 ms).
   Future<void> setAudioDelayMs(int ms) async {
     final clamped = ms.clamp(-2000, 2000);
+    _audioDelayMs = clamped;
+    // A catalogue film (ExoPlayer): its audio clock moved (ExoAudio.kt).
+    if (_exoActive) await _exo?.audioDelay(clamped);
     await _setMpvProperty(
         'audio-delay', (clamped / 1000.0).toStringAsFixed(3));
+  }
+
+  // ── ♪: Stereo mode, Night mode, Disable (P4, 27 Nov 2026) ─────────────
+  // The owner chose MX's ♪ items (docs/handoff_2026_11_27_beyond_mx.md §5):
+  // each acts on whichever engine plays and is carried to the next film.
+  // ExoPlayer shapes its own PCM (audio/AudioShape.kt); libmpv: Mono by its
+  // own downmix (`audio-channels`), Swap by a `pan` filter, Night and the
+  // levelling by Android's DynamicsProcessing on its audio session — its
+  // libavfilter has no compressor (SessionDynamics.kt).
+  int _audioDelayMs = 0;
+  int _stereoMode = 0;
+  bool _night = false;
+  bool _level = false;
+  bool _audioOff = false;
+  int _audioSession = 0;
+  static const MethodChannel _dynamics = MethodChannel('innocent/dynamics');
+
+  /// 0 stereo, 1 mono (both sides the average), 2 left and right swapped.
+  int get stereoMode => _stereoMode;
+  bool get nightMode => _night;
+  bool get audioDisabled => _audioOff;
+
+  Future<void> setStereoMode(int mode) async {
+    _stereoMode = mode.clamp(0, 2);
+    if (_exoActive) await _exo?.stereo(_stereoMode);
+    await _setMpvProperty('audio-channels', _stereoMode == 1 ? 'mono' : 'auto-safe');
+    await _setMpvProperty('af', _stereoMode == 2 ? 'lavfi=[pan=stereo|c0=c1|c1=c0]' : '');
+  }
+
+  /// Night mode: loud moments brought down, quiet speech lifted. False
+  /// when this phone cannot (libmpv below Android 9).
+  Future<bool> setNightMode(bool on) async {
+    _night = on;
+    if (_exoActive) {
+      await _exo?.night(on);
+      return true;
+    }
+    return _applyDynamics();
+  }
+
+  /// ♪'s Disable: the film silent, its tracks kept; off plays the one
+  /// that played.
+  Future<void> setAudioDisabled(bool off) async {
+    _audioOff = off;
+    if (_exoActive) {
+      await _exo?.setAudioOff(off);
+      return;
+    }
+    await _setMpvProperty('aid', off ? 'no' : 'auto');
+  }
+
+  Future<bool> _applyDynamics() async {
+    try {
+      final mode = _night ? 1 : (_level ? 2 : 0);
+      return await _dynamics.invokeMethod<bool>(
+              'set', <String, Object?>{'session': _audioSession, 'mode': mode}) ??
+          false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Phase 45 (audit): apply a global subtitle delay in milliseconds.

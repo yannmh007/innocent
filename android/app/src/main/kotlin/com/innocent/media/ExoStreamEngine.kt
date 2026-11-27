@@ -80,6 +80,14 @@ class ExoStreamEngine private constructor(
     private val selector = DefaultTrackSelector(context, factory)
     private var player: ExoPlayer? = null
 
+    // ♪ on a catalogue film (ExoAudio.kt): the sound shaped (Stereo mode,
+    // Night mode), the audio clock moved (Synchronization), the tracks the
+    // ladder offers (an HLS rendition each, or the one muxed in).
+    private val shape = com.innocent.media.audio.AudioShape()
+    @Volatile
+    private var audioDelayUs = 0L
+    private var tracksNow: Tracks? = null
+
     /** Scrubbing mode as last asked ([scrubbing]): what a suppressed playback is put down to. */
     private var scrubOn = false
     private var lastRung = -1
@@ -154,7 +162,7 @@ class ExoStreamEngine private constructor(
             // A minute of 240p and a minute of 1080p are both a minute.
             .setPrioritizeTimeOverSizeThresholds(true)
             .build()
-        val p = ExoPlayer.Builder(context)
+        val p = ExoPlayer.Builder(context, ExoAudio.renderers(context, shape) { audioDelayUs })
             .setTrackSelector(selector)
             .setBandwidthMeter(meter)
             .setLoadControl(load)
@@ -200,6 +208,8 @@ class ExoStreamEngine private constructor(
             }
 
             override fun onTracksChanged(tracks: Tracks) {
+                tracksNow = tracks
+                emitAudio(tracks)
                 val heights = mutableListOf<Int>()
                 // What Auto weighs each rung by (the master's BANDWIDTH, its
                 // fastest 20 s: HlsLadder.peakWindowMs), for the trail:
@@ -490,6 +500,72 @@ class ExoStreamEngine private constructor(
         val r = reopen ?: return false
         r(p.currentPosition, p.playWhenReady)
         return true
+    }
+
+    // ── ♪ (P4) ────────────────────────────────────────────────────────────
+    /**
+     * The audio tracks as ♪ lists them: `id` is "group:track" in the
+     * player's Tracks, `on` the one playing; `off` when audio is disabled.
+     */
+    private fun emitAudio(tracks: Tracks) {
+        val list = mutableListOf<Map<String, Any?>>()
+        tracks.groups.forEachIndexed { gi, g ->
+            if (g.type != C.TRACK_TYPE_AUDIO) return@forEachIndexed
+            for (i in 0 until g.length) {
+                val f = g.getTrackFormat(i)
+                list.add(mapOf(
+                    "id" to "$gi:$i",
+                    "title" to f.label,
+                    "lang" to f.language,
+                    "codec" to (f.codecs ?: f.sampleMimeType),
+                    "ch" to (if (f.channelCount > 0) f.channelCount else null),
+                    "on" to g.isTrackSelected(i),
+                    "ok" to g.isTrackSupported(i),
+                ))
+            }
+        }
+        val off = player?.trackSelectionParameters?.disabledTrackTypes?.contains(C.TRACK_TYPE_AUDIO) == true
+        emit(mapOf("id" to id, "e" to "audio", "tracks" to list, "off" to off))
+    }
+
+    /** Plays the audio track [trackId] ("group:track"); false when unknown. */
+    fun audioTrack(trackId: String): Boolean {
+        val p = player ?: return false
+        val t = tracksNow ?: return false
+        val parts = trackId.split(':')
+        val gi = parts.getOrNull(0)?.toIntOrNull() ?: return false
+        val ti = parts.getOrNull(1)?.toIntOrNull() ?: return false
+        val g = t.groups.getOrNull(gi) ?: return false
+        if (g.type != C.TRACK_TYPE_AUDIO || ti !in 0 until g.length) return false
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+            .setOverrideForType(androidx.media3.common.TrackSelectionOverride(g.mediaTrackGroup, ti))
+            .build()
+        return true
+    }
+
+    /** MX's Disable: no audio track at all ([off]), or back. */
+    fun audioOff(off: Boolean) {
+        val p = player ?: return
+        p.trackSelectionParameters = p.trackSelectionParameters.buildUpon()
+            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, off)
+            .build()
+        tracksNow?.let { emitAudio(it) }
+    }
+
+    /** Synchronization: the sound [ms] later than the picture (negative: sooner). */
+    fun audioDelay(ms: Long) {
+        audioDelayUs = ms.coerceIn(-10_000L, 10_000L) * 1000L
+    }
+
+    /** Stereo mode: 0 stereo, 1 mono, 2 left and right swapped. */
+    fun stereo(mode: Int) {
+        shape.stereo = mode.coerceIn(0, 2)
+    }
+
+    /** Night mode: loud moments down, quiet ones up. */
+    fun night(on: Boolean) {
+        shape.night = on
     }
 
     fun stats(): Map<String, Any?> {
@@ -848,6 +924,14 @@ class ExoStreamEngine private constructor(
                         "maxHeight" -> e.maxHeight((call.argument<Number>("height"))?.toInt())
                         "bandwidth" -> e.bandwidth((call.argument<Number>("bps"))?.toLong() ?: 0L)
                         "stop" -> e.stop()
+                        "audioTrack" -> {
+                            result.success(e.audioTrack(call.argument<String>("track") ?: ""))
+                            return@setMethodCallHandler
+                        }
+                        "audioOff" -> e.audioOff(call.argument<Boolean>("off") ?: false)
+                        "audioDelay" -> e.audioDelay((call.argument<Number>("ms"))?.toLong() ?: 0L)
+                        "stereo" -> e.stereo((call.argument<Number>("mode"))?.toInt() ?: 0)
+                        "night" -> e.night(call.argument<Boolean>("on") ?: false)
                         "release" -> {
                             e.release()
                             engines.remove(id)

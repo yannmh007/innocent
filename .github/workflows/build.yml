@@ -217,6 +217,12 @@ jobs:
       - name: Media seal on the JVM
         run: (cd tool/sealjvm && gradle test --no-daemon --console=plain)
 
+      # ♪'s Stereo mode and Night mode on ExoPlayer (audio/AudioShape.kt):
+      # plain Kotlin on 16-bit PCM, proved on a plain JVM before an APK
+      # carrying it is built (docs/handoff_2026_11_27_beyond_mx.md P4).
+      - name: Audio shaping on the JVM
+        run: (cd tool/audiojvm && gradle test --no-daemon --console=plain)
+
       # Errors fail the build. Warnings and infos do not — yet.
       #
       # analysis_options.yaml deliberately runs a wide rule set and there is a
