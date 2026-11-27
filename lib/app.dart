@@ -861,12 +861,14 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           }
         }());
         if (built.isNotEmpty) {
-          // Test Lab's game loop has 360 s; the jumps in Auto take ~140,
-          // the smoothness run ~250 (it closes the app itself when done).
+          // Test Lab's game loop has 360 s (600 for a smoothness run,
+          // device-cloud.yml); the jumps in Auto take ~140, the smoothness
+          // run up to ~440 with P1's looks and a local file (it closes the
+          // app itself when done).
           Timer(
               Duration(
                   seconds: smooth.isNotEmpty
-                      ? 345
+                      ? 585
                       : (autoJumps.isEmpty ? 240 : 330)),
               () => exit(0));
         }
