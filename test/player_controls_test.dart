@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:innocent/core/di/core_providers.dart';
 import 'package:innocent/core/services/preferences/extra_settings_service.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/ui/device_profile.dart';
@@ -896,7 +897,13 @@ void main() {
     await _settle(tester);
     expect(dashed, findsNothing);
     c.setInSystemPip(false);
-    c.closePanel();
+    await _settle(tester);
+    // Android saying PiP began (the Home button): the card goes too.
+    playerContainer!.read(pipServiceProvider).onPipModeChanged?.call(true);
+    await _settle(tester);
+    expect(_state().openPanel, SidePanel.none);
+    expect(find.byType(CustomiseTopBarCard), findsNothing);
+    playerContainer!.read(pipServiceProvider).onPipModeChanged?.call(false);
     await _settle(tester);
     await leavePlayer(tester);
   });

@@ -2329,7 +2329,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
     // MX's A-B bar is the player's own, not a panel: Back puts it away
     // too, as every other surface in the player (the 1.64.89 review).
-    if (_abBarOpen) {
+    if (_abBarOpen && _chromeUp(state)) {
       setState(() => _abBarOpen = false);
       return;
     }
@@ -4465,13 +4465,17 @@ class _TopBar extends StatelessWidget {
     final pill = menu != null &&
         menu.options.isNotEmpty &&
         (activeUri == null || menu.uri == activeUri);
-    double textWidth(String t, TextStyle st) => (TextPainter(
-          text: TextSpan(text: t, style: st),
-          textDirection: TextDirection.ltr,
-          textScaler: scaler,
-          maxLines: 1,
-        )..layout())
-            .width;
+    double textWidth(String t, TextStyle st) {
+      final tp = TextPainter(
+        text: TextSpan(text: t, style: st),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final w = tp.width;
+      tp.dispose();
+      return w;
+    }
     final pillLabel = !pill
         ? ''
         : menu.options
