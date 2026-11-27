@@ -63,6 +63,13 @@ final scenes = <Scene>[
   // ♪'s audio delay row (as MX's Synchronization), then its own sheet.
   Scene('audio_sync', (t, c, svc) async {
     await _tapIcon(t, Icons.music_note);
+    // ♪'s rows under the tracks (Disable since 27 Nov 2026) put the delay
+    // below the fold of a short window (a 411 dp split): scrolled to, as
+    // a viewer would.
+    if (find.text('0 ms').evaluate().isEmpty) {
+      await t.scrollUntilVisible(find.text('0 ms'), 60,
+          scrollable: find.byType(Scrollable).last);
+    }
     await t.tap(find.text('0 ms').last, warnIfMissed: false);
     await _settle(t);
   }),
