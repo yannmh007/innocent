@@ -369,6 +369,24 @@ def shortcuts(dump, package, dpi):
         print('%d %d %s %s' % ((b[0] + b[2]) // 2, (b[1] + b[3]) // 2, kind, lab))
 
 
+def sub(dump):
+    """MX's subtitle on screen: the box around its visible SubText views
+    (class names, never words), "x1 y1 x2 y2 lines"; nothing when none is
+    shown. SCREENS=subgest."""
+    boxes = []
+    for n in nodes(dump):
+        if not n.get('class', '').endswith('.SubText'):
+            continue
+        m = re.match(r'\[(\d+),(\d+)\]\[(\d+),(\d+)\]', n.get('bounds', ''))
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            if x2 > x1 and y2 > y1:
+                boxes.append((x1, y1, x2, y2))
+    if boxes:
+        print('%d %d %d %d %d' % (min(b[0] for b in boxes), min(b[1] for b in boxes),
+                                  max(b[2] for b in boxes), max(b[3] for b in boxes), len(boxes)))
+
+
 def main(argv):
     if len(argv) == 4 and argv[0] == 'splits':
         splits(argv[1], int(argv[2]), argv[3])
@@ -388,6 +406,8 @@ def main(argv):
         grid(argv[1], argv[2], argv[3], int(argv[4]))
     elif len(argv) == 4 and argv[0] == 'shortcuts':
         shortcuts(argv[1], argv[2], int(argv[3]))
+    elif len(argv) == 2 and argv[0] == 'sub':
+        sub(argv[1])
     elif len(argv) == 6 and argv[0] == 'topbar':
         topbar(argv[1], argv[2], int(argv[3]), int(argv[4]), int(argv[5]))
     else:

@@ -496,6 +496,8 @@ panels() {
   local total=0
   if [ "${SCREENS:-panels}" = fps ]; then
     fps_votes
+  elif [ "${SCREENS:-panels}" = subgest ]; then
+    subtitle_gestures
   elif [ "${SCREENS:-panels}" = shortcuts ]; then
     shortcut_screens
   else
@@ -536,6 +538,194 @@ fps_votes() {
     say "FPS $app: display $(grep -m1 -oE '(activeMode|mActiveMode|refresh-rate)[^,]*' "$d" || echo '?')"
     adb shell am force-stop "$pkg" >/dev/null 2>&1 || true
   done
+}
+
+# SCREENS=subgest (28 Nov 2026, docs/handoff_2026_11_28_beyond_mx_p1.md,
+# P5): what MX does with a finger ON its subtitle — a swipe along the line
+# (the previous or next line?), a drag up or down (moves it?), a pinch (its
+# size?), and the same swipe above the line (the screen's own seek). MX
+# alone, sideways, from a fresh open of its own copy each time, paused with
+# a line up. Measured: its SubText views' box (the tree: dumpsys), the
+# position (its media session), screenshots before, during and after (to
+# innocent-ref). A pinch needs two fingers: `input` has one, so the touch
+# screen is written with sendevent (root), after a calibration tap on ⋮
+# picks how a sideways point maps to the panel's axes.
+SUB=()
+TDEV=""; TMX=0; TMY=0; TMAP=""; ORI=""
+sg_sub() {  # MX's subtitle box now into SUB (x1 y1 x2 y2 views); false when none
+  quick_tree mx "$OUT/raw/quick.xml"
+  read -r -a SUB <<< "$(UI sub "$OUT/raw/quick.xml" || true)"
+  [ "${#SUB[@]}" -ge 4 ]
+}
+sg_pos() {  # MX's position (ms) from its media session, else ?
+  adb shell dumpsys media_session 2>/dev/null | tr -d '\r' \
+    | awk -v p="package=$MX_PACKAGE" 'index($0,p){on=1}
+        on && /PlaybackState/ { if (match($0,/position=-?[0-9]+/)) { print substr($0,RSTART+9,RLENGTH-9); f=1; exit } }
+        END { if (!f) print "?" }'
+}
+sg_open() {  # $1 copy, $2 play|pause: MX on it with a line of the subtitle up (SUB)
+  local i
+  adb shell am force-stop "$MX_PACKAGE"
+  open_film mx "/sdcard/Movies/ref_sg_$1/ref_sg$1.mp4"
+  for i in $(seq 1 30); do
+    sleep 0.5
+    sg_sub || continue
+    [ "$2" = play ] && return 0
+    adb shell input keyevent KEYCODE_MEDIA_PAUSE
+    sleep 1.5
+    sg_sub && return 0
+    # Paused in the gap between two lines: on to the next.
+    adb shell input keyevent KEYCODE_MEDIA_PLAY
+  done
+  return 1
+}
+sg_touch() {
+  local out
+  out=$(adb shell getevent -pl 2>/dev/null | tr -d '\r')
+  TDEV=$(printf '%s\n' "$out" | awk '/^add device/{d=$4} /ABS_MT_POSITION_X/{print d; exit}')
+  TMX=$(printf '%s\n' "$out" | awk -v d="$TDEV" '/^add device/{on=($4==d)} on && /ABS_MT_POSITION_X/{for(i=1;i<=NF;i++) if($i=="max"){v=$(i+1); gsub(/,/,"",v); print v; exit}}')
+  TMY=$(printf '%s\n' "$out" | awk -v d="$TDEV" '/^add device/{on=($4==d)} on && /ABS_MT_POSITION_Y/{for(i=1;i<=NF;i++) if($i=="max"){v=$(i+1); gsub(/,/,"",v); print v; exit}}')
+  ORI=$(adb shell dumpsys input 2>/dev/null | tr -d '\r' | grep -m1 -oE 'Viewport INTERNAL:.*' | grep -oE 'orientation=[0-9]' | cut -d= -f2 || true)
+  say "SUBGEST touch screen: ${TDEV:-none}, axes 0..${TMX:-?} x 0..${TMY:-?}, viewport orientation ${ORI:-?}"
+  [ -n "$TDEV" ] && [ "${TMX:-0}" -gt 0 ] && [ "${TMY:-0}" -gt 0 ]
+}
+raw_xy() {  # $1 $2: a point on the sideways screen -> the panel's raw "x y" (TMAP 1 or 3)
+  if [ "$TMAP" = 1 ]; then
+    echo "$(( TMX - $2 * (TMX + 1) / pw )) $(( $1 * (TMY + 1) / ph ))"
+  else
+    echo "$(( $2 * (TMX + 1) / pw )) $(( TMY - $1 * (TMY + 1) / ph ))"
+  fi
+}
+se_run() {  # the sendevent script in $OUT/raw/se.sh, on the device
+  adb push "$OUT/raw/se.sh" /data/local/tmp/se.sh >/dev/null 2>&1 && adb shell sh /data/local/tmp/se.sh
+}
+se_tap() {  # $1 $2: one finger down and up there
+  local r; r=$(raw_xy "$1" "$2")
+  { echo "d=$TDEV"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7001; sendevent \$d 3 53 ${r% *}; sendevent \$d 3 54 ${r#* }; sendevent \$d 1 330 1; sendevent \$d 0 0 0"
+    echo "sleep 0.08"
+    echo "sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
+  se_run
+}
+se_pinch() {  # $1 $2 centre, $3 $4 half-spread from/to (px, along the line), $5 steps
+  local cx=$1 cy=$2 a=$3 b=$4 n=${5:-15} k sp r0 r1
+  r0=$(raw_xy $((cx - a)) "$cy"); r1=$(raw_xy $((cx + a)) "$cy")
+  { echo "d=$TDEV"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 7101; sendevent \$d 3 53 ${r0% *}; sendevent \$d 3 54 ${r0#* }; sendevent \$d 1 330 1; sendevent \$d 0 0 0"
+    echo "sleep 0.05"
+    echo "sendevent \$d 3 47 1; sendevent \$d 3 57 7102; sendevent \$d 3 53 ${r1% *}; sendevent \$d 3 54 ${r1#* }; sendevent \$d 0 0 0"
+    for k in $(seq 1 "$n"); do
+      sp=$(( a + (b - a) * k / n ))
+      r0=$(raw_xy $((cx - sp)) "$cy"); r1=$(raw_xy $((cx + sp)) "$cy")
+      echo "sleep 0.03"
+      echo "sendevent \$d 3 47 0; sendevent \$d 3 53 ${r0% *}; sendevent \$d 3 54 ${r0#* }; sendevent \$d 3 47 1; sendevent \$d 3 53 ${r1% *}; sendevent \$d 3 54 ${r1#* }; sendevent \$d 0 0 0"
+    done
+    # Held a second at the end (the screen in the middle of it), then up.
+    echo "sleep 1.2"
+    echo "sendevent \$d 3 47 1; sendevent \$d 3 57 -1; sendevent \$d 0 0 0"
+    echo "sendevent \$d 3 47 0; sendevent \$d 3 57 -1; sendevent \$d 1 330 0; sendevent \$d 0 0 0"; } > "$OUT/raw/se.sh"
+  se_run
+}
+sg_calibrate() {  # TMAP: the mapping whose sendevent tap on ⋮ opens ⋮'s panel
+  local m n x y
+  for m in 1 3; do
+    sg_open "cal$m" pause || { note "calibration $m: no subtitle came"; continue; }
+    ensure_controls mx "$SW" "$SH" || { note "calibration $m: no controls"; continue; }
+    [ -n "${BTNS[0]:-}" ] || continue
+    read -r x y <<< "${BTNS[0]}"
+    cp "$OUT/raw/quick.xml" "$OUT/raw/before.xml"
+    TMAP=$m
+    se_tap "$x" "$y"
+    sleep 2.5
+    quick_tree mx "$OUT/raw/quick.xml"
+    n=$(UI added "$OUT/raw/before.xml" "$OUT/raw/quick.xml" "$MX_PACKAGE" || echo 0)
+    grab mx "sg_calibrate_$m"
+    say "SUBGEST calibration: mapping $m, a sendevent tap on ⋮ added ${n:-0} views"
+    [ "${n:-0}" -ge 3 ] && return 0
+  done
+  TMAP=""
+  return 1
+}
+# One gesture from a fresh open: $1 its name, $2 play|pause, then the kind
+# and its numbers. The screen before, during (a slow one) and after; the
+# subtitle's box and the position before and after, in the summary.
+SGN=0
+sg_one() {
+  local name=$1 how=$2 kind=$3 cx cy b0 p0 a0 p1 bg
+  shift 3
+  SGN=$((SGN + 1))
+  if ! sg_open "$SGN" "$how"; then
+    say "SUBGEST $name: no subtitle line came up"; grab mx "sg_${name}_none"; return 0
+  fi
+  b0="${SUB[*]}"; p0=$(sg_pos)
+  grab mx "sg_${name}_0"
+  cx=$((SW / 2)); cy=$(( SUB[1] + 2 * (SUB[3] - SUB[1]) / 3 ))
+  case "$kind" in
+    none)   # nothing: whatever MX shows by itself (a first-time guide?)
+      sleep 3
+      adb exec-out screencap -p > "$OUT/sg_${name}_mid.png" 2>/dev/null || true ;;
+    swipe)  # $1 $2 from/to x (% of the width), $3 ms, $4 dy from the line (px)
+      adb shell input swipe $((SW * $1 / 100)) $((cy + ${4:-0})) $((SW * $2 / 100)) $((cy + ${4:-0})) "$3" &
+      bg=$!
+      sleep "$(awk -v t="$3" 'BEGIN{printf "%.1f", t / 2000}')"
+      adb exec-out screencap -p > "$OUT/sg_${name}_mid.png" 2>/dev/null || true
+      wait "$bg" || true ;;
+    drag)   # $1 dy (px), $2 ms
+      adb shell input swipe "$cx" "$cy" "$cx" $((cy + $1)) "$2" &
+      bg=$!
+      sleep "$(awk -v t="$2" 'BEGIN{printf "%.1f", t / 1600}')"
+      adb exec-out screencap -p > "$OUT/sg_${name}_mid.png" 2>/dev/null || true
+      wait "$bg" || true ;;
+    pinch)  # $1 $2 half-spread from/to (px)
+      if [ -z "$TMAP" ]; then say "SUBGEST $name: no two-finger mapping, skipped"; return 0; fi
+      se_pinch "$cx" "$cy" "$1" "$2" 15 &
+      bg=$!
+      sleep 1.4
+      adb exec-out screencap -p > "$OUT/sg_${name}_mid.png" 2>/dev/null || true
+      wait "$bg" || true ;;
+  esac
+  sleep 1.5
+  sg_sub || SUB=()
+  a0="${SUB[*]}"; p1=$(sg_pos)
+  grab mx "sg_${name}_1"
+  say "SUBGEST $name: subtitle ${b0:-none} -> ${a0:-none}; position ${p0} -> ${p1} ms"
+}
+subtitle_gestures() {
+  local i dir src
+  SW=$ph; SH=$pw
+  src=/sdcard/Movies/ref_land_black.mp4
+  for i in $(seq 1 16) cal1 cal3; do
+    dir=/sdcard/Movies/ref_sg_$i
+    adb shell "mkdir -p $dir && cp $src $dir/ref_sg$i.mp4 && cp /sdcard/Movies/ref_sub.srt $dir/ref_sg$i.srt"
+  done
+  adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1 || true
+  adb shell wm set-fix-to-user-rotation enabled >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 1 >/dev/null 2>&1 || true
+  sleep 2
+  # MX's own settings about subtitles and gestures, before (private).
+  adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
+    | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_before.txt" || true
+  if sg_touch && sg_calibrate; then :; else say "SUBGEST: no two-finger mapping found; the pinches are skipped"; fi
+  sg_one look pause none
+  sg_one swipe_left pause swipe 62 38 300
+  sg_one swipe_right pause swipe 38 62 300
+  sg_one swipe_left_short pause swipe 53 47 200
+  sg_one swipe_left_long pause swipe 85 15 400
+  sg_one swipe_left_slow pause swipe 62 38 1500
+  sg_one swipe_left_besides pause swipe 22 8 300
+  sg_one swipe_left_above pause swipe 62 38 300 -260
+  sg_one swipe_left_playing play swipe 62 38 300
+  sg_one drag_up pause drag -300 2000
+  sg_one drag_down pause drag 120 1500
+  sg_one pinch_out pause pinch 120 420
+  sg_one pinch_in pause pinch 420 120
+  sg_one drag_up_playing play drag -300 2000
+  adb shell "cat /data/data/$MX_PACKAGE/shared_prefs/*.xml" 2>/dev/null | tr -d '\r' \
+    | grep -iE 'sub|gesture|swipe|pinch|zoom' > "$OUT/raw/mx_prefs_sub_after.txt" || true
+  say "SUBGEST MX's settings about subtitles and gestures: $(wc -l < "$OUT/raw/mx_prefs_sub_before.txt") lines before, $(diff "$OUT/raw/mx_prefs_sub_before.txt" "$OUT/raw/mx_prefs_sub_after.txt" | grep -c '^[<>]' || true) changed after (private)"
+  adb shell am force-stop "$MX_PACKAGE"
+  adb shell wm set-fix-to-user-rotation disabled >/dev/null 2>&1 || true
+  adb shell settings put system user_rotation 0 >/dev/null 2>&1 || true
 }
 
 # PHASE 2 (26 Nov 2026, the owner: "every shortcut as MX's — what it does
