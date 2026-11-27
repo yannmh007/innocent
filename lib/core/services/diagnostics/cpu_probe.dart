@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show FrameTiming, PlatformDispatcher;
+import 'dart:ui' show FramePhase, FrameTiming, PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -138,7 +138,7 @@ class CpuProbe {
       final cur = _read();
       final elapsed = now.difference(_lastAt ?? now).inMilliseconds / 1000.0;
       final line = summarise(_last, cur, elapsed, _frames,
-          timing: _window.brief());
+          timing: _window.brief(refreshRate));
       _last = cur;
       _lastAt = now;
       _frames = 0;
@@ -280,22 +280,43 @@ class FrameWindow {
   final List<int> _raster = <int>[];
   int _count = 0;
 
+  // The shortest gap between two frames' vsyncs in the window (µs), and the
+  // last frame's vsync. WHY (27 Nov 2026): the owner's phone can run at 120
+  // Hz, and whether Flutter draws at 60 or 120 there was not in any report
+  // — the display's rate alone does not say it (Samsung lowers it while a
+  // film plays; an LTPO panel keeps its mode and varies underneath). Two
+  // frames one vsync apart are the proof: 8.3 ms is 120 Hz, 16.7 is 60.
+  int _minGap = 0;
+  int _lastVsync = 0;
+
   /// Frames timed in the window, kept or not.
   int get count => _count;
 
-  void add(FrameTiming t) =>
-      addMicros(t.buildDuration.inMicroseconds, t.rasterDuration.inMicroseconds);
+  void add(FrameTiming t) => addMicros(
+      t.buildDuration.inMicroseconds, t.rasterDuration.inMicroseconds,
+      vsync: t.timestampInMicroseconds(FramePhase.vsyncStart));
 
   @visibleForTesting
-  void addMicros(int build, int raster) {
+  void addMicros(int build, int raster, {int vsync = 0}) {
     _count++;
+    if (vsync > 0) {
+      final gap = vsync - _lastVsync;
+      if (_lastVsync > 0 && gap > 0 && (_minGap == 0 || gap < _minGap)) {
+        _minGap = gap;
+      }
+      _lastVsync = vsync;
+    }
     if (_build.length >= cap) return;
     _build.add(build);
     _raster.add(raster);
   }
 
+  /// The shortest gap between two frames' vsyncs, µs (0: none seen).
+  int get minGap => _minGap;
+
   void clear() {
     _count = 0;
+    _minGap = 0;
     _build.clear();
     _raster.clear();
   }
@@ -322,14 +343,19 @@ class FrameWindow {
     return ms >= 10 ? ms.round().toString() : ms.toStringAsFixed(1);
   }
 
-  /// The 10 s line's part: `b90 2.1 r90 9.4 ms · late 3`, or null with no
-  /// frames.
-  String? brief() {
+  /// The 10 s line's part: `b90 2.1 r90 9.4 ms · late 3 · 120 Hz · gap
+  /// 8.3`, or null with no frames. [hz] is the display's rate as Flutter
+  /// reads it (0: unknown, left out); the gap, the shortest between two
+  /// frames' vsyncs, only when something moved (under 30 ms) — the rate
+  /// Flutter really drew at.
+  String? brief([double hz = 0]) {
     if (_build.isEmpty) return null;
     final b = [..._build]..sort();
     final r = [..._raster]..sort();
     return 'b90 ${_ms(percentile(b, 90))} r90 ${_ms(percentile(r, 90))} ms'
-        '${over(_budget60) > 0 ? ' · late ${over(_budget60)}' : ''}';
+        '${over(_budget60) > 0 ? ' · late ${over(_budget60)}' : ''}'
+        '${hz > 0 ? ' · ${hz.round()} Hz' : ''}'
+        '${_minGap > 0 && _minGap < 30000 ? ' · gap ${_ms(_minGap)}' : ''}';
   }
 
   /// A lab window's numbers: frames per second, build and raster p50, p90,

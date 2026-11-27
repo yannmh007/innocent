@@ -88,5 +88,39 @@ void main() {
       final w = FrameWindow()..addMicros(1000, 1000);
       expect(w.describe(1, 60), isNot(contains('over8')));
     });
+
+    // The owner's phone can run at 120 Hz; whether Flutter drew at 60 or
+    // 120 is the shortest gap between two frames' vsyncs (27 Nov 2026).
+    test('the report says the display rate and the rate frames came at', () {
+      final at120 = FrameWindow();
+      var v = 1000000;
+      for (var i = 0; i < 10; i++) {
+        at120.addMicros(2000, 3000, vsync: v);
+        // A fling at 120 Hz, one frame skipped now and then.
+        v += i.isEven ? 8333 : 16667;
+      }
+      expect(at120.minGap, 8333);
+      expect(at120.brief(120), 'b90 2.0 r90 3.0 ms · 120 Hz · gap 8.3');
+
+      // A 24 fps film alone on a 60 Hz display: frames 33 and 50 ms apart,
+      // nothing moved between — no gap is claimed as the display's.
+      final film = FrameWindow();
+      v = 1000000;
+      var last = v;
+      for (var i = 0; i < 10; i++) {
+        film.addMicros(200, 4000, vsync: v);
+        last = v;
+        v += i.isEven ? 33333 : 50000;
+      }
+      expect(film.brief(60), 'b90 0.2 r90 4.0 ms · 60 Hz');
+
+      // The window is cleared each tick; the next one starts afresh but
+      // still measures across the boundary from the last frame.
+      film.clear();
+      expect(film.minGap, 0);
+      film.addMicros(200, 4000, vsync: last + 16667);
+      expect(film.minGap, 16667);
+      expect(film.brief(), 'b90 0.2 r90 4.0 ms · gap 17');
+    });
   });
 }
