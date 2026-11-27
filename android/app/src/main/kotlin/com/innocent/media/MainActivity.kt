@@ -290,8 +290,34 @@ class MainActivity : AudioServiceFragmentActivity() {
     }
     private var adbPairResultReceiver: BroadcastReceiver? = null
 
+    // LAB ONLY (PlayerLab): SmoothLab's see-through window — Flutter's
+    // SurfaceView on top and transparent, so a film on a SurfaceView behind
+    // it shows. Off (the default, every release build): the platform's own.
+    override fun getBackgroundMode(): io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode =
+        if (PlayerLab.transparent) {
+            io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode.transparent
+        } else {
+            super.getBackgroundMode()
+        }
+
+    override fun getRenderMode(): io.flutter.embedding.android.RenderMode =
+        if (PlayerLab.transparent) io.flutter.embedding.android.RenderMode.surface
+        else super.getRenderMode()
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        PlayerLab.attach(this)
+        // A lab's switch of the window's mode recreates the Activity; the
+        // saved FlutterFragment would come back with the old mode, so it
+        // is not restored (the engine is cached and keeps running).
+        val drop = PlayerLab.recreating
+        PlayerLab.recreating = false
+        super.onCreate(if (drop) null else savedInstanceState)
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        PlayerLab.attach(this)
+        PlayerLab.register(flutterEngine)
         // Catalogue films with a ladder: ExoPlayer, as HLS (ExoStreamEngine).
         ExoStreamEngine.register(flutterEngine, applicationContext)
         PreviewFrames.register(flutterEngine)

@@ -89,6 +89,16 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
 
   /// DEVICE LAB ONLY — play the film the lab named through the stream proxy
   /// (see [LabStream]). Nothing happens when it named none.
+  /// LAB ONLY (SmoothLab's step `local`): the player closed and opened again
+  /// on a file, as a viewer's own video opens (libmpv).
+  Future<void> _labOpenFile(String path) async {
+    final router = ref.read(routerProvider);
+    router.pop();
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    unawaited(router.push(Routes.player,
+        extra: <String, dynamic>{'uri': path, 'title': path.split('/').last}));
+  }
+
   Future<void> _labStream() async {
     final titleId = await LabStream.titleId();
     if (titleId != null) {
@@ -99,7 +109,10 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       await _labTitle(titleId, plan: plan);
       // The player's menus scrolled and timed (run.sh, flow smooth).
       final smooth = await LabStream.smoothPlan();
-      if (smooth != null) await SmoothLab.run(smooth);
+      if (smooth != null) {
+        SmoothLab.openFile = _labOpenFile;
+        await SmoothLab.run(smooth);
+      }
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
       if (await LabStream.jumpsAsked()) await _labJumpScript();
       // Jumps in Auto on a weak line (run.sh, flow weakjumps).
@@ -831,6 +844,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
           if (built.isNotEmpty && smooth.isNotEmpty) {
             // The film a few seconds in, its first rung settled.
             await Future<void>.delayed(const Duration(seconds: 12));
+            SmoothLab.openFile = _labOpenFile;
             await SmoothLab.run(smooth);
             PlaybackLog.add('LAB script: smoothness done');
             Timer(const Duration(seconds: 3), () => exit(0));

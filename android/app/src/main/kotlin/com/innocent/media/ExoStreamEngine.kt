@@ -104,12 +104,13 @@ class ExoStreamEngine private constructor(
             // playing without a picture meanwhile — the sound is what a
             // viewer who stepped away is still listening to.
             override fun onSurfaceAvailable() {
-                player?.setVideoSurface(surface.surface)
+                // LAB: the film on a SurfaceView of its own keeps it.
+                if (labView == null) player?.setVideoSurface(surface.surface)
                 emit(mapOf("id" to id, "e" to "surface", "on" to true))
             }
 
             override fun onSurfaceCleanup() {
-                player?.clearVideoSurface()
+                if (labView == null) player?.clearVideoSurface()
                 emit(mapOf("id" to id, "e" to "surface", "on" to false))
             }
         })
@@ -161,6 +162,10 @@ class ExoStreamEngine private constructor(
             .setSeekParameters(SeekParameters.EXACT)
             .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
+            // LAB (SmoothLab `sched`): off, Media3's default, unless a lab
+            // asked — the playback loop then sleeps until a renderer can
+            // make progress instead of waking every 10 ms.
+            .experimentalSetDynamicSchedulingEnabled(labSched)
             .build()
         // The app keeps audio focus itself (AudioFocusService), as for
         // libmpv; two owners would fight over it.
@@ -170,7 +175,11 @@ class ExoStreamEngine private constructor(
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build(),
             false)
-        p.setVideoSurface(surface.surface)
+        val lab = labView
+        if (lab != null) p.setVideoSurfaceHolder(lab.holder) else p.setVideoSurface(surface.surface)
+        reopen = { at, play ->
+            open(url, at, play, target, maxHeight, bps, start, rungs, progressive)
+        }
         p.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) = sendState()
             override fun onIsPlayingChanged(isPlaying: Boolean) = sendState()
@@ -179,6 +188,8 @@ class ExoStreamEngine private constructor(
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     surface.setSize(videoSize.width, videoSize.height)
+                    labVideo = videoSize
+                    layoutLab()
                 }
                 emit(mapOf("id" to id, "e" to "size",
                     "w" to videoSize.width, "h" to videoSize.height))
@@ -410,6 +421,77 @@ class ExoStreamEngine private constructor(
     }
 
     /** What the picture is doing: frames drawn and dropped so far. */
+    // ── LAB ONLY (PlayerLab, SmoothLab's `sv` and `sched` looks) ─────────
+    // The film on Android's own SurfaceView behind a see-through Flutter
+    // window, as MX draws it: MediaCodec renders into a surface the display
+    // composes itself, and Flutter is not woken by each frame. Nothing in a
+    // release build calls these.
+    private var labView: android.view.SurfaceView? = null
+    private var labVideo: VideoSize? = null
+    private var labRoot: android.view.ViewGroup? = null
+    private val labRelayout = android.view.View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+        layoutLab()
+    }
+    private var reopen: ((Long, Boolean) -> Unit)? = null
+
+    /** The film on a SurfaceView behind Flutter ([on]) or back on the texture. */
+    fun labSurface(on: Boolean): Boolean {
+        val p = player
+        if (!on) {
+            val v = labView ?: return true
+            labView = null
+            labRoot?.removeOnLayoutChangeListener(labRelayout)
+            labRoot = null
+            p?.clearVideoSurfaceHolder(v.holder)
+            (v.parent as? android.view.ViewGroup)?.removeView(v)
+            p?.setVideoSurface(surface.surface)
+            return true
+        }
+        val a = PlayerLab.current() ?: return false
+        val root = a.findViewById<android.view.ViewGroup>(android.R.id.content) ?: return false
+        labView?.let { old -> (old.parent as? android.view.ViewGroup)?.removeView(old) }
+        labRoot?.removeOnLayoutChangeListener(labRelayout)
+        val v = android.view.SurfaceView(a)
+        root.addView(v, 0, android.widget.FrameLayout.LayoutParams(1, 1, android.view.Gravity.CENTER))
+        root.addOnLayoutChangeListener(labRelayout)
+        labRoot = root
+        labView = v
+        layoutLab()
+        p?.setVideoSurfaceHolder(v.holder)
+        return true
+    }
+
+    /** Fits the SurfaceView to the film inside the window (Fit, centred). */
+    private fun layoutLab() {
+        val v = labView ?: return
+        val root = labRoot ?: return
+        val vs = labVideo ?: return
+        val w = root.width
+        val h = root.height
+        if (w <= 0 || h <= 0 || vs.width <= 0 || vs.height <= 0) return
+        val aspect = vs.width * vs.pixelWidthHeightRatio / vs.height
+        var fw = w
+        var fh = Math.round(w / aspect)
+        if (fh > h) {
+            fh = h
+            fw = Math.round(h * aspect)
+        }
+        val lp = v.layoutParams as android.widget.FrameLayout.LayoutParams
+        if (lp.width == fw && lp.height == fh) return
+        lp.width = fw
+        lp.height = fh
+        lp.gravity = android.view.Gravity.CENTER
+        v.layoutParams = lp
+    }
+
+    /** The same film opened again where it is (a Builder switch to apply). */
+    fun labReopen(): Boolean {
+        val p = player ?: return false
+        val r = reopen ?: return false
+        r(p.currentPosition, p.playWhenReady)
+        return true
+    }
+
     fun stats(): Map<String, Any?> {
         val p = player ?: return emptyMap()
         val c = p.videoDecoderCounters
@@ -455,6 +537,7 @@ class ExoStreamEngine private constructor(
         player = null
         lastRung = -1
         if (!keepSurface) {
+            labSurface(false)
             surface.setCallback(null)
             surface.release()
         }
@@ -696,6 +779,10 @@ class ExoStreamEngine private constructor(
         private const val METHODS = "innocent/exo"
         private const val EVENTS = "innocent/exo/events"
         private val engines = mutableMapOf<Int, ExoStreamEngine>()
+
+        /** LAB ONLY: dynamic scheduling for the players opened from now on. */
+        @Volatile
+        var labSched = false
         private var nextId = 1
         private var sink: EventChannel.EventSink? = null
 
@@ -724,6 +811,16 @@ class ExoStreamEngine private constructor(
                     }
                     if (call.method == "stats") {
                         result.success(e.stats())
+                        return@setMethodCallHandler
+                    }
+                    // LAB ONLY (SmoothLab): see the members above.
+                    if (call.method == "labSurface") {
+                        result.success(e.labSurface(call.argument<Boolean>("on") ?: false))
+                        return@setMethodCallHandler
+                    }
+                    if (call.method == "labSched") {
+                        labSched = call.argument<Boolean>("on") ?: false
+                        result.success(e.labReopen())
                         return@setMethodCallHandler
                     }
                     when (call.method) {

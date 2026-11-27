@@ -52,6 +52,7 @@ import '../../../core/services/preferences/extra_settings_service.dart';
 // on the VideoPlayerService interface.
 import '../../../core/services/video_player/models/subtitle_track_info.dart';
 import '../../../core/services/video_player/video_player_service.dart';
+import '../../../core/services/video_player/exo_engine.dart';
 import '../../../core/services/video_player/media_kit_player_service.dart';
 import '../../../core/services/video_player/stall_diagnosis.dart';
 import '../../../core/theme/app_colors.dart';
@@ -358,6 +359,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       SmoothLab.open = _labOpen;
       SmoothLab.close = _labClose;
       SmoothLab.playing = _labPlaying;
+      SmoothLab.mpvSurface = () async {
+        final svc = ref.read(videoPlayerServiceProvider);
+        return svc is MediaKitPlayerService && await svc.labMpvSurface();
+      };
+      ExoEngine.labNative.addListener(_labNativeChanged);
     }
     // Can this phone afford the menus' frosted glass? (Asked once.)
     // ignore: discarded_futures
@@ -1283,6 +1289,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       SmoothLab.close = null;
       SmoothLab.playing = null;
     }
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      ExoEngine.labNative.removeListener(_labNativeChanged);
+    }
     if (identical(_onTop, this)) _onTop = null;
     if (PlayerToastController.current == _toast) {
       PlayerToastController.current = null;
@@ -2022,6 +2031,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (st.playbackSpeed != 1.0) await c.setSpeed(1.0);
     if (st.abPointA != null) c.clearABRepeat();
     c.hideControls();
+  }
+
+  /// LAB: the film on a SurfaceView behind the window — the player's
+  /// background is left see-through (SmoothLab's `sv` looks, PlayerLab.kt).
+  bool get _labNativeFilm =>
+      const bool.fromEnvironment('INNOCENT_LAB') && ExoEngine.labNative.value;
+
+  void _labNativeChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _labPlaying(bool play) async {
@@ -3439,7 +3457,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         _handleBackRequest();
       },
       child: Scaffold(
-        backgroundColor: AppColors.playerBackground,
+        backgroundColor: _labNativeFilm
+            ? Colors.transparent
+            : AppColors.playerBackground,
         body: Stack(
         children: [
           // === LAYER 1: Video (with screenshot boundary) ===
@@ -3447,7 +3467,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             child: RepaintBoundary(
               key: _videoBoundaryKey,
               child: Container(
-                color: Colors.black,
+                color: _labNativeFilm ? Colors.transparent : Colors.black,
                 child: _videoDisplayEnabled && svc.isInitialized
                     ? _screenModeVideo(svc, state)
                     : (svc.isInitialized

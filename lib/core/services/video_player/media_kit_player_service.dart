@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart' as mk;
 import 'package:media_kit_video/media_kit_video.dart' as mkv;
@@ -3445,9 +3446,43 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     }
   }
 
+  /// LAB ONLY (SmoothLab's look `mpvsv`, P1 of docs/handoff_2026_11_27_
+  /// beyond_mx.md): libmpv's picture moved from Flutter's texture to a
+  /// SurfaceView behind the see-through window (PlayerLab.kt), sized to the
+  /// film so the display scales it. One way: the app closes after.
+  Future<bool> labMpvSurface() async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
+    final vp = _player.state.videoParams;
+    final w = vp.dw ?? vp.w ?? 0;
+    final h = vp.dh ?? vp.h ?? 0;
+    if (w <= 0 || h <= 0) return false;
+    final wid = await const MethodChannel('innocent/lab')
+        .invokeMethod<int>('mpvSurface', <String, Object?>{'w': w, 'h': h});
+    if (wid == null || wid == 0) return false;
+    ExoEngine.labNative.value = true;
+    await _setMpvProperty('vo', 'null');
+    await _setMpvProperty('wid', '$wid');
+    await _setMpvProperty('android-surface-size', '${w}x$h');
+    await _setMpvProperty('vo', 'gpu');
+    PlaybackLog.add('LAB native: libmpv to wid $wid, ${w}x$h');
+    return true;
+  }
+
   // === UI ===
   @override
   Widget buildVideoWidget({BoxFit fit = BoxFit.contain}) {
+    // LAB: the film on a SurfaceView behind the window shows through.
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: ExoEngine.labNative,
+        builder: (context, native, _) =>
+            native ? const SizedBox.expand() : _videoWidget(fit),
+      );
+    }
+    return _videoWidget(fit);
+  }
+
+  Widget _videoWidget(BoxFit fit) {
     // Guard the late-final controller: if a surface (e.g. the floating PiP
     // overlay, which lives on every tab) rebuilds before initialize() has
     // assigned `_videoController`, touching it would throw a

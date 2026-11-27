@@ -1006,7 +1006,15 @@ for flow in $FLOWS; do
     while [ "$waited" -lt "${SMOOTH_S:-420}" ]; do
       sleep 10; waited=$((waited + 10))
       if grep -q 'LAB smooth: done\|LAB smooth: stopped' "$OUT/logcat_raw.txt" 2>/dev/null; then break; fi
-      if [ $((waited % 60)) -eq 0 ]; then adb exec-out screencap -p > "$OUT/shots/9_smooth_${waited}s.png"; fi
+      if [ $((waited % ${SMOOTH_SHOT_EVERY:-60})) -eq 0 ]; then adb exec-out screencap -p > "$OUT/shots/9_smooth_${waited}s.png"; fi
+      # P1 (27 Nov 2026): the film on a SurfaceView of its own — the
+      # display's layers and their frame-rate votes, once, while it is.
+      if [ ! -s "$OUT/smooth_layers_sv.txt" ] && grep -q 'LAB native: the film on a SurfaceView (on)' "$OUT/logcat_raw.txt" 2>/dev/null; then
+        sleep 3
+        adb exec-out screencap -p > "$OUT/shots/9_smooth_sv.png"
+        adb shell dumpsys SurfaceFlinger 2>/dev/null | tr -d '\r' \
+          | grep -iE "^Display |activeMode|refresh|frameRate|FrameRate|SurfaceView|$PKG" | head -120 > "$OUT/smooth_layers_sv.txt" || true
+      fi
     done
     adb shell dumpsys gfxinfo "$PKG" framestats > "$OUT/smooth_gfxinfo.txt" 2>&1 || true
     layer=$(adb shell dumpsys SurfaceFlinger --list 2>/dev/null | tr -d '\r' | grep -m1 "SurfaceView.*$PKG" || true)

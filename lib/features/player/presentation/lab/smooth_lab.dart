@@ -1,11 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/services/diagnostics/cpu_probe.dart';
 import '../../../../core/services/diagnostics/playback_log.dart';
+import '../../../../core/services/video_player/exo_engine.dart';
 import '../shortcut_item.dart';
 import '../widgets/player_ui.dart';
 
@@ -52,6 +57,14 @@ class SmoothLab {
   static Future<void> Function()? close;
   static Future<void> Function(bool play)? playing;
 
+  /// The app's, in a lab build: the player opened again on a local file
+  /// (the step `local`: libmpv, as a viewer's own video plays).
+  static Future<void> Function(String path)? openFile;
+
+  /// The player service's, in a lab build: libmpv's picture moved to a
+  /// SurfaceView behind the window (the look `mpvsv`); false when refused.
+  static Future<bool> Function()? mpvSurface;
+
   /// The default plan: ⋮ in every look, playing then paused; the other
   /// menus and the controls in the two that count.
   static const String defaultPlan =
@@ -87,7 +100,91 @@ class SmoothLab {
     // Everything of `now` but the halo: 1.64.89's three blurs.
     'ink3': {'ink': 'blur3', 'stretch': true},
     'now': <String, Object>{},
+    // P1, the film's own cost (27 Nov 2026, docs/handoff_2026_11_27_
+    // beyond_mx.md): the drawing of `now`, the film drawn another way
+    // ([_native]; PlayerLab.kt, ExoStreamEngine's lab members).
+    //  `sched`  ExoPlayer's dynamic scheduling (the film opened again);
+    //  `t`      the window see-through, the film still on Flutter's texture
+    //           (what the transparency alone costs);
+    //  `sv`     the film on Android's own SurfaceView behind it, as MX;
+    //  `svsched` both;
+    //  `…prof`  the same, the main thread profiled message by message
+    //           (`LAB main …`; the profiling itself costs a little).
+    'sched': {'sched': true},
+    't': {'win': true},
+    'sv': {'win': true, 'sv': true},
+    'svsched': {'win': true, 'sv': true, 'sched': true},
+    'nowprof': {'prof': true},
+    'tprof': {'win': true, 'prof': true},
+    'svprof': {'win': true, 'sv': true, 'prof': true},
+    // libmpv (after `local`): its picture on a SurfaceView behind the
+    // see-through window, rendered there by libmpv itself.
+    'mpvsv': {'win': true, 'mpvsv': true},
+    'mpvsvprof': {'win': true, 'mpvsv': true, 'prof': true},
   };
+
+  // ── The film drawn another way (P1) ────────────────────────────────────
+  static const MethodChannel _lab = MethodChannel('innocent/lab');
+  static bool _win = false;
+  static bool _sv = false;
+  static bool _sched = false;
+
+  /// Puts the window, the film's surface and ExoPlayer's scheduling as
+  /// [look] asks (each off unless named), in the order that keeps a picture:
+  /// the SurfaceView leaves before the window changes (it belongs to the
+  /// Activity a switch recreates).
+  static Future<void> _native(Map<String, Object> look) async {
+    final win = look['win'] == true;
+    final sv = look['sv'] == true;
+    final sched = look['sched'] == true;
+    final exo = ExoEngine.labLatest;
+    if (_mpvSv) {
+      // libmpv renders into a view of this Activity: the window stays.
+      if (!win) PlaybackLog.add('LAB native: libmpv stays on its SurfaceView');
+      return;
+    }
+    if (_sv && (!sv || win != _win)) {
+      await exo?.labSurface(false);
+      _sv = false;
+      PlaybackLog.add('LAB native: the film back on the texture');
+      await _wait(800);
+    }
+    if (win != _win) {
+      final ok = await _lab.invokeMethod<bool>('transparent', <String, Object?>{'on': win}) ?? false;
+      _win = win;
+      PlaybackLog.add('LAB native: the window ${win ? 'see-through' : 'opaque'} '
+          '(${ok ? 'recreated' : 'unchanged'})');
+      // The Activity comes back on the cached engine: its view, the
+      // surface, the first frames.
+      await _wait(4500);
+      await playing?.call(true);
+      await _wait(1000);
+    }
+    if (sched != _sched) {
+      final ok = await exo?.labSched(sched) ?? false;
+      _sched = sched;
+      PlaybackLog.add('LAB native: dynamic scheduling ${sched ? 'on' : 'off'} '
+          '(${ok ? 'the film opened again' : 'no ExoPlayer'})');
+      await _wait(5000);
+    }
+    if (sv && !_sv) {
+      final ok = await exo?.labSurface(true) ?? false;
+      _sv = ok;
+      PlaybackLog.add('LAB native: the film on a SurfaceView '
+          '(${ok ? 'on' : 'refused'})');
+      await _wait(1500);
+    }
+    // libmpv's picture on a SurfaceView: one way (the last steps of a
+    // plan; the app closes after).
+    if (look['mpvsv'] == true && !_mpvSv) {
+      final ok = await mpvSurface?.call() ?? false;
+      _mpvSv = ok;
+      PlaybackLog.add('LAB native: libmpv on a SurfaceView (${ok ? 'on' : 'refused'})');
+      await _wait(2000);
+    }
+  }
+
+  static bool _mpvSv = false;
 
   static bool _running = false;
 
@@ -105,6 +202,10 @@ class SmoothLab {
       PlaybackLog.add('LAB smooth: ${steps.length} steps, '
           'display ${CpuProbe.refreshRate.round()} Hz');
       for (final step in steps) {
+        if (step == 'local') {
+          if (!await _playLocal()) break;
+          continue;
+        }
         final p = step.split(':');
         if (p.length == 2 && p[0] == 'fn') {
           await _functions(p[1]);
@@ -115,11 +216,119 @@ class SmoothLab {
         await _step(p[0], p[1], p[2], seconds);
       }
       PlayerUi.labReset();
+      await _native(const <String, Object>{});
       PlaybackLog.add('LAB smooth: done');
     } catch (e) {
       PlaybackLog.add('LAB smooth: stopped ($e)');
     } finally {
       _running = false;
+    }
+  }
+
+  /// A minute of the film playing now, copied from the local proxy into a
+  /// file, and the player opened on it: what follows is libmpv on a local
+  /// file (P1: MX's 26 % was a local film). False when there is none.
+  static Future<bool> _playLocal() async {
+    final url = ExoEngine.labLatest?.labUrl;
+    if (url == null) {
+      PlaybackLog.add('LAB local: no film to copy');
+      return false;
+    }
+    await close?.call();
+    await _native(const <String, Object>{});
+    final path = await _localCopy(url);
+    if (path == null) return false;
+    final open = openFile;
+    if (open == null) {
+      PlaybackLog.add('LAB local: nothing opens a file');
+      return false;
+    }
+    await open(path);
+    // The new player screen, libmpv's first frames, the film settled.
+    await _wait(9000);
+    PlaybackLog.add('LAB local: playing $path');
+    return true;
+  }
+
+  /// The tallest rung up to 720p of [master]: its init and segments up to
+  /// [seconds] of film, one after another in one file (fMP4 or MPEG-TS
+  /// concatenate). Null when encrypted or unreadable.
+  static Future<String?> _localCopy(String master, {int seconds = 75}) async {
+    final client = HttpClient();
+    try {
+      Future<String> text(Uri u) async {
+        final rq = await client.getUrl(u);
+        final rs = await rq.close();
+        return rs.transform(utf8.decoder).join();
+      }
+
+      final m = Uri.parse(master);
+      final mText = await text(m);
+      var pick = m;
+      var best = 0;
+      final lines = mText.split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        final l = lines[i].trim();
+        if (!l.startsWith('#EXT-X-STREAM-INF')) continue;
+        final r = RegExp(r'RESOLUTION=(\d+)x(\d+)').firstMatch(l);
+        final h = r == null ? 0 : int.parse(r.group(2)!);
+        var j = i + 1;
+        while (j < lines.length &&
+            (lines[j].trim().isEmpty || lines[j].trim().startsWith('#'))) {
+          j++;
+        }
+        if (j < lines.length && h <= 720 && h > best) {
+          best = h;
+          pick = m.resolve(lines[j].trim());
+        }
+      }
+      if (mText.contains('TYPE=AUDIO')) {
+        PlaybackLog.add('LAB local: the ladder has separate audio (not copied)');
+      }
+      final media = identical(pick, m) ? mText : await text(pick);
+      if (media.contains('#EXT-X-KEY') && !media.contains('METHOD=NONE')) {
+        PlaybackLog.add('LAB local: the rung is encrypted, no local file');
+        return null;
+      }
+      Uri? init;
+      final segs = <Uri>[];
+      var total = 0.0;
+      double? dur;
+      for (final raw in media.split('\n')) {
+        final l = raw.trim();
+        if (l.startsWith('#EXT-X-MAP')) {
+          final u = RegExp(r'URI="([^"]+)"').firstMatch(l);
+          if (u != null) init = pick.resolve(u.group(1)!);
+        } else if (l.startsWith('#EXTINF:')) {
+          dur = double.tryParse(l.substring(8).split(',').first);
+        } else if (l.isNotEmpty && !l.startsWith('#')) {
+          if (total >= seconds) break;
+          segs.add(pick.resolve(l));
+          total += dur ?? 0;
+          dur = null;
+        }
+      }
+      if (segs.isEmpty) {
+        PlaybackLog.add('LAB local: no segments');
+        return null;
+      }
+      final dir = await getTemporaryDirectory();
+      final out = File('${dir.path}/lab_local_${best}p.${init != null ? 'mp4' : 'ts'}');
+      final sink = out.openWrite();
+      for (final u in <Uri>[if (init != null) init, ...segs]) {
+        final rq = await client.getUrl(u);
+        final rs = await rq.close();
+        await sink.addStream(rs);
+      }
+      await sink.close();
+      PlaybackLog.add('LAB local: ${segs.length} segments, '
+          '${total.round()} s of ${best}p, ${(await out.length()) ~/ 1024} KB');
+      return out.path;
+    } catch (e) {
+      PlaybackLog.add('LAB local: copy failed ($e)');
+      return null;
+    } finally {
+      client.close(force: true);
     }
   }
 
@@ -131,7 +340,9 @@ class SmoothLab {
     final name = '$state/$menu/$look';
     await close?.call();
     await _wait(400);
-    PlayerUi.labLook(looks[look] ?? const <String, Object>{});
+    final asked = looks[look] ?? const <String, Object>{};
+    PlayerUi.labLook(asked);
+    await _native(asked);
     await playing?.call(state != 'pause');
     await _wait(900);
     // `more-still`: ⋮ open, nothing scrolled — what an open menu costs
@@ -152,9 +363,18 @@ class SmoothLab {
     if (!still && scroll == null) {
       PlaybackLog.add('LAB frames $name: nothing to scroll');
     }
+    final prof = asked['prof'] == true;
+    if (prof) await _lab.invokeMethod<bool>('profileStart');
     CpuProbe.markStart(name);
     final end = DateTime.now().add(Duration(milliseconds: (seconds * 1000).round()));
-    if (scroll == null) {
+    if (menu == 'controls') {
+      // The controls hide after 4 s: shown again every 3 s, as a viewer
+      // who keeps touching would.
+      while (DateTime.now().isBefore(end)) {
+        await _wait(3000);
+        await open?.call('controls');
+      }
+    } else if (scroll == null) {
       await _wait((seconds * 1000).round());
     } else {
       var up = true;
@@ -166,6 +386,10 @@ class SmoothLab {
     }
     final line = CpuProbe.markEnd();
     if (line == null) PlaybackLog.add('LAB frames $name: no window');
+    if (prof) {
+      final main = await _lab.invokeMethod<String>('profileStop');
+      PlaybackLog.add('LAB main $name: $main');
+    }
   }
 
   /// The list the open menu scrolls: the last vertical (or horizontal)

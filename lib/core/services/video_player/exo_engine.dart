@@ -152,6 +152,7 @@ class ExoEngine {
       if (id == null || tex == null) return null;
       final e = ExoEngine._(id, tex);
       e._listen();
+      if (const bool.fromEnvironment('INNOCENT_LAB')) labLatest = e;
       return e;
     } catch (e) {
       if (kDebugMode) debugPrint('ExoEngine.create: $e');
@@ -303,6 +304,7 @@ class ExoEngine {
     rung = null;
     rungOnScreen.value = null;
     _letGo('a new film');
+    if (const bool.fromEnvironment('INNOCENT_LAB')) labUrl = url;
     return _call('open', <String, Object?>{
       'url': url,
       'startMs': startAt?.inMilliseconds ?? 0,
@@ -373,6 +375,33 @@ class ExoEngine {
     }
   }
 
+  // ── LAB ONLY (SmoothLab's `sv` and `sched` looks; PlayerLab.kt) ──────
+  /// The engine made last, for a lab that has no player in hand.
+  static ExoEngine? labLatest;
+
+  /// The address this engine opened last (the local proxy's master
+  /// playlist): SmoothLab copies a minute of it into a local file.
+  String? labUrl;
+
+  /// True while the film is on Android's own SurfaceView behind a
+  /// see-through window: [ExoVideo] and the player's background then draw
+  /// nothing, so the film shows through.
+  static final ValueNotifier<bool> labNative = ValueNotifier<bool>(false);
+
+  /// The film on a SurfaceView of its own ([on]) or back on the texture.
+  Future<bool> labSurface(bool on) async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
+    final ok = await _call('labSurface', <String, Object?>{'on': on});
+    labNative.value = on && ok;
+    return ok;
+  }
+
+  /// ExoPlayer's dynamic scheduling, by opening the film again where it is.
+  Future<bool> labSched(bool on) async {
+    if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
+    return _call('labSched', <String, Object?>{'on': on});
+  }
+
   Future<void> release() async {
     _letGo('released');
     // A hold still on as the film leaves is said too: the stuck film of
@@ -422,6 +451,18 @@ class ExoVideo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // LAB: the film on a SurfaceView behind the window shows through.
+    if (const bool.fromEnvironment('INNOCENT_LAB')) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: ExoEngine.labNative,
+        builder: (context, native, _) =>
+            native ? const SizedBox.expand() : _picture(),
+      );
+    }
+    return _picture();
+  }
+
+  Widget _picture() {
     return StreamBuilder<Size?>(
       stream: engine.sizeStream,
       initialData: engine.size,
