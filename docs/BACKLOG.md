@@ -16,6 +16,39 @@ Newest first within each group; tick an item by deleting it in the commit that
 does it.
 
 ### WHERE THINGS STAND — read first in a new session (20 Nov 2026)
+- **27 Nov (night): BEYOND MX, SESSION 1 — P1 MEASURED ON THE EMULATOR,
+  P2-P4 BUILT (branch only; docs/handoff_2026_11_28_beyond_mx_p1.md)**.
+  The owner's answers: P1 A/B first; frame-rate matching seamless only;
+  120 Hz only while touching; ♪ gets Volume boost, Night sound, Stereo
+  mode, Disable; online subtitles and MX's subtitle gestures wanted.
+  P0 NOT RUN: Test Lab's five were spent before this session (45965335653,
+  45969983812, 45979430510); first thing 28 Nov after 08:00 UTC. No 1.64.90
+  report from the owner yet (the last, 20 Nov on 1.64.86: never above 59.4
+  fps — 60 Hz in the player).
+  P1 (lab only): every video frame makes Flutter draw the whole scene
+  (shell.cc ScheduleFrame(false) → DrawLastLayerTrees; no partial repaint
+  on Vulkan); MX draws its film on a SurfaceView of the film's size that
+  the display composes, votes no frame rate (reference lab 46020419675).
+  SmoothLab looks `sched` `t` `sv` `svsched` `…prof`, step `local`,
+  `mpvsv` (PlayerLab.kt). Device lab P1-E1 46019884853: film on its own
+  SurfaceView 0 Flutter frames, app 6-8 % against 44-54 % (emulator,
+  shares only); main thread 330 messages in 8 s on the texture, 45 on the
+  SurfaceView. Faults fixed for Test Lab: the local copy (one byte range),
+  one window switch per plan (a second stopped the film). P1-E2 (ce1f1dc3)
+  runs the Test Lab plan on the emulator.
+  P2/P3 (ship): DisplayVote.kt on Flutter's own SurfaceView (the film's
+  rate, FIXED_SOURCE, seamless only; the highest rate while touched,
+  DisplayRate); Report a problem says `· N Hz · gap 8.3` and the display's
+  rates.
+  P4 (ship, look pending the owner's word): ♪ on catalogue films (the
+  ladder's tracks), Synchronization on ExoPlayer (ExoAudio.DelayedSink),
+  Stereo mode and Night sound (audio/AudioShape.kt, tool/audiojvm 9 tests,
+  a Build step; libmpv by audio-channels, pan, DynamicsProcessing),
+  Disable, Volume boost. FOUND: libmpv's libavfilter has no dynaudnorm —
+  Loudness normalization never worked; DynamicsProcessing now.
+  Tests: audio_menu (7), display_rate (4), cpu_probe (+1); CI Build
+  46023679241 (f20ecade): checks, both JVM suites, Analyze, the whole
+  suite green.
 - **27 Nov (evening): 1.64.90 IS OUT — THE PLAYER'S MENUS SMOOTH (the
   owner: "release everything done and proven")**. RELEASED: main 956e2518
   (pushed 12:31:55 UTC, the libmpv jars whole 3 of 3 and the arm32's, md5

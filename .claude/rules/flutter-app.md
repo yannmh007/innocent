@@ -103,6 +103,17 @@ paths:
   compared) and on phones with SmoothLab (`STREAM_SMOOTH` in cloud.env,
   flow `smooth`). A widget that leaned on the old rebuild (the top bar's
   clock) needs its own timer.
+- **An mpv `af`/`vf` filter is only there if libmpv.so carries it.**
+  media_kit's libmpv (libmpv-android-video-build v1.1.11) has libavfilter
+  with almost no filters: `dynaudnorm`, `acompressor`, `alimiter`,
+  `aformat` are absent, so Settings → Audio → Loudness normalization did
+  nothing for months and nobody saw (found 27 Nov 2026). Before using one,
+  fetch the jar named in third_party/media_kit_libs_android_video (the
+  sandbox reaches github.com) and look for the filter's name in
+  `strings -n 3 libmpv.so`; prefer mpv's own options (`audio-channels`)
+  or Android's effects on the session libmpv plays on
+  (SessionDynamics.kt). An unknown filter is logged at error level, which
+  media_kit can turn into "Playback failed".
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.

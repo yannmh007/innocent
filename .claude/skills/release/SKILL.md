@@ -21,7 +21,19 @@ files, minus what must not ship. Nothing is merged.
   `_labOpen`/`_labClose`/`_labPlaying` with their registration — PlayerUi's
   lab switches (`labLook`, `ink`, `labMask`, `labBoundary`, `labTick`)
   fold to the build's own values without INNOCENT_LAB and may ship, as
-  CpuProbe's FrameWindow and markStart/markEnd do); the Google
+  CpuProbe's FrameWindow and markStart/markEnd do); P1's lab (27 Nov):
+  `PlayerLab.kt`, MainActivity's `getBackgroundMode`/`getRenderMode`/
+  `onCreate` overrides and its `PlayerLab` calls, ExoStreamEngine's lab
+  members (`labView`, `labSurface`, `layoutLab`, `labReopen`, `labSched`
+  and the `reopen` lambda, the `labSurface`/`labSched` channel methods,
+  the `experimentalSetDynamicSchedulingEnabled(labSched)` line and the
+  `labView` guards in the surface callback), ExoEngine's `labLatest`/
+  `labNative`/`labUrl`/`labSurface`/`labSched` and ExoVideo's lab branch,
+  MediaKitPlayerService's `labMpvSurface` and buildVideoWidget's lab
+  branch, player_screen's `_labNativeFilm`/`_labNativeChanged`/
+  `SmoothLab.mpvSurface`, app.dart's `_labOpenFile` — unless the owner
+  takes the SurfaceView route, which then ships as production code; the
+  Google
   sign-in nonce (`api_account_repository.dart`, `test/google_sign_in_gate_test.dart`)
   until the owner has signed in once with a build that carries it. Check
   BACKLOG §0 "Next app release" for the current list.
