@@ -214,7 +214,7 @@ jobs:
                 --app app32.apk \
                 "${device32_args[@]}" \
                 --scenario-numbers 3 \
-                --timeout 360s \
+                --timeout "$([ -n "${STREAM_SMOOTH:-}" ] && echo 600s || echo 360s)" \
                 --results-dir "$dir-arm32" \
                 --format=json > out/matrix32.json 2> out/run32.txt &
               pid32=$!
@@ -225,7 +225,7 @@ jobs:
                 --app app.apk \
                 "${device_args[@]}" \
                 --scenario-numbers 3 \
-                --timeout 360s \
+                --timeout "$([ -n "${STREAM_SMOOTH:-}" ] && echo 600s || echo 360s)" \
                 --results-dir "$dir" \
                 --format=json > out/matrix.json 2> out/run.txt && rc=0 || rc=$?
             else
