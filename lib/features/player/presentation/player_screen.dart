@@ -2015,6 +2015,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         unawaited(showAudioEffectSheet(context, initialTab: 1));
       case 'sleep':
         c.openSleepTimerDialog();
+      case 'decoder':
+        // A dialog on frosted glass (P1: its blur over the texture beside
+        // the tint alone over a SurfaceView).
+        c.openDecoderDialog();
       case 'bookmarks':
         unawaited(_showBookmarks(context));
       case 'shortcuts':

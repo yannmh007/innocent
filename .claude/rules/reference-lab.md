@@ -95,7 +95,12 @@ repository and a run's public log carry numbers and our own code.
   130 px was the screen's seek); a drag moves the line after ~60 px and
   MX keeps the place for the next film, "↕ N" mid-screen while dragging;
   the line greyed (white ~33 %) while held. The pinch is not measured:
-  sendevent on the API 30 image registered nothing (no tap opened ⋮ under
-  any axis mapping). MX's tree gives the subtitle as `subtitleView` /
-  `SubText` (ui.py `sub`); its media session gives no position there.
+  two fingers by sendevent reach MX (the line greys, show_touches shows
+  both) but MX took them as a tap, not a pinch (run 46054727876).
+  sendevent needs pressure (ABS_MT_PRESSURE) and BTN_TOOL_FINGER with
+  BTN_TOUCH, on display 0's panel (`…multi_touch_1`), axes 0..32767 by
+  mapping 1 (rotated) sideways, though the viewport reads orientation 0:
+  without them no tap registered at all (runs 46049383870, 46050792610).
+  MX's tree gives the subtitle as `subtitleView` / `SubText` (ui.py
+  `sub`); its media session gives no position there.
 
