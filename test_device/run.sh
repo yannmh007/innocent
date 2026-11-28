@@ -1018,13 +1018,27 @@ for flow in $FLOWS; do
     adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1 || true
     # Until the app says it is done, at most SMOOTH_S seconds.
     waited=20
+    shots_taken=0
     while [ "$waited" -lt "${SMOOTH_S:-420}" ]; do
-      sleep 10; waited=$((waited + 10))
+      # P1 (28 Nov 2026): a plan's `shot:NAME` step writes `LAB shot NAME`
+      # and waits 3 s: the display taken then (adb screencap: the film's
+      # own SurfaceView with Flutter over it, as a viewer sees it).
+      for _tick in 1 2 3 4 5; do
+        sleep 2
+        n=$(grep -c 'LAB shot ' "$OUT/logcat_raw.txt" 2>/dev/null || true)
+        n=${n:-0}
+        while [ "$shots_taken" -lt "$n" ]; do
+          shots_taken=$((shots_taken + 1))
+          name=$(grep -o 'LAB shot [A-Za-z0-9_-]*' "$OUT/logcat_raw.txt" | sed -n "${shots_taken}p" | awk '{print $3}')
+          adb exec-out screencap -p > "$OUT/shots/9_p1_$(printf %02d "$shots_taken")_${name:-x}.png" 2>/dev/null || true
+        done
+      done
+      waited=$((waited + 10))
       if grep -q 'LAB smooth: done\|LAB smooth: stopped' "$OUT/logcat_raw.txt" 2>/dev/null; then break; fi
       if [ $((waited % ${SMOOTH_SHOT_EVERY:-60})) -eq 0 ]; then adb exec-out screencap -p > "$OUT/shots/9_smooth_${waited}s.png"; fi
       # P1 (27 Nov 2026): the film on a SurfaceView of its own — the
       # display's layers and their frame-rate votes, once, while it is.
-      if [ ! -s "$OUT/smooth_layers_sv.txt" ] && grep -q 'LAB native: the film on a SurfaceView (on)' "$OUT/logcat_raw.txt" 2>/dev/null; then
+      if [ ! -s "$OUT/smooth_layers_sv.txt" ] && grep -q 'exo film on its own surface' "$OUT/logcat_raw.txt" 2>/dev/null; then
         sleep 3
         adb exec-out screencap -p > "$OUT/shots/9_smooth_sv.png"
         adb shell dumpsys SurfaceFlinger 2>/dev/null | tr -d '\r' \
@@ -1042,6 +1056,11 @@ for flow in $FLOWS; do
     # The Screenshot shortcut's picture, where a viewer looks for it.
     { echo "screenshots in MediaStore:"; adb shell content query --uri content://media/external/images/media \
         --projection _display_name:relative_path 2>/dev/null | grep -i 'Innocent' || echo "  none"; } >> "$OUT/smooth.txt"
+    # P1 (28 Nov 2026): the shortcut's own picture (PixelCopy of the film's
+    # SurfaceView, or Flutter's layer on the texture), to look at.
+    for f in $(adb shell ls /sdcard/Pictures/Innocent/ 2>/dev/null | tr -d '\r' | grep -i '\.png$' | head -4); do
+      adb pull "/sdcard/Pictures/Innocent/$f" "$OUT/shots/9_shortcut_$f" >/dev/null 2>&1 || true
+    done
 
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"

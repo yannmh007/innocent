@@ -290,33 +290,27 @@ class MainActivity : AudioServiceFragmentActivity() {
     }
     private var adbPairResultReceiver: BroadcastReceiver? = null
 
-    // LAB ONLY (PlayerLab): SmoothLab's see-through window — Flutter's
-    // SurfaceView on top and transparent, so a film on a SurfaceView behind
-    // it shows. Off (the default, every release build): the platform's own.
-    override fun getBackgroundMode(): io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode =
-        if (PlayerLab.transparent) {
-            io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode.transparent
-        } else {
-            super.getBackgroundMode()
-        }
-
-    override fun getRenderMode(): io.flutter.embedding.android.RenderMode =
-        if (PlayerLab.transparent) io.flutter.embedding.android.RenderMode.surface
-        else super.getRenderMode()
-
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
-        PlayerLab.attach(this)
-        // A lab's switch of the window's mode recreates the Activity; the
-        // saved FlutterFragment would come back with the old mode, so it
-        // is not restored (the engine is cached and keeps running).
+        // P1 (28 Nov 2026): Flutter's surface see-through from the start,
+        // under the window, so the player can lay the film's own
+        // SurfaceView beneath it (PlayerWindow.kt). Before super.onCreate,
+        // which adds the FlutterFragment.
+        PlayerWindow.watch(this)
+        // LAB ONLY (PlayerLab `opaque`): a lab's switch of the window's
+        // surface recreates the Activity; the saved FlutterFragment would
+        // come back as it was, so it is not restored (the engine is cached
+        // and keeps running).
         val drop = PlayerLab.recreating
         PlayerLab.recreating = false
         super.onCreate(if (drop) null else savedInstanceState)
+        // A film left on the last Activity's SurfaceView goes back to the
+        // texture; the player asks for a new one.
+        ExoStreamEngine.windowChanged()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        PlayerLab.attach(this)
+        PlayerWindow.attach(this)
         PlayerLab.register(flutterEngine)
         // ♪'s Night mode and levelling on libmpv's audio session.
         SessionDynamics.register(flutterEngine)
@@ -832,6 +826,8 @@ class MainActivity : AudioServiceFragmentActivity() {
                                 )
                             }
                             secureScreenOn = on
+                            // A film on its own SurfaceView (P1) follows.
+                            ExoStreamEngine.secureChanged()
                         }
                         result.success(true)
                     } catch (e: Exception) {

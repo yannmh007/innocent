@@ -5,9 +5,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.Surface
-import android.view.SurfaceView
-import android.view.View
-import android.view.ViewGroup
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -32,6 +29,13 @@ import io.flutter.plugin.common.MethodChannel
  * moment after, for a fling) the highest rate the display offers at its
  * resolution; then the film's vote again, or none — battery between.
  *
+ * THE FILM ON ITS OWN SURFACE (P1, 28 Nov 2026). While the film plays on
+ * a SurfaceView of its own (ExoStreamEngine's film surface), Media3 casts
+ * the film's vote on that surface itself (VideoFrameReleaseHelper: the
+ * film's rate times the speed, FIXED_SOURCE, the two-argument form — only
+ * if seamless — and none while paused): Flutter's surface then asks only
+ * for the touch ([filmOwnSurface]).
+ *
  * Android 11 (API 30) and up; below it, nothing to ask.
  */
 object DisplayVote {
@@ -43,6 +47,10 @@ object DisplayVote {
 
     @Volatile
     private var touching = false
+
+    /** The film votes on its own SurfaceView (Media3), not through Flutter's. */
+    @Volatile
+    private var filmOwnSurface = false
 
     /** What was asked last, for the trail: "24.0 film", "120 touch", "none". */
     @Volatile
@@ -73,6 +81,12 @@ object DisplayVote {
         main.post { apply() }
     }
 
+    /** The film moved to its own SurfaceView ([on]) or back to the texture. */
+    fun filmSurface(on: Boolean) {
+        filmOwnSurface = on
+        main.post { apply() }
+    }
+
     fun touch(on: Boolean) {
         touching = on
         main.post { apply() }
@@ -87,7 +101,7 @@ object DisplayVote {
 
     /** The display's rates at its resolution and the one it runs at. */
     private fun rates(): Map<String, Any?> {
-        val a = PlayerLab.current() ?: return emptyMap()
+        val a = PlayerWindow.current() ?: return emptyMap()
         val d = displayOf(a) ?: return emptyMap()
         val mode = d.mode
         val rates = d.supportedModes
@@ -103,8 +117,8 @@ object DisplayVote {
 
     private fun apply() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        val a = PlayerLab.current() ?: return
-        val sv = flutterSurface(a.window?.decorView) ?: return
+        val a = PlayerWindow.current() ?: return
+        val sv = PlayerWindow.flutterSurface(a.window?.decorView) ?: return
         val s = sv.holder?.surface ?: return
         if (!s.isValid) return
         try {
@@ -114,7 +128,7 @@ object DisplayVote {
                     s.setFrameRate(top, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
                     last = "${top.toInt()} touch"
                 }
-                filmFps > 0f -> {
+                filmFps > 0f && !filmOwnSurface -> {
                     // The two-argument form changes only where it is
                     // seamless (Surface.setFrameRate's documentation).
                     s.setFrameRate(filmFps, Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE)
@@ -122,7 +136,7 @@ object DisplayVote {
                 }
                 else -> {
                     s.setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)
-                    last = "none"
+                    last = if (filmFps > 0f) "film's own surface" else "none"
                 }
             }
         } catch (_: Throwable) {
@@ -136,16 +150,5 @@ object DisplayVote {
         return d.supportedModes
             .filter { it.physicalWidth == mode.physicalWidth && it.physicalHeight == mode.physicalHeight }
             .maxOfOrNull { it.refreshRate } ?: d.refreshRate
-    }
-
-    /** Flutter's own SurfaceView in the window (not a film's of its own). */
-    private fun flutterSurface(v: View?): SurfaceView? {
-        if (v is io.flutter.embedding.android.FlutterSurfaceView) return v
-        if (v is ViewGroup) {
-            for (i in 0 until v.childCount) {
-                flutterSurface(v.getChildAt(i))?.let { return it }
-            }
-        }
-        return null
     }
 }

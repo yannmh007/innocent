@@ -66,8 +66,25 @@ class SmoothLab {
   static Future<void> Function()? openTitle;
 
   /// The player service's, in a lab build: libmpv's picture moved to a
-  /// SurfaceView behind the window (the look `mpvsv`); false when refused.
-  static Future<bool> Function()? mpvSurface;
+  /// SurfaceView behind the window (the look `mpvsv`; `mpvembed` with
+  /// vo=mediacodec_embed, [embed]); false when refused.
+  static Future<bool> Function(bool embed)? mpvSurface;
+
+  /// The player service's, in a lab build: libmpv's position events since
+  /// the last ask (the controls over `mpvsv` drew 25 fps on the realme).
+  static int Function()? mpvPositionEvents;
+
+  /// The player screen's, in a lab build: one thing a viewer does (the
+  /// step `do:WHAT`): `fit` `stretch` `crop` `original` (the screen
+  /// mode), `zoom` (a pinch to 1.6x), `pan` (a drag of the zoomed picture),
+  /// `mirror` `flip` `night` `filter` (Display's brightness; each again
+  /// to put it back), `pause` `play`, `shot` (the Screenshot shortcut).
+  /// Answers what it did, for the trail.
+  static Future<String> Function(String what)? act;
+
+  /// The app's, in a lab build: the player closed (the step `page`: the
+  /// title's page behind it, scrolled).
+  static Future<void> Function()? leave;
 
   /// The player service's, in a lab build: one of ♪'s items set as the
   /// menu sets it (`delay` ms, `stereo` 0-2, `night` 0/1, `off` 0/1,
@@ -109,59 +126,58 @@ class SmoothLab {
     // Everything of `now` but the halo: 1.64.89's three blurs.
     'ink3': {'ink': 'blur3', 'stretch': true},
     'now': <String, Object>{},
-    // P1, the film's own cost (27 Nov 2026, docs/handoff_2026_11_27_
-    // beyond_mx.md): the drawing of `now`, the film drawn another way
-    // ([_native]; PlayerLab.kt, ExoStreamEngine's lab members).
+    // P1, the film's own cost. Since 28 Nov 2026 the build's own (`now`)
+    // puts an ExoPlayer film on Android's own SurfaceView under Flutter's
+    // see-through surface (PlayerWindow.kt; ExoStreamEngine's film
+    // surface); the looks draw it another way ([_native]):
+    //  `tex`    the film kept on Flutter's texture, as 1.64.90 drew it;
+    //  `sv`     the same as `now` (plans written before 28 Nov);
     //  `sched`  ExoPlayer's dynamic scheduling (the film opened again);
-    //  `t`      the window see-through, the film still on Flutter's texture
-    //           (what the transparency alone costs);
-    //  `sv`     the film on Android's own SurfaceView behind it, as MX;
-    //  `svsched` both;
+    //  `opaque` the window as 1.64.90 had it (Flutter's surface opaque: the
+    //           Activity made again once, the film on the texture) — what
+    //           the see-through surface costs a screen;
     //  `…prof`  the same, the main thread profiled message by message
     //           (`LAB main …`; the profiling itself costs a little).
+    'tex': {'tex': true},
+    'sv': <String, Object>{},
     'sched': {'sched': true},
-    't': {'win': true},
-    'sv': {'win': true, 'sv': true},
-    'svsched': {'win': true, 'sv': true, 'sched': true},
+    'opaque': {'opaque': true},
     'nowprof': {'prof': true},
-    'tprof': {'win': true, 'prof': true},
-    'svprof': {'win': true, 'sv': true, 'prof': true},
+    'svprof': {'prof': true},
+    'texprof': {'tex': true, 'prof': true},
     // libmpv (after `local`): its picture on a SurfaceView behind the
-    // see-through window, rendered there by libmpv itself.
-    'mpvsv': {'win': true, 'mpvsv': true},
-    'mpvsvprof': {'win': true, 'mpvsv': true, 'prof': true},
+    // see-through window, rendered there by libmpv itself — by GL
+    // (`mpvsv`, vo=gpu) or by MediaCodec straight into it (`mpvembed`,
+    // vo=mediacodec_embed, no GL).
+    'mpvsv': {'mpvsv': true},
+    'mpvsvprof': {'mpvsv': true, 'prof': true},
+    'mpvembed': {'mpvembed': true},
+    'mpvembedprof': {'mpvembed': true, 'prof': true},
   };
 
   // ── The film drawn another way (P1) ────────────────────────────────────
   static const MethodChannel _lab = MethodChannel('innocent/lab');
-  static bool _win = false;
-  static bool _sv = false;
+  static bool _opaque = false;
   static bool _sched = false;
 
-  /// Puts the window, the film's surface and ExoPlayer's scheduling as
-  /// [look] asks (each off unless named), in the order that keeps a picture:
-  /// the SurfaceView leaves before the window changes (it belongs to the
-  /// Activity a switch recreates).
+  /// Puts the film's surface, the window and ExoPlayer's scheduling as
+  /// [look] asks (each the build's own unless named).
   static Future<void> _native(Map<String, Object> look) async {
-    final win = look['win'] == true;
-    final sv = look['sv'] == true;
+    final tex = look['tex'] == true;
+    final opaque = look['opaque'] == true;
     final sched = look['sched'] == true;
     final exo = ExoEngine.labLatest;
-    if (_mpvSv) {
-      // libmpv renders into a view of this Activity: the window stays.
-      if (!win) PlaybackLog.add('LAB native: libmpv stays on its SurfaceView');
-      return;
+    // libmpv on a SurfaceView of this Activity (`mpvsv`, `mpvembed`): the
+    // window and ExoPlayer's switches stay as they are.
+    if (tex != ExoEngine.labTexture.value && !_mpvSv) {
+      ExoEngine.labTexture.value = tex;
+      PlaybackLog.add('LAB native: the film ${tex ? 'kept on the texture' : 'free for its own surface'}');
+      await _wait(1500);
     }
-    if (_sv && (!sv || win != _win)) {
-      await exo?.labSurface(false);
-      _sv = false;
-      PlaybackLog.add('LAB native: the film back on the texture');
-      await _wait(800);
-    }
-    if (win != _win) {
-      final ok = await _lab.invokeMethod<bool>('transparent', <String, Object?>{'on': win}) ?? false;
-      _win = win;
-      PlaybackLog.add('LAB native: the window ${win ? 'see-through' : 'opaque'} '
+    if (opaque != _opaque && !_mpvSv) {
+      final ok = await _lab.invokeMethod<bool>('opaque', <String, Object?>{'on': opaque}) ?? false;
+      _opaque = opaque;
+      PlaybackLog.add('LAB native: the window ${opaque ? 'opaque (1.64.90)' : 'see-through'} '
           '(${ok ? 'recreated' : 'unchanged'})');
       // The Activity comes back on the cached engine: its view, the
       // surface, the first frames.
@@ -169,31 +185,34 @@ class SmoothLab {
       await playing?.call(true);
       await _wait(1000);
     }
-    if (sched != _sched) {
+    if (sched != _sched && !_mpvSv) {
       final ok = await exo?.labSched(sched) ?? false;
       _sched = sched;
       PlaybackLog.add('LAB native: dynamic scheduling ${sched ? 'on' : 'off'} '
           '(${ok ? 'the film opened again' : 'no ExoPlayer'})');
       await _wait(5000);
     }
-    if (sv && !_sv) {
-      final ok = await exo?.labSurface(true) ?? false;
-      _sv = ok;
-      PlaybackLog.add('LAB native: the film on a SurfaceView '
-          '(${ok ? 'on' : 'refused'})');
-      await _wait(1500);
-    }
     // libmpv's picture on a SurfaceView: one way (the last steps of a
-    // plan; the app closes after).
-    if (look['mpvsv'] == true && !_mpvSv) {
-      final ok = await mpvSurface?.call() ?? false;
-      _mpvSv = ok;
-      PlaybackLog.add('LAB native: libmpv on a SurfaceView (${ok ? 'on' : 'refused'})');
-      await _wait(2000);
+    // plan; the app closes after) — `mpvsv` (GL) then `mpvembed`
+    // (MediaCodec) may follow each other: a new SurfaceView each.
+    final embed = look['mpvembed'] == true;
+    if ((look['mpvsv'] == true || embed) && (!_mpvSv || embed != _mpvEmbed)) {
+      final ok = await mpvSurface?.call(embed) ?? false;
+      _mpvSv = _mpvSv || ok;
+      if (ok) _mpvEmbed = embed;
+      PlaybackLog.add('LAB native: libmpv on a SurfaceView, '
+          '${embed ? 'mediacodec_embed' : 'gpu'} (${ok ? 'on' : 'refused'})');
+      await _wait(2500);
+    }
+    if (exo != null && !_mpvSv) {
+      final st = await exo.stats();
+      final win = await _lab.invokeMethod<String>('window');
+      PlaybackLog.add('LAB native: the film on ${st['film'] ?? '?'}, window $win');
     }
   }
 
   static bool _mpvSv = false;
+  static bool _mpvEmbed = false;
 
   static bool _running = false;
 
@@ -233,6 +252,30 @@ class SmoothLab {
           await _functions(p[1]);
           continue;
         }
+        if (p.length == 2 && p[0] == 'do') {
+          final done = await act?.call(p[1]) ?? 'no player';
+          PlaybackLog.add('LAB do ${p[1]}: $done');
+          // The film's surface follows (a move waits for a first frame).
+          await _wait(2500);
+          continue;
+        }
+        if (p.length == 2 && p[0] == 'shot') {
+          // run.sh takes the screen (adb screencap: the display, the film's
+          // own surface included) when it reads this line.
+          final exo = ExoEngine.labLatest;
+          final st = exo == null ? const <String, Object?>{} : await exo.stats();
+          PlaybackLog.add('LAB shot ${p[1]} film=${st['film'] ?? '-'}');
+          await _wait(3000);
+          continue;
+        }
+        if (p.length >= 2 && p[0] == 'page') {
+          await _page(p[1], p.length > 2 ? (double.tryParse(p[2]) ?? 6) : 6.0);
+          continue;
+        }
+        if (p.length >= 2 && p[0] == 'pinch') {
+          await _pinch(p[1], p.length > 2 ? (double.tryParse(p[2]) ?? 4) : 4.0);
+          continue;
+        }
         if (p.length < 3) continue;
         final seconds = p.length > 3 ? (double.tryParse(p[3]) ?? 5) : 5.0;
         await _step(p[0], p[1], p[2], seconds);
@@ -266,7 +309,7 @@ class SmoothLab {
     // switch of the window's mode stopped the film on the emulator (run
     // 46019884853: after the Activity was made again, play went to libmpv),
     // so a plan changes it once.
-    await _native(<String, Object>{'win': _win});
+    await _native(<String, Object>{'opaque': _opaque});
     final String? path;
     if (how == 'lab') {
       final dir = await getExternalStorageDirectory();
@@ -412,6 +455,64 @@ class SmoothLab {
   static Future<void> _wait(int ms) =>
       Future<void>.delayed(Duration(milliseconds: ms));
 
+  /// The step `page:LOOK[:SECONDS]`: the player left for the title's page
+  /// behind it, which is flung up and down and timed (`LAB frames
+  /// page/LOOK`) — what the window's see-through surface costs a screen
+  /// that is not the player (`opaque` beside `now`). `title` brings the
+  /// film back.
+  static Future<void> _page(String look, double seconds) async {
+    await close?.call();
+    final l = leave;
+    if (l == null) {
+      PlaybackLog.add('LAB frames page/$look: nothing leaves the player');
+      return;
+    }
+    await l();
+    await _wait(2500);
+    final asked = looks[look] ?? const <String, Object>{};
+    await _native(asked);
+    final scroll = _findScrollable(horizontal: false);
+    if (scroll == null) {
+      PlaybackLog.add('LAB frames page/$look: nothing to scroll');
+      return;
+    }
+    CpuProbe.markStart('page/$look');
+    final end = DateTime.now().add(Duration(milliseconds: (seconds * 1000).round()));
+    var up = true;
+    while (DateTime.now().isBefore(end)) {
+      await _fling(scroll, up: up);
+      up = !up;
+      await _wait(700);
+    }
+    if (CpuProbe.markEnd() == null) PlaybackLog.add('LAB frames page/$look: no window');
+  }
+
+  /// The step `pinch:LOOK[:SECONDS]`: the picture zoomed in and out by two
+  /// fingers' worth of steps (the controller's pinch, 60 a second) while
+  /// the film plays, timed (`LAB frames pinch/LOOK`): on its own surface
+  /// each step moves a SurfaceView; on the texture Flutter scales it.
+  static Future<void> _pinch(String look, double seconds) async {
+    await close?.call();
+    await _wait(400);
+    final asked = looks[look] ?? const <String, Object>{};
+    PlayerUi.labLook(asked);
+    await _native(asked);
+    await playing?.call(true);
+    await _wait(900);
+    CpuProbe.markStart('pinch/$look');
+    final end = DateTime.now().add(Duration(milliseconds: (seconds * 1000).round()));
+    var i = 0;
+    while (DateTime.now().isBefore(end)) {
+      // 30 steps up by 2 %, 30 down: 1.0 → 1.8 → 1.0 a second.
+      await act?.call((i ~/ 30).isEven ? 'pinch+' : 'pinch-');
+      i++;
+      await _wait(16);
+    }
+    await act?.call('pinchend');
+    if (CpuProbe.markEnd() == null) PlaybackLog.add('LAB frames pinch/$look: no window');
+    await act?.call('fit');
+  }
+
   static Future<void> _step(
       String state, String menu, String look, double seconds) async {
     final name = '$state/$menu/$look';
@@ -463,6 +564,13 @@ class SmoothLab {
     }
     final line = CpuProbe.markEnd();
     if (line == null) PlaybackLog.add('LAB frames $name: no window');
+    if (_mpvSv) {
+      final n = mpvPositionEvents?.call();
+      if (n != null) {
+        PlaybackLog.add('LAB mpvpos $name: $n position events in '
+            '${seconds.toStringAsFixed(0)} s (${(n / seconds).toStringAsFixed(1)}/s)');
+      }
+    }
     if (prof) {
       final main = await _lab.invokeMethod<String>('profileStop');
       PlaybackLog.add('LAB main $name: $main');

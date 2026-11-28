@@ -164,5 +164,9 @@ abstract class VideoPlayerService {
   Future<void> setBackgroundAudioMode(bool enabled);
 
   // === UI rendering ===
-  Widget buildVideoWidget({BoxFit fit = BoxFit.contain});
+  /// The picture. [filmHost]: the player screen's own, which a film on its
+  /// own SurfaceView (ExoPlayer, P1) lies under — it then draws nothing
+  /// there; any other picture (the in-app picture-in-picture window) never
+  /// is one.
+  Widget buildVideoWidget({BoxFit fit = BoxFit.contain, bool filmHost = false});
 }

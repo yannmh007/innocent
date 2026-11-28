@@ -218,7 +218,7 @@ class FakePlayerService implements VideoPlayerService {
   }
 
   @override
-  Widget buildVideoWidget({BoxFit fit = BoxFit.contain}) => Center(
+  Widget buildVideoWidget({BoxFit fit = BoxFit.contain, bool filmHost = false}) => Center(
         child: AspectRatio(
           aspectRatio: videoSize.width / videoSize.height,
           child: frame == null

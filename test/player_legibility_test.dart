@@ -33,6 +33,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:innocent/core/services/video_player/models/audio_track_info.dart';
 import 'package:innocent/core/services/video_player/models/subtitle_track_info.dart';
 import 'package:innocent/features/player/presentation/player_provider.dart';
+import 'package:innocent/features/player/presentation/widgets/player_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fake_player_service.dart';
@@ -110,6 +111,19 @@ Future<void> _tapIcon(WidgetTester tester, IconData icon) async {
 
 final _scenes = <String, Future<void> Function(WidgetTester, PlayerController)>{
   'controls': (t, c) async {},
+  // A dialog on its glass over the texture (the film blurred under the
+  // tint), and over a film on its own SurfaceView (P1, 28 Nov 2026: the
+  // tint alone — what the display composes is the frame under the scrim
+  // and the tint, as drawn here).
+  'decoder': (t, c) async {
+    c.openDecoderDialog();
+    await _settle(t);
+  },
+  'decoder-film': (t, c) async {
+    PlayerUi.filmBehind.value = true;
+    c.openDecoderDialog();
+    await _settle(t);
+  },
   'more': (t, c) => _tapIcon(t, Icons.more_vert),
   'audio': (t, c) => _tapIcon(t, Icons.music_note),
   'subtitle': (t, c) async {
@@ -443,6 +457,7 @@ void main() {
               ].join('\t'));
             }
             await leavePlayer(tester);
+            PlayerUi.filmBehind.value = false;
           });
         }
       }

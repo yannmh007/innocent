@@ -708,6 +708,13 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// change of quality is [setLadderQuality], never a reopen.
   bool get playingLadder => _exoActive;
 
+  /// The ExoPlayer drawing now, whose film can lie on its own SurfaceView
+  /// under the player (P1); null while libmpv draws.
+  ExoEngine? get filmEngine => _exoActive ? _exo : null;
+
+  /// [filmEngine] as it changes (the engine moves in and out of a film).
+  ValueListenable<bool> get onLadder => _ladderView;
+
   /// The rung on screen while a ladder plays, by height.
   int? get ladderRung => _exoActive ? _exo?.rung : null;
 
@@ -1978,6 +1985,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     if (_exoActive) await _leaveLadder();
     await _exo?.release();
     _exo = null;
+    await _labMpvPosSub?.cancel();
+    _labMpvPosSub = null;
     await _player.dispose();
     _initialized = false;
     anyInitialized = false;
@@ -3576,7 +3585,13 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// beyond_mx.md): libmpv's picture moved from Flutter's texture to a
   /// SurfaceView behind the see-through window (PlayerLab.kt), sized to the
   /// film so the display scales it. One way: the app closes after.
-  Future<bool> labMpvSurface() async {
+  ///
+  /// [embed] (P1, 28 Nov 2026): `vo=mediacodec_embed` instead of `gpu` —
+  /// MediaCodec renders its frames straight into the SurfaceView, no GL
+  /// and no render thread (libmpv.so 1.1.11 carries vo_mediacodec_embed;
+  /// it needs `hwdec=mediacodec`, not `-copy`). Innocent draws its own
+  /// subtitles, so mpv's on-picture subtitles are not missed.
+  Future<bool> labMpvSurface({bool embed = false}) async {
     if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
     final vp = _player.state.videoParams;
     final w = vp.dw ?? vp.w ?? 0;
@@ -3589,26 +3604,47 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     await _setMpvProperty('vo', 'null');
     await _setMpvProperty('wid', '$wid');
     await _setMpvProperty('android-surface-size', '${w}x$h');
-    await _setMpvProperty('vo', 'gpu');
-    PlaybackLog.add('LAB native: libmpv to wid $wid, ${w}x$h');
+    if (embed) {
+      await _setMpvProperty('hwdec', 'mediacodec');
+      await _setMpvProperty('vo', 'mediacodec_embed');
+    } else {
+      await _setMpvProperty('vo', 'gpu');
+    }
+    _labMpvPos = 0;
+    _labMpvPosSub ??= _player.stream.position.listen((_) => _labMpvPos++);
+    PlaybackLog.add('LAB native: libmpv to wid $wid, ${w}x$h, '
+        'vo ${embed ? 'mediacodec_embed' : 'gpu'}');
     return true;
+  }
+
+  /// LAB: libmpv's position events since [labMpvSurface] — the controls
+  /// over `mpvsv` drew 25 fps (Test Lab 46129966885): is it the position
+  /// changing every frame (mpv's time-pos, observed per frame)?
+  int _labMpvPos = 0;
+  StreamSubscription<Duration>? _labMpvPosSub;
+
+  /// [_labMpvPos], read and set back to 0.
+  int labMpvPositionEvents() {
+    final n = _labMpvPos;
+    _labMpvPos = 0;
+    return n;
   }
 
   // === UI ===
   @override
-  Widget buildVideoWidget({BoxFit fit = BoxFit.contain}) {
-    // LAB: the film on a SurfaceView behind the window shows through.
+  Widget buildVideoWidget({BoxFit fit = BoxFit.contain, bool filmHost = false}) {
+    // LAB: libmpv on a SurfaceView behind the window shows through.
     if (const bool.fromEnvironment('INNOCENT_LAB')) {
       return ValueListenableBuilder<bool>(
         valueListenable: ExoEngine.labNative,
         builder: (context, native, _) =>
-            native ? const SizedBox.expand() : _videoWidget(fit),
+            native ? const SizedBox.expand() : _videoWidget(fit, filmHost),
       );
     }
-    return _videoWidget(fit);
+    return _videoWidget(fit, filmHost);
   }
 
-  Widget _videoWidget(BoxFit fit) {
+  Widget _videoWidget(BoxFit fit, bool filmHost) {
     // Guard the late-final controller: if a surface (e.g. the floating PiP
     // overlay, which lives on every tab) rebuilds before initialize() has
     // assigned `_videoController`, touching it would throw a
@@ -3623,7 +3659,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       builder: (context, onLadder, _) {
         final ladder = _exo;
         if (onLadder && ladder != null) {
-          return ExoVideo(key: ValueKey<String>('exo-${ladder.id}'), engine: ladder, fit: fit);
+          return ExoVideo(
+              key: ValueKey<String>('exo-${ladder.id}'),
+              engine: ladder,
+              fit: fit,
+              filmHost: filmHost);
         }
         return mkv.Video(
           // A rebuilt engine is a new texture; a new key makes a new State.

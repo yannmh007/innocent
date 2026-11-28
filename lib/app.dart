@@ -121,6 +121,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
       if (smooth != null) {
         SmoothLab.openFile = _labOpenFile;
         SmoothLab.openTitle = () => _labReopenTitle(titleId);
+        SmoothLab.leave = () async => ref.read(routerProvider).pop();
         await SmoothLab.run(smooth);
       }
       // The device lab's own run of Test Lab's jumps (run.sh, flow jumps).
@@ -856,6 +857,7 @@ class _InnocentAppState extends ConsumerState<InnocentApp> {
             await Future<void>.delayed(const Duration(seconds: 12));
             SmoothLab.openFile = _labOpenFile;
             SmoothLab.openTitle = () => _labReopenTitle(id);
+            SmoothLab.leave = () async => ref.read(routerProvider).pop();
             await SmoothLab.run(smooth);
             PlaybackLog.add('LAB script: smoothness done');
             Timer(const Duration(seconds: 3), () => exit(0));

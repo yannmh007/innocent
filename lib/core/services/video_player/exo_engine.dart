@@ -223,6 +223,25 @@ class ExoEngine {
         }
         _letGo('first frame');
         _first.add(null);
+      case 'film':
+        final note = e['note'] as String?;
+        if (note != null) {
+          PlaybackLog.add('exo film: $note');
+          return;
+        }
+        final on = e['on'] == true;
+        final clock = _filmClock;
+        _filmClock = null;
+        PlaybackLog.add('exo film on ${on ? 'its own surface' : 'the texture'}'
+            '${clock == null ? '' : ' after ${clock.elapsedMilliseconds} ms'}');
+        if (!on && surfaceAsked) {
+          // The phone took it back (a new Activity, the window's secure flag
+          // changed): asked again by the player when it wants it.
+          surfaceAsked = false;
+          _filmWait?.cancel();
+        }
+        if (on) _filmWait?.cancel();
+        onSurface.value = on;
       case 'surface':
         final on = e['on'] == true;
         PlaybackLog.add('exo surface ${on ? 'back' : 'gone'} at ${position.inSeconds}s');
@@ -423,7 +442,114 @@ class ExoEngine {
     }
   }
 
-  // ── LAB ONLY (SmoothLab's `sv` and `sched` looks; PlayerLab.kt) ──────
+  // ── THE FILM ON ITS OWN SURFACE (P1 in production, 28 Nov 2026) ─────
+  // ExoStreamEngine's film surface: the film on Android's own SurfaceView
+  // under Flutter's see-through surface (PlayerWindow.kt), which the
+  // display composes without Flutter drawing a frame for it (Test Lab
+  // 46124628533: app CPU realme 61 → 39 %, OPPO 52 → ~42 % of a core).
+  // The player screen asks for it ([useSurface]) and places it
+  // ([placeFilm]); [ExoVideo] in the player draws nothing while
+  // [onSurface] is true, so the film shows through.
+
+  /// The film's frame is on its own SurfaceView (Kotlin said so after the
+  /// first frame landed there), not on [textureId].
+  final ValueNotifier<bool> onSurface = ValueNotifier<bool>(false);
+
+  /// What was asked last ([useSurface]); the move may still be on its way.
+  bool surfaceAsked = false;
+
+  /// The phone said no once ([useSurface]: Flutter's surface opaque, no
+  /// Activity): not asked again for this engine.
+  bool surfaceRefused = false;
+
+  Stopwatch? _filmClock;
+  List<int>? _placed;
+  Timer? _filmWait;
+
+  /// How long a playing film may take to show its first frame on its own
+  /// surface before the texture is kept for good (this engine): a phone
+  /// whose SurfaceView never draws would otherwise leave the texture's last
+  /// frame standing over a film that plays on.
+  static const Duration filmLandLimit = Duration(seconds: 5);
+
+  /// The film on its own SurfaceView ([on]) or back on the texture. The
+  /// move lands with the first frame on the new surface ([onSurface]).
+  Future<bool> useSurface(bool on) async {
+    if (on == surfaceAsked) return true;
+    if (on && surfaceRefused) return false;
+    surfaceAsked = on;
+    _filmClock = Stopwatch()..start();
+    // Not [_call]: a false here is "this phone cannot", not a lost engine.
+    var ok = false;
+    try {
+      ok = await _m.invokeMethod<bool>(
+              'filmSurface', <String, Object?>{'id': id, 'on': on}) ??
+          false;
+    } catch (e) {
+      PlaybackLog.add('exo film: ${e.runtimeType}');
+    }
+    if (on && !ok) {
+      surfaceAsked = false;
+      surfaceRefused = true;
+      _filmClock = null;
+      PlaybackLog.add('exo film: no surface of its own here (the texture stays)');
+    }
+    _filmWait?.cancel();
+    if (on && ok) _filmWait = Timer(filmLandLimit, _filmLate);
+    return ok;
+  }
+
+  void _filmLate() {
+    if (!surfaceAsked || onSurface.value) return;
+    if (!playing || buffering) {
+      // Paused or waiting for bytes: no frame is due yet.
+      _filmWait = Timer(filmLandLimit, _filmLate);
+      return;
+    }
+    PlaybackLog.add('exo film: no frame on its own surface in '
+        '${filmLandLimit.inSeconds} s while playing (the texture kept)');
+    surfaceRefused = true;
+    // ignore: discarded_futures
+    useSurface(false);
+  }
+
+  /// Where the film's SurfaceView goes: [rect] in physical pixels of
+  /// Flutter's view, which is [view] pixels large. Sent when it changes.
+  Future<void> placeFilm(Rect rect, Size view) async {
+    final p = <int>[
+      rect.left.round(),
+      rect.top.round(),
+      rect.width.round(),
+      rect.height.round(),
+      view.width.round(),
+      view.height.round(),
+    ];
+    final last = _placed;
+    if (last != null && listEquals(last, p)) return;
+    _placed = p;
+    await _call('filmPlace', <String, Object?>{
+      'l': p[0],
+      't': p[1],
+      'w': p[2],
+      'h': p[3],
+      'vw': p[4],
+      'vh': p[5],
+    });
+  }
+
+  /// The frame on the film's SurfaceView, the part on screen, as a PNG
+  /// (PixelCopy); null when the film is not there or the copy failed.
+  Future<Uint8List?> filmShot() async {
+    if (!onSurface.value) return null;
+    try {
+      return await _m.invokeMethod<Uint8List>('filmShot', <String, Object?>{'id': id});
+    } catch (e) {
+      PlaybackLog.add('exo film shot: ${e.runtimeType}');
+      return null;
+    }
+  }
+
+  // ── LAB ONLY (SmoothLab's `tex` and `sched` looks; PlayerLab.kt) ─────
   /// The engine made last, for a lab that has no player in hand.
   static ExoEngine? labLatest;
 
@@ -431,18 +557,13 @@ class ExoEngine {
   /// playlist): SmoothLab copies a minute of it into a local file.
   String? labUrl;
 
-  /// True while the film is on Android's own SurfaceView behind a
-  /// see-through window: [ExoVideo] and the player's background then draw
-  /// nothing, so the film shows through.
-  static final ValueNotifier<bool> labNative = ValueNotifier<bool>(false);
+  /// SmoothLab's `tex`: the film kept on the texture, as 1.64.90 drew it,
+  /// for an A/B beside the build's own SurfaceView.
+  static final ValueNotifier<bool> labTexture = ValueNotifier<bool>(false);
 
-  /// The film on a SurfaceView of its own ([on]) or back on the texture.
-  Future<bool> labSurface(bool on) async {
-    if (!const bool.fromEnvironment('INNOCENT_LAB')) return false;
-    final ok = await _call('labSurface', <String, Object?>{'on': on});
-    labNative.value = on && ok;
-    return ok;
-  }
+  /// True while libmpv draws on a SurfaceView of the lab's (`mpvsv`,
+  /// `mpvembed`): the player's background is then left see-through.
+  static final ValueNotifier<bool> labNative = ValueNotifier<bool>(false);
 
   /// ExoPlayer's dynamic scheduling, by opening the film again where it is.
   Future<bool> labSched(bool on) async {
@@ -455,7 +576,10 @@ class ExoEngine {
     // A hold still on as the film leaves is said too: the stuck film of
     // 14 Nov ended in Back, not in a drag.
     _noteHeld('');
+    _filmWait?.cancel();
     await _call('release');
+    onSurface.value = false;
+    surfaceAsked = false;
     await _sub?.cancel();
     await _audio.close();
     for (final c in [_position, _duration, _buffered, _playing, _buffering, _completed, _error, _size, _first]) {
@@ -492,63 +616,81 @@ class ExoEngine {
 }
 
 /// The picture of an [ExoEngine], fitted like libmpv's.
+///
+/// While the film is on its own SurfaceView ([ExoEngine.onSurface]), the
+/// player's own picture ([filmHost]) draws nothing but the landing picture
+/// of a far jump, so the film under Flutter shows through; any other
+/// (the in-app picture-in-picture window) is black until the film is back
+/// on the texture — the texture then holds an old frame.
 class ExoVideo extends StatelessWidget {
-  const ExoVideo({super.key, required this.engine, this.fit = BoxFit.contain});
+  const ExoVideo({
+    super.key,
+    required this.engine,
+    this.fit = BoxFit.contain,
+    this.filmHost = false,
+  });
 
   final ExoEngine engine;
   final BoxFit fit;
 
+  /// The player screen's picture, which the film's SurfaceView lies under.
+  final bool filmHost;
+
   @override
   Widget build(BuildContext context) {
-    // LAB: the film on a SurfaceView behind the window shows through.
-    if (const bool.fromEnvironment('INNOCENT_LAB')) {
-      return ValueListenableBuilder<bool>(
-        valueListenable: ExoEngine.labNative,
-        builder: (context, native, _) =>
-            native ? const SizedBox.expand() : _picture(),
-      );
-    }
-    return _picture();
+    return ValueListenableBuilder<bool>(
+      valueListenable: engine.onSurface,
+      builder: (context, onSurface, _) {
+        if (!onSurface) return _picture(film: true);
+        if (!filmHost) return const ColoredBox(color: Color(0xFF000000));
+        return _picture(film: false);
+      },
+    );
   }
 
-  Widget _picture() {
+  /// The texture ([film]) or nothing in its place, the landing picture over it.
+  Widget _picture({required bool film}) {
     return StreamBuilder<Size?>(
       stream: engine.sizeStream,
       initialData: engine.size,
       builder: (context, snap) {
         final s = snap.data;
-        if (s == null) return const ColoredBox(color: Color(0xFF000000));
-        return ColoredBox(
-          color: const Color(0xFF000000),
-          child: FittedBox(
-            fit: fit,
-            clipBehavior: Clip.hardEdge,
-            child: SizedBox(
-              width: s.width,
-              height: s.height,
-              // The landing picture inside the same box as the texture, so
-              // it takes the same fit, zoom and crop as the film.
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Texture(textureId: engine.textureId),
-                  ValueListenableBuilder<Uint8List?>(
-                    valueListenable: engine.landing,
-                    builder: (context, picture, _) => picture == null
-                        ? const SizedBox.shrink()
-                        : Image.memory(
-                            picture,
-                            fit: BoxFit.fill,
-                            gaplessPlayback: true,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                          ),
-                  ),
-                ],
-              ),
+        if (s == null) {
+          return film
+              ? const ColoredBox(color: Color(0xFF000000))
+              : const SizedBox.expand();
+        }
+        final picture = FittedBox(
+          fit: fit,
+          clipBehavior: Clip.hardEdge,
+          child: SizedBox(
+            width: s.width,
+            height: s.height,
+            // The landing picture inside the same box as the texture, so
+            // it takes the same fit, zoom and crop as the film.
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (film) Texture(textureId: engine.textureId),
+                ValueListenableBuilder<Uint8List?>(
+                  valueListenable: engine.landing,
+                  builder: (context, picture, _) => picture == null
+                      ? const SizedBox.shrink()
+                      : Image.memory(
+                          picture,
+                          fit: BoxFit.fill,
+                          gaplessPlayback: true,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                        ),
+                ),
+              ],
             ),
           ),
         );
+        return film
+            ? ColoredBox(color: const Color(0xFF000000), child: picture)
+            : SizedBox.expand(child: picture);
       },
     );
   }

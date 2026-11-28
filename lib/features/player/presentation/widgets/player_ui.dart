@@ -33,6 +33,23 @@ class PlayerUi {
   static const Color glassEdge = Color(0x1FFFFFFF);
   static const double glassBlur = 30;
 
+  /// THE FILM ON ITS OWN SURFACE (P1, the owner's choice of 28 Nov 2026:
+  /// "the SurfaceView, the dialogs' glass a tint alone, as MX"). The film
+  /// then lies under Flutter's surface, out of reach of a blur: a dialog
+  /// is [glassTintOverFilm] over the scrim and the moving film, which the
+  /// display composes without Flutter drawing (Test Lab 46124628533: a
+  /// dialog 89/69 % of a core on the texture, its glass blurring the film
+  /// 25 times a second; 37-38 % over the SurfaceView). Set by the player
+  /// screen while the film shows there.
+  static final ValueNotifier<bool> filmBehind = ValueNotifier<bool>(false);
+
+  /// The tint where nothing blurs the film under it: the unblurred film's
+  /// detail reads through a tint as its brightness does through the glass,
+  /// so it is darker than [glassTint] — the secondary text (62 % white)
+  /// still 4.5:1 over a white or a busy frame (test/player_legibility_test
+  /// scene `decoder-film`).
+  static const Color glassTintOverFilm = Color(0xD11C1C1E);
+
   /// Frosted glass, or [surface] on a phone that cannot afford it: Android
   /// Go (a low-RAM device) and 32-bit-only phones — the blur is redrawn on
   /// every frame of the film under it. See [probeGlass].
@@ -1639,24 +1656,35 @@ class PlayerGlass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final glass = PlayerUi.glass;
-    final body = DecoratedBox(
-      decoration: BoxDecoration(
-        color: glass ? PlayerUi.glassTint : PlayerUi.surface,
-        borderRadius: borderRadius,
-        border: Border.all(color: PlayerUi.glassEdge),
-      ),
-      child: Material(type: MaterialType.transparency, child: child),
-    );
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: glass
-          ? BackdropFilter(
-              filter: ImageFilter.blur(
-                  sigmaX: PlayerUi.glassBlur, sigmaY: PlayerUi.glassBlur),
-              child: body,
-            )
-          : body,
+    return ValueListenableBuilder<bool>(
+      valueListenable: PlayerUi.filmBehind,
+      builder: (context, filmBehind, _) {
+        // Over a film on its own SurfaceView there is nothing in Flutter's
+        // scene to blur: the tint alone, no backdrop pass (P1).
+        final glass = PlayerUi.glass && !filmBehind;
+        final body = DecoratedBox(
+          decoration: BoxDecoration(
+            color: filmBehind && PlayerUi.glass
+                ? PlayerUi.glassTintOverFilm
+                : glass
+                    ? PlayerUi.glassTint
+                    : PlayerUi.surface,
+            borderRadius: borderRadius,
+            border: Border.all(color: PlayerUi.glassEdge),
+          ),
+          child: Material(type: MaterialType.transparency, child: child),
+        );
+        return ClipRRect(
+          borderRadius: borderRadius,
+          child: glass
+              ? BackdropFilter(
+                  filter: ImageFilter.blur(
+                      sigmaX: PlayerUi.glassBlur, sigmaY: PlayerUi.glassBlur),
+                  child: body,
+                )
+              : body,
+        );
+      },
     );
   }
 }

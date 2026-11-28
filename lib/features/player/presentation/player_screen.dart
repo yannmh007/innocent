@@ -28,6 +28,7 @@ import '../../../core/services/haptic/haptic_service.dart';
 import '../../../core/services/pip/pip_service.dart';
 import '../../../core/services/subtitles/subtitle_formats.dart';
 import '../../../core/services/thumbnail/thumbnail_cache.dart';
+import 'film_surface.dart';
 import 'floating_pip_provider.dart';
 import '../../../core/di/preferences_provider.dart';
 import '../../network_stream/presentation/network_stream_screen.dart';
@@ -359,6 +360,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     }
   }
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // The route's own animation: the film leaves its surface as the screen
+    // starts to go (the route under it is drawn from then on).
+    final a = ModalRoute.of(context)?.animation;
+    if (!identical(a, _routeAnimation)) {
+      _routeAnimation?.removeStatusListener(_routeStatus);
+      _routeAnimation = a;
+      a?.addStatusListener(_routeStatus);
+      _routeIn = a == null || a.status == AnimationStatus.completed;
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
     PlayerToastController.current = _toast;
@@ -366,10 +381,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       SmoothLab.open = _labOpen;
       SmoothLab.close = _labClose;
       SmoothLab.playing = _labPlaying;
-      SmoothLab.mpvSurface = () async {
+      SmoothLab.mpvSurface = (embed) async {
         final svc = ref.read(videoPlayerServiceProvider);
-        return svc is MediaKitPlayerService && await svc.labMpvSurface();
+        return svc is MediaKitPlayerService &&
+            await svc.labMpvSurface(embed: embed);
       };
+      SmoothLab.mpvPositionEvents = () {
+        final svc = ref.read(videoPlayerServiceProvider);
+        return svc is MediaKitPlayerService ? svc.labMpvPositionEvents() : 0;
+      };
+      SmoothLab.act = _labAct;
       SmoothLab.audio = (item, v) async {
         final svc = ref.read(videoPlayerServiceProvider);
         if (svc is! MediaKitPlayerService) return;
@@ -387,6 +408,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         }
       };
       ExoEngine.labNative.addListener(_labNativeChanged);
+      ExoEngine.labTexture.addListener(_labNativeChanged);
     }
     // Can this phone afford the menus' frosted glass? (Asked once.)
     // ignore: discarded_futures
@@ -1313,10 +1335,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       SmoothLab.close = null;
       SmoothLab.playing = null;
       SmoothLab.audio = null;
+      SmoothLab.act = null;
     }
     if (const bool.fromEnvironment('INNOCENT_LAB')) {
       ExoEngine.labNative.removeListener(_labNativeChanged);
+      ExoEngine.labTexture.removeListener(_labNativeChanged);
     }
+    // The film back on the texture (the in-app picture-in-picture window
+    // may go on playing it), the route's listener off.
+    _step('filmSurface', () {
+      _routeAnimation?.removeStatusListener(_routeStatus);
+      final e = _filmEngine;
+      _filmEngine = null;
+      // ignore: discarded_futures
+      _filmSizeSub?.cancel();
+      e?.onSurface.removeListener(_filmChanged);
+      // ignore: discarded_futures
+      e?.useSurface(false);
+      // After the tree is unlocked (a glass elsewhere rebuilds on it), and
+      // only if no other player screen has taken over.
+      scheduleMicrotask(() {
+        if (_onTop == null) PlayerUi.filmBehind.value = false;
+      });
+    });
     if (identical(_onTop, this)) _onTop = null;
     if (PlayerToastController.current == _toast) {
       PlayerToastController.current = null;
@@ -1502,14 +1543,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       return;
     }
     try {
-      final boundary = _videoBoundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
-      if (boundary == null) {
-        _showSnack(context, AppStrings.of(context).plScreenshotFailed);
-        return;
+      // The film on its own SurfaceView (P1): Flutter's layer holds nothing
+      // of it, so the frame comes by PixelCopy, at the film's resolution.
+      final film = _filmEngine;
+      Uint8List? shot;
+      if (film != null && film.onSurface.value) {
+        shot = await film.filmShot();
+        PlaybackLog.add('screenshot: the film\'s own surface '
+            '(${shot == null ? 'no picture' : '${shot.length} B'})');
+        if (!context.mounted) return;
       }
-      final image = await boundary.toImage(pixelRatio: 2.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      ByteData? byteData;
+      if (shot != null) {
+        byteData = ByteData.sublistView(shot);
+      } else {
+        final boundary = _videoBoundaryKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
+        if (boundary == null) {
+          _showSnack(context, AppStrings.of(context).plScreenshotFailed);
+          return;
+        }
+        final image = await boundary.toImage(pixelRatio: 2.0);
+        byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      }
       if (byteData == null) {
         PlaybackLog.add('screenshot: no picture');
         // `toImage` / `toByteData` above are both awaits, so match the
@@ -1521,7 +1577,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         }
         return;
       }
-      final bytes = byteData.buffer.asUint8List();
+      // The view's own bytes: a channel's answer can sit inside a larger
+      // buffer.
+      final bytes = byteData.buffer
+          .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
       final ts = DateTime.now().millisecondsSinceEpoch;
 
       // Into the phone's gallery (Pictures/Innocent), where a viewer looks
@@ -2032,6 +2091,70 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return true;
   }
 
+  /// LAB: SmoothLab's `do:WHAT` — what a viewer does, through the
+  /// controller as the gestures and shortcuts do it.
+  Future<String> _labAct(String what) async {
+    if (!mounted) return 'no screen';
+    final c = ref.read(playerControllerProvider.notifier);
+    AspectRatioMode mode() => ref.read(playerControllerProvider).aspectRatioMode;
+    switch (what) {
+      case 'fit':
+      case 'stretch':
+      case 'crop':
+      case 'original':
+        final want = AspectRatioMode.values.byName(what);
+        if (mode() == AspectRatioMode.custom) c.resetZoom();
+        for (var i = 0; i < 6 && mode() != want; i++) {
+          c.cycleAspectRatio();
+        }
+        c.hideControls();
+        return mode().name;
+      case 'zoom':
+        for (var i = 0; i < 24; i++) {
+          c.onPinchUpdate(1.02);
+        }
+        c.onPinchEnd();
+        return 'custom ${ref.read(playerControllerProvider).videoScale.toStringAsFixed(2)}x';
+      case 'pinch+':
+        c.onPinchUpdate(1.02);
+        return 'pinch';
+      case 'pinch-':
+        c.onPinchUpdate(1 / 1.02);
+        return 'pinch';
+      case 'pinchend':
+        c.onPinchEnd();
+        return 'pinch end';
+      case 'pan':
+        c.onPanDelta(const Offset(-80, 30), MediaQuery.sizeOf(context));
+        return 'offset ${ref.read(playerControllerProvider).videoOffset}';
+      case 'mirror':
+        c.toggleMirrorMode();
+        return 'mirror ${ref.read(playerControllerProvider).isMirrorMode}';
+      case 'flip':
+        c.toggleVerticalFlip();
+        return 'flip ${ref.read(playerControllerProvider).isVerticalFlip}';
+      case 'night':
+        c.toggleNightMode();
+        return 'night ${ref.read(playerControllerProvider).isNightMode}';
+      case 'filter':
+        final a = ref.read(videoAdjustProvider.notifier);
+        a.state = a.state.isNeutral
+            ? a.state.copyWith(brightness: 0.3)
+            : const VideoAdjust();
+        return 'colour ${ref.read(videoAdjustProvider).isNeutral ? 'neutral' : 'filtered'}';
+      case 'pause':
+        await c.pause();
+        return 'paused';
+      case 'play':
+        await c.play();
+        return 'playing';
+      case 'shot':
+        await _captureScreenshot(context);
+        return 'screenshot asked';
+    }
+    return 'unknown';
+  }
+
   Future<void> _labClose() async {
     if (!mounted) return;
     final c = ref.read(playerControllerProvider.notifier);
@@ -2062,10 +2185,114 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     c.hideControls();
   }
 
-  /// LAB: the film on a SurfaceView behind the window — the player's
-  /// background is left see-through (SmoothLab's `sv` looks, PlayerLab.kt).
+  /// LAB: libmpv on a SurfaceView behind the window — the player's
+  /// background is left see-through (SmoothLab's `mpvsv`, PlayerLab.kt).
   bool get _labNativeFilm =>
       const bool.fromEnvironment('INNOCENT_LAB') && ExoEngine.labNative.value;
+
+  // ─── THE FILM ON ITS OWN SURFACE (P1 in production, 28 Nov 2026) ─────
+  //
+  // A catalogue film (ExoPlayer) plays on Android's own SurfaceView under
+  // Flutter's see-through surface, as MX draws it: the display composes
+  // it, and Flutter draws only when the controls change (Test Lab
+  // 46124628533: app CPU realme 61 → 39 %, OPPO 52 → ~42 % of a core; a
+  // dialog over it 89/69 → 37-38 %). The owner chose it on 28 Nov 2026,
+  // with the dialogs' glass a tint alone. The screen asks for it while
+  // nothing it shows needs the picture inside Flutter — Display's colour
+  // filters and the mirror or flip go back to the texture while on (the
+  // owner's word); Night mode is a black layer, which works on both — and
+  // places it where video_geometry.dart puts the picture. Everything over
+  // the film (subtitles, the account's code, the controls, menus) stays
+  // Flutter's.
+
+  /// The engine asked to put its film on its own surface by this screen.
+  ExoEngine? _filmEngine;
+  StreamSubscription<Size?>? _filmSizeSub;
+
+  /// This screen's route is fully in (not opening, not leaving).
+  bool _routeIn = true;
+  Animation<double>? _routeAnimation;
+
+  /// The film's frame is on its SurfaceView and this screen shows it:
+  /// the player's background is then left see-through.
+  bool get _filmShows =>
+      _routeIn && (_filmEngine?.onSurface.value ?? false);
+
+  void _filmChanged() {
+    if (!mounted) return;
+    PlayerUi.filmBehind.value = _filmShows;
+    setState(() {});
+  }
+
+  void _routeStatus(AnimationStatus status) {
+    final now = status == AnimationStatus.completed;
+    if (now == _routeIn) return;
+    _routeIn = now;
+    _filmChanged();
+  }
+
+  /// Whether the film may lie on its own surface now: an ExoPlayer film,
+  /// its size known, the picture shown, nothing that needs Flutter's
+  /// texture on, this screen in.
+  bool _filmWanted(PlayerState state, ExoEngine? engine) {
+    if (engine == null || engine.surfaceRefused) return false;
+    if (const bool.fromEnvironment('INNOCENT_LAB') &&
+        ExoEngine.labTexture.value) {
+      return false;
+    }
+    return filmSurfaceAllowed(
+      videoShown: _videoDisplayEnabled,
+      sizeKnown:
+          ref.read(playerControllerProvider.notifier).displayVideoSize != null,
+      mirror: state.isMirrorMode,
+      flip: state.isVerticalFlip,
+      colourNeutral: ref.read(videoAdjustProvider).isNeutral,
+      routeIn: _routeIn,
+    );
+  }
+
+  /// After a frame: the engine asked for what [_filmWanted] says, and an
+  /// engine this screen no longer plays given its film back.
+  void _syncFilm(ExoEngine? engine, bool want) {
+    final old = _filmEngine;
+    if (!identical(old, engine)) {
+      old?.onSurface.removeListener(_filmChanged);
+      // ignore: discarded_futures
+      old?.useSurface(false);
+      // ignore: discarded_futures
+      _filmSizeSub?.cancel();
+      _filmEngine = engine;
+      engine?.onSurface.addListener(_filmChanged);
+      // Its size makes the film placeable (and its rectangle).
+      _filmSizeSub = engine?.sizeStream.listen((_) {
+        if (mounted) setState(() {});
+      });
+      PlayerUi.filmBehind.value = _filmShows;
+    }
+    if (engine != null && engine.surfaceAsked != want) {
+      // ignore: discarded_futures
+      engine.useSurface(want);
+    }
+  }
+
+  /// The film's SurfaceView where the picture is: [picture] in the video
+  /// layer's own coordinates, sent in the physical pixels of Flutter's view.
+  void _placeFilm(ExoEngine engine, Rect picture) {
+    if (!mounted) return;
+    final box = _videoBoundaryKey.currentContext?.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return;
+    final view = View.of(context);
+    final dpr = view.devicePixelRatio;
+    final at = box.localToGlobal(Offset.zero);
+    final px = Rect.fromLTWH(
+      (picture.left + at.dx) * dpr,
+      (picture.top + at.dy) * dpr,
+      picture.width * dpr,
+      picture.height * dpr,
+    );
+    // ignore: discarded_futures
+    engine.placeFilm(px, view.physicalSize);
+  }
 
   void _labNativeChanged() {
     if (mounted) setState(() {});
@@ -3027,6 +3254,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   /// by the pan. Nothing is wrapped at Fit with no pan — a transform layer
   /// at identity still costs the compositor on every frame.
   Widget _screenModeVideo(VideoPlayerService svc, PlayerState state) {
+    // Rebuilt when the engine moves in or out of a ladder (ExoPlayer): the
+    // film's own surface follows it (P1).
+    if (svc is MediaKitPlayerService) {
+      return ValueListenableBuilder<bool>(
+        valueListenable: svc.onLadder,
+        builder: (_, __, ___) => _screenModeLayout(svc, state),
+      );
+    }
+    return _screenModeLayout(svc, state);
+  }
+
+  Widget _screenModeLayout(VideoPlayerService svc, PlayerState state) {
     return LayoutBuilder(builder: (context, c) {
       final view = Size(c.maxWidth, c.maxHeight);
       final dpr = MediaQuery.devicePixelRatioOf(context);
@@ -3039,8 +3278,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         devicePixelRatio: dpr,
         customScale: state.videoScale,
       );
+      // P1: the film on its own SurfaceView where the picture is, or back
+      // on the texture — after this frame, so the rectangle is the one on
+      // screen (the layer's place in Flutter's view).
+      final engine = svc is MediaKitPlayerService ? svc.filmEngine : null;
+      final want = _filmWanted(state, engine);
+      final picture = pictureRect(
+        view,
+        pictureSize(
+            mode: state.aspectRatioMode,
+            view: view,
+            video: controller.displayVideoSize,
+            scale: scale),
+        state.videoOffset,
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (engine != null && want) _placeFilm(engine, picture);
+        _syncFilm(engine, want);
+      });
       final video = _wrapVideoTransforms(
-          svc.buildVideoWidget(fit: state.aspectRatioMode.boxFit), state);
+          svc.buildVideoWidget(
+              fit: state.aspectRatioMode.boxFit, filmHost: true),
+          state);
       if (scale == 1.0 && state.videoOffset == Offset.zero) return video;
       return Transform.translate(
         offset: state.videoOffset,
@@ -3120,23 +3380,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         child: result,
       );
     }
-    // Display Settings (video_adjust.dart) and Night mode: one colour
-    // matrix, so the picture is filtered once, not twice.
+    // Display Settings (video_adjust.dart): one colour matrix. Night mode
+    // is a black layer over the picture since P1 (film_surface.dart's
+    // nightShade: the same 40 %, and it dims a film on its own SurfaceView
+    // too, which no colour matrix in Flutter reaches).
     final adjust = ref.watch(videoAdjustProvider);
-    List<double>? colour = adjust.isNeutral ? null : adjust.matrix;
-    if (state.isNightMode) {
-      // As MX 3.4.3's Night Mode (the reference lab, run 45862946745: a
-      // white frame read 102 of 255 under it, grey, not tinted): the
-      // picture at 40 %, every colour alike. It was a warm filter that
-      // turned white orange (255, 102, 51).
-      const night = <double>[
-        0.4, 0, 0, 0, 0,
-        0, 0.4, 0, 0, 0,
-        0, 0, 0.4, 0, 0,
-        0, 0, 0, 1, 0,
-      ];
-      colour = colour == null ? night : composeColorMatrices(night, colour);
-    }
+    final colour = adjust.isNeutral ? null : adjust.matrix;
     if (colour != null) {
       result = ColorFiltered(
         colorFilter: ColorFilter.matrix(colour),
@@ -3551,7 +3800,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         _handleBackRequest();
       },
       child: Scaffold(
-        backgroundColor: _labNativeFilm
+        // The film on its own SurfaceView lies under this screen (P1).
+        backgroundColor: _labNativeFilm || _filmShows
             ? Colors.transparent
             : AppColors.playerBackground,
         body: Stack(
@@ -3561,9 +3811,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             child: RepaintBoundary(
               key: _videoBoundaryKey,
               child: Container(
-                color: _labNativeFilm ? Colors.transparent : Colors.black,
+                color: _labNativeFilm || _filmShows
+                    ? Colors.transparent
+                    : Colors.black,
                 child: _videoDisplayEnabled && svc.isInitialized
-                    ? _screenModeVideo(svc, state)
+                    // One Stack whether Night mode is on or not: the
+                    // picture's element (libmpv's Video keeps state) stays.
+                    ? Stack(fit: StackFit.expand, children: [
+                        _screenModeVideo(svc, state),
+                        if (state.isNightMode)
+                          const IgnorePointer(
+                            child: ColoredBox(color: Color(nightShadeArgb)),
+                          ),
+                      ])
                     : (svc.isInitialized
                         ? const Center(
                             child: Icon(

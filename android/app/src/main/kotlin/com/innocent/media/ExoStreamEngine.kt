@@ -115,13 +115,13 @@ class ExoStreamEngine private constructor(
             // playing without a picture meanwhile — the sound is what a
             // viewer who stepped away is still listening to.
             override fun onSurfaceAvailable() {
-                // LAB: the film on a SurfaceView of its own keeps it.
-                if (labView == null) player?.setVideoSurface(surface.surface)
+                // The film on its own SurfaceView keeps it.
+                if (!filmOn) player?.setVideoSurface(surface.surface)
                 emit(mapOf("id" to id, "e" to "surface", "on" to true))
             }
 
             override fun onSurfaceCleanup() {
-                if (labView == null) player?.clearVideoSurface()
+                if (!filmOn) player?.clearVideoSurface()
                 emit(mapOf("id" to id, "e" to "surface", "on" to false))
             }
         })
@@ -186,8 +186,14 @@ class ExoStreamEngine private constructor(
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                 .build(),
             false)
-        val lab = labView
-        if (lab != null) p.setVideoSurfaceHolder(lab.holder) else p.setVideoSurface(surface.surface)
+        // The film where the player put it: its own SurfaceView, or the texture.
+        val fv = filmView
+        if (filmOn && fv != null) {
+            filmAwait = "view"
+            p.setVideoSurfaceHolder(fv.holder)
+        } else {
+            p.setVideoSurface(surface.surface)
+        }
         reopen = { at, play ->
             open(url, at, play, target, maxHeight, bps, start, rungs, progressive)
         }
@@ -203,8 +209,9 @@ class ExoStreamEngine private constructor(
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (videoSize.width > 0 && videoSize.height > 0) {
                     surface.setSize(videoSize.width, videoSize.height)
-                    labVideo = videoSize
-                    layoutLab()
+                    videoNow = videoSize
+                    filmView?.holder?.setFixedSize(videoSize.width, videoSize.height)
+                    layoutFilm()
                 }
                 emit(mapOf("id" to id, "e" to "size",
                     "w" to videoSize.width, "h" to videoSize.height))
@@ -248,6 +255,10 @@ class ExoStreamEngine private constructor(
             }
         })
         p.addAnalyticsListener(object : AnalyticsListener {
+            override fun onRenderedFirstFrame(
+                eventTime: AnalyticsListener.EventTime, output: Any, renderTimeMs: Long,
+            ) = filmFirstFrame(output)
+
             override fun onVideoInputFormatChanged(
                 eventTime: AnalyticsListener.EventTime,
                 format: Format,
@@ -441,68 +452,308 @@ class ExoStreamEngine private constructor(
             "heights" to heights, "picks" to picks))
     }
 
-    /** What the picture is doing: frames drawn and dropped so far. */
-    // ── LAB ONLY (PlayerLab, SmoothLab's `sv` and `sched` looks) ─────────
-    // The film on Android's own SurfaceView behind a see-through Flutter
-    // window, as MX draws it: MediaCodec renders into a surface the display
-    // composes itself, and Flutter is not woken by each frame. Nothing in a
-    // release build calls these.
-    private var labView: android.view.SurfaceView? = null
-    private var labVideo: VideoSize? = null
-    private var labRoot: android.view.ViewGroup? = null
-    private val labRelayout = android.view.View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-        layoutLab()
+    // ── THE FILM ON ITS OWN SURFACE (P1 in production, 28 Nov 2026) ─────
+    // The film on Android's own SurfaceView under Flutter's see-through
+    // surface (PlayerWindow.kt), as MX draws it: MediaCodec renders into a
+    // surface the display composes itself, and Flutter is not woken by each
+    // frame (Test Lab 46124628533: app CPU realme 61 → 39 %, OPPO 52 → ~42 %
+    // of a core; Flutter 0 frames while nothing changes). The player places
+    // it ([filmPlace]: video_geometry.dart's rectangle in pixels — fit,
+    // zoom, pan, crop, stretch, 100 %) and moves the film between it and the
+    // texture ([filmSurface]): an effect only Flutter can draw (a colour
+    // filter, a mirror), the in-app picture-in-picture window. Each move
+    // waits for the film's first frame on the new surface before the old
+    // one goes (`film` events), so no black frame shows between; the
+    // texture keeps its last picture meanwhile, and the SurfaceView its own.
+    private var filmView: android.view.SurfaceView? = null
+    private var filmRoot: android.view.ViewGroup? = null
+
+    /** ExoPlayer renders into [filmView] (asked; its first frame may be on its way). */
+    private var filmOn = false
+
+    /** Whose first frame is awaited: "view", "texture" or none. */
+    private var filmAwait: String? = null
+
+    /** The film's frame is on the SurfaceView: what Dart was told last. */
+    private var filmShown = false
+
+    /** Where the player wants the film (px in the FlutterView: l, t, w, h), for a view of [filmFor]. */
+    private var filmRect: IntArray? = null
+    private var filmFor: IntArray? = null
+    private var videoNow: VideoSize? = null
+
+    /** The SurfaceView was made secure (the window's FLAG_SECURE then). */
+    private var filmSecure = false
+    private val filmRelayout = android.view.View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+        layoutFilm()
+    }
+    private val filmRemove = Runnable { dropFilmView() }
+
+    /**
+     * Paused, Media3 still releases a frame to a new surface
+     * (VideoFrameReleaseControl.setOutputSurface: FIRST_FRAME_NOT_RENDERED
+     * is force-released while not started), but its loop runs once a
+     * second then and may hold no decoded frame: a seek to where it is
+     * makes one.
+     */
+    private val filmNudge = Runnable {
+        val p = player ?: return@Runnable
+        if (filmAwait != null && !p.playWhenReady) {
+            emit(mapOf("id" to id, "e" to "film", "note" to "paused switch, nudged"))
+            p.seekTo(p.currentPosition)
+        }
     }
     private var reopen: ((Long, Boolean) -> Unit)? = null
 
-    /** The film on a SurfaceView behind Flutter ([on]) or back on the texture. */
-    fun labSurface(on: Boolean): Boolean {
-        val p = player
-        if (!on) {
-            val v = labView ?: return true
-            labView = null
-            labRoot?.removeOnLayoutChangeListener(labRelayout)
-            labRoot = null
-            p?.clearVideoSurfaceHolder(v.holder)
-            (v.parent as? android.view.ViewGroup)?.removeView(v)
-            p?.setVideoSurface(surface.surface)
+    /**
+     * The film on its own SurfaceView ([on]) or back on the texture. False
+     * when it cannot be (Flutter's surface opaque: PlayerWindow.seeThrough;
+     * no Activity): the film stays where it is.
+     */
+    fun filmSurface(on: Boolean): Boolean {
+        if (on) {
+            if (filmOn) return true
+            if (!PlayerWindow.seeThrough) return false
+            val a = PlayerWindow.current() ?: return false
+            val root = a.findViewById<android.view.ViewGroup>(android.R.id.content) ?: return false
+            main.removeCallbacks(filmRemove)
+            var v = filmView
+            if (v == null || v.parent !== root) {
+                dropFilmView()
+                v = android.view.SurfaceView(a)
+                // A paid film or a vault one (FLAG_SECURE on the window): its
+                // own surface kept out of screenshots and recordings too —
+                // set before it is in the window.
+                filmSecure = windowSecure()
+                v.setSecure(filmSecure)
+                root.addView(v, 0, android.widget.FrameLayout.LayoutParams(
+                    1, 1, android.view.Gravity.TOP or android.view.Gravity.START))
+                root.addOnLayoutChangeListener(filmRelayout)
+                filmRoot = root
+                filmView = v
+            }
+            videoNow?.let { vs ->
+                if (vs.width > 0 && vs.height > 0) v.holder.setFixedSize(vs.width, vs.height)
+            }
+            layoutFilm()
+            filmOn = true
+            filmAwait = "view"
+            player?.setVideoSurfaceHolder(v.holder)
+            main.removeCallbacks(filmNudge)
+            main.postDelayed(filmNudge, 1600)
             return true
         }
-        val a = PlayerLab.current() ?: return false
-        val root = a.findViewById<android.view.ViewGroup>(android.R.id.content) ?: return false
-        labView?.let { old -> (old.parent as? android.view.ViewGroup)?.removeView(old) }
-        labRoot?.removeOnLayoutChangeListener(labRelayout)
-        val v = android.view.SurfaceView(a)
-        root.addView(v, 0, android.widget.FrameLayout.LayoutParams(1, 1, android.view.Gravity.CENTER))
-        root.addOnLayoutChangeListener(labRelayout)
-        labRoot = root
-        labView = v
-        layoutLab()
-        p?.setVideoSurfaceHolder(v.holder)
+        if (!filmOn) return true
+        filmOn = false
+        DisplayVote.filmSurface(false)
+        val p = player
+        if (p == null || p.playbackState == Player.STATE_IDLE) {
+            // Nothing renders (released, stopped): no frame to wait for.
+            p?.setVideoSurface(surface.surface)
+            dropFilmView()
+            return true
+        }
+        filmAwait = "texture"
+        p.setVideoSurface(surface.surface)
+        main.removeCallbacks(filmRemove)
+        // At the latest: a film that renders nothing (stopped, ended).
+        main.postDelayed(filmRemove, 2500)
+        main.removeCallbacks(filmNudge)
+        main.postDelayed(filmNudge, 1600)
         return true
     }
 
-    /** Fits the SurfaceView to the film inside the window (Fit, centred). */
-    private fun layoutLab() {
-        val v = labView ?: return
-        val root = labRoot ?: return
-        val vs = labVideo ?: return
-        val w = root.width
-        val h = root.height
-        if (w <= 0 || h <= 0 || vs.width <= 0 || vs.height <= 0) return
-        val aspect = vs.width * vs.pixelWidthHeightRatio / vs.height
-        var fw = w
-        var fh = Math.round(w / aspect)
-        if (fh > h) {
-            fh = h
-            fw = Math.round(h * aspect)
+    /** A first frame on [output]: the move [filmSurface] began has landed. */
+    private fun filmFirstFrame(output: Any) {
+        val onView = filmView?.holder?.surface?.let { it === output } == true
+        when (filmAwait) {
+            "view" -> if (onView) {
+                filmAwait = null
+                main.removeCallbacks(filmNudge)
+                DisplayVote.filmSurface(true)
+                if (!filmShown) {
+                    filmShown = true
+                    emit(mapOf("id" to id, "e" to "film", "on" to true))
+                }
+            }
+            "texture" -> if (!onView) {
+                filmAwait = null
+                main.removeCallbacks(filmNudge)
+                if (filmShown) {
+                    filmShown = false
+                    emit(mapOf("id" to id, "e" to "film", "on" to false))
+                }
+                // The SurfaceView goes once Flutter has drawn the texture's
+                // frame over it (an event, a rebuild, a vsync).
+                main.removeCallbacks(filmRemove)
+                main.postDelayed(filmRemove, 300)
+            }
+        }
+    }
+
+    /** The SurfaceView out of the window; the film (if it was there) on the texture. */
+    private fun dropFilmView() {
+        main.removeCallbacks(filmRemove)
+        main.removeCallbacks(filmNudge)
+        val v = filmView
+        if (filmOn) {
+            filmOn = false
+            DisplayVote.filmSurface(false)
+            if (v != null) player?.clearVideoSurfaceHolder(v.holder)
+            player?.setVideoSurface(surface.surface)
+        }
+        filmAwait = null
+        filmRoot?.removeOnLayoutChangeListener(filmRelayout)
+        filmRoot = null
+        filmView = null
+        if (v != null) (v.parent as? android.view.ViewGroup)?.removeView(v)
+        if (filmShown) {
+            filmShown = false
+            emit(mapOf("id" to id, "e" to "film", "on" to false))
+        }
+    }
+
+    /** The Activity was made again: its window holds no SurfaceView of ours. */
+    fun filmLost() {
+        if (filmView != null) dropFilmView()
+    }
+
+    /**
+     * The window's FLAG_SECURE changed (the next film is paid, or not): a
+     * SurfaceView takes its secure flag only before it is in a window, so
+     * one made otherwise goes; the player asks for a new one.
+     */
+    fun filmSecureCheck() {
+        if (filmView != null && filmSecure != windowSecure()) dropFilmView()
+    }
+
+    private fun windowSecure(): Boolean {
+        val flags = PlayerWindow.current()?.window?.attributes?.flags ?: 0
+        return (flags and android.view.WindowManager.LayoutParams.FLAG_SECURE) != 0
+    }
+
+    /** Where the film goes: [l], [t], [w], [h] px in Flutter's view of [vw]×[vh]. */
+    fun filmPlace(l: Int, t: Int, w: Int, h: Int, vw: Int, vh: Int) {
+        filmRect = intArrayOf(l, t, w, h)
+        filmFor = intArrayOf(vw, vh)
+        layoutFilm()
+    }
+
+    /**
+     * The SurfaceView where the player asked, in the root's pixels (Flutter's
+     * view may sit inside it); while the window's size is not the one the
+     * player measured (a turn, picture-in-picture, before Flutter's next
+     * frame), the whole film centred in it.
+     */
+    private fun layoutFilm() {
+        val v = filmView ?: return
+        val root = filmRoot ?: return
+        val fv = PlayerWindow.flutterSurface(root)
+        val vw = fv?.width ?: root.width
+        val vh = fv?.height ?: root.height
+        if (vw <= 0 || vh <= 0) return
+        var dx = 0
+        var dy = 0
+        if (fv != null) {
+            val a = IntArray(2)
+            val b = IntArray(2)
+            fv.getLocationInWindow(a)
+            root.getLocationInWindow(b)
+            dx = a[0] - b[0]
+            dy = a[1] - b[1]
+        }
+        val r = filmRect
+        val f = filmFor
+        val l: Int
+        val t: Int
+        val w: Int
+        val h: Int
+        if (r != null && f != null && f[0] == vw && f[1] == vh) {
+            l = r[0]; t = r[1]; w = r[2]; h = r[3]
+        } else {
+            val vs = videoNow ?: return
+            if (vs.width <= 0 || vs.height <= 0) return
+            val aspect = vs.width * vs.pixelWidthHeightRatio / vs.height
+            var fw = vw
+            var fh = Math.round(vw / aspect)
+            if (fh > vh) {
+                fh = vh
+                fw = Math.round(vh * aspect)
+            }
+            w = fw; h = fh; l = (vw - fw) / 2; t = (vh - fh) / 2
         }
         val lp = v.layoutParams as android.widget.FrameLayout.LayoutParams
-        if (lp.width == fw && lp.height == fh) return
-        lp.width = fw
-        lp.height = fh
-        lp.gravity = android.view.Gravity.CENTER
+        val nw = w.coerceAtLeast(1)
+        val nh = h.coerceAtLeast(1)
+        if (lp.width == nw && lp.height == nh && lp.leftMargin == l + dx && lp.topMargin == t + dy) return
+        lp.width = nw
+        lp.height = nh
+        lp.leftMargin = l + dx
+        lp.topMargin = t + dy
+        lp.gravity = android.view.Gravity.TOP or android.view.Gravity.START
         v.layoutParams = lp
+    }
+
+    /**
+     * The Screenshot shortcut while the film is on its SurfaceView (a
+     * RepaintBoundary of Flutter's holds nothing of it then): the frame by
+     * PixelCopy, the part of it on screen (Crop and zoom cut it as the
+     * viewer sees it), at the film's own resolution, as a PNG. Null when
+     * it cannot.
+     */
+    fun filmShot(result: MethodChannel.Result) {
+        val v = filmView
+        val vs = videoNow
+        val root = filmRoot
+        if (v == null || !filmShown || vs == null || root == null || !v.holder.surface.isValid ||
+            vs.width <= 0 || vs.height <= 0 || v.width <= 0 || v.height <= 0) {
+            result.success(null)
+            return
+        }
+        // The SurfaceView's part inside Flutter's view, in its own pixels.
+        val fv = PlayerWindow.flutterSurface(root)
+        val vw = fv?.width ?: root.width
+        val vh = fv?.height ?: root.height
+        val lp = v.layoutParams as android.widget.FrameLayout.LayoutParams
+        val l = lp.leftMargin
+        val t = lp.topMargin
+        val visL = maxOf(0, -l)
+        val visT = maxOf(0, -t)
+        val visR = minOf(v.width, vw - l)
+        val visB = minOf(v.height, vh - t)
+        if (visR <= visL || visB <= visT) {
+            result.success(null)
+            return
+        }
+        val sx = vs.width.toDouble() / v.width
+        val sy = vs.height.toDouble() / v.height
+        val src = android.graphics.Rect(
+            Math.floor(visL * sx).toInt(), Math.floor(visT * sy).toInt(),
+            Math.ceil(visR * sx).toInt().coerceAtMost(vs.width),
+            Math.ceil(visB * sy).toInt().coerceAtMost(vs.height))
+        // The film's horizontal resolution; the height as the screen shows
+        // it (Stretch, a non-square pixel).
+        val outW = src.width().coerceAtLeast(1)
+        val outH = Math.round(outW * (visB - visT).toDouble() / (visR - visL)).toInt().coerceAtLeast(1)
+        val bmp = android.graphics.Bitmap.createBitmap(outW, outH, android.graphics.Bitmap.Config.ARGB_8888)
+        try {
+            android.view.PixelCopy.request(v, src, bmp, { code ->
+                if (code != android.view.PixelCopy.SUCCESS) {
+                    bmp.recycle()
+                    result.success(null)
+                    return@request
+                }
+                Thread {
+                    val out = java.io.ByteArrayOutputStream()
+                    val ok = bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                    bmp.recycle()
+                    main.post { result.success(if (ok) out.toByteArray() else null) }
+                }.start()
+            }, main)
+        } catch (t: Throwable) {
+            bmp.recycle()
+            result.success(null)
+        }
     }
 
     /** The same film opened again where it is (a Builder switch to apply). */
@@ -579,6 +830,7 @@ class ExoStreamEngine private constructor(
         shape.night = on
     }
 
+    /** What the picture is doing: frames drawn and dropped so far. */
     fun stats(): Map<String, Any?> {
         val p = player ?: return emptyMap()
         val c = p.videoDecoderCounters
@@ -600,6 +852,8 @@ class ExoStreamEngine private constructor(
             "volume" to p.volume.toDouble(),
             "boostOn" to (enhancer?.enabled == true),
             "boostMb" to (if (enhancer?.enabled == true) (enhancer?.targetGain?.toDouble() ?: 0.0) else 0.0),
+            // P1: where the film is drawn.
+            "film" to (if (filmShown) "view" else if (filmOn) "to view" else "texture"),
         )
     }
 
@@ -637,7 +891,7 @@ class ExoStreamEngine private constructor(
         player = null
         lastRung = -1
         if (!keepSurface) {
-            labSurface(false)
+            dropFilmView()
             surface.setCallback(null)
             surface.release()
         }
@@ -880,6 +1134,16 @@ class ExoStreamEngine private constructor(
         private const val EVENTS = "innocent/exo/events"
         private val engines = mutableMapOf<Int, ExoStreamEngine>()
 
+        /** A new Activity (PlayerWindow): no film keeps a SurfaceView of the old one. */
+        fun windowChanged() {
+            for (e in engines.values) e.filmLost()
+        }
+
+        /** The window's FLAG_SECURE changed: each film's SurfaceView follows. */
+        fun secureChanged() {
+            for (e in engines.values) e.filmSecureCheck()
+        }
+
         /** LAB ONLY: dynamic scheduling for the players opened from now on. */
         @Volatile
         var labSched = false
@@ -913,11 +1177,28 @@ class ExoStreamEngine private constructor(
                         result.success(e.stats())
                         return@setMethodCallHandler
                     }
-                    // LAB ONLY (SmoothLab): see the members above.
-                    if (call.method == "labSurface") {
-                        result.success(e.labSurface(call.argument<Boolean>("on") ?: false))
+                    // The film on its own SurfaceView (P1): see the members above.
+                    if (call.method == "filmSurface") {
+                        result.success(e.filmSurface(call.argument<Boolean>("on") ?: false))
                         return@setMethodCallHandler
                     }
+                    if (call.method == "filmPlace") {
+                        e.filmPlace(
+                            (call.argument<Number>("l"))?.toInt() ?: 0,
+                            (call.argument<Number>("t"))?.toInt() ?: 0,
+                            (call.argument<Number>("w"))?.toInt() ?: 0,
+                            (call.argument<Number>("h"))?.toInt() ?: 0,
+                            (call.argument<Number>("vw"))?.toInt() ?: 0,
+                            (call.argument<Number>("vh"))?.toInt() ?: 0,
+                        )
+                        result.success(true)
+                        return@setMethodCallHandler
+                    }
+                    if (call.method == "filmShot") {
+                        e.filmShot(result)
+                        return@setMethodCallHandler
+                    }
+                    // LAB ONLY (SmoothLab `sched`).
                     if (call.method == "labSched") {
                         labSched = call.argument<Boolean>("on") ?: false
                         result.success(e.labReopen())

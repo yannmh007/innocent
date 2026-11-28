@@ -7,7 +7,6 @@ import android.os.SystemClock
 import android.util.Printer
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import java.lang.ref.WeakReference
 
 /**
  * LAB ONLY — called by SmoothLab (lib/features/player/presentation/lab/,
@@ -26,50 +25,45 @@ import java.lang.ref.WeakReference
  * repaint), after taking the image through JNI (ImageExternalTextureVK
  * ProcessFrame: acquireLatestImage, getHardwareBuffer, close). MX draws
  * the film on Android's own SurfaceView, which the display composes
- * without the app. This lets one Test Lab run measure, on one phone:
- *  * the window transparent ([transparent]) — Flutter's SurfaceView on top
- *    of the window, see-through where nothing is drawn, so a SurfaceView
- *    BEHIND it (ExoStreamEngine.labSurface) shows the film and Flutter
- *    draws only when its own content changes;
+ * without the app. Since 28 Nov 2026 the app does too (PlayerWindow.kt,
+ * ExoStreamEngine's film surface): this measures beside it, on one phone:
+ *  * the window as 1.64.90 had it ([opaque]: Flutter's surface opaque, the
+ *    Activity recreated once) — what the see-through surface costs on the
+ *    app's other screens;
  *  * what the main thread spends its CPU on, message by message
  *    ([profileStart]/[profileStop]: the main Looper's dispatches, each
- *    timed in the thread's own CPU time).
+ *    timed in the thread's own CPU time);
+ *  * libmpv's picture on a SurfaceView of its own ([mpvSurface]).
  */
 object PlayerLab {
     private const val CHANNEL = "innocent/lab"
 
-    /** The window see-through (Flutter's SurfaceView on top, transparent). */
-    @Volatile
-    var transparent = false
+    /** The window as 1.64.90 had it: Flutter's surface opaque (PlayerWindow.labOpaque). */
+    val opaque: Boolean get() = PlayerWindow.labOpaque
 
     /** The next onCreate drops the saved fragment, so the new mode applies. */
     @Volatile
     var recreating = false
 
-    private var activity: WeakReference<Activity>? = null
-
-    fun attach(a: Activity) {
-        activity = WeakReference(a)
-    }
-
-    fun current(): Activity? = activity?.get()
+    fun current(): Activity? = PlayerWindow.current()
 
     fun register(flutterEngine: FlutterEngine) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
-                    "transparent" -> {
+                    "opaque" -> {
                         val on = call.argument<Boolean>("on") ?: false
                         val a = current()
-                        if (a == null || on == transparent) {
+                        if (a == null || on == opaque) {
                             result.success(false)
                         } else {
-                            transparent = on
+                            PlayerWindow.labOpaque = on
                             recreating = true
                             result.success(true)
                             a.runOnUiThread { a.recreate() }
                         }
                     }
+                    "window" -> result.success(PlayerWindow.how)
                     "profileStart" -> {
                         profileStart()
                         result.success(true)
