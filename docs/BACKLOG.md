@@ -49,6 +49,16 @@ does it.
   lab's `fn:audio` (f377b5c9) sets each item on the phones in the P1 run.
   MX's pinch on the subtitle: not measurable by sendevent (MX took it as
   a tap, run 46054727876); Innocent's pinch-to-size stays.
+  TEST LAB 28 Nov (the day's tests 1-4): P0 46124465325 realme and OPPO
+  16 PASS 1 SKIP (the ~7 s jump at want≈281 as on 1.64.88/89). P1
+  46124628533: the film on a SurfaceView, app CPU realme 61 → 39 %
+  (median), OPPO 52 → ~42 %; Flutter 0 frames; the raster thread gone;
+  the main thread 341 → 49-126 messages in 12 s; the controls over it
+  4.5-4.9 fps (they draw only when they change, r50 9 ms — the emulator's
+  worry did not hold); a dialog 89/69 % on the texture (its glass blurs a
+  moving film) against 37-38 % — the glass then a tint alone. `sched`
+  and `t`: no gain. P4 fn:audio on both phones: every ♪ item reached the
+  sound (handoff 2026_11_29 §3). WAITS: the owner's decision on P1.
 - **27 Nov (night): BEYOND MX, SESSION 1 — P1 MEASURED ON THE EMULATOR,
   P2-P4 BUILT (branch only; docs/handoff_2026_11_28_beyond_mx_p1.md)**.
   The owner's answers: P1 A/B first; frame-rate matching seamless only;

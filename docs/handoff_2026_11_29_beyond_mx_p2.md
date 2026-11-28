@@ -44,9 +44,44 @@ first: CLAUDE.md, this file, BACKLOG §0 (the newest entry), skills
 - Branch Build 46118303872 (f377b5c9): checks, both JVM suites, Analyze,
   the whole suite, the APK — green.
 
-## 3. P1 on the phones (Test Lab fifty-seventh)
+## 3. P1 on the phones (Test Lab fifty-seventh, 46124628533)
 
-(filled in below when the run lands)
+Sintel on ExoPlayer, 20 s a look, app CPU (% of one core, CpuProbe),
+Flutter's frames (fps), raster p50 (ms); `LAB main` = the main thread's
+messages over the profiled 12 s.
+
+| look | realme app % | realme fps | OPPO app % | OPPO fps |
+|---|---|---|---|---|
+| film on the texture (`now` ×2, `…prof`) | 51 / 61 / 61 | 23-25 | 52 / 49 / 53 | 24-25 |
+| texture, ExoPlayer's dynamic scheduling (`sched`) | 63 | 25 | 54 | 24 |
+| texture, the window see-through (`t`, `tprof`) | 71 / 61 | 23-25 | 65 / 51 | 23-24 |
+| **film on a SurfaceView** (`sv` ×2, `svprof`, `svsched`) | **43 / 37 / 38 / 40** | **0** | **48 / 35 / 59 / 40** | **0** |
+| controls up, texture | 79 | 24.9 (r50 6.9) | 76 | 25.7 (r50 6.0) |
+| controls up, SurfaceView | 62 | 4.9 (r50 9.4, late 6.8 %) | 45 | 4.5 (r50 8.8, late 9.3 %) |
+| decoder dialog (glass), texture | 89 | 25.0 | 69 | 25.0 |
+| decoder dialog, SurfaceView | 38 | 0.3 | 37 | 0.3 |
+
+- Medians, the film alone: realme 61 → 39 % (−22 points, −36 %), OPPO
+  52 → 40-44 % (−10 to −12 points, −20 %). Flutter draws nothing while the
+  film plays on the SurfaceView; the raster thread (10-17 %) is gone.
+- `LAB main`: texture 341/343 messages in 12 s (ImageReader 288-289 of
+  them, main 6 %), SurfaceView 49 (realme, main 2 %) / 126 (OPPO, main
+  15 %, one sample with Dart messages).
+- The emulator's worry did NOT hold on the phones: the controls over the
+  SurfaceView draw only when they change (4.5-4.9 fps, the clock and the
+  bar), raster p50 9 ms.
+- A dialog over the texture costs a lot (89 / 69 %: its glass blurs a
+  changing film 25 times a second); over the SurfaceView it is still
+  (0.3 fps, 37-38 %) — but its glass has nothing to blur: the tint alone
+  (pictures: p1_dialog_glass.png, simulated by composing the dialog drawn
+  over nothing on the frame, as the display does).
+- `sched` and `t` change nothing measurable: dynamic scheduling stays off.
+- P4 `fn:audio` on both phones: Mono, Swap and Night shaped ~144 000
+  frames in 3 s (48 kHz: all of it); Night's gain +1.4 / +0.3 dB (a quiet
+  part lifted); the delay moved the clock (+300 ms: position +3311 ms in
+  3 s; −300: +2410); Disable turned the track off; Boost 200 % = the
+  LoudnessEnhancer at 602 mB (+6 dB); every item back off.
+- P0 the same morning (46124465325): 16 PASS 1 SKIP on both phones.
 
 ## 4. Open
 
