@@ -1,18 +1,18 @@
-[10:46:30] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[10:46:30] install
-[10:46:46] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[10:46:46] network: eth0 has qdisc clsact
-[10:46:46] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[10:47:16] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[10:47:16] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[10:47:16] library: pushing 24 files
-[10:47:45] library: MediaStore lists 24 videos
-[10:47:45] cold start
+[11:30:37] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[11:30:37] install
+[11:30:53] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[11:30:54] network: eth0 has qdisc clsact
+[11:30:54] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[11:31:22] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[11:31:22] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[11:31:22] library: pushing 24 files
+[11:31:53] library: MediaStore lists 24 videos
+[11:31:53] cold start
 Status: ok
-TotalTime: 3076
-WaitTime: 3096
-[10:47:59] flow smooth
-[10:48:06] smooth: lab_fresh.mp4 pushed (8907435 B)
-[10:48:06] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:8 shot:sv_fit play:film:tex:8 shot:tex_fit play:controls:now:6 play:controls:tex:6 play:decoder-still:now:4 shot:dialog_sv play:decoder-still:tex:4 shot:dialog_tex play:film:now:3 do:crop shot:sv_crop do:original shot:sv_original do:stretch shot:sv_stretch do:fit do:zoom shot:sv_zoom do:pan shot:sv_pan do:fit shot:sv_fit2 do:mirror shot:mirror do:mirror shot:mirror_back do:night shot:night do:night do:filter shot:filter do:filter shot:filter_back do:pause do:mirror shot:paused_mirror do:mirror shot:paused_back do:play do:shot pinch:now:4 pinch:tex:4 play:film:now:6 local:lab play:film:now:6 shot:mpv_tex play:film:mpvembed:8 shot:mpvembed play:controls:mpvembed:6
-[10:52:18] flow smooth done
-[10:52:22] done
+TotalTime: 4440
+WaitTime: 4451
+[11:32:08] flow smooth
+[11:32:14] smooth: lab_fresh.mp4 pushed (8907435 B)
+[11:32:14] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:8 shot:sv_fit play:film:tex:8 shot:tex_fit play:controls:now:6 play:controls:tex:6 play:decoder-still:now:4 shot:dialog_sv play:decoder-still:tex:4 shot:dialog_tex play:film:now:3 do:crop shot:sv_crop do:original shot:sv_original do:stretch shot:sv_stretch do:fit do:zoom shot:sv_zoom do:pan shot:sv_pan do:fit shot:sv_fit2 do:mirror shot:mirror do:mirror shot:mirror_back do:night shot:night do:night do:filter shot:filter do:filter shot:filter_back do:pause do:mirror shot:paused_mirror do:mirror shot:paused_back do:play do:shot pinch:now:4 pinch:tex:4 play:film:now:6 local:lab play:film:now:6 shot:mpv_tex play:film:mpvembed:8 shot:mpvembed play:controls:mpvembed:6
+[11:36:25] flow smooth done
+[11:36:29] done

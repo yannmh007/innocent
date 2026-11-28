@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 121, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 85, in main
+    Image = _pil()
+  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 37, in _pil
+    from PIL import Image
+ModuleNotFoundError: No module named 'PIL'
