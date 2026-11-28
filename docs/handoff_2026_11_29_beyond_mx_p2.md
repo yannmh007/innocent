@@ -12,7 +12,11 @@ first: CLAUDE.md, this file, BACKLOG §0 (the newest entry), skills
 1. ♪'s look (MX | Innocent sheet): **approved**.
 2. OpenSubtitles: account made, `OPENSUBTITLES_API_KEY`, `_USERNAME`,
    `_PASSWORD` set as Supabase Edge Function secrets.
-3. P1 (the film on Android's SurfaceView): **PENDING** — see §3.
+3. P1 (the film on Android's SurfaceView): **the SurfaceView, the dialogs'
+   glass a tint alone (as MX)** — after §3's table and the glass pictures
+   (p1_dialog_glass.png: blurred on the texture | tint over the
+   SurfaceView). Effects that need the picture in Flutter (Display's colour
+   filters, mirror/flip) fall back to the texture while on.
 
 ## 1. What was found (with the proof)
 
