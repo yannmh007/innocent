@@ -37,10 +37,18 @@ does it.
   in check.py), migration 084 subtitle_budget (install 40 searches/h, 5
   downloads/day; network 200/h, 10/day; tool/sql/subtitle_budget_test.sql),
   the app's CC → Online sheet (online_subtitles_test: hash, name, refusals,
-  download → load) and the privacy text. WAITS ON THE OWNER: the
-  OpenSubtitles key and account as secrets; then skill live-db-change
-  (084) and edge-deploy (subtitles-online, verify_jwt false). P4: the ♪
-  sheet sent again (p4_audio_mx_vs_innocent.png); the owner's word pending.
+  download → load) and the privacy text. LIVE 28 Nov 06:40 UTC (the owner
+  set OPENSUBTITLES_API_KEY/USERNAME/PASSWORD): migration 084 applied
+  (dry run and live test 'SUBTITLE BUDGET TEST PASSED', RLS on, anon
+  nothing); subtitles-online v1 = shim at 485ae02c, verify_jwt false;
+  Subtitles check 46117747259 (.github/workflows/subtitles-check.yml, a
+  search and one download from a runner): search 200, 40 rows, no link
+  in the answer; download 200, 76 KB SubRip, 1089 cues, the account's
+  remaining 19 (the login works: 20 a day). The app's sheet reaches users
+  with the next release. P4: the owner APPROVED ♪'s look (28 Nov); the
+  lab's `fn:audio` (f377b5c9) sets each item on the phones in the P1 run.
+  MX's pinch on the subtitle: not measurable by sendevent (MX took it as
+  a tap, run 46054727876); Innocent's pinch-to-size stays.
 - **27 Nov (night): BEYOND MX, SESSION 1 — P1 MEASURED ON THE EMULATOR,
   P2-P4 BUILT (branch only; docs/handoff_2026_11_28_beyond_mx_p1.md)**.
   The owner's answers: P1 A/B first; frame-rate matching seamless only;
