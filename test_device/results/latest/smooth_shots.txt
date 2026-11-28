@@ -1,9 +1,15 @@
-Traceback (most recent call last):
-  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 121, in <module>
-    sys.exit(main())
-             ~~~~^^
-  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 85, in main
-    Image = _pil()
-  File "/home/runner/work/innocent/innocent/test_device/shots_measure.py", line 37, in _pil
-    from PIL import Image
-ModuleNotFoundError: No module named 'PIL'
+9_p1_01_fit.png: 1080x2400 · film box 0,0 1080x2400 · luma 111
+9_p1_02_crop.png: 1080x2400 · film box 0,0 1080x2400 · luma 112
+9_p1_03_original.png: 1080x2400 · film box 70,820 940x888 · luma 226
+9_p1_04_stretch.png: 1080x2400 · film box 0,0 1080x2400 · luma 104
+9_p1_05_zoom.png: 1080x2400 · film box 0,712 1080x996 · luma 182
+9_p1_06_pan.png: 1080x2400 · film box 0,712 1080x996 · luma 187
+9_p1_07_night.png: 1080x2400 · film box 0,820 1080x888 · luma 199
+9_p1_08_fit2.png: 1080x2400 · film box 0,820 1080x888 · luma 201
+9_p1_09_mirror.png: 1080x2400 · film box 0,820 1080x888 · luma 199
+9_p1_10_mirror_back.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · the last shot as this one turned: 0.25 (> 1 mirrored)
+9_p1_11_paused_mirror.png: 1080x2400 · film box 0,820 1080x888 · luma 202
+9_p1_12_paused_back.png: 1080x2400 · film box 0,820 1080x888 · luma 202 · the last shot as this one turned: 0.88 (> 1 mirrored)
+9_p1_13_tex.png: 1080x2400 · film box 0,820 1080x888 · luma 199
+9_shortcut_Innocent_1795867301874.png: 640x360 · film box 0,0 640x360 · luma 159
+9_shortcut_Innocent_1795867322207.png: 823x1829 · film box 0,684 824x462 · luma 193
