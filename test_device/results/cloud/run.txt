@@ -3,16 +3,24 @@ Have questions, feedback, or issues? Get support by visiting:
   https://firebase.google.com/support/
 
 Uploading [app.apk] to Firebase Test Lab...
-Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/46124628533/]
+Raw results will be stored in your GCS bucket at [https://console.developers.google.com/storage/browser/test-lab-a83h77c3x52vk-yvsvq7a2052yz/innocent/46129966885/]
 
-Test [matrix-g59jt8m8p6yza] has been created in the Google Cloud.
+Test [matrix-28mglko2xdjom] has been created in the Google Cloud.
 Creating individual test executions...
-..............................................................................done.
-Firebase Test Lab will execute your game-loop test on 2 device(s). More devices may be added later if flaky test attempts are specified.
+...............................done.
+Firebase Test Lab will execute your game-loop test on 1 device(s). More devices may be added later if flaky test attempts are specified.
 
-Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6479725937280640025 ].
-08:44:47 Test matrix status: Pending:2 08:44:59 Test matrix status: Pending:2 08:45:12 Test matrix status: Pending:2 08:45:24 Test matrix status: Pending:2 08:45:36 Test matrix status: Running:2 08:45:48 Test matrix status: Running:2 08:46:00 Test matrix status: Running:2 08:46:12 Test matrix status: Running:2 08:46:25 Test matrix status: Running:2 08:46:37 Test matrix status: Running:2 08:46:49 Test matrix status: Running:2 08:47:01 Test matrix status: Running:2 08:47:13 Test matrix status: Running:2 08:47:25 Test matrix status: Running:2 08:47:37 Test matrix status: Running:2 08:47:49 Test matrix status: Running:2 08:48:02 Test matrix status: Running:2 08:48:14 Test matrix status: Running:2 08:48:26 Test matrix status: Running:2 08:48:38 Test matrix status: Running:2 08:48:50 Test matrix status: Running:2 08:49:02 Test matrix status: Running:2 08:49:14 Test matrix status: Running:2 08:49:26 Test matrix status: Running:2 08:49:38 Test matrix status: Running:2 08:49:51 Test matrix status: Running:2 08:50:03 Test matrix status: Running:2 08:50:15 Test matrix status: Running:2 08:50:27 Test matrix status: Running:2 08:50:39 Test matrix status: Running:2 08:50:51 Test matrix status: Running:2 08:51:04 Test matrix status: Running:2 08:51:16 Test matrix status: Running:2 08:51:28 Test matrix status: Running:2 08:51:40 Test matrix status: Running:2 08:51:52 Test matrix status: Running:2 08:52:04 Test matrix status: Running:2 08:52:16 Test matrix status: Running:2 08:52:28 Test matrix status: Pending:1 Running:1 08:52:40 Test matrix status: Pending:1 Running:1 08:52:52 Test matrix status: Finished:1 Pending:1 08:53:04 Test matrix status: Finished:1 Running:1 08:53:17 Test matrix status: Finished:2           
+Test results will be streamed to [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5865298430665006273 ].
+09:32:04 Test is Pending
+09:32:52 Firebase Test Lab is deprecated and will be fully shut down on September 30, 2027. To maintain your testing workflows, you can migrate to the Developer Device Platform on Google Cloud. See the Developer Device Platform Migration Guide (https://docs.cloud.google.com/developer-device-platform/device-run/migrate) and FAQ (https://docs.cloud.google.com/developer-device-platform/troubleshooting) for more details.
+09:32:52 Starting attempt 1.
+09:32:52 Test is Running
+09:37:18 Done. Test time = 182 (secs)
+09:37:18 Starting results processing. Attempt: 1
+09:37:30 Completed results processing. Time taken = 7 (secs)
+09:37:30 Test is Finished
+
 Game-loop testing complete.
 
-More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/6479725937280640025 ].
+More details are available at [ https://console.firebase.google.com/project/innocent-lab/testlab/histories/bh.d8fc1d97699ac8b0/matrices/5865298430665006273 ].
 exit 0
