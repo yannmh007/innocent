@@ -1,0 +1,64 @@
+# Subtitles check: the online subtitles function (docs/edge/subtitles-online.ts)
+# asked as the app asks it — a search for an open film, then the download of
+# its first result — from a runner, which reaches Supabase (the session's
+# sandbox does not). Prints numbers only: HTTP codes, rows, bytes, the
+# account's remaining downloads; never a link (the function returns none).
+#
+# One run spends ONE of the shared account's daily downloads (and one of
+# this check's install budget, migration 084). Push a change to this file on
+# a branch, or dispatch it.
+
+name: Subtitles check
+
+on:
+  push:
+    branches-ignore: [ main ]
+    paths:
+      - '.github/workflows/subtitles-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Search, then download the first result
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: sb_publishable_vTiAxBAhnZL_BqFcZD4m9A_Rb8Q8PHj
+        run: |
+          set -euo pipefail
+          fn="$SB_URL/functions/v1/subtitles-online"
+          code=$(curl -sS -o /tmp/s.json -w '%{http_code}' -X POST "$fn" \
+            -H "apikey: $SB_KEY" -H 'Content-Type: application/json' \
+            -d '{"op":"search","device_id":"ci-subtitles-check","query":"big buck bunny","languages":"en"}')
+          echo "search: HTTP $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open('/tmp/s.json'))
+          rows = d.get('results') or []
+          print('search: rows', len(rows), '| code', d.get('code'),
+                '| first', [(r.get('lang'), r.get('downloads'), r.get('file_id') > 0) for r in rows[:3]])
+          print('search: any http in the answer:', 'http' in json.dumps(d))
+          open('/tmp/fid', 'w').write(str(rows[0]['file_id']) if rows else '')
+          PY
+          [ "$code" = "200" ] || exit 1
+          fid=$(cat /tmp/fid)
+          [ -n "$fid" ] || { echo "no result to download"; exit 1; }
+          code=$(curl -sS -o /tmp/d.json -w '%{http_code}' -X POST "$fn" \
+            -H "apikey: $SB_KEY" -H 'Content-Type: application/json' \
+            -d "{\"op\":\"download\",\"device_id\":\"ci-subtitles-check\",\"file_id\":$fid}")
+          echo "download: HTTP $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import base64, json
+          d = json.load(open('/tmp/d.json'))
+          raw = base64.b64decode(d.get('data') or '')
+          text = raw.decode('utf-8', 'replace')
+          print('download: name ends .srt', str(d.get('name', '')).endswith('.srt'),
+                '| bytes', len(raw), '| cues', text.count('-->'),
+                '| remaining', d.get('remaining'), '| code', d.get('code'))
+          PY
+          [ "$code" = "200" ]
