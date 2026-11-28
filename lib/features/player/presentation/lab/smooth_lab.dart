@@ -69,6 +69,11 @@ class SmoothLab {
   /// SurfaceView behind the window (the look `mpvsv`); false when refused.
   static Future<bool> Function()? mpvSurface;
 
+  /// The player service's, in a lab build: one of ♪'s items set as the
+  /// menu sets it (`delay` ms, `stereo` 0-2, `night` 0/1, `off` 0/1,
+  /// `gain` × 100) — the step `fn:audio` (P4 on real phones, 28 Nov 2026).
+  static Future<void> Function(String item, int value)? audio;
+
   /// The default plan: ⋮ in every look, playing then paused; the other
   /// menus and the controls in the two that count.
   static const String defaultPlan =
@@ -677,9 +682,57 @@ class SmoothLab {
         .replaceAll('\n', ' '));
   }
 
+  /// ♪'s items on the phone's own sound (P4): each set as the menu sets it,
+  /// then what ExoPlayer's sound went through over the next 3 s — the
+  /// shaper's frames (mono, swap, night), Night's gain, the delay, the
+  /// audio track's switch, the volume and the boost (LoudnessEnhancer) —
+  /// one `LAB fn audio/<item>` line each; then everything back.
+  static Future<void> _audioChecks() async {
+    final set = audio;
+    final exo = ExoEngine.labLatest;
+    if (set == null || exo == null) {
+      PlaybackLog.add('LAB fn audio: ${set == null ? 'no hook' : 'no ExoPlayer'}');
+      return;
+    }
+    Future<Map<String, Object?>> st() => exo.stats();
+    num n(Map<String, Object?> m, String k) => (m[k] as num?) ?? -1;
+    Future<void> one(String name, String item, int value) async {
+      final a = await st();
+      await set(item, value);
+      await _wait(3000);
+      final b = await st();
+      PlaybackLog.add('LAB fn audio/$name: '
+          'stereo=${b['stereo']} night=${b['night']} '
+          'mono+${n(b, 'framesMono') - n(a, 'framesMono')} '
+          'swap+${n(b, 'framesSwap') - n(a, 'framesSwap')} '
+          'night+${n(b, 'framesNight') - n(a, 'framesNight')} '
+          'gain=${n(b, 'gainDb').toStringAsFixed(1)}dB '
+          'delay=${b['delayMs']}ms off=${b['audioOff']} '
+          'vol=${n(b, 'volume').toStringAsFixed(2)} boost=${b['boostOn']}/${n(b, 'boostMb').round()}mB '
+          'pos+${n(b, 'pos') - n(a, 'pos')}ms playing=${b['playing']}');
+    }
+
+    await one('mono', 'stereo', 1);
+    await one('swap', 'stereo', 2);
+    await one('stereo', 'stereo', 0);
+    await one('night on', 'night', 1);
+    await one('night off', 'night', 0);
+    await one('delay +300', 'delay', 300);
+    await one('delay -300', 'delay', -300);
+    await one('delay 0', 'delay', 0);
+    await one('disable', 'off', 1);
+    await one('enable', 'off', 0);
+    await one('boost 200', 'gain', 200);
+    await one('boost 100', 'gain', 100);
+  }
+
   static Future<void> _functions(String what) async {
     await close?.call();
     await _wait(500);
+    if (what == 'audio') {
+      await _audioChecks();
+      return;
+    }
     if (what == 'shortcuts') {
       for (final item in ShortcutItem.available()) {
         if (item == ShortcutItem.screenRotation) continue;

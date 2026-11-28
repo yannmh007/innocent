@@ -54,6 +54,16 @@ class AudioShape {
     @Volatile
     var night: Boolean = false
 
+    /**
+     * Frames this shaper changed, by what it did, and the Night gain now
+     * (dB): read by the lab's ♪ check on real phones (SmoothLab `fn:audio`,
+     * 28 Nov 2026) — proof the phone's sound went through it.
+     */
+    @Volatile var framesMono: Long = 0
+    @Volatile var framesSwap: Long = 0
+    @Volatile var framesNight: Long = 0
+    val gainDb: Float get() = 20f * log10(max(gain, 1e-6f))
+
     private var sampleRate = 48000
     private var attack = 0f
     private var release = 0f
@@ -118,6 +128,7 @@ class AudioShape {
                 }
                 i += 2
             }
+            if (mode == MONO) framesMono += frames else framesSwap += frames
         }
         if (!night) {
             gain = 1f
@@ -163,5 +174,6 @@ class AudioShape {
             gain = target
             frame += n
         }
+        framesNight += frames
     }
 }

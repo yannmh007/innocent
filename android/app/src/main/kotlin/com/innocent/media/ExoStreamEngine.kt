@@ -588,6 +588,18 @@ class ExoStreamEngine private constructor(
             "dropped" to (c?.droppedBufferCount ?: -1),
             "playing" to p.isPlaying,
             "pos" to p.currentPosition,
+            // ♪ (P4): what the sound goes through now, for the lab's check.
+            "stereo" to shape.stereo,
+            "night" to shape.night,
+            "framesMono" to shape.framesMono,
+            "framesSwap" to shape.framesSwap,
+            "framesNight" to shape.framesNight,
+            "gainDb" to shape.gainDb.toDouble(),
+            "delayMs" to audioDelayUs / 1000L,
+            "audioOff" to p.trackSelectionParameters.disabledTrackTypes.contains(C.TRACK_TYPE_AUDIO),
+            "volume" to p.volume.toDouble(),
+            "boostOn" to (enhancer?.enabled == true),
+            "boostMb" to (if (enhancer?.enabled == true) (enhancer?.targetGain?.toDouble() ?: 0.0) else 0.0),
         )
     }
 

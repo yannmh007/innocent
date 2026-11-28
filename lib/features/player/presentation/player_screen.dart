@@ -370,6 +370,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         final svc = ref.read(videoPlayerServiceProvider);
         return svc is MediaKitPlayerService && await svc.labMpvSurface();
       };
+      SmoothLab.audio = (item, v) async {
+        final svc = ref.read(videoPlayerServiceProvider);
+        if (svc is! MediaKitPlayerService) return;
+        switch (item) {
+          case 'delay':
+            await svc.setAudioDelayMs(v);
+          case 'stereo':
+            await svc.setStereoMode(v);
+          case 'night':
+            await svc.setNightMode(v == 1);
+          case 'off':
+            await svc.setAudioDisabled(v == 1);
+          case 'gain':
+            await svc.setAudioGain(v / 100);
+        }
+      };
       ExoEngine.labNative.addListener(_labNativeChanged);
     }
     // Can this phone afford the menus' frosted glass? (Asked once.)
@@ -1296,6 +1312,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       SmoothLab.open = null;
       SmoothLab.close = null;
       SmoothLab.playing = null;
+      SmoothLab.audio = null;
     }
     if (const bool.fromEnvironment('INNOCENT_LAB')) {
       ExoEngine.labNative.removeListener(_labNativeChanged);
