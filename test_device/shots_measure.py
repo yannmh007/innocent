@@ -153,6 +153,14 @@ def main():
             flipped = _diff(img, prev.transpose(Image.FLIP_LEFT_RIGHT))
             ratio = plain / max(flipped, 0.01)
             line += f' · the last shot as this one turned: {ratio:.2f} (> 1 mirrored)'
+        # Where Flutter's own layer shows: the top and bottom bands (the
+        # controls' bars), the middle (a dialog) — so a shot with the
+        # controls or a dialog up reads differently from one without.
+        W, H = img.size
+        top = _mean(lum, (0, 0, W, int(H * 0.12)))
+        bottom = _mean(lum, (0, int(H * 0.88), W, H))
+        mid = _mean(lum, (int(W * 0.3), int(H * 0.42), int(W * 0.7), int(H * 0.58)))
+        line += f' · bands top {top:.0f} middle {mid:.0f} bottom {bottom:.0f}'
         print(line)
         prev = img
     return 0

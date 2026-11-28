@@ -1031,6 +1031,8 @@ for flow in $FLOWS; do
           shots_taken=$((shots_taken + 1))
           name=$(grep -o 'LAB shot [A-Za-z0-9_-]*' "$OUT/logcat_raw.txt" | sed -n "${shots_taken}p" | awk '{print $3}')
           adb exec-out screencap -p > "$OUT/shots/9_p1_$(printf %02d "$shots_taken")_${name:-x}.png" 2>/dev/null || true
+          # The app's plan waits for this before it changes the screen.
+          adb shell "echo $shots_taken > $d/lab_shot_ack" >/dev/null 2>&1 || true
           # The display's layers, as text, for the first three shots only:
           # a dumpsys takes seconds on the emulator, and P1-E8's shots fell
           # behind their steps one dump at a time.

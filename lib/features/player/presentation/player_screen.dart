@@ -2163,6 +2163,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       case 'shot':
         await _captureScreenshot(context);
         return 'screenshot asked';
+      case 'controls':
+        c.showControls();
+        return 'controls up';
+      case 'dialog':
+        c.openDecoderDialog();
+        return 'decoder dialog open';
+      case 'close':
+        await _labClose();
+        return 'closed';
     }
     return 'unknown';
   }

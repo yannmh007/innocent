@@ -265,9 +265,26 @@ class SmoothLab {
           final exo = ExoEngine.labLatest;
           final st = exo == null ? const <String, Object?>{} : await exo.stats();
           final rect = st['filmRect'];
+          // In step with run.sh (P1-E9: a screencap taken by polling can
+          // fall behind): it writes lab_shot_ack once it has the screen.
+          final dir = await getExternalStorageDirectory();
+          final ack = File('${dir?.path}/lab_shot_ack');
+          try {
+            if (ack.existsSync()) ack.deleteSync();
+          } catch (_) {}
+          await _wait(800);
           PlaybackLog.add('LAB shot ${p[1]} film=${st['film'] ?? '-'}'
               '${rect == null ? '' : ' at $rect'}');
-          await _wait(5000);
+          final until = DateTime.now().add(const Duration(seconds: 15));
+          var taken = false;
+          while (DateTime.now().isBefore(until)) {
+            await _wait(250);
+            if (ack.existsSync()) {
+              taken = true;
+              break;
+            }
+          }
+          if (!taken) PlaybackLog.add('LAB shot ${p[1]}: no ack from run.sh');
           continue;
         }
         if (p.length >= 2 && p[0] == 'page') {
