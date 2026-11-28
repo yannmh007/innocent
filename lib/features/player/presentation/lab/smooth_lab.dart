@@ -264,8 +264,10 @@ class SmoothLab {
           // own surface included) when it reads this line.
           final exo = ExoEngine.labLatest;
           final st = exo == null ? const <String, Object?>{} : await exo.stats();
-          PlaybackLog.add('LAB shot ${p[1]} film=${st['film'] ?? '-'}');
-          await _wait(3000);
+          final rect = st['filmRect'];
+          PlaybackLog.add('LAB shot ${p[1]} film=${st['film'] ?? '-'}'
+              '${rect == null ? '' : ' at $rect'}');
+          await _wait(5000);
           continue;
         }
         if (p.length >= 2 && p[0] == 'page') {

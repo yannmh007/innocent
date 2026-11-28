@@ -32,8 +32,18 @@ def _pil():
     try:
         from PIL import Image  # noqa: F401
     except ImportError:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'pillow'],
-                       check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # The runner's Python is "externally managed" (PEP 668): P1-E7's
+        # plain install did nothing.
+        for extra in (['--user', '--break-system-packages'], ['--break-system-packages'], []):
+            r = subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', *extra, 'pillow'],
+                               check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if r.returncode == 0:
+                break
+        import site
+        try:
+            sys.path.append(site.getusersitepackages())
+        except Exception:
+            pass
     from PIL import Image
     return Image
 

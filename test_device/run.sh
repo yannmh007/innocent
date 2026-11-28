@@ -1023,8 +1023,8 @@ for flow in $FLOWS; do
       # P1 (28 Nov 2026): a plan's `shot:NAME` step writes `LAB shot NAME`
       # and waits 3 s: the display taken then (adb screencap: the film's
       # own SurfaceView with Flutter over it, as a viewer sees it).
-      for _tick in 1 2 3 4 5; do
-        sleep 2
+      for _tick in 1 2 3 4 5 6 7 8 9 10; do
+        sleep 1
         n=$(grep -c 'LAB shot ' "$OUT/logcat_raw.txt" 2>/dev/null || true)
         n=${n:-0}
         while [ "$shots_taken" -lt "$n" ]; do

@@ -854,6 +854,8 @@ class ExoStreamEngine private constructor(
             "boostMb" to (if (enhancer?.enabled == true) (enhancer?.targetGain?.toDouble() ?: 0.0) else 0.0),
             // P1: where the film is drawn.
             "film" to (if (filmShown) "view" else if (filmOn) "to view" else "texture"),
+            // Where its SurfaceView is, in the window's pixels (the lab's shots).
+            "filmRect" to filmView?.let { "${it.left},${it.top} ${it.width}x${it.height}" },
         )
     }
 

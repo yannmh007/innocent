@@ -1987,6 +1987,8 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     _exo = null;
     await _labMpvPosSub?.cancel();
     _labMpvPosSub = null;
+    await _labMpvParamsSub?.cancel();
+    _labMpvParamsSub = null;
     await _player.dispose();
     _initialized = false;
     anyInitialized = false;
@@ -3597,29 +3599,58 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     final w = vp.dw ?? vp.w ?? 0;
     final h = vp.dh ?? vp.h ?? 0;
     if (w <= 0 || h <= 0) return false;
+    // A second switch (`mpvsv` then `mpvembed`): libmpv lets go of the
+    // lab's last SurfaceView before PlayerLab removes it.
+    if (_labMpvVo != null) await _setMpvProperty('vo', 'null');
     final wid = await const MethodChannel('innocent/lab')
         .invokeMethod<int>('mpvSurface', <String, Object?>{'w': w, 'h': h});
     if (wid == null || wid == 0) return false;
     ExoEngine.labNative.value = true;
-    await _setMpvProperty('vo', 'null');
-    await _setMpvProperty('wid', '$wid');
-    await _setMpvProperty('android-surface-size', '${w}x$h');
     if (embed) {
+      // MediaCodec must hand mpv its own frames for mediacodec_embed: the
+      // decoder changes first (a new video-params, which media_kit answers
+      // by putting its texture and vo=gpu back), then the output.
       await _setMpvProperty('hwdec', 'mediacodec');
-      await _setMpvProperty('vo', 'mediacodec_embed');
-    } else {
-      await _setMpvProperty('vo', 'gpu');
+      await Future<void>.delayed(const Duration(milliseconds: 2000));
     }
-    // A video output that failed before (the API 34 emulator's GL: P1-E6
-    // 46135660574, "Video: no video") left the track off: chosen again,
-    // the video starts on the new output.
-    await _setMpvProperty('vid', 'no');
-    await _setMpvProperty('vid', 'auto');
+    _labMpvWid = wid;
+    _labMpvVo = embed ? 'mediacodec_embed' : 'gpu';
+    _labMpvSize = '${w}x$h';
+    await _labMpvApply();
+    // media_kit puts its own surface and vo=gpu back on every new
+    // video-params (android_video_controller/real.dart): the lab's output
+    // is set again after each, up to six times (P1-E7 46138677180: the
+    // emulator's GL failing there each time).
+    _labMpvParamsSub ??= _player.stream.videoParams.listen((_) {
+      if (_labMpvVo == null || _labMpvReapplied >= 6) return;
+      _labMpvReapplied++;
+      PlaybackLog.add('LAB native: libmpv\'s output taken back by media_kit '
+          '($_labMpvReapplied), set again');
+      Future<void>.delayed(const Duration(milliseconds: 700), _labMpvApply);
+    });
     _labMpvPos = 0;
     _labMpvPosSub ??= _player.stream.position.listen((_) => _labMpvPos++);
     PlaybackLog.add('LAB native: libmpv to wid $wid, ${w}x$h, '
         'vo ${embed ? 'mediacodec_embed' : 'gpu'}');
     return true;
+  }
+
+  int? _labMpvWid;
+  String? _labMpvVo;
+  String? _labMpvSize;
+  int _labMpvReapplied = 0;
+  StreamSubscription<Object?>? _labMpvParamsSub;
+
+  /// The lab's SurfaceView as libmpv's output: no output, the surface, its
+  /// size, the output — the order media_kit uses.
+  Future<void> _labMpvApply() async {
+    final wid = _labMpvWid;
+    final vo = _labMpvVo;
+    if (wid == null || vo == null) return;
+    await _setMpvProperty('vo', 'null');
+    await _setMpvProperty('wid', '$wid');
+    await _setMpvProperty('android-surface-size', _labMpvSize ?? '0x0');
+    await _setMpvProperty('vo', vo);
   }
 
   /// LAB: libmpv's position events since [labMpvSurface] — the controls
