@@ -87,11 +87,52 @@ messages over the profiled 12 s.
   LoudnessEnhancer at 602 mB (+6 dB); every item back off.
 - P0 the same morning (46124465325): 16 PASS 1 SKIP on both phones.
 
-## 4. Open
+libmpv on the realme (fifty-eighth, 46129966885; `local` = a minute of
+Sintel's 720p copied to a file): libmpv plays on the phone (vo=gpu,
+hwdec mediacodec, 1690x720 at 24 fps, 0 dropped) — the emulator's EGL
+fault is the emulator's. Texture 46-52 % app (Flutter 24.7 fps, a "Thread"
+— libmpv's render thread — 16-18 %); `mpvsv` (libmpv's GL output moved to
+a SurfaceView, wid 1690x720) 41 % / 41 %, Flutter 0.1 fps, the main thread
+0 messages — a smaller gain than ExoPlayer's (libmpv still renders by GL,
+its thread 19 %). The controls over `mpvsv` drew 25 fps (82 %), unlike
+ExoPlayer's 4.9: something still asks Flutter for a frame per video frame
+(media_kit's texture?) — to read in the production work. mpv logged
+`aimagereader acquireLatestImage failed: -30001` around the switch. For
+libmpv the bigger gain would be `vo=mediacodec_embed` (the decoder
+straight to the SurfaceView, no GL; Innocent draws its subtitles itself) —
+not measured.
 
-- The owner's decision on P1 (§3) — the production list if `sv` wins is in
-  the previous handoff §3.4.
-- libmpv's A/B (`local`, `mpvsv`) needs the phones: one Test Lab run.
+## 4. Open — the next session: P1 in production (the owner's choice)
+
+The film on Android's SurfaceView by default, ExoPlayer first (catalogue
+films; the measured win), the dialogs' glass a tint. The work (previous
+handoff §3.4, plus what this session learned):
+1. The window: the lab switches it see-through by recreating the
+   Activity (a visible blink). Production: the player's window
+   see-through from its start (FlutterActivity's transparent background
+   mode) or a SurfaceView placed under Flutter without a recreate —
+   measure the cost of a see-through window on the phones' home and
+   library screens first (`t` looked free while a film played).
+2. The film's SurfaceView placed and sized by the player: fit / zoom /
+   pan / crop / 100 % from Flutter's numbers (video_geometry.dart), the
+   cutout and rotation; the subtitles stay Flutter's.
+3. Screenshot by PixelCopy of the SurfaceView; the in-app PiP window on
+   the texture (or its own view); system PiP.
+4. Display's colour filters, mirror/flip: back on the texture while on
+   (the owner's word); Night mode (picture) as a black layer.
+5. The dialogs (PlayerDialog/PlayerGlass): over the SurfaceView the tint
+   only — raise the tint where the film reads through (check legibility
+   with test/player_legibility_test.dart's frames).
+6. ExoPlayer then votes its own frame rate on its surface (P2's
+   DisplayVote is on Flutter's SurfaceView today).
+7. libmpv: `mpvsv` worked on the phone but saved less (41 % against
+   46-52 %); try `vo=mediacodec_embed` on the SurfaceView, and find why
+   the controls over it draw 25 fps.
+Each step: device lab first (ExoPlayer draws on the emulator; libmpv does
+not), then Test Lab (count the day's five), then the release when the
+owner says "release".
+
+Also open:
 - Online subtitles for catalogue films (ExoPlayer): the sheet says it is
   for the phone's own videos; a sidecar SRT on ExoPlayer (or the app's own
   SRT layer) would be needed.
@@ -99,8 +140,29 @@ messages over the profiled 12 s.
 
 ## 5. The owner's steps
 
-(filled in at the end)
+1. Nothing is waiting on you now. With the next release (say "release"):
+   on the phone, try ♪ (Volume boost, Night sound, Stereo mode, Disable,
+   Audio delay) on a catalogue film and on a video of your own; CC →
+   Online on a video of your own (search, tap a row, it loads); a swipe
+   left on a subtitle line for the next line, right for the previous,
+   drag it up and down; Report a problem with a film playing.
+2. The OpenSubtitles account gives 20 downloads a day to all viewers
+   together (each phone 5, each network 10 — migration 084).
 
 ## 6. The prompt for the next session
 
-(filled in at the end)
+```
+Innocent player — "MX ထက် ပိုကောင်းအောင်" session 3: P1 production
+(film ကို SurfaceView ပေါ်၊ dialog glass = tint — 28 Nov ဆုံးဖြတ်ချက်)။
+docs/handoff_2026_11_29_beyond_mx_p2.md ကို အရင်ဖတ်ပါ (CLAUDE.md, BACKLOG §0
+newest entry, skill device-labs, ui-design, release)။ Work branch:
+claude/extract-github-release-oteqr5 (fast-forward push)။
+1. handoff §4 အတိုင်း ExoPlayer ကို SurfaceView ပေါ် production လုပ်ပါ
+   (window, geometry, screenshot, PiP, effect fallback, dialog tint,
+   frame-rate vote)။ device lab အရင်၊ ပြီးမှ Test Lab (cloud.env comment
+   နဲ့ ဒီနေ့ test အရေအတွက် ရေတွက်ပါ)။
+2. libmpv: mediacodec_embed ကို SurfaceView ပေါ် စမ်းပြီး တိုင်းပါ။
+3. ပုံ (before/after) တွေ ပြပြီး ကျွန်တော့် ဆုံးဖြတ်ချက် ယူပါ။
+4. Release ကို "release" လို့ ပြောမှ။ အဆုံးမှာ မြန်မာလို report, ဇယား,
+   ဖုန်းမှာ စမ်းရမယ့် အဆင့်, handoff နဲ့ prompt။
+```

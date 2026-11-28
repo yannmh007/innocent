@@ -58,7 +58,12 @@ does it.
   worry did not hold); a dialog 89/69 % on the texture (its glass blurs a
   moving film) against 37-38 % — the glass then a tint alone. `sched`
   and `t`: no gain. P4 fn:audio on both phones: every ♪ item reached the
-  sound (handoff 2026_11_29 §3). WAITS: the owner's decision on P1.
+  sound (handoff 2026_11_29 §3). THE OWNER CHOSE (28 Nov): the film on
+  the SurfaceView, the dialogs' glass a tint — production next session
+  (handoff §4). Fifty-eighth 46129966885 (the realme, the day's fifth):
+  libmpv plays on the phone (vo=gpu, mediacodec, 24 fps, 0 dropped);
+  `mpvsv` 41 % against 46-52 % on the texture (its GL thread stays); the
+  controls over it drew 25 fps — to read. Next: vo=mediacodec_embed.
 - **27 Nov (night): BEYOND MX, SESSION 1 — P1 MEASURED ON THE EMULATOR,
   P2-P4 BUILT (branch only; docs/handoff_2026_11_28_beyond_mx_p1.md)**.
   The owner's answers: P1 A/B first; frame-rate matching seamless only;
