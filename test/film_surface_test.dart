@@ -132,6 +132,16 @@ void main() {
           findsOneWidget);
     });
 
+    testWidgets("the viewer's Aspect ratio shapes the texture too",
+        (tester) async {
+      await tester.pumpWidget(
+          _box(ExoVideo(engine: engine, aspect: 4 / 3, filmHost: true)));
+      final box = tester.renderObject<RenderBox>(find.byType(Texture));
+      expect(box.size.width / box.size.height, closeTo(4 / 3, 0.001),
+          reason: 'before 28 Nov the film kept 16:9 while its subtitles '
+              'moved to the 4:3 picture');
+    });
+
     testWidgets('a note from the phone changes nothing', (tester) async {
       await tester.pumpWidget(_box(ExoVideo(engine: engine, filmHost: true)));
       engine.debugEvent(

@@ -627,11 +627,15 @@ class ExoVideo extends StatelessWidget {
     super.key,
     required this.engine,
     this.fit = BoxFit.contain,
+    this.aspect,
     this.filmHost = false,
   });
 
   final ExoEngine engine;
   final BoxFit fit;
+
+  /// The viewer's Aspect ratio (width over height), or null for the film's.
+  final double? aspect;
 
   /// The player screen's picture, which the film's SurfaceView lies under.
   final bool filmHost;
@@ -660,11 +664,12 @@ class ExoVideo extends StatelessWidget {
               ? const ColoredBox(color: Color(0xFF000000))
               : const SizedBox.expand();
         }
+        final a = aspect;
         final picture = FittedBox(
           fit: fit,
           clipBehavior: Clip.hardEdge,
           child: SizedBox(
-            width: s.width,
+            width: a == null ? s.width : s.height * a,
             height: s.height,
             // The landing picture inside the same box as the texture, so
             // it takes the same fit, zoom and crop as the film.

@@ -45,3 +45,8 @@ paths:
   403, 20 Nov), and `tail_lines` only reaches the last steps. Print what a
   step proves into `$GITHUB_STEP_SUMMARY` as well, or hand the run to
   `ci-reader`; do not pull 150+ lines hoping to reach it.
+- **The runner's Python is "externally managed" (PEP 668, ubuntu-24.04):**
+  `pip install pillow` fails silently there. A lab script that needs a
+  package installs it with `--user --break-system-packages` and adds the
+  user site to `sys.path` (test_device/shots_measure.py; P1-E7 lost its
+  numbers to this, 28 Nov 2026).

@@ -114,6 +114,16 @@ paths:
   or Android's effects on the session libmpv plays on
   (SessionDynamics.kt). An unknown filter is logged at error level, which
   media_kit can turn into "Playback failed".
+- **media_kit owns libmpv's `vo` and `wid` on Android.** Its
+  AndroidVideoController (third_party/media_kit_video, real.dart) sets its
+  own Surface as `wid` and `vo=gpu` again on EVERY new video-params (a
+  decoder change, a track chosen again). Anything that points libmpv at
+  another output (the lab's `mpvsv`/`mpvembed`, a future SurfaceView for
+  libmpv) is undone by the next video-params unless it is set again after
+  each; and on the API 34 emulator each `vo=gpu` fails ("Could not create
+  EGL context") and switches the video track off (P1-E6/E7, 28 Nov 2026).
+  A libmpv on its own SurfaceView in production needs that controller
+  changed, not worked around.
 - **A Tooltip takes the long press.** A GestureDetector(onLongPress) around a
   tooltip'd IconButton never fires (Next's repeat menu, 11 Nov): drop the
   tooltip and name the button with `Semantics(label:, onLongPress:)`.

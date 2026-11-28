@@ -695,6 +695,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// then on, for the rest of the film.
   static final Map<String, String> _ladderOnMpv = <String, String>{};
 
+  /// The viewer's Aspect ratio choice (Display → Aspect ratio), null for the
+  /// film's own: libmpv takes it as video-aspect-override, ExoVideo here.
+  final ValueNotifier<double?> _aspectOverride = ValueNotifier<double?>(null);
+
   /// Which engine draws, for [buildVideoWidget]: the switch happens inside
   /// [open], and the screen may not rebuild for it on its own.
   final ValueNotifier<bool> _ladderView = ValueNotifier<bool>(false);
@@ -3189,6 +3193,10 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
   /// `video-aspect-override` property which is consulted continuously
   /// during playback so the change takes effect immediately.
   Future<void> setAspectRatioOverride(double? aspect) async {
+    // ExoPlayer's picture takes it too (ExoVideo): before 28 Nov 2026 a
+    // catalogue film on the texture kept its own shape while the subtitles
+    // moved to the chosen one's (PlayerController.displayVideoSize).
+    _aspectOverride.value = aspect == null || aspect <= 0 ? null : aspect;
     if (aspect == null || aspect <= 0) {
       // -1 in libmpv means "use the file's intrinsic aspect ratio"
       await _setMpvProperty('video-aspect-override', '-1');
@@ -3695,11 +3703,15 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
       builder: (context, onLadder, _) {
         final ladder = _exo;
         if (onLadder && ladder != null) {
-          return ExoVideo(
-              key: ValueKey<String>('exo-${ladder.id}'),
-              engine: ladder,
-              fit: fit,
-              filmHost: filmHost);
+          return ValueListenableBuilder<double?>(
+            valueListenable: _aspectOverride,
+            builder: (context, aspect, _) => ExoVideo(
+                key: ValueKey<String>('exo-${ladder.id}'),
+                engine: ladder,
+                fit: fit,
+                aspect: aspect,
+                filmHost: filmHost),
+          );
         }
         return mkv.Video(
           // A rebuilt engine is a new texture; a new key makes a new State.

@@ -17,7 +17,11 @@ without a picture:
     (`mirror`, `paused_mirror`) resembles it turned left to right than as
     it is (> 1: that one was mirrored; paused, the same frame).
 
-    python3 test_device/shots_measure.py OUT/shots > OUT/smooth_shots.txt
+    python3 test_device/shots_measure.py OUT/shots [OUT/logcat_raw.txt] > OUT/smooth_shots.txt
+
+With the logcat, each shot is also read inside the rectangle its `LAB shot
+NAME film=view at L,T WxH` line names (the film's SurfaceView, as the app
+placed it): the film's own brightness there, and the bars' outside it.
 
 Pillow is installed on the runner if missing (the analysis is lab-only).
 """
@@ -98,6 +102,17 @@ def main():
     if not shots:
         print('shots: none')
         return 0
+    rects = []
+    if len(sys.argv) > 2 and os.path.exists(sys.argv[2]):
+        for line in open(sys.argv[2], errors='replace'):
+            m = re.search(r'LAB shot (\S+) film=(\S+)(?: at (-?\d+),(-?\d+) (\d+)x(\d+))?', line)
+            if m:
+                # On the texture no SurfaceView is reported: the picture is
+                # where the last one was (the same screen mode).
+                r = rects[-1][2] if rects else None
+                if m.group(3) is not None:
+                    r = tuple(int(m.group(i)) for i in range(3, 7))
+                rects.append((m.group(1), m.group(2), r))
     prev = None
     for f in shots:
         name = os.path.basename(f)
@@ -115,8 +130,24 @@ def main():
         else:
             bw, bh = box[2] - box[0], box[3] - box[1]
             line += f' · film box {box[0]},{box[1]} {bw}x{bh} · luma {mean:.0f}'
-        m = re.match(r'9_p1_\d+_(.*)\.png', name)
-        tag = m.group(1) if m else ''
+        m = re.match(r'9_p1_(\d+)_(.*)\.png', name)
+        tag = m.group(2) if m else ''
+        if m and int(m.group(1)) - 1 < len(rects):
+            _, film, r = rects[int(m.group(1)) - 1]
+            line += f' · film on {film}'
+            if r is not None:
+                l, t, w, h = r
+                inside = (max(0, l), max(0, t), min(img.size[0], l + w), min(img.size[1], t + h))
+                if inside[2] > inside[0] and inside[3] > inside[1]:
+                    line += f' · in its rect {l},{t} {w}x{h}: luma {_mean(lum, inside):.0f}'
+                    # The bars: the screen's rows above and below it.
+                    bars = []
+                    if inside[1] > 8:
+                        bars.append(_mean(lum, (0, 0, img.size[0], inside[1])))
+                    if img.size[1] - inside[3] > 8:
+                        bars.append(_mean(lum, (0, inside[3], img.size[0], img.size[1])))
+                    if bars:
+                        line += f', outside {sum(bars) / len(bars):.0f}'
         if tag in ('mirror_back', 'paused_back') and prev is not None:
             plain = _diff(img, prev)
             flipped = _diff(img, prev.transpose(Image.FLIP_LEFT_RIGHT))

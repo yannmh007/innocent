@@ -123,6 +123,20 @@ Both run only on non-main branches, started by pushing their config file.
   30 does not help: the app cannot read `lab_stream_url` from Android/data
   there (P1-E5 46048122459: the smooth flow never started).
 
+- **The lab's pictures are sealed; prove a picture with numbers** (28 Nov
+  2026, P1). Screenshots are encrypted with LAB_RESULTS_KEY (the repository
+  is public): a session cannot open them, and must not try. A smooth plan's
+  `shot:NAME` step writes `LAB shot NAME film=view|texture at L,T WxH` (the
+  film SurfaceView's own rectangle, from ExoStreamEngine's stats), run.sh
+  takes the screen then, writes the display's layers per shot
+  (`smooth_layers_shots.txt`: z, pos, crop, opaque — the film -2 under
+  Flutter's -1) and `test_device/shots_measure.py` the film's box, its
+  brightness and the mirror per shot (`smooth_shots.txt`). `do:WHAT` steps
+  act as a viewer does (screen modes, zoom, pan, mirror, Night, a colour
+  filter, pause, the Screenshot shortcut). A dump taken by polling lags a
+  step: read the `LAB shot` line's rectangle first. Pictures for the owner
+  come from the Flutter harnesses (player_legibility_test, player_layout).
+
 ## Test Lab — `test_device/cloud.env` → device-cloud.yml (real phones)
 - `DEVICES="RE58C2,35 OP573DL1,34"` (realme, OPPO). Five physical tests a
   day, reset at midnight PACIFIC: 07:00 UTC in summer time, 08:00 UTC from
