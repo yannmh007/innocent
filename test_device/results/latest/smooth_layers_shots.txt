@@ -1,213 +1,54 @@
 == shot 1 fit
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
-      layerStack=   0, z=       -2, pos=(-1593,0), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[6.67, 0.00][0.00, 6.67]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
-      layerStack=   0, z=        0, pos=(-1593,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[6.67, 0.00][0.00, 6.67]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:140332920365}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:136415549260, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerPID:6318, ownerUID:10192, 9:4bytes, windowType:1, dequeueTime:122918526301}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-== shot 2 crop
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
-      layerStack=   0, z=       -2, pos=(220,1020), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
-      layerStack=   0, z=        0, pos=(220,1020), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:144492202477}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:143949382750, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, ownerPID:6318, ownerUID:10192, windowType:1, dequeueTime:135206673542}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 3 original
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
-      layerStack=   0, z=       -2, pos=(220,1020), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
-      layerStack=   0, z=        0, pos=(220,1020), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:147101647600, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:143949382750, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerPID:6318, ownerUID:10192, dequeueTime:135206673542, windowType:1, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 4 stretch
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#217) uid=10192
       layerStack=   0, z=       -2, pos=(0,896), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[1.69, 0.00][0.00, 1.69]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218) uid=10192
       layerStack=   0, z=        0, pos=(0,896), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:158943144074, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
+      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:651978290155, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#197) uid=10192
       layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#198) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:159019597100, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:652316496744, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (com.innocent.media/com.innocent.media.MainActivity#193) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerPID:6318, ownerUID:10192, 9:4bytes, windowType:1, dequeueTime:150260187222}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:638986569253, windowType:1, 9:4bytes, ownerUID:10192, ownerPID:8177}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#196) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 5 zoom
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
-      layerStack=   0, z=       -2, pos=(-539,711), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[2.71, 0.00][0.00, 2.71]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
-      layerStack=   0, z=        0, pos=(-539,711), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[2.71, 0.00][0.00, 2.71]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:169838111918}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:167831219257}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerPID:6318, ownerUID:10192, dequeueTime:160336458639, windowType:1, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-== shot 6 pan
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
-      layerStack=   0, z=       -2, pos=(-539,711), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[2.71, 0.00][0.00, 2.71]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
-      layerStack=   0, z=        0, pos=(-539,711), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[2.71, 0.00][0.00, 2.71]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:173697651599, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:167831219257, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={windowType:1, dequeueTime:160336458639, ownerUID:10192, ownerPID:6318, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-== shot 7 night
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
+== shot 2 night
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#217) uid=10192
       layerStack=   0, z=       -2, pos=(0,896), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[1.69, 0.00][0.00, 1.69]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218) uid=10192
       layerStack=   0, z=        0, pos=(0,896), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:181531930695}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
+      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:657015190293}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#197) uid=10192
       layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#198) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:177835016166}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:652316496744, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (com.innocent.media/com.innocent.media.MainActivity#193) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:167940335118, windowType:1, ownerPID:6318, ownerUID:10192, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerUID:10192, ownerPID:8177, dequeueTime:638986569253, windowType:1, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#196) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 8 fit2
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#229) uid=10192
+== shot 3 fit_after
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#217) uid=10192
       layerStack=   0, z=       -2, pos=(0,896), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[1.69, 0.00][0.00, 1.69]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#230) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#218) uid=10192
       layerStack=   0, z=        0, pos=(0,896), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:189763390972, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
+      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:663426599341, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#197) uid=10192
       layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
       activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
++ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#198) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:185406997545, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:659848155511, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (com.innocent.media/com.innocent.media.MainActivity#193) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:167940335118, windowType:1, ownerPID:6318, ownerUID:10192}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 9 mirror
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:196772307525}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={windowType:1, dequeueTime:175441715066, 9:4bytes, ownerUID:10192, ownerPID:6318}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 10 mirror_back
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#232) uid=10192
-      layerStack=   0, z=       -2, pos=(0,896), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#233) uid=10192
-      layerStack=   0, z=        0, pos=(0,896), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:203439004722}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:200879456138, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerUID:10192, ownerPID:6318, 9:4bytes, dequeueTime:193354028255, windowType:1}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 11 paused_mirror
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:210471385002, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, windowType:1, dequeueTime:200550647383, ownerPID:6318, ownerUID:10192}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 12 paused_back
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#235) uid=10192
-      layerStack=   0, z=       -2, pos=(0,896), size=(   0,   0), crop=[  0,   0, 640, 360], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#236) uid=10192
-      layerStack=   0, z=        0, pos=(0,896), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=1, invalidate=0, dataspace=BT601_525 SMPTE_170M Limited range, defaultPixelFormat=Unknown 0x000023, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000102, tr=[1.69, 0.00][0.00, 1.69]
-      activeBuffer=[ 640x 360:4196659,Unknown 0x000023], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={dequeueTime:218027874875, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerUID:10192, ownerPID:6318, dequeueTime:210712129732, windowType:1, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-== shot 13 tex
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity]#208) uid=10192
-      layerStack=   0, z=       -1, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[   0x   0:   0,Unknown/None], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (SurfaceView[com.innocent.media/com.innocent.media.MainActivity](BLAST)#209) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000500, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, dequeueTime:243894374611}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (com.innocent.media/com.innocent.media.MainActivity#204) uid=10192
-      layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0,  -1,  -1], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=0, dataspace=BT709 sRGB Full range, defaultPixelFormat=RGBA_8888, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000100, tr=[0.00, 0.00][0.00, 0.00]
-      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={ownerUID:10192, ownerPID:6318, dequeueTime:217959465810, windowType:1, 9:4bytes}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
-+ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#207) uid=10192
+      activeBuffer=[1080x2400:2816,RGBA_8888], tr=[0.00, 0.00][0.00, 0.00] queued-frames=0 metadata={9:4bytes, ownerUID:10192, ownerPID:8177, dequeueTime:638986569253, windowType:1}, cornerRadiusCrop=[0.00, 0.00, 0.00, 0.00],  shadowRadius=0.000, 
++ Layer (Bounds for - com.innocent.media/com.innocent.media.MainActivity#196) uid=10192
       layerStack=   0, z=        0, pos=(0,0), size=(   0,   0), crop=[  0,   0, 1080, 2400], cornerRadius=0.000000, isProtected=0, isTrustedOverlay=0, isOpaque=0, invalidate=1, dataspace=BT709 sRGB Full range, defaultPixelFormat=Unknown/None, backgroundBlurRadius=0, color=(-1.000,-1.000,-1.000,1.000), flags=0x00000000, tr=[0.00, 0.00][0.00, 0.00]

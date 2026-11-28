@@ -1,17 +1,17 @@
-[11:58:26] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
-[11:58:26] install
-[11:58:37] network: speed 2000:4000 kbit/s, delay 80:200 ms
-[11:58:37] network: eth0 has qdisc clsact
-[11:58:38] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
-[11:59:03] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
-[11:59:03] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
-[11:59:03] library: pushing 24 files
-[11:59:34] library: MediaStore lists 24 videos
-[11:59:34] cold start
+[12:27:28] device: sdk_gphone64_x86_64 / Android 14 / ABIs x86_64,arm64-v8a
+[12:27:28] install
+[12:27:41] network: speed 2000:4000 kbit/s, delay 80:200 ms
+[12:27:41] network: eth0 has qdisc clsact
+[12:27:42] network: the redirect into ifb0 was accepted but only 0 bytes reached it — NO loss applies (ingress filters there: pref 1 bpf pref 49 u32 )
+[12:28:09] overlays: [x] com.android.internal.display.cutout.emulation.hole [x] com.android.internal.systemui.navbar.threebutton 
+[12:28:09] nav bar: navigationBars frame=[0,2274][1080,2400] navigationBars frame=[0,2274][1080,2400] 
+[12:28:09] library: pushing 24 files
+[12:28:40] library: MediaStore lists 24 videos
+[12:28:40] cold start
 Status: ok
-TotalTime: 2123
-WaitTime: 2125
-[11:59:46] flow smooth
-[11:59:47] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:6 shot:fit do:crop shot:crop do:original shot:original do:stretch shot:stretch do:fit do:zoom shot:zoom do:pan shot:pan do:fit do:night shot:night do:night shot:fit2 do:mirror shot:mirror do:mirror shot:mirror_back do:pause do:mirror shot:paused_mirror do:mirror shot:paused_back do:play do:shot play:film:tex:6 shot:tex do:shot play:film:now:6 page:now:6 page:opaque:6
-[12:02:28] flow smooth done
-[12:02:32] done
+TotalTime: 3008
+WaitTime: 3179
+[12:28:54] flow smooth
+[12:28:55] smooth: 5c01507a-ef1d-46eb-8bb8-a9a2326be153, plan play:film:now:6 shot:fit do:night shot:night do:night shot:fit_after do:pause shot:paused do:mirror shot:paused_mirror do:mirror shot:paused_back do:play do:crop shot:crop do:fit play:film:tex:4 shot:tex do:night shot:tex_night do:night shot:tex_after
+[12:39:30] flow smooth done
+[12:39:35] done

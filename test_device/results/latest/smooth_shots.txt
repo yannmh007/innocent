@@ -1,15 +1,10 @@
-9_p1_01_fit.png: 1080x2400 · film box 0,0 1080x2400 · luma 111
-9_p1_02_crop.png: 1080x2400 · film box 0,0 1080x2400 · luma 112
-9_p1_03_original.png: 1080x2400 · film box 70,820 940x888 · luma 226
-9_p1_04_stretch.png: 1080x2400 · film box 0,0 1080x2400 · luma 104
-9_p1_05_zoom.png: 1080x2400 · film box 0,712 1080x996 · luma 182
-9_p1_06_pan.png: 1080x2400 · film box 0,712 1080x996 · luma 187
-9_p1_07_night.png: 1080x2400 · film box 0,820 1080x888 · luma 199
-9_p1_08_fit2.png: 1080x2400 · film box 0,820 1080x888 · luma 201
-9_p1_09_mirror.png: 1080x2400 · film box 0,820 1080x888 · luma 199
-9_p1_10_mirror_back.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · the last shot as this one turned: 0.25 (> 1 mirrored)
-9_p1_11_paused_mirror.png: 1080x2400 · film box 0,820 1080x888 · luma 202
-9_p1_12_paused_back.png: 1080x2400 · film box 0,820 1080x888 · luma 202 · the last shot as this one turned: 0.88 (> 1 mirrored)
-9_p1_13_tex.png: 1080x2400 · film box 0,820 1080x888 · luma 199
-9_shortcut_Innocent_1795867301874.png: 640x360 · film box 0,0 640x360 · luma 159
-9_shortcut_Innocent_1795867322207.png: 823x1829 · film box 0,684 824x462 · luma 193
+9_p1_01_fit.png: 1080x2400 · film box 0,820 1080x888 · luma 202 · film on view · in its rect 0,896 1080x608: luma 205, outside 31
+9_p1_02_night.png: 1080x2400 · film box 0,820 1080x888 · luma 198 · film on view · in its rect 0,896 1080x608: luma 198, outside 31
+9_p1_03_fit_after.png: 1080x2400 · film box 0,820 1080x888 · luma 203 · film on view · in its rect 0,896 1080x608: luma 205, outside 31
+9_p1_04_paused.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · film on view · in its rect 0,896 1080x608: luma 202, outside 31
+9_p1_05_paused_mirror.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · film on texture · in its rect 0,896 1080x608: luma 201, outside 31
+9_p1_06_paused_back.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · film on view · in its rect 0,896 1080x608: luma 202, outside 31 · the last shot as this one turned: 0.61 (> 1 mirrored)
+9_p1_07_crop.png: 1080x2400 · film box 0,0 1080x2400 · luma 102 · film on view · in its rect -1593,0 4267x2400: luma 102
+9_p1_08_tex.png: 1080x2400 · film box 0,820 1080x888 · luma 200 · film on texture · in its rect -1593,0 4267x2400: luma 74
+9_p1_09_tex_night.png: 1080x2400 · film box 12,820 1068x888 · luma 201 · film on texture · in its rect -1593,0 4267x2400: luma 74
+9_p1_10_tex_after.png: 1080x2400 · film box 0,820 1080x888 · luma 202 · film on texture · in its rect -1593,0 4267x2400: luma 75
