@@ -2104,8 +2104,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       case 'original':
         final want = AspectRatioMode.values.byName(what);
         if (mode() == AspectRatioMode.custom) c.resetZoom();
+        // Settings → Player → "Quick zoom" (on by default) leaves Stretch
+        // out of the cycle: off while the lab cycles to it.
+        final settings = ref.read(playerSettingsProvider.notifier);
+        final quick =
+            ref.read(playerSettingsProvider).get(PlayerSetting.quickZoom);
+        if (want == AspectRatioMode.stretch && quick) {
+          await settings.setValue(PlayerSetting.quickZoom, false);
+        }
         for (var i = 0; i < 6 && mode() != want; i++) {
           c.cycleAspectRatio();
+        }
+        if (want == AspectRatioMode.stretch && quick) {
+          await settings.setValue(PlayerSetting.quickZoom, true);
         }
         c.hideControls();
         return mode().name;
@@ -2126,7 +2137,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         return 'pinch end';
       case 'pan':
         c.onPanDelta(const Offset(-80, 30), MediaQuery.sizeOf(context));
-        return 'offset ${ref.read(playerControllerProvider).videoOffset}';
+        final o = ref.read(playerControllerProvider).videoOffset;
+        return 'offset ${o.dx.round()},${o.dy.round()}';
       case 'mirror':
         c.toggleMirrorMode();
         return 'mirror ${ref.read(playerControllerProvider).isMirrorMode}';

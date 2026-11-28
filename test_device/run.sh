@@ -1031,6 +1031,13 @@ for flow in $FLOWS; do
           shots_taken=$((shots_taken + 1))
           name=$(grep -o 'LAB shot [A-Za-z0-9_-]*' "$OUT/logcat_raw.txt" | sed -n "${shots_taken}p" | awk '{print $3}')
           adb exec-out screencap -p > "$OUT/shots/9_p1_$(printf %02d "$shots_taken")_${name:-x}.png" 2>/dev/null || true
+          # The display's layers then, as text: where each SurfaceView is
+          # (the film's own and Flutter's) and what it shows.
+          { echo "== shot ${shots_taken} ${name:-x}"
+            adb shell dumpsys SurfaceFlinger 2>/dev/null | tr -d '\r' \
+              | grep -A14 -E '^\+ Layer \(SurfaceView\[|^\+ Layer \(com\.innocent' \
+              | grep -E '^\+ Layer|pos=|size=|crop=|dataspace|alpha=|isOpaque|z=|frame=|destinationFrame|bufferTransform|activeBuffer' | head -60
+          } >> "$OUT/smooth_layers_shots.txt" 2>/dev/null || true
         done
       done
       waited=$((waited + 10))
@@ -1061,6 +1068,9 @@ for flow in $FLOWS; do
     for f in $(adb shell ls /sdcard/Pictures/Innocent/ 2>/dev/null | tr -d '\r' | grep -i '\.png$' | head -4); do
       adb pull "/sdcard/Pictures/Innocent/$f" "$OUT/shots/9_shortcut_$f" >/dev/null 2>&1 || true
     done
+    # What the shots show, as numbers (they are sealed): the film's box,
+    # its brightness, the mirror (test_device/shots_measure.py).
+    python3 test_device/shots_measure.py "$OUT/shots" > "$OUT/smooth_shots.txt" 2>&1 || true
 
     adb shell log -p i -t flutter "LAB phase $flow end" >/dev/null 2>&1 || true
     adb shell am force-stop "$PKG"

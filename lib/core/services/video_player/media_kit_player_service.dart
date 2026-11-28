@@ -3610,6 +3610,11 @@ class MediaKitPlayerService implements VideoPlayerService, SlowEngine {
     } else {
       await _setMpvProperty('vo', 'gpu');
     }
+    // A video output that failed before (the API 34 emulator's GL: P1-E6
+    // 46135660574, "Video: no video") left the track off: chosen again,
+    // the video starts on the new output.
+    await _setMpvProperty('vid', 'no');
+    await _setMpvProperty('vid', 'auto');
     _labMpvPos = 0;
     _labMpvPosSub ??= _player.stream.position.listen((_) => _labMpvPos++);
     PlaybackLog.add('LAB native: libmpv to wid $wid, ${w}x$h, '
